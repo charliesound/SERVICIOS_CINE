@@ -3,6 +3,7 @@
 > Estado: propuesta/integracion legacy.
 > Este material se conserva como referencia historica y no describe el stack operativo actual de `SERVICIOS_CINE`.
 > Para despliegue vigente usa `README_WSL2.md`, `DOCKER.md` y `docs/DOCUMENTACION_VIGENTE.md`.
+> Los archivos runtime locales de esta carpeta como `.env`, `env/` y `*.zip` no forman parte del versionado operativo.
 
 Este paquete prepara una **primera prueba real** en un solo PC, con separación clara de servicios.
 

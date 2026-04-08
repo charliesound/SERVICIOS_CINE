@@ -1,0 +1,45 @@
+app:
+  name: "SERVICIOS_CINE"
+  version: "1.0.0"
+  debug: false
+  host: "0.0.0.0"
+  port: 8000
+
+database:
+  url: "sqlite:///./servicios_cine.db"
+  echo: false
+
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+  password: null
+
+auth:
+  secret_key: "change-me-in-production"
+  algorithm: "HS256"
+  access_token_expire_minutes: 60
+  refresh_token_expire_days: 7
+
+cors:
+  allowed_origins:
+    - "http://localhost:3000"
+    - "https://servicios-cine.com"
+  allow_credentials: true
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+queue:
+  backend: "redis"
+  default_timeout: 3600
+  max_retries: 3
+
+workflows:
+  presets_dir: "./presets"
+  custom_dir: "./custom_workflows"
+
+experimental:
+  enabled: false
+  admin_key: "admin-secret-key-change-me"

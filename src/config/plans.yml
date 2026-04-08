@@ -1,0 +1,105 @@
+plans:
+  free:
+    name: "Free"
+    display_name: "Gratis"
+    price: 0
+    billing_period: "monthly"
+    max_active_jobs: 1
+    max_queued_jobs: 2
+    priority_score: 1
+    allowed_task_types:
+      - "still"
+    features:
+      - watermark_enabled
+      - community_support
+    limits:
+      max_images_per_day: 10
+      max_video_seconds_per_month: 0
+      max_audio_seconds_per_month: 0
+      max_projects: 1
+      max_sequences_per_project: 3
+      watermark: true
+      api_access: false
+      experimental_access: false
+
+  creator:
+    name: "Creator"
+    display_name: "Creador"
+    price: 9.99
+    billing_period: "monthly"
+    max_active_jobs: 2
+    max_queued_jobs: 5
+    priority_score: 2
+    allowed_task_types:
+      - "still"
+      - "dubbing"
+    features:
+      - no_watermark
+      - email_support
+      - api_basic
+    limits:
+      max_images_per_day: 100
+      max_video_seconds_per_month: 0
+      max_audio_seconds_per_month: 120
+      max_projects: 3
+      max_sequences_per_project: 10
+      watermark: false
+      api_access: true
+      experimental_access: false
+
+  studio:
+    name: "Studio"
+    display_name: "Estudio"
+    price: 29.99
+    billing_period: "monthly"
+    max_active_jobs: 3
+    max_queued_jobs: 10
+    priority_score: 3
+    allowed_task_types:
+      - "still"
+      - "video"
+      - "dubbing"
+    features:
+      - all_lower_features
+      - priority_queue
+      - api_full
+      - team_sharing
+    limits:
+      max_images_per_day: 500
+      max_video_seconds_per_month: 1800
+      max_audio_seconds_per_month: 600
+      max_projects: 10
+      max_sequences_per_project: 50
+      watermark: false
+      api_access: true
+      experimental_access: false
+
+  enterprise:
+    name: "Enterprise"
+    display_name: "Empresarial"
+    price: 99.99
+    billing_period: "monthly"
+    max_active_jobs: 5
+    max_queued_jobs: 20
+    priority_score: 4
+    allowed_task_types:
+      - "still"
+      - "video"
+      - "dubbing"
+      - "experimental"
+    features:
+      - all_lower_features
+      - sso_integration
+      - sla_guarantee
+      - dedicated_support
+      - custom_workflows
+      - white_label
+    limits:
+      max_images_per_day: 999999
+      max_video_seconds_per_month: 999999
+      max_audio_seconds_per_month: 999999
+      max_projects: 999999
+      max_sequences_per_project: 999999
+      watermark: false
+      api_access: true
+      experimental_access: true

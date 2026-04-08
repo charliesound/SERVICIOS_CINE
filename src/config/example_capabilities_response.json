@@ -1,0 +1,107 @@
+{
+  "backends": {
+    "still": {
+      "backend": "still",
+      "healthy": true,
+      "response_time_ms": 45.23,
+      "comfyui_version": "1.2.1",
+      "nodes_count": 47,
+      "models_count": 12,
+      "nodes": [
+        {
+          "type": "CheckpointLoaderSimple",
+          "category": "model_loading",
+          "inputs": ["ckpt_name"],
+          "outputs": ["MODEL", "CLIP", "VAE"]
+        },
+        {
+          "type": "CLIPTextEncode",
+          "category": "text",
+          "inputs": ["text", "clip"],
+          "outputs": ["CONDITIONING"]
+        },
+        {
+          "type": "KSampler",
+          "category": "sampling",
+          "inputs": ["model", "positive", "negative", "seed", "steps", "cfg", "sampler_name", "scheduler"],
+          "outputs": ["LATENT"]
+        },
+        {
+          "type": "VAEDecode",
+          "category": "latent",
+          "inputs": ["samples", "vae"],
+          "outputs": ["IMAGE"]
+        },
+        {
+          "type": "SaveImage",
+          "category": "io",
+          "inputs": ["images", "filename_prefix"],
+          "outputs": []
+        }
+      ],
+      "models": [
+        {"name": "sd_xl_base_1.0.safetensors", "type": "checkpoint", "loaded": true, "size_mb": 6800},
+        {"name": "juggernaut_xl.safetensors", "type": "checkpoint", "loaded": false, "size_mb": 6800},
+        {"name": "realisticVision_v60B1_v51VAE.safetensors", "type": "checkpoint", "loaded": false, "size_mb": 6800}
+      ],
+      "detected_capabilities": [
+        "image_generation",
+        "sampling",
+        "image_decoding",
+        "image_output"
+      ],
+      "warnings": [],
+      "last_check": "2026-04-06T12:30:00Z"
+    },
+    "video": {
+      "backend": "video",
+      "healthy": true,
+      "response_time_ms": 52.10,
+      "comfyui_version": "1.2.1",
+      "nodes_count": 35,
+      "models_count": 8,
+      "detected_capabilities": [
+        "image_generation",
+        "sampling",
+        "video_output",
+        "video_generation"
+      ],
+      "warnings": [],
+      "last_check": "2026-04-06T12:30:00Z"
+    },
+    "dubbing": {
+      "backend": "dubbing",
+      "healthy": true,
+      "response_time_ms": 38.45,
+      "comfyui_version": "1.2.1",
+      "nodes_count": 22,
+      "models_count": 5,
+      "detected_capabilities": [
+        "audio_processing",
+        "voice_cloning",
+        "image_output"
+      ],
+      "warnings": [],
+      "last_check": "2026-04-06T12:30:00Z"
+    },
+    "lab": {
+      "backend": "lab",
+      "healthy": true,
+      "response_time_ms": 42.67,
+      "comfyui_version": "1.2.1",
+      "nodes_count": 89,
+      "models_count": 15,
+      "detected_capabilities": [
+        "image_generation",
+        "sampling",
+        "inpainting",
+        "upscaling",
+        "audio_processing",
+        "experimental"
+      ],
+      "warnings": ["Experimental backend - stability not guaranteed"],
+      "last_check": "2026-04-06T12:30:00Z"
+    }
+  },
+  "timestamp": "2026-04-06T12:30:00Z"
+}

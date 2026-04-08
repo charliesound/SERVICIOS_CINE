@@ -1,0 +1,74 @@
+version: "3.9"
+
+services:
+  automation-engine:
+    build:
+      context: ../CID_SERVER/automation-engine
+      dockerfile: Dockerfile
+    container_name: automation-engine
+    env_file:
+      - ../CID_SERVER/automation-engine/.env
+    restart: unless-stopped
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    networks:
+      - cine_net
+
+  cid-web:
+    build:
+      context: ../Web Ailink_Cinema
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_CINEMA_API_URL: ${CINEMA_API_URL:-}
+        AUTOMATION_ENGINE_URL: ${AUTOMATION_ENGINE_URL:-}
+    container_name: cid-web
+    env_file:
+      - ./env/cid.env
+    restart: unless-stopped
+    expose:
+      - "3000"
+    depends_on:
+      - automation-engine
+    networks:
+      - cine_net
+
+  cine-api:
+    build:
+      context: ../CINE_AI_PLATFORM
+      dockerfile: Dockerfile.cine
+    container_name: cine-api
+    env_file:
+      - ./env/cine.env
+    restart: unless-stopped
+    expose:
+      - "3000"
+    networks:
+      - cine_net
+
+  caddy:
+    image: caddy:2
+    container_name: cine-caddy
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - cid-web
+      - cine-api
+      - automation-engine
+    networks:
+      - cine_net
+
+networks:
+  cine_net:
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  html {
+    @apply text-slate-100 antialiased;
+  }
+  
+  body {
+    @apply bg-dark-300 min-h-screen;
+    background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700/50 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-600;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold rounded-lg transition-all duration-200 hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply px-5 py-2.5 bg-white/5 text-white font-medium rounded-lg border border-white/10 transition-all duration-200 hover:bg-white/10 hover:border-white/20;
+  }
+  
+  .btn-ghost {
+    @apply px-4 py-2 text-slate-400 hover:text-amber-400 transition-colors;
+  }
+  
+  .card {
+    @apply bg-dark-200/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 transition-all duration-300 hover:border-white/10 hover:bg-dark-200/80;
+  }
+
+  .card-hover {
+    @apply hover:border-amber-500/20 hover:shadow-card transition-all duration-300;
+  }
+  
+  .input {
+    @apply w-full px-4 py-3 bg-dark-400 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/20 transition-all;
+  }
+
+  .input-search {
+    @apply bg-dark-400/50 border-none rounded-xl px-4 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-slate-300 mb-2;
+  }
+
+  .heading-xl {
+    @apply text-4xl font-bold text-white tracking-tight;
+  }
+
+  .heading-lg {
+    @apply text-2xl font-bold text-white;
+  }
+
+  .heading-md {
+    @apply text-lg font-semibold text-white;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-free {
+    @apply bg-slate-700/50 text-slate-300 border border-slate-600/30;
+  }
+  
+  .badge-creator {
+    @apply bg-amber-500/10 text-amber-400 border border-amber-500/20;
+  }
+  
+  .badge-studio {
+    @apply bg-purple-500/10 text-purple-400 border border-purple-500/20;
+  }
+  
+  .badge-enterprise {
+    @apply bg-amber-400/10 text-amber-300 border border-amber-400/20;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 transition-all duration-200 hover:bg-white/5 hover:text-white;
+  }
+
+  .nav-link-active {
+    @apply bg-amber-500/10 text-amber-400 border border-amber-500/20;
+  }
+
+  .divider {
+    @apply h-px bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  }
+
+  .glass {
+    @apply bg-dark-200/30 backdrop-blur-lg border border-white/5;
+  }
+
+  /* Stats card estilo MITO */
+  .stat-card {
+    @apply bg-dark-200/50 rounded-xl border border-white/5 p-4 hover:border-amber-500/20 transition-all duration-300;
+  }
+
+  /* Table styles */
+  .table-row {
+    @apply border-b border-white/5 hover:bg-white/[0.02] transition-colors;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-amber-500;
+  }
+  
+  .text-gradient-light {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300;
+  }
+
+  .border-subtle {
+    @apply border-white/5;
+  }
+
+  .bg-subtle {
+    @apply bg-white/[0.02];
+  }
+}

@@ -1,0 +1,186 @@
+# AILinkCinema - Caddy Configuration
+
+{
+    auto_https disable_redirects
+}
+
+# Puerto 80 - HTTP
+:80 {
+    encode gzip
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+    }
+
+    # AILinkCinema Backend
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /docs {
+        reverse_proxy backend:8000
+    }
+
+    handle /openapi.json {
+        reverse_proxy backend:8000
+    }
+
+    handle /redoc {
+        reverse_proxy backend:8000
+    }
+
+    handle /health {
+        reverse_proxy backend:8000
+    }
+
+    handle /auth/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /queue/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /workflows/* {
+        reverse_proxy backend:8000
+    }
+
+    # CINE AI Platform API
+    handle_path /cine/api/* {
+        reverse_proxy cine-api:3000
+    }
+
+    handle /cine/health {
+        rewrite * /api/health
+        reverse_proxy cine-api:3000
+    }
+
+    handle /cine {
+        redir /cine/ 308
+    }
+
+    handle_path /cine/* {
+        reverse_proxy cine-web:80
+    }
+
+    # Automation Engine
+    handle_path /automation/* {
+        reverse_proxy automation-engine:8000
+    }
+
+    # n8n
+    handle /n8n {
+        redir /n8n/ 308
+    }
+
+    handle_path /n8n/* {
+        reverse_proxy n8n:5678
+    }
+
+    # Qdrant
+    handle /qdrant {
+        redir /qdrant/ 308
+    }
+
+    handle_path /qdrant/* {
+        reverse_proxy qdrant:6333
+    }
+
+    # Frontend Principal
+    handle / {
+        reverse_proxy frontend:80
+    }
+}
+
+# Puerto 443 - HTTPS
+:443 {
+    encode gzip
+
+    tls /etc/caddy/certs/server.crt /etc/caddy/certs/server.key
+
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+    }
+
+    # AILinkCinema Backend
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /docs {
+        reverse_proxy backend:8000
+    }
+
+    handle /openapi.json {
+        reverse_proxy backend:8000
+    }
+
+    handle /redoc {
+        reverse_proxy backend:8000
+    }
+
+    handle /health {
+        reverse_proxy backend:8000
+    }
+
+    handle /auth/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /queue/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /workflows/* {
+        reverse_proxy backend:8000
+    }
+
+    # CINE AI Platform API
+    handle_path /cine/api/* {
+        reverse_proxy cine-api:3000
+    }
+
+    handle /cine/health {
+        rewrite * /api/health
+        reverse_proxy cine-api:3000
+    }
+
+    handle /cine {
+        redir /cine/ 308
+    }
+
+    handle_path /cine/* {
+        reverse_proxy cine-web:80
+    }
+
+    # Automation Engine
+    handle_path /automation/* {
+        reverse_proxy automation-engine:8000
+    }
+
+    # n8n
+    handle /n8n {
+        redir /n8n/ 308
+    }
+
+    handle_path /n8n/* {
+        reverse_proxy n8n:5678
+    }
+
+    # Qdrant
+    handle /qdrant {
+        redir /qdrant/ 308
+    }
+
+    handle_path /qdrant/* {
+        reverse_proxy qdrant:6333
+    }
+
+    # Frontend Principal
+    handle / {
+        reverse_proxy frontend:80
+    }
+}

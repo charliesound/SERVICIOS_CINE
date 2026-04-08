@@ -1,0 +1,42 @@
+# Environment and secrets
+.env
+.env.local
+*.env
+!*.env.example
+!*.compose.example
+!*.private.example
+*.zip
+*.url
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+venv/
+.venv/
+
+# Node
+node_modules/
+dist/
+build/
+
+# Docker and runtime data
+certs/
+logs/
+data/
+caddy_data/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Project-local tooling
+.opencode/
+
+# Embedded/legacy repos excluded from root commit
+CINE_AI_PLATFORM/
+Web Ailink_Cinema/

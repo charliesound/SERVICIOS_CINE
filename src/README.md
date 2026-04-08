@@ -1,13 +1,23 @@
-# SERVICIOS_CINE Backend Structure
+# SERVICIOS_CINE Backend
 
-## Quick Start
+Backend FastAPI principal de `SERVICIOS_CINE`.
+
+## Arranque local
+
 ```bash
-cd src
+cd /opt/SERVICIOS_CINE/src
 pip install -r requirements.txt
-python -m uvicorn app:app --reload --port 8000
+python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## Structure Overview
+API local:
+
+- `http://localhost:8000`
+- `http://localhost:8000/docs`
+
+Para el despliegue actual con Docker y Caddy, usa `README_WSL2.md` y `DOCKER.md`.
+
+## Estructura
 
 ```
 src/
@@ -46,7 +56,7 @@ src/
     └── smoke_ops.bat
 ```
 
-## Backend Ports
+## Puertos de backends externos
 
 | Backend  | Port | Purpose              |
 |----------|------|----------------------|
@@ -55,7 +65,7 @@ src/
 | dubbing  | 8190 | Voice/Audio          |
 | lab      | 8191 | Experimental         |
 
-## Key Endpoints
+## Endpoints clave
 
 ### Jobs
 - `POST /api/render/jobs` - Submit a new job
@@ -85,18 +95,18 @@ src/
 
 ## Scheduler
 
-The scheduler runs automatically when the app starts:
+El scheduler arranca automaticamente al iniciar la app:
 - Poll interval: 5 seconds
 - Job timeout: 3600 seconds (1 hour)
 - Manages concurrency per backend
 
-## Priority Queue
+## Cola de prioridad
 
-Jobs are ordered by:
+Los jobs se ordenan por:
 1. Priority score (plan-based, higher is better)
 2. Submission time (FIFO)
 
-## Example Job Submission
+## Ejemplo de envio de job
 
 ```bash
 curl -X POST "http://localhost:8000/api/render/jobs" \
@@ -114,11 +124,6 @@ curl -X POST "http://localhost:8000/api/render/jobs" \
   }'
 ```
 
-## Next Steps
+## Artefactos locales
 
-1. Implement auth routes with JWT
-2. Add database integration (SQLite/PostgreSQL)
-3. Add Redis for queue persistence
-4. Implement webhook callbacks for job completion
-5. Add rate limiting
-6. Add metrics/monitoring
+Los artefactos locales como `.env`, `.venv/`, `__pycache__/`, `logs/` y `data/` no forman parte del versionado operativo.

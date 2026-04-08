@@ -2,6 +2,8 @@
 
 Frontend React + TypeScript + Vite para la plataforma SERVICIOS_CINE.
 
+Para el despliegue actual con Docker y Caddy, usa `README_WSL2.md` y `DOCKER.md`.
+
 ## Quick Start
 
 ```bash
@@ -11,6 +13,8 @@ npm run dev
 ```
 
 Abre http://localhost:3000
+
+En el stack Docker actual, la app principal se sirve por Caddy en `http://localhost`.
 
 ## Estructura
 
@@ -125,3 +129,7 @@ npm run lint
 El proxy de Vite está configurado para redirigir `/api` a `http://localhost:8000`.
 
 Para cambiar el backend, edita `vite.config.ts`.
+
+## Artefactos locales
+
+Los artefactos locales como `.env`, `node_modules/`, `dist/`, `build/` y `coverage/` no forman parte del versionado operativo.

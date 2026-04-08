@@ -1,0 +1,176 @@
+{
+  "name": "04 - Project Context Embed And Ingest",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "project-context-embed-ingest",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook: Embed And Ingest",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        320
+      ],
+      "webhookId": "project-context-embed-and-ingest-internal-id"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $json.body ?? $json;\nconst required = ['text', 'project_id', 'entity_type', 'title', 'content', 'source'];\nfor (const key of required) {\n  const value = input[key];\n  if (value === undefined || value === null || String(value).trim() === '') {\n    throw new Error(`Missing required field: ${key}`);\n  }\n}\n\nconst normalizeNullable = (value) => {\n  if (value === undefined || value === null) return null;\n  const normalized = String(value).trim();\n  return normalized === '' ? null : normalized;\n};\n\nconst tags = Array.isArray(input.tags)\n  ? input.tags.map((tag) => String(tag).trim()).filter((tag) => tag !== '')\n  : [];\n\nconst normalized = {\n  text: String(input.text).trim(),\n  project_id: String(input.project_id).trim(),\n  sequence_id: normalizeNullable(input.sequence_id),\n  scene_id: normalizeNullable(input.scene_id),\n  shot_id: normalizeNullable(input.shot_id),\n  entity_type: String(input.entity_type).trim(),\n  title: String(input.title).trim(),\n  content: String(input.content),\n  tags,\n  source: String(input.source).trim(),\n  created_at: normalizeNullable(input.created_at),\n  point_id: normalizeNullable(input.point_id)\n};\n\nreturn [{\n  json: {\n    normalized,\n    embed_request: {\n      text: normalized.text,\n      metadata: {\n        project_id: normalized.project_id,\n        sequence_id: normalized.sequence_id,\n        scene_id: normalized.scene_id,\n        shot_id: normalized.shot_id,\n        entity_type: normalized.entity_type,\n        title: normalized.title,\n        source: normalized.source\n      }\n    }\n  }\n}];"
+      },
+      "name": "Normalize Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8091/embed",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.embed_request }}",
+        "options": {}
+      },
+      "name": "Create Embedding",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        860,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const normalized = $('Normalize Request').first().json.normalized;\nconst embedding = $json;\n\nif (!Array.isArray(embedding.vector) || embedding.vector.length !== 384) {\n  throw new Error(`Invalid embedding dimensions: ${embedding.dimensions}`);\n}\n\nreturn [{\n  json: {\n    ingest_request: {\n      project_id: normalized.project_id,\n      sequence_id: normalized.sequence_id,\n      scene_id: normalized.scene_id,\n      shot_id: normalized.shot_id,\n      entity_type: normalized.entity_type,\n      title: normalized.title,\n      content: normalized.content,\n      tags: normalized.tags,\n      source: normalized.source,\n      created_at: normalized.created_at,\n      point_id: normalized.point_id,\n      vector: embedding.vector\n    },\n    embedding: {\n      model: embedding.model,\n      dimensions: embedding.dimensions\n    }\n  }\n}];"
+      },
+      "name": "Build Ingest Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5678/n8n/webhook/project-context-ingest",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.ingest_request }}",
+        "options": {}
+      },
+      "name": "Call Project Context Ingest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1460,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const embedding = $('Build Ingest Payload').first().json.embedding;\nconst ingest = $json;\nreturn [{\n  json: {\n    ok: true,\n    embedding_model: embedding.model,\n    dimensions: embedding.dimensions,\n    collection: ingest.collection,\n    point_id: ingest.point_id,\n    payload: ingest.payload,\n    qdrant: ingest.qdrant\n  }\n}];"
+      },
+      "name": "Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2040,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: Embed And Ingest": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Create Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Embedding": {
+      "main": [
+        [
+          {
+            "node": "Build Ingest Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Ingest Payload": {
+      "main": [
+        [
+          {
+            "node": "Call Project Context Ingest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Project Context Ingest": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

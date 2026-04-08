@@ -1,0 +1,176 @@
+{
+  "name": "05 - Project Context Search",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "project-context-search",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook: Project Context Search",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        320
+      ],
+      "webhookId": "project-context-search-internal-id"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $json.body ?? $json;\nconst required = ['text', 'project_id'];\nfor (const key of required) {\n  const value = input[key];\n  if (value === undefined || value === null || String(value).trim() === '') {\n    throw new Error(`Missing required field: ${key}`);\n  }\n}\n\nconst normalizeNullable = (value) => {\n  if (value === undefined || value === null) return null;\n  const normalized = String(value).trim();\n  return normalized === '' ? null : normalized;\n};\n\nconst tags = Array.isArray(input.tags)\n  ? input.tags.map((tag) => String(tag).trim()).filter((tag) => tag !== '')\n  : [];\n\nconst parsedLimit = Number(input.limit ?? 5);\nconst limit = Number.isFinite(parsedLimit) ? Math.max(1, Math.min(20, Math.trunc(parsedLimit))) : 5;\n\nconst normalized = {\n  text: String(input.text).trim(),\n  project_id: String(input.project_id).trim(),\n  sequence_id: normalizeNullable(input.sequence_id),\n  scene_id: normalizeNullable(input.scene_id),\n  shot_id: normalizeNullable(input.shot_id),\n  entity_type: normalizeNullable(input.entity_type),\n  tags,\n  source: normalizeNullable(input.source),\n  limit\n};\n\nreturn [{\n  json: {\n    normalized,\n    embed_request: {\n      text: normalized.text,\n      metadata: {\n        project_id: normalized.project_id,\n        sequence_id: normalized.sequence_id,\n        scene_id: normalized.scene_id,\n        shot_id: normalized.shot_id,\n        entity_type: normalized.entity_type,\n        source: normalized.source,\n        limit: normalized.limit\n      }\n    }\n  }\n}];"
+      },
+      "name": "Normalize Search Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8091/embed",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.embed_request }}",
+        "options": {}
+      },
+      "name": "Create Query Embedding",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        860,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const normalized = $('Normalize Search Request').first().json.normalized;\nconst embedding = $json;\n\nif (!Array.isArray(embedding.vector) || embedding.vector.length !== 384) {\n  throw new Error(`Invalid embedding dimensions: ${embedding.dimensions}`);\n}\n\nconst must = [\n  { key: 'project_id', match: { value: normalized.project_id } }\n];\n\nif (normalized.sequence_id) {\n  must.push({ key: 'sequence_id', match: { value: normalized.sequence_id } });\n}\nif (normalized.scene_id) {\n  must.push({ key: 'scene_id', match: { value: normalized.scene_id } });\n}\nif (normalized.shot_id) {\n  must.push({ key: 'shot_id', match: { value: normalized.shot_id } });\n}\nif (normalized.entity_type) {\n  must.push({ key: 'entity_type', match: { value: normalized.entity_type } });\n}\nif (normalized.source) {\n  must.push({ key: 'source', match: { value: normalized.source } });\n}\nif (Array.isArray(normalized.tags) && normalized.tags.length > 0) {\n  must.push({ key: 'tags', match: { any: normalized.tags } });\n}\n\nreturn [{\n  json: {\n    search_request: {\n      vector: embedding.vector,\n      limit: normalized.limit,\n      with_payload: true,\n      with_vector: false,\n      filter: { must }\n    },\n    search_meta: {\n      query: normalized,\n      embedding_model: embedding.model,\n      dimensions: embedding.dimensions\n    }\n  }\n}];"
+      },
+      "name": "Build Search Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/cine_project_context/points/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.search_request }}",
+        "options": {}
+      },
+      "name": "Search Qdrant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1460,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const meta = $('Build Search Request').first().json.search_meta;\nconst raw = Array.isArray($json.result) ? $json.result : [];\nconst results = raw.map((item) => {\n  const payload = item.payload ?? {};\n  return {\n    point_id: item.id ?? null,\n    score: item.score ?? null,\n    project_id: payload.project_id ?? null,\n    sequence_id: payload.sequence_id ?? null,\n    scene_id: payload.scene_id ?? null,\n    shot_id: payload.shot_id ?? null,\n    entity_type: payload.entity_type ?? null,\n    title: payload.title ?? null,\n    content: payload.content ?? null,\n    tags: Array.isArray(payload.tags) ? payload.tags : [],\n    source: payload.source ?? null,\n    created_at: payload.created_at ?? null\n  };\n});\n\nreturn [{\n  json: {\n    ok: true,\n    collection: 'cine_project_context',\n    embedding_model: meta.embedding_model,\n    dimensions: meta.dimensions,\n    query: meta.query,\n    count: results.length,\n    results\n  }\n}];"
+      },
+      "name": "Normalize Search Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "name": "Respond Search Results",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2040,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: Project Context Search": {
+      "main": [
+        [
+          {
+            "node": "Normalize Search Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Search Request": {
+      "main": [
+        [
+          {
+            "node": "Create Query Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Query Embedding": {
+      "main": [
+        [
+          {
+            "node": "Build Search Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Search Request": {
+      "main": [
+        [
+          {
+            "node": "Search Qdrant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Qdrant": {
+      "main": [
+        [
+          {
+            "node": "Normalize Search Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Search Results": {
+      "main": [
+        [
+          {
+            "node": "Respond Search Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

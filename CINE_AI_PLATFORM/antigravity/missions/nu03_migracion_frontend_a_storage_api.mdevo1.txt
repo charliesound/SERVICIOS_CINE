@@ -1,0 +1,91 @@
+# Misión 03 — Migración del frontend a la Storage API
+
+## Objetivo exacto
+Migrar el frontend actual para que deje de depender del backend legacy y pase a consumir la Storage API como fuente principal de datos.
+
+## Problema actual
+El frontend React/Vite consume rutas legacy como:
+- `/projects`
+- `/characters`
+- `/scenes`
+- `/shots`
+- `/jobs`
+
+Mientras tanto, la evolución backend reciente ya se está moviendo hacia:
+- `/api/storage/...`
+
+Esto crea desalineación entre UI y backend oficial.
+
+## Alcance exacto
+Esta misión debe:
+1. auditar dónde consume el frontend las rutas legacy
+2. diseñar una capa de acceso a datos alineada con storage
+3. migrar la carga principal de proyecto
+4. migrar consultas jerárquicas:
+   - proyecto
+   - sequences
+   - scenes
+   - shots
+5. mantener la UI funcional durante la transición
+
+## No alcance
+Esta misión NO debe:
+- rehacer el diseño visual completo
+- integrar ComfyUI real
+- introducir un estado global complejo sin necesidad
+- cambiar la experiencia de usuario más allá de lo imprescindible
+
+## Archivos objetivo
+- `apps/web/src/App.tsx`
+- `apps/web/src/components/**/*`
+- `apps/web/src/lib/**/*`
+- `apps/web/src/services/**/*`
+- cualquier helper o cliente fetch existente
+
+## Estrategia obligatoria
+- aislar fetch/API en una capa reutilizable
+- no dejar llamadas dispersas por toda la UI
+- crear tipos claros para respuestas storage
+- permitir evolución futura de endpoints sin romper toda la app
+
+## Contrato de datos base esperado
+El frontend debe poder consumir:
+- proyecto activo
+- sequences del proyecto
+- scenes del proyecto
+- shots del proyecto
+
+## Entregables obligatorios
+1. frontend funcional sobre storage API
+2. cliente API centralizado
+3. documento:
+   - `docs/frontend/migracion_storage_api.md`
+
+## Contenido mínimo del documento
+- endpoints nuevos utilizados
+- endpoints legacy que dejan de usarse
+- adaptación de tipos
+- impacto en componentes
+- trabajo pendiente tras la migración
+
+## Criterios de aceptación
+- la app arranca
+- la carga de datos principal usa storage API
+- no depende críticamente de `/projects`, `/shots`, `/scenes`, `/jobs`
+- la jerarquía de datos se refleja correctamente en la UI
+
+## Pruebas manuales mínimas
+- carga inicial del proyecto
+- listado de sequences
+- listado de scenes
+- listado de shots
+- comportamiento ante respuestas vacías
+- comportamiento ante 404 o 500
+
+## Riesgos a vigilar
+- romper componentes que asumían contrato antiguo
+- hardcodear respuestas transitorias
+- mezclar cliente legacy y cliente nuevo sin control
+
+## Siguiente misión encadenada
+- `04_contrato_jerarquia_storage.md`

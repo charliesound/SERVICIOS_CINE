@@ -38,5 +38,5 @@ Thumbs.db
 .opencode/
 
 # Embedded/legacy repos excluded from root commit
-CINE_AI_PLATFORM/
 Web Ailink_Cinema/
+CINE_AI_PLATFORM/.git.embedded-backup/

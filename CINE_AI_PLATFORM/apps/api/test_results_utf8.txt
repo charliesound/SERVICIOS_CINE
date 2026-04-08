@@ -1,0 +1,26 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.2, pluggy-1.6.0
+rootdir: D:\ANTIGRAVITY_Proyects\CINE_AI_PLATFORM\apps\api
+plugins: anyio-4.13.0
+collected 6 items
+
+tests\test_sequence_planner.py F.....                                    [100%]
+
+================================== FAILURES ===================================
+___________________________ test_plan_empty_script ____________________________
+
+planner = <src.services.sequence_planner_service.SequencePlannerService object at 0x0000017FE569A7B0>
+
+    def test_plan_empty_script(planner):
+        """Should raise ValueError for empty script text."""
+>       request = SequencePlanRequest(script_text="   ")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for SequencePlanRequest
+E       script_text
+E         Value error, script_text must be a non-empty string [type=value_error, input_value='   ', input_type=str]
+E           For further information visit https://errors.pydantic.dev/2.12/v/value_error
+
+tests\test_sequence_planner.py:11: ValidationError
+=========================== short test summary info ===========================
+FAILED tests/test_sequence_planner.py::test_plan_empty_script - pydantic_core...
+========================= 1 failed, 5 passed in 0.45s =========================

@@ -1,0 +1,254 @@
+# 🎬 CINE AI PLATFORM — GUÍA COMPLETA DE INSTALACIÓN Y DESARROLLO
+
+## Versión
+
+v1.0 — Base de infraestructura
+
+---
+
+# 1. OBJETIVO DEL SISTEMA
+
+Construir una plataforma profesional para generación cinematográfica basada en:
+
+* ComfyUI como motor de render
+* Backend propio como orquestador
+* Frontend web como interfaz de trabajo
+* Acceso remoto desde portátil vía red segura
+* Control de continuidad (seed, refs, cámara, luz)
+* Integración futura con IA (Antigravity + OpenCode)
+
+---
+
+# 2. ARQUITECTURA GENERAL
+
+## Estructura lógica
+
+PORTÁTIL (desarrollo)
+↓
+Acceso remoto seguro (Tailscale)
+↓
+PC CASA (servidor principal)
+├── ComfyUI (render)
+├── Backend API
+├── PostgreSQL
+├── Redis
+├── Storage (refs + outputs)
+└── Frontend (opcional en producción)
+
+---
+
+# 3. REQUISITOS DEL SISTEMA
+
+## PC CASA (Servidor)
+
+* GPU potente (RTX serie alta)
+* Conexión Ethernet al router DIGI 10Gb
+* Espacio en disco suficiente para:
+
+  * modelos
+  * outputs
+  * proyectos
+
+## PORTÁTIL
+
+* Entorno de desarrollo
+* Navegador moderno
+* Conexión por hotspot 5G o WiFi
+
+---
+
+# 4. ESTRUCTURA DE DIRECTORIOS
+
+Crear en el PC de casa:
+
+D:\CINE_AI_PLATFORM
+│
+├── comfy
+│   ├── models
+│   ├── workflows
+│   └── instances
+│
+├── data
+│   ├── projects
+│   ├── assets
+│   ├── outputs
+│   ├── thumbs
+│   └── logs
+│
+├── backend
+│
+├── frontend
+│
+└── infra\
+
+---
+
+# 5. CONFIGURACIÓN DE RED
+
+## Reglas
+
+* PC de casa conectado por Ethernet
+* IP fija o reserva DHCP en router
+* No exponer ComfyUI a internet
+* Acceso remoto mediante Tailscale
+
+---
+
+# 6. INSTALACIÓN DE TAILSCALE
+
+## Paso 1
+
+Instalar Tailscale en:
+
+* PC de casa
+* portátil
+
+## Paso 2
+
+Iniciar sesión en ambos
+
+## Paso 3
+
+Verificar conexión:
+
+* ping entre dispositivos
+* acceso a IP interna tipo:
+  http://100.x.x.x
+
+---
+
+# 7. CONFIGURACIÓN DE COMFYUI
+
+## Paso 1
+
+Instalar ComfyUI en el PC de casa
+
+## Paso 2
+
+Configurar rutas de modelos:
+D:\CINE_AI_PLATFORM\comfy\models
+
+## Paso 3
+
+Lanzar ComfyUI:
+
+python main.py --listen 0.0.0.0 --port 8188
+
+## Paso 4
+
+Verificar acceso:
+http://IP_LOCAL:8188
+
+---
+
+# 8. WORKFLOWS BASE (OBLIGATORIOS)
+
+Crear y exportar en formato API:
+
+1. character_lock
+2. master_shot
+3. reverse_shot
+4. acting_variations
+
+Guardar en:
+
+D:\CINE_AI_PLATFORM\comfy\workflows\
+
+---
+
+# 9. BACKEND (PLANIFICACIÓN)
+
+Se implementará en FastAPI.
+
+Responsabilidades:
+
+* validar datos del frontend
+* construir workflows dinámicos
+* comunicarse con ComfyUI
+* gestionar jobs
+* almacenar resultados
+* mantener continuidad
+
+---
+
+# 10. BASE DE DATOS
+
+## PostgreSQL
+
+Tablas principales:
+
+* users
+* projects
+* characters
+* scenes
+* shots
+* jobs
+* assets
+
+---
+
+# 11. REDIS
+
+Uso:
+
+* estado de jobs
+* caché
+* colas
+* locks
+
+---
+
+# 12. FRONTEND (PLANIFICACIÓN)
+
+Stack:
+
+* React
+* Vite
+* TypeScript
+* Tailwind
+
+Módulos:
+
+* dashboard
+* proyectos
+* personajes
+* escenas
+* shot builder
+* monitor de jobs
+* galería
+* continuidad
+
+---
+
+# 13. FLUJO DE RENDER
+
+1. usuario crea plano en frontend
+2. frontend envía datos al backend
+3. backend construye workflow
+4. backend envía a ComfyUI
+5. ComfyUI genera resultado
+6. backend guarda output
+7. frontend muestra resultado
+
+---
+
+# 14. NORMAS CRÍTICAS
+
+* NO exponer ComfyUI directamente
+* SIEMPRE usar backend como intermediario
+* GUARDAR seeds por personaje
+* USAR miniaturas para redes móviles
+* SEPARAR identidad de variación
+
+---
+
+# 15. SIGUIENTE PASO
+
+FASE 1 COMPLETADA → Infraestructura base
+
+Siguiente fase:
+→ Instalación real del backend FastAPI
+→ Cliente ComfyUI
+→ Primer endpoint funcional de render
+
+---

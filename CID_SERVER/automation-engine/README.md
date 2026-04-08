@@ -132,6 +132,8 @@ uvicorn app.main:app --reload --port 8000
 
 El servicio arranca en `http://localhost:8000`.
 
+Los artefactos locales como `.env`, `venv/`, caches y logs no forman parte del versionado operativo.
+
 Para desactivar dry_run y conectar OpenAI, edita `.env`:
 ```
 DRY_RUN=false

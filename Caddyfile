@@ -13,9 +13,9 @@
         X-XSS-Protection "1; mode=block"
     }
 
-    # AILinkCinema Backend
+    # Landing / CRM Web Ailink_Cinema APIs
     handle /api/* {
-        reverse_proxy backend:8000
+        reverse_proxy landing-web:3000
     }
 
     handle /docs {
@@ -87,9 +87,13 @@
         reverse_proxy qdrant:6333
     }
 
-    # Frontend Principal
+    # Acceso amigable a la app operativa
+    @app_path path /app /app/*
+    redir @app_path /cine/ 308
+
+    # Landing principal
     handle / {
-        reverse_proxy frontend:80
+        reverse_proxy landing-web:3000
     }
 }
 
@@ -105,9 +109,9 @@
         X-XSS-Protection "1; mode=block"
     }
 
-    # AILinkCinema Backend
+    # Landing / CRM Web Ailink_Cinema APIs
     handle /api/* {
-        reverse_proxy backend:8000
+        reverse_proxy landing-web:3000
     }
 
     handle /docs {
@@ -179,8 +183,12 @@
         reverse_proxy qdrant:6333
     }
 
-    # Frontend Principal
+    # Acceso amigable a la app operativa
+    @app_path_secure path /app /app/*
+    redir @app_path_secure /cine/ 308
+
+    # Landing principal
     handle / {
-        reverse_proxy frontend:80
+        reverse_proxy landing-web:3000
     }
 }

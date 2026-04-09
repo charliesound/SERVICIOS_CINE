@@ -33,6 +33,35 @@ services:
       - servicios_cine
     restart: unless-stopped
 
+  # Landing / CRM comercial (Web Ailink_Cinema)
+  landing-web:
+    build:
+      context: ./Web Ailink_Cinema
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_CINEMA_API_URL: ${NEXT_PUBLIC_CINEMA_API_URL:-http://cine-api:3000}
+        AUTOMATION_ENGINE_URL: ${AUTOMATION_ENGINE_URL:-http://automation-engine:8000}
+    container_name: servicios_cine_landing
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+      CINEMA_API_URL: ${CINEMA_API_URL:-http://cine-api:3000}
+      NEXT_PUBLIC_CINEMA_API_URL: ${NEXT_PUBLIC_CINEMA_API_URL:-http://cine-api:3000}
+      AUTOMATION_ENGINE_URL: ${AUTOMATION_ENGINE_URL:-http://automation-engine:8000}
+      AUTOMATION_ENGINE_TIMEOUT_MS: ${AUTOMATION_ENGINE_TIMEOUT_MS:-5000}
+      AUTOMATION_ENGINE_RETRIES: ${AUTOMATION_ENGINE_RETRIES:-1}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
+    depends_on:
+      cine-api:
+        condition: service_healthy
+      automation-engine:
+        condition: service_started
+    networks:
+      - servicios_cine
+    restart: unless-stopped
+
   # ==================== CINE AI PLATFORM ====================
   
   # API de CINE AI Platform
@@ -178,6 +207,7 @@ services:
     depends_on:
       - backend
       - frontend
+      - landing-web
       - cine-api
       - cine-web
       - n8n

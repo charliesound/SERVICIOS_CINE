@@ -29,7 +29,7 @@ Revisa `.env` antes de levantar el stack:
 ```env
 LOCAL_WSL_IP=172.24.174.31
 TAILSCALE_IP=100.104.219.15
-PUBLIC_HOST=100.104.219.15
+PUBLIC_HOST=ailinkcinema
 PUBLIC_PROTOCOL=http
 ```
 
@@ -68,7 +68,7 @@ docker-compose down
 
 ## URLs locales
 
-- App principal: `http://localhost`
+- Landing principal: `http://localhost`
 - Backend API: `http://localhost:8000`
 - API Docs: `http://localhost:8000/docs`
 - CINE Web: `http://localhost/cine/`
@@ -79,14 +79,20 @@ docker-compose down
 
 ## URLs por Tailscale
 
-- App principal: `http://100.104.219.15`
-- Backend API: `http://100.104.219.15:8000`
-- API Docs: `http://100.104.219.15:8000/docs`
-- CINE Web: `http://100.104.219.15/cine/`
-- CINE API: `http://100.104.219.15/cine/api/`
-- Automation: `http://100.104.219.15/automation/health`
-- n8n: `http://100.104.219.15/n8n/`
-- Qdrant: `http://100.104.219.15/qdrant/collections`
+- Landing principal: `http://ailinkcinema`
+- Backend API: `http://ailinkcinema:8000`
+- API Docs: `http://ailinkcinema/docs`
+- CINE Web: `http://ailinkcinema/cine/`
+- CINE API: `http://ailinkcinema/cine/api/`
+- Automation: `http://ailinkcinema/automation/health`
+- n8n: `http://ailinkcinema/n8n/`
+- Qdrant: `http://ailinkcinema/qdrant/collections`
+
+## Acceso protegido
+
+- La landing `/` es publica.
+- Las rutas `/cine/`, `/app`, `/n8n/`, `/qdrant/`, `/automation/`, `/docs`, `/redoc` y `/openapi.json` requieren autenticacion basica.
+- Las credenciales operativas no se documentan en el repo y se administran desde `.env`.
 
 ## Verificaciones rapidas
 
@@ -184,7 +190,7 @@ Comprueba:
 ```bash
 tailscale ip -4
 docker-compose ps
-curl http://100.104.219.15
+curl http://ailinkcinema
 ```
 
 Y desde la laptop:

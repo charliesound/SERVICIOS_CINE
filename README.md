@@ -30,7 +30,7 @@ iniciar.bat
 |---------|-----|
 | Local | http://localhost |
 | Tailscale IP | http://100.104.219.15 |
-| Dominio personalizado | http://ailinkcinema |
+| Nombre recomendado | http://ailinkcinema |
 
 **Nota**: Para dominio personalizado, agregar al archivo `hosts`:
 ```
@@ -74,14 +74,20 @@ docker-compose up -d
 
 | Servicio | URL local | URL Tailscale |
 |----------|-----------|---------------|
-| App principal | http://localhost | http://100.104.219.15 |
-| Backend API | http://localhost:8000 | http://100.104.219.15:8000 |
-| API Docs | http://localhost:8000/docs | http://100.104.219.15:8000/docs |
-| CINE Web | http://localhost/cine/ | http://100.104.219.15/cine/ |
-| CINE API | http://localhost/cine/api/ | http://100.104.219.15/cine/api/ |
-| Automation Engine | http://localhost/automation/health | http://100.104.219.15/automation/health |
-| n8n | http://localhost/n8n/ | http://100.104.219.15/n8n/ |
-| Qdrant | http://localhost/qdrant/collections | http://100.104.219.15/qdrant/collections |
+| Landing principal | http://localhost | http://ailinkcinema |
+| Backend API | http://localhost:8000 | http://ailinkcinema:8000 |
+| API Docs | http://localhost:8000/docs | http://ailinkcinema/docs |
+| CINE Web | http://localhost/cine/ | http://ailinkcinema/cine/ |
+| CINE API | http://localhost/cine/api/ | http://ailinkcinema/cine/api/ |
+| Automation Engine | http://localhost/automation/health | http://ailinkcinema/automation/health |
+| n8n | http://localhost/n8n/ | http://ailinkcinema/n8n/ |
+| Qdrant | http://localhost/qdrant/collections | http://ailinkcinema/qdrant/collections |
+
+### Acceso protegido
+
+- La landing en `/` es publica.
+- Las rutas operativas `/cine/`, `/app`, `/n8n/`, `/qdrant/`, `/automation/` y la documentacion tecnica del backend estan protegidas con autenticacion basica de Caddy.
+- La clave no se documenta en el repositorio; se gestiona solo en `.env`.
 
 ### HTTP y HTTPS
 

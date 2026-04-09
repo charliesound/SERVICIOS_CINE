@@ -13,6 +13,11 @@
         X-XSS-Protection "1; mode=block"
     }
 
+    @protected path /cine /cine/* /app /app/* /n8n /n8n/* /qdrant /qdrant/* /automation /automation/* /docs /redoc /openapi.json
+    basic_auth @protected {
+        {$CADDY_BASIC_AUTH_USER} {$CADDY_BASIC_AUTH_PASSWORD_HASH}
+    }
+
     # Landing / CRM Web Ailink_Cinema APIs
     handle /api/* {
         reverse_proxy landing-web:3000
@@ -107,6 +112,11 @@
         X-Frame-Options "SAMEORIGIN"
         X-Content-Type-Options "nosniff"
         X-XSS-Protection "1; mode=block"
+    }
+
+    @protected_secure path /cine /cine/* /app /app/* /n8n /n8n/* /qdrant /qdrant/* /automation /automation/* /docs /redoc /openapi.json
+    basic_auth @protected_secure {
+        {$CADDY_BASIC_AUTH_USER} {$CADDY_BASIC_AUTH_PASSWORD_HASH}
     }
 
     # Landing / CRM Web Ailink_Cinema APIs

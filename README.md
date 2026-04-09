@@ -29,12 +29,12 @@ iniciar.bat
 | Entorno | URL |
 |---------|-----|
 | Local | http://localhost |
-| Tailscale IP | http://100.105.161.84 |
+| Tailscale IP | http://100.104.219.15 |
 | Dominio personalizado | http://ailinkcinema |
 
 **Nota**: Para dominio personalizado, agregar al archivo `hosts`:
 ```
-100.105.161.84    ailinkcinema
+100.104.219.15    ailinkcinema
 ```
 
 ---
@@ -74,14 +74,14 @@ docker-compose up -d
 
 | Servicio | URL local | URL Tailscale |
 |----------|-----------|---------------|
-| App principal | http://localhost | http://100.105.161.84 |
-| Backend API | http://localhost:8000 | http://100.105.161.84:8000 |
-| API Docs | http://localhost:8000/docs | http://100.105.161.84:8000/docs |
-| CINE Web | http://localhost/cine/ | http://100.105.161.84/cine/ |
-| CINE API | http://localhost/cine/api/ | http://100.105.161.84/cine/api/ |
-| Automation Engine | http://localhost/automation/health | http://100.105.161.84/automation/health |
-| n8n | http://localhost/n8n/ | http://100.105.161.84/n8n/ |
-| Qdrant | http://localhost/qdrant/collections | http://100.105.161.84/qdrant/collections |
+| App principal | http://localhost | http://100.104.219.15 |
+| Backend API | http://localhost:8000 | http://100.104.219.15:8000 |
+| API Docs | http://localhost:8000/docs | http://100.104.219.15:8000/docs |
+| CINE Web | http://localhost/cine/ | http://100.104.219.15/cine/ |
+| CINE API | http://localhost/cine/api/ | http://100.104.219.15/cine/api/ |
+| Automation Engine | http://localhost/automation/health | http://100.104.219.15/automation/health |
+| n8n | http://localhost/n8n/ | http://100.104.219.15/n8n/ |
+| Qdrant | http://localhost/qdrant/collections | http://100.104.219.15/qdrant/collections |
 
 ### HTTP y HTTPS
 

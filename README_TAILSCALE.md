@@ -6,7 +6,7 @@
 
 ### Opción 1: Por IP de Tailscale
 ```
-http://100.105.161.84
+http://100.104.219.15
 ```
 
 ### Opción 2: Con dominio personalizado (RECOMENDADO)
@@ -15,7 +15,7 @@ http://100.105.161.84
    - Abrir `C:\Windows\System32\drivers\etc\hosts` como administrador
    - Agregar línea:
      ```
-     100.105.161.84    ailinkcinema
+     100.104.219.15    ailinkcinema
      ```
    - Guardar
 
@@ -30,23 +30,23 @@ http://100.105.161.84
 
 | Servicio | Puerto | URL Local | URL Tailscale |
 |----------|--------|-----------|---------------|
-| Frontend principal | 80 | http://localhost | http://100.105.161.84 |
-| Backend API | 8000 | http://localhost:8000 | http://100.105.161.84:8000 |
-| API Docs | 8000 | http://localhost:8000/docs | http://100.105.161.84:8000/docs |
-| CINE API | Caddy | http://localhost/cine/api/ | http://100.105.161.84/cine/api/ |
-| CINE Web | Caddy | http://localhost/cine/ | http://100.105.161.84/cine/ |
-| Automation Engine | Caddy | http://localhost/automation/health | http://100.105.161.84/automation/health |
-| n8n | Caddy | http://localhost/n8n/ | http://100.105.161.84/n8n/ |
-| Qdrant | Caddy | http://localhost/qdrant/collections | http://100.105.161.84/qdrant/collections |
+| Frontend principal | 80 | http://localhost | http://100.104.219.15 |
+| Backend API | 8000 | http://localhost:8000 | http://100.104.219.15:8000 |
+| API Docs | 8000 | http://localhost:8000/docs | http://100.104.219.15:8000/docs |
+| CINE API | Caddy | http://localhost/cine/api/ | http://100.104.219.15/cine/api/ |
+| CINE Web | Caddy | http://localhost/cine/ | http://100.104.219.15/cine/ |
+| Automation Engine | Caddy | http://localhost/automation/health | http://100.104.219.15/automation/health |
+| n8n | Caddy | http://localhost/n8n/ | http://100.104.219.15/n8n/ |
+| Qdrant | Caddy | http://localhost/qdrant/collections | http://100.104.219.15/qdrant/collections |
 
 ## Rutas recomendadas
 
 ```text
-App:        http://100.105.161.84/
-CINE:       http://100.105.161.84/cine/
-n8n:        http://100.105.161.84/n8n/
-Qdrant:     http://100.105.161.84/qdrant/collections
-Automation: http://100.105.161.84/automation/health
+App:        http://100.104.219.15/
+CINE:       http://100.104.219.15/cine/
+n8n:        http://100.104.219.15/n8n/
+Qdrant:     http://100.104.219.15/qdrant/collections
+Automation: http://100.104.219.15/automation/health
 ```
 
 Para Tailscale, usa `http://` como opcion recomendada. `https://` funciona con certificado autofirmado y puede mostrar advertencias del navegador.

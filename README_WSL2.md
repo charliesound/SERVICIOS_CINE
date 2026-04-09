@@ -28,8 +28,8 @@ Revisa `.env` antes de levantar el stack:
 
 ```env
 LOCAL_WSL_IP=172.24.174.31
-TAILSCALE_IP=100.105.161.84
-PUBLIC_HOST=100.105.161.84
+TAILSCALE_IP=100.104.219.15
+PUBLIC_HOST=100.104.219.15
 PUBLIC_PROTOCOL=http
 ```
 
@@ -79,14 +79,14 @@ docker-compose down
 
 ## URLs por Tailscale
 
-- App principal: `http://100.105.161.84`
-- Backend API: `http://100.105.161.84:8000`
-- API Docs: `http://100.105.161.84:8000/docs`
-- CINE Web: `http://100.105.161.84/cine/`
-- CINE API: `http://100.105.161.84/cine/api/`
-- Automation: `http://100.105.161.84/automation/health`
-- n8n: `http://100.105.161.84/n8n/`
-- Qdrant: `http://100.105.161.84/qdrant/collections`
+- App principal: `http://100.104.219.15`
+- Backend API: `http://100.104.219.15:8000`
+- API Docs: `http://100.104.219.15:8000/docs`
+- CINE Web: `http://100.104.219.15/cine/`
+- CINE API: `http://100.104.219.15/cine/api/`
+- Automation: `http://100.104.219.15/automation/health`
+- n8n: `http://100.104.219.15/n8n/`
+- Qdrant: `http://100.104.219.15/qdrant/collections`
 
 ## Verificaciones rapidas
 
@@ -125,7 +125,7 @@ tailscale ip -4
 Si quieres usar nombre amigable en tu laptop Windows, añade al archivo `C:\Windows\System32\drivers\etc\hosts`:
 
 ```text
-100.105.161.84    ailinkcinema
+100.104.219.15    ailinkcinema
 ```
 
 Entonces puedes entrar con:
@@ -184,7 +184,7 @@ Comprueba:
 ```bash
 tailscale ip -4
 docker-compose ps
-curl http://100.105.161.84
+curl http://100.104.219.15
 ```
 
 Y desde la laptop:

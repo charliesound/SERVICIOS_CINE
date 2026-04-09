@@ -57,14 +57,14 @@ docker-compose down
 
 ### Tailscale
 
-- App principal: `http://100.105.161.84`
-- Backend API: `http://100.105.161.84:8000`
-- API Docs: `http://100.105.161.84:8000/docs`
-- CINE Web: `http://100.105.161.84/cine/`
-- CINE API: `http://100.105.161.84/cine/api/`
-- Automation: `http://100.105.161.84/automation/health`
-- n8n: `http://100.105.161.84/n8n/`
-- Qdrant: `http://100.105.161.84/qdrant/collections`
+- App principal: `http://100.104.219.15`
+- Backend API: `http://100.104.219.15:8000`
+- API Docs: `http://100.104.219.15:8000/docs`
+- CINE Web: `http://100.104.219.15/cine/`
+- CINE API: `http://100.104.219.15/cine/api/`
+- Automation: `http://100.104.219.15/automation/health`
+- n8n: `http://100.104.219.15/n8n/`
+- Qdrant: `http://100.104.219.15/qdrant/collections`
 
 ## Validacion rapida
 

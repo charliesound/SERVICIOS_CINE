@@ -1,8 +1,10 @@
+import os
 from pathlib import Path
 from typing import Any, Dict
 import yaml
 
 _CONFIG_CACHE: Dict[str, Any] | None = None
+DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./ailinkcinema_s2.db"
 
 
 def get_base_dir() -> Path:
@@ -36,6 +38,31 @@ def load_config(force_reload: bool = False) -> Dict[str, Any]:
 
 def get_config() -> Dict[str, Any]:
     return load_config()
+
+
+def get_database_config() -> Dict[str, Any]:
+    database_config = get_config().get("database", {})
+    if not isinstance(database_config, dict):
+        raise ValueError("config.database debe ser un objeto YAML")
+    return database_config
+
+
+def get_database_url() -> str:
+    env_database_url = os.getenv("DATABASE_URL")
+    if env_database_url:
+        return env_database_url
+
+    configured_url = get_database_config().get("url")
+    if isinstance(configured_url, str) and configured_url.strip():
+        return configured_url.strip()
+
+    return DEFAULT_DATABASE_URL
+
+
+def get_database_settings() -> Dict[str, Any]:
+    database_config = dict(get_database_config())
+    database_config["url"] = get_database_url()
+    return database_config
 
 
 config = load_config()

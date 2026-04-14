@@ -3,7 +3,6 @@ from __future__ import annotations
 import atexit
 import asyncio
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -20,21 +19,26 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 
-TEMP_DIR = Path(tempfile.mkdtemp(prefix="ailinkcinema_s7_review_delivery_phase2_"))
+TEMP_ROOT = Path(tempfile.gettempdir()).resolve()
+DATABASE_BASENAME = f"ailinkcinema_s7_review_delivery_{uuid.uuid4().hex}.db"
+DEFAULT_DATABASE_FILE = TEMP_ROOT / DATABASE_BASENAME
+SERVER_LOG_FILE = TEMP_ROOT / f"ailinkcinema_s7_review_delivery_{uuid.uuid4().hex}.log"
 
 
-def _cleanup_temp_dir() -> None:
+def _cleanup_temp_artifacts() -> None:
     if os.getenv("SMOKE_KEEP_DB") == "1":
         return
-    shutil.rmtree(TEMP_DIR, ignore_errors=True)
+    if DEFAULT_DATABASE_FILE.exists():
+        DEFAULT_DATABASE_FILE.unlink(missing_ok=True)
+    if SERVER_LOG_FILE.exists():
+        SERVER_LOG_FILE.unlink(missing_ok=True)
 
 
-atexit.register(_cleanup_temp_dir)
+atexit.register(_cleanup_temp_artifacts)
 
 
 def _default_database_url() -> str:
-    db_path = TEMP_DIR / f"ailinkcinema_s7_review_delivery_{uuid.uuid4().hex}.db"
-    return f"sqlite+aiosqlite:///{db_path.as_posix()}"
+    return f"sqlite+aiosqlite:///{DEFAULT_DATABASE_FILE.as_posix()}"
 
 
 def _database_file_from_url(database_url: str) -> Path | None:
@@ -54,34 +58,56 @@ SERVER_START_TIMEOUT_SECONDS = float(os.getenv("SMOKE_START_TIMEOUT", "20"))
 
 os.environ["DATABASE_URL"] = DATABASE_URL
 
-from database import AsyncSessionLocal, init_db  # noqa: E402
-from models.core import Organization, Project  # noqa: E402
-
 
 async def ensure_project() -> str:
+    env = dict(os.environ)
+    env["DATABASE_URL"] = DATABASE_URL
+    env["PYTHONPATH"] = "src"
+    bootstrap_code = """import asyncio
+import uuid
+
+from database import AsyncSessionLocal, init_db
+from models.core import Organization, Project
+
+
+async def main():
     await init_db()
     async with AsyncSessionLocal() as db:
         org = Organization(
-            name=f"Review Delivery Smoke Org {uuid.uuid4().hex[:6]}",
-            billing_plan="studio",
+            name=f'Review Delivery Smoke Org {uuid.uuid4().hex[:6]}',
+            billing_plan='studio',
         )
         db.add(org)
         await db.flush()
 
         project = Project(
-            name=f"Review Delivery Smoke Project {uuid.uuid4().hex[:6]}",
+            name=f'Review Delivery Smoke Project {uuid.uuid4().hex[:6]}',
             organization_id=org.id,
-            status="active",
+            status='active',
         )
         db.add(project)
         await db.commit()
         await db.refresh(project)
-        return str(project.id)
+        print(project.id)
+
+
+asyncio.run(main())
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", bootstrap_code],
+        cwd=str(REPO_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip().splitlines()[-1]
 
 
 def start_server() -> subprocess.Popen:
     env = dict(os.environ)
     env["DATABASE_URL"] = DATABASE_URL
+    log_handle = SERVER_LOG_FILE.open("ab")
     process = subprocess.Popen(
         [
             sys.executable,
@@ -95,10 +121,11 @@ def start_server() -> subprocess.Popen:
         ],
         cwd=str(REPO_ROOT),
         env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=log_handle,
+        stderr=log_handle,
     )
     wait_for_server(process)
+    time.sleep(5)
     return process
 
 
@@ -132,17 +159,19 @@ def stop_server(process: subprocess.Popen) -> None:
 
 
 async def main() -> None:
-    project_id = await ensure_project()
     print("DATABASE_URL=", DATABASE_URL)
     print("DATABASE_FILE=", DATABASE_FILE)
     print(
         "DATABASE_FILE_EXISTS_AFTER_INIT=",
         DATABASE_FILE.exists() if DATABASE_FILE is not None else "n/a",
     )
-    print("PROJECT_ID=", project_id)
 
     server = start_server()
     try:
+        project_id = await ensure_project()
+        time.sleep(5)
+        print("PROJECT_ID=", project_id)
+
         with httpx.Client(base_url=BASE_URL, timeout=20.0) as client:
             openapi = client.get("/openapi.json")
             print("FIRST_START_OPENAPI_STATUS=", openapi.status_code)

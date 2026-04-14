@@ -1,26 +1,59 @@
-import os
 from typing import AsyncGenerator
 
-from sqlalchemy import event, select
+from sqlalchemy import event, inspect, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
+from config import get_database_settings
 from services.producer_catalog import DEMO_OPPORTUNITIES, parse_catalog_deadline
 
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./ailinkcinema_s2.db")
+DATABASE_SETTINGS = get_database_settings()
+DATABASE_URL = str(DATABASE_SETTINGS["url"])
+
+
+def is_sqlite_url(database_url: str) -> bool:
+    return database_url.startswith("sqlite")
+
+
+def is_postgresql_url(database_url: str) -> bool:
+    return database_url.startswith("postgresql") or database_url.startswith("postgres")
+
+
+def validate_database_url(database_url: str) -> str:
+    normalized = database_url.strip()
+    if not normalized:
+        raise ValueError("DATABASE_URL must not be empty")
+
+    if is_sqlite_url(normalized):
+        return normalized
+
+    if is_postgresql_url(normalized):
+        if "+asyncpg://" not in normalized:
+            raise ValueError(
+                "PostgreSQL DATABASE_URL must use the asyncpg driver, e.g. postgresql+asyncpg://..."
+            )
+        return normalized
+
+    raise ValueError(
+        "Unsupported DATABASE_URL. Use sqlite+aiosqlite:// or postgresql+asyncpg://"
+    )
+
+
+DATABASE_URL = validate_database_url(DATABASE_URL)
+IS_SQLITE = is_sqlite_url(DATABASE_URL)
+RUNTIME_SCHEMA_SYNC = bool(DATABASE_SETTINGS.get("runtime_schema_sync", True))
+SQLITE_LEGACY_BOOTSTRAP = bool(DATABASE_SETTINGS.get("sqlite_legacy_bootstrap", True))
 
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     future=True,
-    connect_args={"check_same_thread": False, "timeout": 30}
-    if "sqlite" in DATABASE_URL
-    else {},
+    connect_args={"check_same_thread": False, "timeout": 30} if IS_SQLITE else {},
 )
 
 
-if "sqlite" in DATABASE_URL:
+if IS_SQLITE:
 
     @event.listens_for(engine.sync_engine, "connect")
     def _set_sqlite_pragma(dbapi_connection, connection_record) -> None:
@@ -74,6 +107,12 @@ async def _bootstrap_sqlite_schema(conn) -> None:
 async def _get_sqlite_columns(conn, table_name: str) -> list[str]:
     result = await conn.exec_driver_sql(f"PRAGMA table_info({table_name})")
     return [row[1] for row in result.fetchall()]
+
+
+async def _has_table(conn, table_name: str) -> bool:
+    return await conn.run_sync(
+        lambda sync_conn: inspect(sync_conn).has_table(table_name)
+    )
 
 
 async def _bootstrap_review_delivery_schema(conn) -> None:
@@ -247,8 +286,28 @@ async def _seed_funding_catalog() -> None:
         await session.commit()
 
 
+async def _verify_database_connection() -> None:
+    async with engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
+
+
+async def _seed_funding_catalog_if_ready() -> None:
+    async with engine.connect() as conn:
+        if not await _has_table(conn, "funding_opportunities"):
+            return
+
+    await _seed_funding_catalog()
+
+
 async def init_db():
-    """Initialize database tables and bootstrap producer persistence."""
+    """Initialize the configured database.
+
+    Behavior by configuration:
+    - PostgreSQL: Alembic is primary (user must run migrations manually)
+    - SQLite with USE_ALEMBIC=true: Use Alembic, skip runtime bootstrap
+    - SQLite default: Legacy runtime bootstrap (for dev convenience)
+    """
+    import os
     from models import Organization, Project, User
     from models.delivery import Deliverable
     from models.review import ApprovalDecision, Review, ReviewComment
@@ -262,13 +321,48 @@ async def init_db():
     )
     from models.visual import Shot, VisualAsset
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    del (
+        Organization,
+        Project,
+        User,
+        Deliverable,
+        ApprovalDecision,
+        Review,
+        ReviewComment,
+        Character,
+        Scene,
+        Sequence,
+        scene_character_link,
+        AssemblyCut,
+        Clip,
+        DemoRequestRecord,
+        FundingOpportunity,
+        LeadGenEvent,
+        SavedOpportunity,
+        Shot,
+        VisualAsset,
+    )
 
-        if "sqlite" in DATABASE_URL:
-            await _bootstrap_sqlite_schema(conn)
+    use_alembic = os.getenv("USE_ALEMBIC", "").lower() in ("1", "true", "yes")
+    is_postgresql = not IS_SQLITE
 
-    await _seed_funding_catalog()
+    if is_postgresql or use_alembic:
+        await _verify_database_connection()
+        await _seed_funding_catalog_if_ready()
+        return
+
+    if IS_SQLITE and RUNTIME_SCHEMA_SYNC:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+            if SQLITE_LEGACY_BOOTSTRAP:
+                await _bootstrap_sqlite_schema(conn)
+
+        await _seed_funding_catalog()
+        return
+
+    await _verify_database_connection()
+    await _seed_funding_catalog_if_ready()
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

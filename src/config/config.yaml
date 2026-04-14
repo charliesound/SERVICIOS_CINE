@@ -48,7 +48,7 @@ health:
 
 demo:
   enabled: true
-  auto_seed_on_startup: false
+  auto_seed_narrative: false  # Set to true to auto-seed narrative on startup
 
 storage:
   type: "local"
@@ -58,6 +58,11 @@ storage:
 
 frontend:
   dev_url: "http://localhost:3000"
+
+database:
+  url: "sqlite+aiosqlite:///./ailinkcinema_s2.db"
+  runtime_schema_sync: true
+  sqlite_legacy_bootstrap: true
 
 features:
   workflows: true

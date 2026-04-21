@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ payload.project.name }} - Filmstrip</title>
+  <style>
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: {% if render_mode == 'pdf' %}0{% else %}24px{% endif %};
+      color: #1f2937;
+      background: #f8fafc;
+      font-size: 13px;
+    }
+    .page {
+      max-width: {% if render_mode == 'pdf' %}980px{% else %}1100px{% endif %};
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      padding: {% if render_mode == 'pdf' %}24px{% else %}32px{% endif %};
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+    h1, h2, h3, p {
+      margin: 0;
+    }
+    .hero {
+      display: grid;
+      gap: 10px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .summary {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .summary-card {
+      padding: 12px 14px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      min-width: 140px;
+    }
+    .sequence {
+      margin-top: 28px;
+    }
+    .sequence-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .shot {
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+    }
+    .shot-thumb {
+      height: 180px;
+      background: linear-gradient(135deg, #dbeafe, #fef3c7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #475569;
+      font-size: 12px;
+      text-align: center;
+      padding: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    .shot-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .shot-thumb-link {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: inherit;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+    .shot-thumb-doc {
+      display: grid;
+      gap: 6px;
+    }
+    .shot-placeholder {
+      display: grid;
+      gap: 6px;
+      padding: 12px;
+    }
+    .shot-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .shot-link {
+      color: #1d4ed8;
+      text-decoration: none;
+    }
+    .shot-link:hover {
+      text-decoration: underline;
+    }
+    .pdf-only {
+      display: {% if render_mode == 'pdf' %}inline{% else %}none{% endif %};
+    }
+    .html-only {
+      display: {% if render_mode == 'pdf' %}none{% else %}inline{% endif %};
+    }
+    .shot-body {
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .muted {
+      color: #64748b;
+    }
+    .comments {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .comment {
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    {% if render_mode == 'pdf' %}
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+    .page {
+      border: none;
+    }
+    .sequence-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .summary-card {
+      min-width: 120px;
+    }
+    {% endif %}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">AILinkCinema Presentation Scaffold</div>
+      <h1>{{ payload.project.name }}</h1>
+      <p class="muted">Project {{ payload.project.id }} | Organization {{ payload.project.organization_id }}</p>
+      <p>{{ payload.project.description or "Presentation scaffold generated from tenant-safe assets." }}</p>
+      <div class="summary">
+        <div class="summary-card"><strong>{{ payload.summary.sequences_count }}</strong><br><span class="muted">Sequences</span></div>
+        <div class="summary-card"><strong>{{ payload.summary.shots_count }}</strong><br><span class="muted">Shots</span></div>
+        <div class="summary-card"><strong>{{ payload.summary.orphan_assets_count }}</strong><br><span class="muted">Orphan Assets</span></div>
+        <div class="summary-card"><strong>{{ payload.summary.comments_count }}</strong><br><span class="muted">Review Comments</span></div>
+      </div>
+    </section>
+
+    {% for sequence in payload.sequences %}
+    <section class="sequence">
+      <div class="eyebrow">Sequence {{ sequence.sequence_id }}</div>
+      <h2>{{ sequence.title }}</h2>
+      <p class="muted">Visual modes: {{ sequence.visual_modes | join(', ') if sequence.visual_modes else 'not tagged yet' }}</p>
+      <div class="sequence-grid">
+        {% for shot in sequence.shots %}
+        <article class="shot">
+          <div class="shot-thumb">
+            {% if render_mode == 'pdf' and shot.pdf_thumbnail_url %}
+              <img src="{{ shot.pdf_thumbnail_url }}" alt="{{ shot.file_name }}">
+            {% elif shot.thumbnail_url and shot.asset_type == 'image' %}
+              <img src="{{ shot.thumbnail_url }}" alt="{{ shot.file_name }}">
+            {% elif shot.thumbnail_url %}
+              <a class="shot-thumb-link html-only" href="{{ shot.thumbnail_url }}" target="_blank" rel="noopener noreferrer">
+                <div class="shot-thumb-doc">
+                  <strong>{{ shot.asset_type | upper }}</strong>
+                  <span>{{ shot.file_name }}</span>
+                  <span class="muted">Secure preview</span>
+                </div>
+              </a>
+              <div class="shot-placeholder pdf-only">
+                <strong>{{ shot.asset_type | upper }}</strong>
+                <span>{{ shot.file_name }}</span>
+                <span class="muted">PDF placeholder for non-image asset</span>
+              </div>
+            {% else %}
+              <div class="shot-placeholder">
+                <strong>{{ shot.asset_type | upper }}</strong>
+                <span>{{ shot.file_name }}</span>
+                <span class="muted">No visual preview available</span>
+              </div>
+            {% endif %}
+          </div>
+          <div class="shot-body">
+            <div class="shot-meta">
+              <strong>{% if shot.shot_order %}Shot {{ shot.shot_order }}{% else %}Unordered asset{% endif %}</strong>
+              {% if shot.thumbnail_url and render_mode != 'pdf' %}<a class="shot-link" href="{{ shot.thumbnail_url }}" target="_blank" rel="noopener noreferrer">Open asset</a>{% endif %}
+            </div>
+            <span class="muted">{{ shot.shot_type or 'untagged shot type' }}</span>
+            <span>{{ shot.prompt_summary or 'Asset indexed without prompt metadata.' }}</span>
+            <span class="muted">Source: {{ shot.asset_source or 'unknown' }}</span>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+
+    {% if payload.orphan_assets %}
+    <section class="sequence">
+      <div class="eyebrow">Orphan Assets</div>
+      <h2>Assets without sequence_id</h2>
+      <div class="sequence-grid">
+        {% for shot in payload.orphan_assets %}
+        <article class="shot">
+          <div class="shot-thumb">
+            {% if render_mode == 'pdf' and shot.pdf_thumbnail_url %}
+              <img src="{{ shot.pdf_thumbnail_url }}" alt="{{ shot.file_name }}">
+            {% elif shot.thumbnail_url and shot.asset_type == 'image' %}
+              <img src="{{ shot.thumbnail_url }}" alt="{{ shot.file_name }}">
+            {% elif shot.thumbnail_url %}
+              <a class="shot-thumb-link html-only" href="{{ shot.thumbnail_url }}" target="_blank" rel="noopener noreferrer">
+                <div class="shot-thumb-doc">
+                  <strong>{{ shot.asset_type | upper }}</strong>
+                  <span>{{ shot.file_name }}</span>
+                  <span class="muted">Secure preview</span>
+                </div>
+              </a>
+              <div class="shot-placeholder pdf-only">
+                <strong>{{ shot.asset_type | upper }}</strong>
+                <span>{{ shot.file_name }}</span>
+                <span class="muted">PDF placeholder for non-image asset</span>
+              </div>
+            {% else %}
+              <div class="shot-placeholder">
+                <strong>{{ shot.asset_type | upper }}</strong>
+                <span>{{ shot.file_name }}</span>
+                <span class="muted">No visual preview available</span>
+              </div>
+            {% endif %}
+          </div>
+          <div class="shot-body">
+            <strong>{{ shot.file_name }}</strong>
+            <span class="muted">{{ shot.asset_type }}</span>
+            <span>{{ shot.prompt_summary or 'Asset indexed without sequence metadata.' }}</span>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="comments">
+      <div class="eyebrow">Review Notes</div>
+      <h2>Comments</h2>
+      {% if payload.review_comments %}
+        {% for comment in payload.review_comments %}
+        <div class="comment">
+          <strong>{{ comment.author_name or 'Unknown author' }}</strong>
+          <p>{{ comment.body }}</p>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="muted">No review comments available for this project yet.</p>
+      {% endif %}
+    </section>
+  </div>
+</body>
+</html>

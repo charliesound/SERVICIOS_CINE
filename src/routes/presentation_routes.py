@@ -1,14 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
+from schemas.delivery_schema import DeliverableResponse
 from schemas.presentation_schema import (
     PresentationFilmstripResponse,
     PresentationPdfExportResponse,
 )
+from services.delivery_service import delivery_service
 from services.pdf_service import PdfRenderError, pdf_service
 from services.presentation_service import (
     PresentationForbiddenError,
@@ -19,6 +23,27 @@ from services.presentation_service import (
 
 
 router = APIRouter(prefix="/api/projects", tags=["presentation"])
+
+
+def _deliverable_response(deliverable) -> DeliverableResponse:
+    payload = getattr(deliverable, "delivery_payload", None)
+    created_at = getattr(deliverable, "created_at", None)
+    updated_at = getattr(deliverable, "updated_at", None)
+    return DeliverableResponse(
+        id=str(deliverable.id),
+        project_id=str(deliverable.project_id),
+        source_review_id=(
+            str(deliverable.source_review_id)
+            if getattr(deliverable, "source_review_id", None) is not None
+            else None
+        ),
+        name=str(deliverable.name),
+        format_type=str(deliverable.format_type),
+        delivery_payload=payload if isinstance(payload, dict) else {},
+        status=str(deliverable.status),
+        created_at=created_at,
+        updated_at=updated_at or created_at,
+    )
 
 
 def _build_pdf_filename(project_name: str) -> str:
@@ -100,6 +125,53 @@ async def download_project_filmstrip_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post(
+    "/{project_id}/presentation/export/pdf/persist",
+    response_model=DeliverableResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def persist_project_filmstrip_pdf(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> DeliverableResponse:
+    try:
+        payload = await presentation_service.build_filmstrip(
+            db,
+            project_id=project_id,
+            tenant=tenant,
+        )
+        render_payload = await presentation_service.build_pdf_render_payload(
+            db,
+            payload=payload,
+            tenant=tenant,
+        )
+        pdf_bytes = pdf_service.export_filmstrip_pdf(render_payload)
+    except ValueError as exc:
+        _raise_presentation_http_error(exc)
+    except PdfRenderError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    filename = _build_pdf_filename(str(payload.project.name))
+    deliverable = await delivery_service.create_project_file_deliverable(
+        db,
+        project_id=str(payload.project.id),
+        organization_id=str(payload.project.organization_id),
+        name=f"{payload.project.name} Presentation PDF",
+        format_type="PRESENTATION_PDF",
+        file_bytes=pdf_bytes,
+        file_name=filename,
+        mime_type="application/pdf",
+        category="presentation_pdf",
+        payload_extra={
+            "project_name": payload.project.name,
+            "presentation_generated_at": datetime.now(timezone.utc).isoformat(),
+            "source_endpoint": f"/api/projects/{project_id}/presentation/export/pdf",
+        },
+    )
+    return _deliverable_response(deliverable)
 
 
 @router.get("/{project_id}/presentation/assets/{asset_id}/preview")

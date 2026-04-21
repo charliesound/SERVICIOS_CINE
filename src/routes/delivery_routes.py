@@ -81,6 +81,7 @@ def _deliverable_response(deliverable: Deliverable) -> DeliverableResponse:
 async def list_deliverables(
     project_id: str,
     status: Optional[str] = None,
+    format_type: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> DeliverableListResponse:
@@ -93,6 +94,7 @@ async def list_deliverables(
         project_id,
         str(project.organization_id),
         status,
+        format_type,
     )
     return DeliverableListResponse(
         deliverables=[
@@ -202,14 +204,13 @@ async def download_deliverable(
 
     payload = deliverable.delivery_payload or {}
     file_path_str = payload.get("file_path")
-    file_name = payload.get("file_name", "export.zip")
+    file_name = payload.get("file_name") or f"{deliverable.name}"
+    media_type = payload.get("mime_type") or "application/octet-stream"
 
     if not file_path_str or not os.path.exists(file_path_str):
         raise HTTPException(status_code=404, detail="Physical file not found on server")
 
-    return FileResponse(
-        path=file_path_str, filename=file_name, media_type="application/zip"
-    )
+    return FileResponse(path=file_path_str, filename=file_name, media_type=media_type)
 
 
 @router.post("/projects/{project_id}/export")

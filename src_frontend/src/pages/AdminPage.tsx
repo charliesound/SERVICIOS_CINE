@@ -1,11 +1,33 @@
+import { useQuery } from '@tanstack/react-query'
+import { opsApi } from '@/api'
 import { useSystemOverview, useInstances, useCapabilities } from '@/hooks'
-import { Settings, Server, Activity, RefreshCw, AlertTriangle, Cpu, Gauge, Layers, Sparkles } from 'lucide-react'
+import { Settings, Server, Activity, RefreshCw, AlertTriangle, Cpu, Gauge, Layers, Sparkles, FolderKanban, Briefcase, Building2 } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function AdminPage() {
   const { data: overview, isLoading: overviewLoading, refetch: refetchOverview } = useSystemOverview()
   const { data: instances } = useInstances()
   const { data: capabilities, refetch: refetchCapabilities } = useCapabilities()
+  const { data: schedulerStatus } = useQuery({
+    queryKey: ['adminSchedulerStatus'],
+    queryFn: opsApi.getSchedulerStatus,
+    refetchInterval: 30000,
+  })
+  const { data: projects } = useQuery({
+    queryKey: ['adminProjects'],
+    queryFn: opsApi.getAdminProjects,
+    refetchInterval: 30000,
+  })
+  const { data: jobs } = useQuery({
+    queryKey: ['adminJobs'],
+    queryFn: opsApi.getAdminJobs,
+    refetchInterval: 30000,
+  })
+  const { data: organizations } = useQuery({
+    queryKey: ['adminOrganizations'],
+    queryFn: opsApi.getAdminOrganizations,
+    refetchInterval: 30000,
+  })
 
   if (overviewLoading) {
     return (
@@ -223,6 +245,92 @@ export default function AdminPage() {
             <p className="font-medium text-white">Scheduler</p>
             <p className="text-sm text-slate-500">Queue config</p>
           </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="card card-hover">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <FolderKanban className="w-5 h-5 text-amber-400" />
+              <h2 className="text-lg font-semibold text-white">Projects</h2>
+            </div>
+            <span className="text-sm text-slate-500">{projects?.length || 0}</span>
+          </div>
+          <div className="space-y-3">
+            {projects?.map((project) => (
+              <div key={project.id} className="p-4 rounded-xl bg-dark-300/50 border border-white/5">
+                <p className="font-medium text-white truncate">{project.name}</p>
+                <p className="text-xs text-slate-500 font-mono truncate">org {project.organization_id}</p>
+              </div>
+            ))}
+            {(!projects || projects.length === 0) && (
+              <div className="text-center py-8 text-slate-500">No projects available</div>
+            )}
+          </div>
+        </div>
+
+        <div className="card card-hover">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-amber-400" />
+              <h2 className="text-lg font-semibold text-white">Jobs</h2>
+            </div>
+            <span className="text-sm text-slate-500">{jobs?.length || 0}</span>
+          </div>
+          <div className="space-y-3">
+            {jobs?.map((job) => (
+              <div key={job.id} className="p-4 rounded-xl bg-dark-300/50 border border-white/5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium text-white truncate">{job.job_type}</p>
+                  <span className="text-xs uppercase tracking-wide text-amber-400">{job.status}</span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono truncate">project {job.project_id}</p>
+              </div>
+            ))}
+            {(!jobs || jobs.length === 0) && (
+              <div className="text-center py-8 text-slate-500">No jobs available</div>
+            )}
+          </div>
+        </div>
+
+        <div className="card card-hover">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-amber-400" />
+              <h2 className="text-lg font-semibold text-white">Organizations</h2>
+            </div>
+            <span className="text-sm text-slate-500">{organizations?.length || 0}</span>
+          </div>
+          <div className="space-y-3">
+            {organizations?.map((organization) => (
+              <div key={organization.id} className="p-4 rounded-xl bg-dark-300/50 border border-white/5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium text-white truncate">{organization.name}</p>
+                  <span className="text-xs text-slate-500">{organization.project_count} projects</span>
+                </div>
+                <p className="text-xs text-slate-500">{organization.job_count} jobs</p>
+              </div>
+            ))}
+            {(!organizations || organizations.length === 0) && (
+              <div className="text-center py-8 text-slate-500">No organizations available</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="card card-hover">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Scheduler Endpoint</h2>
+            <p className="text-sm text-slate-500">Data sourced from /api/admin/scheduler/status</p>
+          </div>
+          <span className={clsx(
+            'px-3 py-1 rounded-full text-xs font-semibold',
+            schedulerStatus?.running ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+          )}>
+            {schedulerStatus?.running ? 'Running' : 'Stopped'}
+          </span>
         </div>
       </div>
     </div>

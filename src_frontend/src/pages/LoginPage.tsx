@@ -1,18 +1,22 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '@/store'
-import { authApi } from '@/api'
-import { Clapperboard, Mail, Lock, User, ArrowRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuthStore, getPrimaryCIDTarget } from '@/store'
+import { Clapperboard, Mail, Lock, ArrowRight } from 'lucide-react'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { setAuth } = useAuthStore()
-  const [isLogin, setIsLogin] = useState(true)
+  const { login, isAuthenticated, user } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const target = getPrimaryCIDTarget(user)
+      navigate(target, { replace: true })
+    }
+  }, [isAuthenticated, user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,21 +24,15 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      if (isLogin) {
-        const response = await authApi.login(email, password)
-        localStorage.setItem('token', response.access_token)
-        const user = await authApi.getMe()
-        setAuth(user, response.access_token)
-        navigate('/')
-      } else {
-        const user = await authApi.register(username, email, password)
-        const response = await authApi.login(email, password)
-        localStorage.setItem('token', response.access_token)
-        setAuth(user, response.access_token)
-        navigate('/')
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error de autenticación')
+      await login(email, password)
+      const loggedUser = useAuthStore.getState().user
+      const target = getPrimaryCIDTarget(loggedUser)
+      navigate(target, { replace: true })
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        'Error de autenticación'
+      setError(message)
     } finally {
       setIsLoading(false)
     }
@@ -42,44 +40,22 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background effects */}
       <div className="absolute inset-0 bg-dark-300" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(245,197,24,0.05)_0%,_transparent_50%)]" />
-      
+
       <div className="w-full max-w-md relative z-10">
-        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
+          <Link to="/" className="inline-flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Clapperboard className="w-6 h-6 text-black" />
             </div>
-          </div>
+          </Link>
           <h1 className="text-2xl font-bold text-white tracking-tight">AILinkCinema</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            {isLogin ? 'Welcome back' : 'Create your account'}
-          </p>
+          <p className="text-slate-400 text-sm mt-1">Inicia sesión en tu cuenta</p>
         </div>
 
-        {/* Login Card */}
         <div className="card bg-dark-200/80 backdrop-blur-xl border border-white/5">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {!isLogin && (
-              <div>
-                <label className="label">Username</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Choose a username"
-                    className="input pl-10"
-                    required={!isLogin}
-                  />
-                </div>
-              </div>
-            )}
-
             <div>
               <label className="label">Email</label>
               <div className="relative">
@@ -88,7 +64,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
+                  placeholder="tu@email.com"
                   className="input pl-10"
                   required
                 />
@@ -96,7 +72,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="label">Password</label>
+              <label className="label">Contraseña</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
@@ -106,7 +82,6 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   className="input pl-10"
                   required
-                  minLength={6}
                 />
               </div>
             </div>
@@ -128,36 +103,37 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Processing...
+                  Procesando...
                 </span>
               ) : (
-                <>
-                  {isLogin ? 'Sign In' : 'Create Account'}
-                  <ArrowRight className="w-4 h-4" />
-                </>
+                <>Iniciar sesión <ArrowRight className="w-4 h-4" /></>
               )}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin)
-                setError('')
-              }}
-              className="text-amber-400 hover:text-amber-300 text-sm transition-colors"
-            >
-              {isLogin ? "Don't have an account? " : 'Already have an account? '}
-              <span className="font-medium">{isLogin ? 'Sign up' : 'Sign in'}</span>
-            </button>
+            <p className="text-slate-400 text-sm">
+              ¿No tienes cuenta?{' '}
+              <Link to="/register/select" className="text-amber-400 hover:text-amber-300 font-medium transition-colors">
+                Solicitar acceso
+              </Link>
+            </p>
           </div>
         </div>
 
-        {/* Demo credentials hint */}
         <div className="mt-6 text-center">
           <p className="text-slate-500 text-xs">
             Demo: <span className="text-slate-400">admin@servicios-cine.com</span> / <span className="text-slate-400">admin123</span>
           </p>
+        </div>
+
+        <div className="mt-4 text-center">
+          <Link
+            to="/"
+            className="text-amber-400 hover:text-amber-300 text-sm transition-colors"
+          >
+            ← Volver al inicio
+          </Link>
         </div>
       </div>
     </div>

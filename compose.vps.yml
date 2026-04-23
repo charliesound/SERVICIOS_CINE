@@ -1,0 +1,48 @@
+# AILinkCinema - Compose for VPS Deployment
+# Usage: docker compose -f compose.base.yml -f compose.vps.yml up
+# Access: https://ailinkcinema.example.com
+
+services:
+  # ==================== VPS SPECIFIC CONFIGURATION ====================
+  
+  # Backend - VPS with remote ComfyUI via Tailscale
+  backend:
+    environment:
+      # COMFYUI endpoints via Tailscale (home machine)
+      COMFYUI_BASE_URL: ${COMFYUI_BASE_URL:-http://100.x.x.x:8188}
+      COMFYUI_STILL: ${COMFYUI_BASE_URL:-http://100.x.x.x:8188}
+      COMFYUI_VIDEO: ${COMFYUI_VIDEO_URL:-http://100.x.x.x:8189}
+      COMFYUI_DUBBING: ${COMFYUI_DUBBING_URL:-http://100.x.x.x:8190}
+      COMFYUI_LAB: ${COMFYUI_LAB_URL:-http://100.x.x.x:8191}
+      # VPS-specific settings
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./ailinkcinema.db}
+      BACKEND_HOST: 0.0.0.0
+      PUBLIC_HOST: ${PUBLIC_HOST:-ailinkcinema.example.com}
+      PUBLIC_PROTOCOL: ${PUBLIC_PROTOCOL:-https}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Frontend - VPS production
+  frontend:
+    environment:
+      VITE_API_URL: https://${PUBLIC_HOST:-ailinkcinema.example.com}
+      VITE_WS_URL: wss://${PUBLIC_HOST:-ailinkcinema.example.com}
+
+  # Reverse Proxy - Production Caddyfile with domain
+  reverse-proxy:
+    volumes:
+      - ./Caddyfile.deploy:/etc/caddy/Caddyfile:ro
+    environment:
+      CADDY_HOST: ${PUBLIC_HOST:-ailinkcinema.example.com}
+      CADDY_PORT: 443
+      CADDY_TLS: internal
+
+networks:
+  public_net:
+    name:ailinkcinema_vps_public
+  private_net:
+    name:ailinkcinema_vps_private
+
+volumes:
+  caddy_data:
+    name:ailinkcinema_vps_caddy_data

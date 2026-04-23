@@ -40,7 +40,60 @@ async def ensure_project() -> str:
 
 async def main() -> None:
     base_url = os.getenv("SMOKE_BASE_URL", "http://127.0.0.1:8000")
-    project_id = os.getenv("SMOKE_PROJECT_ID") or await ensure_project()
+
+    # Check if external server is already running
+    external_server_available = False
+    if base_url != "http://127.0.0.1:8000" or os.getenv("SMOKE_BASE_URL"):
+        try:
+            import httpx
+
+            async with httpx.AsyncClient(timeout=5.0) as check_client:
+                response = await check_client.get(f"{base_url}/health")
+                if response.status_code == 200:
+                    external_server_available = True
+                    print(f"Using external server at {base_url}")
+        except Exception:
+            pass
+
+    # Use external server if available, otherwise use local DB
+    if external_server_available:
+        # With external server, we need to create project in that server's DB
+        # Get DB from environment or create minimal one
+        import sys
+
+        sys.path.insert(0, str(REPO_ROOT / "src"))
+
+        db_url = os.getenv("DATABASE_URL", "")
+        if not db_url:
+            db_url = "sqlite+aiosqlite:////tmp/smoke_external.db"
+
+        os.environ["DATABASE_URL"] = db_url
+
+        # Create project in external server's DB
+        from database import AsyncSessionLocal, init_db
+        from models.core import Organization, Project
+
+        await init_db()
+
+        async with AsyncSessionLocal() as db:
+            org = Organization(
+                name=f"Smoke Org {uuid.uuid4().hex[:6]}", billing_plan="studio"
+            )
+            db.add(org)
+            await db.flush()
+            project = Project(
+                name=f"Smoke Project {uuid.uuid4().hex[:6]}",
+                organization_id=org.id,
+                status="active",
+            )
+            db.add(project)
+            await db.commit()
+            await db.refresh(project)
+            project_id = str(project.id)
+
+        print(f"Created project in external server DB: {project_id}")
+    else:
+        project_id = os.getenv("SMOKE_PROJECT_ID") or await ensure_project()
     unique_suffix = uuid.uuid4().hex[:8]
     demo_request_email = f"smoke-{unique_suffix}@example.com"
     demo_request_name = f"Smoke Tester {unique_suffix}"

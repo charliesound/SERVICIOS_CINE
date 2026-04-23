@@ -1,4 +1,32 @@
 plans:
+  demo:
+    name: "Demo"
+    display_name: "Demo"
+    price: 0
+    billing_period: "monthly"
+    max_active_jobs: 1
+    max_queued_jobs: 1
+    priority_score: 1
+    allowed_task_types:
+      - "still"
+    features:
+      - watermark_enabled
+      - basic_project_export
+    limits:
+      max_images_per_day: 10
+      max_video_seconds_per_month: 0
+      max_audio_seconds_per_month: 0
+      max_projects: 1
+      max_sequences_per_project: 3
+      max_total_jobs: 5
+      max_analyses: 2
+      max_storyboards: 2
+      export_json: false
+      export_zip: false
+      watermark: true
+      api_access: false
+      experimental_access: false
+
   free:
     name: "Free"
     display_name: "Gratis"
@@ -18,6 +46,11 @@ plans:
       max_audio_seconds_per_month: 0
       max_projects: 1
       max_sequences_per_project: 3
+      max_total_jobs: 5
+      max_analyses: 2
+      max_storyboards: 2
+      export_json: false
+      export_zip: false
       watermark: true
       api_access: false
       experimental_access: false
@@ -43,6 +76,43 @@ plans:
       max_audio_seconds_per_month: 120
       max_projects: 3
       max_sequences_per_project: 10
+      max_total_jobs: 25
+      max_analyses: 12
+      max_storyboards: 12
+      export_json: true
+      export_zip: true
+      watermark: false
+      api_access: true
+      experimental_access: false
+
+  producer:
+    name: "Producer"
+    display_name: "Productor"
+    price: 19.99
+    billing_period: "monthly"
+    max_active_jobs: 3
+    max_queued_jobs: 8
+    priority_score: 3
+    allowed_task_types:
+      - "still"
+      - "video"
+      - "dubbing"
+    features:
+      - no_watermark
+      - priority_queue
+      - storyboard_export
+      - project_metrics
+    limits:
+      max_images_per_day: 250
+      max_video_seconds_per_month: 600
+      max_audio_seconds_per_month: 300
+      max_projects: 6
+      max_sequences_per_project: 25
+      max_total_jobs: 60
+      max_analyses: 30
+      max_storyboards: 30
+      export_json: true
+      export_zip: true
       watermark: false
       api_access: true
       experimental_access: false
@@ -70,6 +140,11 @@ plans:
       max_audio_seconds_per_month: 600
       max_projects: 10
       max_sequences_per_project: 50
+      max_total_jobs: 150
+      max_analyses: 80
+      max_storyboards: 80
+      export_json: true
+      export_zip: true
       watermark: false
       api_access: true
       experimental_access: false
@@ -100,6 +175,11 @@ plans:
       max_audio_seconds_per_month: 999999
       max_projects: 999999
       max_sequences_per_project: 999999
+      max_total_jobs: 999999
+      max_analyses: 999999
+      max_storyboards: 999999
+      export_json: true
+      export_zip: true
       watermark: false
       api_access: true
       experimental_access: true

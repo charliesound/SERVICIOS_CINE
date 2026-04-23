@@ -5,7 +5,7 @@ from typing import Optional
 from schemas.job_schema import JobSubmit, JobResponse, JobDetail
 from services.job_router import router as job_router, JobRequest
 from services.queue_service import queue_service
-from services.plan_limits_service import plan_limits_service, user_plan_tracker
+from services.plan_limits_service import plan_limits_service
 from services.instance_registry import registry
 
 router = APIRouter(prefix="/api/render", tags=["render"])
@@ -13,13 +13,26 @@ router = APIRouter(prefix="/api/render", tags=["render"])
 
 @router.post("/jobs", response_model=JobResponse)
 async def create_job(job_data: JobSubmit):
-    can_submit, error_msg = user_plan_tracker.validate_job_submission(
-        job_data.user_id, job_data.user_plan
-    )
-    if not can_submit:
-        raise HTTPException(status_code=429, detail=error_msg)
-
     plan = plan_limits_service.get_plan(job_data.user_plan)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+
+    counts = queue_service.count_user_jobs(job_data.user_id)
+    can_submit_active = (
+        plan.max_active_jobs == -1 or counts["running"] < plan.max_active_jobs
+    )
+    can_submit_queued = (
+        plan.max_queued_jobs == -1 or counts["queued"] < plan.max_queued_jobs
+    )
+    if not can_submit_active and not can_submit_queued:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Has alcanzado la capacidad operativa de tu plan {plan.display_name}. "
+                f"Libera jobs en curso o activa un plan superior para seguir enviando trabajo."
+            ),
+        )
+
     if plan and not plan_limits_service.can_run_task(
         job_data.user_plan, job_data.task_type
     ):
@@ -44,8 +57,6 @@ async def create_job(job_data: JobSubmit):
         raise HTTPException(status_code=400, detail=response.error)
 
     if response.status.value == "queued":
-        user_plan_tracker.track_queued_job(job_data.user_id, job_data.user_plan)
-
         queue_service.enqueue(
             job_id=response.job_id,
             task_type=job_data.task_type,

@@ -1,0 +1,71 @@
+#!/bin/bash
+PORT=8000
+BASE="http://127.0.0.1:$PORT"
+
+# Create project for owner_a in DB directly
+cd "\\\\wsl.localhost\\Ubuntu\\opt\\SERVICIOS_CINE\\src"
+python -c "
+import sys
+sys.path.insert(0, '.')
+import asyncio
+from database import AsyncSessionLocal
+from models.core import Project, User, Organization
+from sqlalchemy import select
+
+async def setup():
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(User).where(User.email == 'ownera@test.com'))
+        user = result.scalar_one_or_none()
+        if user and not user.organization_id:
+            org = Organization(id='org-xyz-999', name='Org XYZ')
+            db.add(org)
+            user.organization_id = 'org-xyz-999'
+            await db.commit()
+        if user:
+            proj = Project(id='proj-xyz-999', organization_id=user.organization_id, name='XYZ Project')
+            db.add(proj)
+            await db.commit()
+            print('proj-xyz-999')
+
+asyncio.run(setup())
+" 2>/dev/null
+
+PROJECT_ID="proj-xyz-999"
+
+echo "=== SPRINT 8 FASE 2 - HTTP VALIDATION ==="
+
+echo -e "\n>>> A. GET /ready"
+curl -s $BASE/ready
+
+echo -e "\n\n>>> B. Register owner_a (already registered)"
+
+echo -e "\n>>> C. Login owner_a"
+TOKEN_A=$(curl -s -X POST $BASE/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"ownera@test.com","password":"pass123"}' | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+
+echo -e "\n>>> D. GET /api/auth/me with token A -> 200"
+curl -s -X GET $BASE/api/auth/me \
+  -H "Authorization: Bearer $TOKEN_A"
+
+echo -e "\n\n>>> E. Project ID: $PROJECT_ID"
+
+echo -e "\n>>> F. POST review without token -> 401"
+curl -s -X POST $BASE/api/reviews/projects/$PROJECT_ID \
+  -H "Content-Type: application/json" \
+  -d '{"target_id":"abc","target_type":"sequence","status":"pending"}'
+
+echo -e "\n\n>>> G. Register owner_b (already registered)"
+
+echo -e "\n>>> H. Login owner_b"
+TOKEN_B=$(curl -s -X POST $BASE/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"ownerb@test.com","password":"pass123"}' | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+
+echo -e "\n>>> I. POST review with token B on project A -> 403"
+curl -s -X POST $BASE/api/reviews/projects/$PROJECT_ID \
+  -H "Authorization: Bearer $TOKEN_B" \
+  -H "Content-Type: application/json" \
+  -d '{"target_id":"abc","target_type":"sequence","status":"pending"}'
+
+echo -e "\n\n=== DONE ==="

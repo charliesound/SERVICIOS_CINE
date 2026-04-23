@@ -7,6 +7,9 @@ from .plan_routes import router as plan_router
 from .admin_routes import router as admin_router
 from .ops_routes import router as ops_router
 from .demo_routes import router as demo_router
+from .ingest_routes import router as ingest_router
+from .document_routes import router as document_router
+from .report_routes import router as report_router
 from . import experimental_routes
 
 __all__ = [
@@ -19,5 +22,8 @@ __all__ = [
     "admin_router",
     "ops_router",
     "demo_router",
+    "ingest_router",
+    "document_router",
+    "report_router",
     "experimental_routes",
 ]

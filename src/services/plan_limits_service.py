@@ -16,6 +16,12 @@ class PlanLimits:
     priority_score: int
     allowed_task_types: List[str]
     features: List[str]
+    max_projects: int
+    max_total_jobs: int
+    max_analyses: int
+    max_storyboards: int
+    export_json: bool
+    export_zip: bool
 
 
 class PlanLimitsService:
@@ -40,20 +46,27 @@ class PlanLimitsService:
         else:
             path = Path(__file__).parent.parent / "config" / "plans.yml"
 
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             data = yaml.safe_load(f)
 
-        for key, plan_data in data['plans'].items():
+        for key, plan_data in data["plans"].items():
+            limits = plan_data.get("limits", {})
             self._plans[key] = PlanLimits(
                 name=key,
-                display_name=plan_data['display_name'],
-                price=plan_data['price'],
-                billing_period=plan_data['billing_period'],
-                max_active_jobs=plan_data['max_active_jobs'],
-                max_queued_jobs=plan_data['max_queued_jobs'],
-                priority_score=plan_data['priority_score'],
-                allowed_task_types=plan_data['allowed_task_types'],
-                features=plan_data['features']
+                display_name=plan_data["display_name"],
+                price=plan_data["price"],
+                billing_period=plan_data["billing_period"],
+                max_active_jobs=plan_data["max_active_jobs"],
+                max_queued_jobs=plan_data["max_queued_jobs"],
+                priority_score=plan_data["priority_score"],
+                allowed_task_types=plan_data["allowed_task_types"],
+                features=plan_data["features"],
+                max_projects=limits.get("max_projects", -1),
+                max_total_jobs=limits.get("max_total_jobs", -1),
+                max_analyses=limits.get("max_analyses", -1),
+                max_storyboards=limits.get("max_storyboards", -1),
+                export_json=limits.get("export_json", False),
+                export_zip=limits.get("export_zip", limits.get("export_json", False)),
             )
 
     def get_plan(self, plan_name: str) -> Optional[PlanLimits]:
@@ -72,8 +85,14 @@ class PlanLimitsService:
                 "max_active_jobs": plan.max_active_jobs,
                 "max_queued_jobs": plan.max_queued_jobs,
                 "priority_score": plan.priority_score,
+                "max_projects": plan.max_projects,
+                "max_total_jobs": plan.max_total_jobs,
+                "max_analyses": plan.max_analyses,
+                "max_storyboards": plan.max_storyboards,
+                "export_json": plan.export_json,
+                "export_zip": plan.export_zip,
                 "allowed_task_types": plan.allowed_task_types,
-                "features": plan.features
+                "features": plan.features,
             }
             for key, plan in self._plans.items()
         ]
@@ -156,10 +175,12 @@ class UserPlanTracker:
             "max_queued_jobs": plan.max_queued_jobs,
             "can_submit_active": user_data["active"] < plan.max_active_jobs,
             "can_submit_queued": user_data["queued"] < plan.max_queued_jobs,
-            "priority_score": plan.priority_score
+            "priority_score": plan.priority_score,
         }
 
-    def validate_job_submission(self, user_id: str, plan_name: str) -> tuple[bool, Optional[str]]:
+    def validate_job_submission(
+        self, user_id: str, plan_name: str
+    ) -> tuple[bool, Optional[str]]:
         plan = self._limits_service.get_plan(plan_name)
         if not plan:
             return False, f"Plan '{plan_name}' not found"
@@ -167,7 +188,10 @@ class UserPlanTracker:
         status = self.get_user_status(user_id, plan_name)
 
         if not status.get("can_submit_active") and not status.get("can_submit_queued"):
-            return False, f"Job limits reached. Max {plan.max_active_jobs} active + {plan.max_queued_jobs} queued"
+            return (
+                False,
+                f"Job limits reached. Max {plan.max_active_jobs} active + {plan.max_queued_jobs} queued",
+            )
 
         return True, None
 

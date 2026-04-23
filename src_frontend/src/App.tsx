@@ -1,31 +1,124 @@
 import { Routes, Route } from 'react-router-dom'
-import Layout from './components/Layout'
+import PublicRoute from './components/PublicRoute'
+import CIDRoute from './components/CIDRoute'
+import PlanRoute from './components/PlanRoute'
+import AppShell from './components/AppShell'
+import LandingPage from './pages/LandingPage'
+import LoginPage from './pages/LoginPage'
+import RegisterSelectPage from './pages/RegisterSelectPage'
+import RegisterCIDPage from './pages/RegisterCIDPage'
+import RegisterDemoPage from './pages/RegisterDemoPage'
+import RegisterPartnerPage from './pages/RegisterPartnerPage'
+import OnboardingPage from './pages/OnboardingPage'
+import PendingAccessPage from './pages/PendingAccessPage'
 import Dashboard from './pages/Dashboard'
 import CreateJob from './pages/CreateJob'
 import QueuePage from './pages/QueuePage'
 import WorkflowsPage from './pages/WorkflowsPage'
 import PlansPage from './pages/PlansPage'
 import AdminPage from './pages/AdminPage'
-import LoginPage from './pages/LoginPage'
 import ProjectHistory from './pages/ProjectHistory'
 import ClientPortal from './pages/ClientPortal'
+import IngestScansPage from './pages/IngestScansPage'
+import IngestScanDetailPage from './pages/IngestScanDetailPage'
+import MediaAssetsPage from './pages/MediaAssetsPage'
+import MediaAssetDetailPage from './pages/MediaAssetDetailPage'
+import DocumentsPage from './pages/DocumentsPage'
+import DocumentDetailPage from './pages/DocumentDetailPage'
+import ReportsPage from './pages/ReportsPage'
+import ReportDetailPage from './pages/ReportDetailPage'
+import StorageSourcesPage from './pages/StorageSourcesPage'
+import StorageSourceDetailPage from './pages/StorageSourceDetailPage'
+import ProjectsPage from './pages/ProjectsPage'
+import NewProjectPage from './pages/NewProjectPage'
+import ProjectDetailPage from './pages/ProjectDetailPage'
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      
-      {/* Public portal for clients */}
+      <Route path="/" element={<LandingPage />} />
+
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register/select" element={<RegisterSelectPage />} />
+        <Route path="/register/cid" element={<RegisterCIDPage />} />
+        <Route path="/register/demo" element={<RegisterDemoPage />} />
+        <Route path="/register/partner" element={<RegisterPartnerPage />} />
+      </Route>
+
+      <Route path="/onboarding" element={<OnboardingPage />} />
+      <Route path="/pending-access" element={<PendingAccessPage />} />
       <Route path="/project/:jobId" element={<ClientPortal />} />
-      
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="create" element={<CreateJob />} />
-        <Route path="queue" element={<QueuePage />} />
-        <Route path="history" element={<ProjectHistory />} />
-        <Route path="workflows" element={<WorkflowsPage />} />
-        <Route path="plans" element={<PlansPage />} />
-        <Route path="admin" element={<AdminPage />} />
+
+      <Route element={<AppShell />}>
+        <Route
+          path="/cid"
+          element={
+            <CIDRoute>
+              <Dashboard />
+            </CIDRoute>
+          }
+        />
+        <Route
+          path="/cid/demo"
+          element={
+            <PlanRoute program="demo">
+              <Dashboard />
+            </PlanRoute>
+          }
+        />
+        <Route
+          path="/cid/creator"
+          element={
+            <PlanRoute program="creator">
+              <Dashboard />
+            </PlanRoute>
+          }
+        />
+        <Route
+          path="/cid/producer"
+          element={
+            <PlanRoute program="producer">
+              <Dashboard />
+            </PlanRoute>
+          }
+        />
+        <Route
+          path="/cid/studio"
+          element={
+            <PlanRoute program="studio">
+              <Dashboard />
+            </PlanRoute>
+          }
+        />
+        <Route
+          path="/cid/enterprise"
+          element={
+            <PlanRoute program="enterprise">
+              <Dashboard />
+            </PlanRoute>
+          }
+        />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/projects/new" element={<NewProjectPage />} />
+        <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+        <Route path="/create" element={<CreateJob />} />
+        <Route path="/queue" element={<QueuePage />} />
+        <Route path="/history" element={<ProjectHistory />} />
+        <Route path="/workflows" element={<WorkflowsPage />} />
+        <Route path="/plans" element={<PlansPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/storage-sources" element={<StorageSourcesPage />} />
+        <Route path="/storage-sources/:sourceId" element={<StorageSourceDetailPage />} />
+        <Route path="/ingest/scans" element={<IngestScansPage />} />
+        <Route path="/ingest/scans/:scanId" element={<IngestScanDetailPage />} />
+        <Route path="/ingest/assets" element={<MediaAssetsPage />} />
+        <Route path="/ingest/assets/:assetId" element={<MediaAssetDetailPage />} />
+        <Route path="/documents" element={<DocumentsPage />} />
+        <Route path="/documents/:documentId" element={<DocumentDetailPage />} />
+        <Route path="/reports/:reportType" element={<ReportsPage />} />
+        <Route path="/reports/:reportType/:reportId" element={<ReportDetailPage />} />
       </Route>
     </Routes>
   )

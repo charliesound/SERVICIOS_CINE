@@ -5,12 +5,13 @@ import uuid
 import asyncio
 
 from .instance_registry import InstanceRegistry, registry
+from .plan_limits_service import plan_limits_service
 from .comfyui_client_factory import (
-    ComfyUIFactory, 
+    ComfyUIFactory,
     factory as comfyui_factory,
-    JobRequest, 
+    JobRequest,
     JobResponse,
-    JobStatus
+    JobStatus,
 )
 
 
@@ -44,9 +45,11 @@ class Job:
             "status": self.status.value,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": self.completed_at.isoformat()
+            if self.completed_at
+            else None,
             "error": self.error,
-            "outputs": self.outputs
+            "outputs": self.outputs,
         }
 
 
@@ -84,15 +87,8 @@ class JobRouter:
 
         return None
 
-    def _validate_plan_access(self, plan: str, backend: str) -> bool:
-        plan_backend_map = {
-            "free": ["still"],
-            "starter": ["still", "video"],
-            "pro": ["still", "video", "dubbing", "lab"],
-            "enterprise": ["still", "video", "dubbing", "lab"]
-        }
-        allowed = plan_backend_map.get(plan, [])
-        return backend in allowed
+    def _validate_plan_access(self, plan: str, task_type: str) -> bool:
+        return plan_limits_service.can_run_task(plan, task_type)
 
     async def route_job(self, job_request: JobRequest) -> JobResponse:
         job_id = str(uuid.uuid4())[:8]
@@ -104,16 +100,20 @@ class JobRouter:
                 status=JobStatus.FAILED,
                 backend="",
                 backend_url="",
-                error=f"No backend found for task_type={job_request.task_type}, workflow={job_request.workflow_key}"
+                error=f"No backend found for task_type={job_request.task_type}, workflow={job_request.workflow_key}",
             )
 
-        if job_request.user_plan and not self._validate_plan_access(job_request.user_plan, backend_key):
+        if job_request.user_plan and not self._validate_plan_access(
+            job_request.user_plan, job_request.task_type
+        ):
             return JobResponse(
                 job_id=job_id,
                 status=JobStatus.FAILED,
                 backend=backend_key,
-                backend_url=self.registry.get_backend(backend_key).base_url if self.registry.get_backend(backend_key) else "",
-                error=f"Plan '{job_request.user_plan}' does not have access to backend '{backend_key}'"
+                backend_url=self.registry.get_backend(backend_key).base_url
+                if self.registry.get_backend(backend_key)
+                else "",
+                error=f"Plan '{job_request.user_plan}' does not allow task type '{job_request.task_type}'",
             )
 
         backend = self.registry.get_backend(backend_key)
@@ -123,7 +123,7 @@ class JobRouter:
                 status=JobStatus.FAILED,
                 backend=backend_key,
                 backend_url=backend.base_url if backend else "",
-                error=f"Backend '{backend_key}' is not available"
+                error=f"Backend '{backend_key}' is not available",
             )
 
         job = Job(
@@ -134,7 +134,7 @@ class JobRouter:
             priority=job_request.priority,
             target_backend=backend_key,
             user_id=job_request.user_id,
-            user_plan=job_request.user_plan
+            user_plan=job_request.user_plan,
         )
 
         async with self._job_lock:
@@ -148,7 +148,7 @@ class JobRouter:
             backend=backend_key,
             backend_url=backend.base_url,
             queue_position=backend.current_jobs,
-            estimated_time=self._estimate_time(backend, job_request.priority)
+            estimated_time=self._estimate_time(backend, job_request.priority),
         )
 
     def _estimate_time(self, backend, priority: int) -> int:

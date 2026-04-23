@@ -28,7 +28,7 @@ services:
       dockerfile: Dockerfile
     container_name: servicios_cine_frontend
     ports:
-      - "3000:3000"
+      - "3000:80"
     networks:
       - servicios_cine
     restart: unless-stopped
@@ -44,15 +44,14 @@ services:
         NEXT_PUBLIC_CINEMA_API_URL: ${NEXT_PUBLIC_CINEMA_API_URL:-http://cine-api:3000}
         AUTOMATION_ENGINE_URL: ${AUTOMATION_ENGINE_URL:-http://automation-engine:8000}
     container_name: servicios_cine_landing
+    env_file:
+      - ./Web Ailink_Cinema/.env.local
     environment:
-      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
       CINEMA_API_URL: ${CINEMA_API_URL:-http://cine-api:3000}
       NEXT_PUBLIC_CINEMA_API_URL: ${NEXT_PUBLIC_CINEMA_API_URL:-http://cine-api:3000}
       AUTOMATION_ENGINE_URL: ${AUTOMATION_ENGINE_URL:-http://automation-engine:8000}
       AUTOMATION_ENGINE_TIMEOUT_MS: ${AUTOMATION_ENGINE_TIMEOUT_MS:-5000}
       AUTOMATION_ENGINE_RETRIES: ${AUTOMATION_ENGINE_RETRIES:-1}
-      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
     depends_on:
       cine-api:
         condition: service_healthy
@@ -161,7 +160,7 @@ services:
     restart: unless-stopped
 
   n8n:
-    image: n8nio/n8n:1.82.3
+    image: n8nio/n8n:2.16.1
     container_name: servicios-n8n
     env_file:
       - ./.env

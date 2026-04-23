@@ -1,0 +1,104 @@
+# AILinkCinema - Base Compose (Shared Services)
+# Este archivo contiene los servicios base compartidos entre Home y VPS
+# Usar con: docker compose -f compose.base.yml -f compose.home.yml up
+# o: docker compose -f compose.base.yml -f compose.vps.yml up
+
+services:
+  # ==================== BASE SERVICES ====================
+
+  # Backend Principal (AILinkCinema API)
+  backend:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    container_name: ailinkcinema_backend
+    env_file:
+      - .env
+    environment:
+      PYTHONUNBUFFERED: "1"
+      BACKEND_HOST: ${BACKEND_HOST:-0.0.0.0}
+      BACKEND_PORT: ${BACKEND_PORT:-8000}
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./ailinkcinema.db}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5).read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - public_net
+
+  # Frontend Principal (AILinkCinema Web)
+  frontend:
+    build:
+      context: ./src_frontend
+      dockerfile: Dockerfile
+    container_name: ailinkcinema_frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - public_net
+
+  # ==================== DATABASE (SQLite por defecto) ====================
+  # NOTA: En producción usar PostgreSQL externo si se desea
+  
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: ailinkcinema_db
+  #   environment:
+  #     POSTGRES_USER: ${POSTGRES_USER:-ailinkcinema}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+  #     POSTGRES_DB: ${POSTGRES_DB:-ailinkcinema}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "${POSTGRES_PORT:-5432}:5432"
+  #   restart: unless-stopped
+  #   networks:
+  #     - private_net
+
+  # ==================== REVERSE PROXY (CADDY) ====================
+
+  reverse-proxy:
+    image: caddy:2-alpine
+    container_name: ailinkcinema_reverse_proxy
+    env_file:
+      - .env
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile.deploy:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    networks:
+      - public_net
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  public_net:
+    name: ailinkcinema_public
+    driver: bridge
+  private_net:
+    name: ailinkcinema_private
+    driver: bridge
+
+volumes:
+  caddy_data:
+    name: ailinkcinema_caddy_data

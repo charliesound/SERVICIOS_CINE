@@ -137,6 +137,15 @@ SERVICIOS_CINE/
 - [Guía WSL2](README_WSL2.md)
 - [Documentación Vigente](docs/DOCUMENTACION_VIGENTE.md)
 
+### Documentación Operativa MVP
+
+- [Contrato técnico MVP v1](directivas/MVP_V1_IMPLEMENTATION_REFERENCE.md)
+- [Operating brief v1](directivas/MVP_V1_OPERATING_BRIEF.md)
+- [Sprint map v1](directivas/MVP_V1_SPRINT_MAP.md)
+- [Demo checklist v1](directivas/MVP_V1_DEMO_CHECKLIST.md)
+- [Guía de organización documental](directivas/DOCUMENTATION_OPERATING_STRUCTURE.md)
+- [Guía de evolución post-MVP](directivas/POST_MVP_EVOLUTION_GUIDE.md)
+
 ---
 
 ## 🔧 Desarrollo

@@ -149,7 +149,9 @@ def wait_for_server(process: subprocess.Popen) -> None:
     raise RuntimeError("Timed out waiting for uvicorn health endpoint")
 
 
-def stop_server(process: subprocess.Popen) -> None:
+def stop_server(process: subprocess.Popen | None) -> None:
+    if process is None:
+        return
     process.terminate()
     try:
         process.wait(timeout=10)
@@ -166,7 +168,20 @@ async def main() -> None:
         DATABASE_FILE.exists() if DATABASE_FILE is not None else "n/a",
     )
 
-    server = start_server()
+    # Check if external server is available
+    use_external = False
+    if os.getenv("SMOKE_BASE_URL"):
+        try:
+            response = httpx.get(f"{BASE_URL}/health", timeout=5.0)
+            if response.status_code == 200:
+                use_external = True
+                print(f"Using external server at {BASE_URL}")
+        except Exception:
+            pass
+
+    server = None
+    if not use_external:
+        server = start_server()
     try:
         project_id = await ensure_project()
         time.sleep(5)
@@ -268,7 +283,12 @@ async def main() -> None:
     finally:
         stop_server(server)
 
-    server = start_server()
+    # Second run - also check for external server
+    server2 = None
+    if use_external:
+        print("Using external server for second run")
+    else:
+        server2 = start_server()
     try:
         with httpx.Client(base_url=BASE_URL, timeout=20.0) as client:
             openapi = client.get("/openapi.json")
@@ -320,7 +340,10 @@ async def main() -> None:
             )
             print("SMOKE_OK=1")
     finally:
-        stop_server(server)
+        if server2:
+            stop_server(server2)
+        elif use_external:
+            pass  # External server, don't stop it
 
 
 if __name__ == "__main__":

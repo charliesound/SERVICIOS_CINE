@@ -6,20 +6,32 @@ import {
   ListOrdered, 
   GitBranch, 
   CreditCard, 
+  FileText,
+  Search,
+  ClipboardList,
   Settings,
   LogOut,
   Clapperboard,
   History,
-  ExternalLink
+  ExternalLink,
+  Folder,
+  Briefcase,
+  HardDrive
 } from 'lucide-react'
 import clsx from 'clsx'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/create', icon: PlusCircle, label: 'Crear' },
+  { to: '/projects', icon: Folder, label: 'Proyectos' },
+  { to: '/producer', icon: Briefcase, label: 'Productor' },
   { to: '/queue', icon: ListOrdered, label: 'Cola' },
   { to: '/workflows', icon: GitBranch, label: 'Workflows' },
   { to: '/plans', icon: CreditCard, label: 'Planes' },
+  { to: '/storage-sources', icon: HardDrive, label: 'Storage' },
+  { to: '/ingest/scans', icon: Search, label: 'Ingesta' },
+  { to: '/documents', icon: FileText, label: 'Documentos' },
+  { to: '/reports/camera', icon: ClipboardList, label: 'Reportes' },
   { to: '/history', icon: History, label: 'Historial' },
   { to: '/admin', icon: Settings, label: 'Admin' },
 ]
@@ -57,7 +69,9 @@ export default function Layout() {
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map(({ to, icon: Icon, label }) => {
-            const isActive = location.pathname === to
+            const isActive = to === '/'
+              ? location.pathname === '/'
+              : location.pathname === to || location.pathname.startsWith(`${to}/`)
             return (
               <Link
                 key={to}

@@ -3,7 +3,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from collections import defaultdict
+import logging
+import os
 import threading
+
+
+logger = logging.getLogger(__name__)
 
 
 class QueueStatus(Enum):
@@ -60,15 +65,49 @@ class QueueService:
         if self._initialized:
             return
         self._initialized = True
+        self._persistence_mode = (
+            os.getenv("QUEUE_PERSISTENCE_MODE", "memory").strip().lower() or "memory"
+        )
+        if self._persistence_mode != "memory":
+            logger.warning(
+                "Unsupported queue persistence mode '%s'; falling back to memory-only queue",
+                self._persistence_mode,
+            )
+            self._persistence_mode = "memory"
         self._queue: Dict[str, List[QueueItem]] = defaultdict(list)
         self._running: Dict[str, List[str]] = defaultdict(list)
         self._completed: Dict[str, QueueItem] = {}
         self._job_map: Dict[str, QueueItem] = {}
         self._config = QueueConfig()
+        logger.warning(
+            "QueueService running in %s mode. Jobs are not durable across process restarts.",
+            self._persistence_mode,
+        )
 
-    def enqueue(self, job_id: str, task_type: str, backend: str, 
-                priority: int, user_plan: str, user_id: Optional[str] = None) -> Optional[QueueItem]:
-        
+    def _record_transition(self, item: QueueItem, event: str) -> None:
+        """Single replacement point for durable queue persistence.
+
+        Future production persistence should replace this no-op with a durable
+        write to SQL/Redis without changing queue callers.
+        """
+        del item, event
+
+    def get_runtime_mode(self) -> Dict[str, Any]:
+        return {
+            "persistence_mode": self._persistence_mode,
+            "durable": False,
+            "production_ready": False,
+        }
+
+    def enqueue(
+        self,
+        job_id: str,
+        task_type: str,
+        backend: str,
+        priority: int,
+        user_plan: str,
+        user_id: Optional[str] = None,
+    ) -> Optional[QueueItem]:
         if backend == "lab" and user_plan not in self._config.PLAN_LAB_ACCESS:
             item = QueueItem(
                 job_id=job_id,
@@ -79,7 +118,7 @@ class QueueService:
                 user_id=user_id,
                 created_at=datetime.utcnow(),
                 status=QueueStatus.REJECTED,
-                error="Plan does not have lab access"
+                error="Plan does not have lab access",
             )
             self._job_map[job_id] = item
             return None
@@ -91,12 +130,13 @@ class QueueService:
             priority=priority,
             user_plan=user_plan,
             user_id=user_id,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
-        
+
         self._queue[backend].append(item)
         self._queue[backend].sort(key=lambda x: (-x.priority, x.created_at))
         self._job_map[job_id] = item
+        self._record_transition(item, "enqueue")
         return item
 
     def get_status(self, job_id: str) -> Optional[QueueItem]:
@@ -109,9 +149,13 @@ class QueueService:
                 "running": len(self._running.get(backend, [])),
                 "max_concurrent": self._config.MAX_CONCURRENT.get(backend, 1),
                 "items": [
-                    {"job_id": i.job_id, "status": i.status.value, "priority": i.priority}
+                    {
+                        "job_id": i.job_id,
+                        "status": i.status.value,
+                        "priority": i.priority,
+                    }
                     for i in queue
-                ]
+                ],
             }
             for backend, queue in self._queue.items()
         }
@@ -119,7 +163,7 @@ class QueueService:
     def get_next_for_backend(self, backend: str) -> Optional[QueueItem]:
         max_concurrent = self._config.MAX_CONCURRENT.get(backend, 1)
         current_running = len(self._running.get(backend, []))
-        
+
         if current_running >= max_concurrent:
             return None
 
@@ -132,38 +176,42 @@ class QueueService:
         item = self._job_map.get(job_id)
         if not item or item.status != QueueStatus.QUEUED:
             return False
-        
+
         item.status = QueueStatus.RUNNING
         item.started_at = datetime.utcnow()
         self._running[item.backend].append(job_id)
+        self._record_transition(item, "running")
         return True
 
     def mark_succeeded(self, job_id: str) -> bool:
         item = self._job_map.get(job_id)
         if not item:
             return False
-        
+
         item.status = QueueStatus.SUCCEEDED
         item.completed_at = datetime.utcnow()
         self._release_slot(job_id)
         self._completed[job_id] = item
+        self._record_transition(item, "succeeded")
         return True
 
     def mark_failed(self, job_id: str, error: str) -> bool:
         item = self._job_map.get(job_id)
         if not item:
             return False
-        
+
         if item.retry_count < item.max_retries:
             item.retry_count += 1
             item.status = QueueStatus.QUEUED
             self._queue[item.backend].insert(0, item)
+            self._record_transition(item, "retry_queued")
         else:
             item.status = QueueStatus.FAILED
             item.error = error
             item.completed_at = datetime.utcnow()
             self._completed[job_id] = item
-        
+            self._record_transition(item, "failed")
+
         self._release_slot(job_id)
         return True
 
@@ -171,41 +219,46 @@ class QueueService:
         item = self._job_map.get(job_id)
         if not item:
             return False
-        
+
         item.status = QueueStatus.TIMEOUT
         item.completed_at = datetime.utcnow()
         self._release_slot(job_id)
         self._completed[job_id] = item
+        self._record_transition(item, "timeout")
         return True
 
     def cancel(self, job_id: str) -> bool:
         item = self._job_map.get(job_id)
         if not item:
             return False
-        
+
         if item.status == QueueStatus.RUNNING:
             item.status = QueueStatus.CANCELED
             item.completed_at = datetime.utcnow()
             self._release_slot(job_id)
         elif item.status == QueueStatus.QUEUED:
             item.status = QueueStatus.CANCELED
-            self._queue[item.backend] = [i for i in self._queue[item.backend] if i.job_id != job_id]
-        
+            self._queue[item.backend] = [
+                i for i in self._queue[item.backend] if i.job_id != job_id
+            ]
+
         self._completed[job_id] = item
+        self._record_transition(item, "canceled")
         return True
 
     def retry(self, job_id: str) -> bool:
         item = self._job_map.get(job_id)
         if not item:
             return False
-        
+
         if item.status not in [QueueStatus.FAILED, QueueStatus.TIMEOUT]:
             return False
-        
+
         item.status = QueueStatus.QUEUED
         item.retry_count = 0
         item.error = None
         self._queue[item.backend].insert(0, item)
+        self._record_transition(item, "manual_retry")
         return True
 
     def _release_slot(self, job_id: str):
@@ -224,15 +277,27 @@ class QueueService:
         item = self._job_map.get(job_id)
         if not item:
             return None
-        
+
         if item.status != QueueStatus.QUEUED:
             return None
-        
+
         queue = self._queue.get(item.backend, [])
         for i, q_item in enumerate(queue):
             if q_item.job_id == job_id:
                 return i + 1
         return None
+
+    def count_user_jobs(self, user_id: str) -> Dict[str, int]:
+        queued = 0
+        running = 0
+        for item in self._job_map.values():
+            if item.user_id != user_id:
+                continue
+            if item.status == QueueStatus.QUEUED:
+                queued += 1
+            elif item.status == QueueStatus.RUNNING:
+                running += 1
+        return {"queued": queued, "running": running}
 
 
 queue_service = QueueService()

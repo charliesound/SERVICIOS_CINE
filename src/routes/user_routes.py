@@ -1,75 +1,99 @@
-from fastapi import APIRouter, HTTPException
 from typing import List
 
-from schemas.user_schema import UserCreate, UserUpdate, UserInDB
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database import get_db
+from models.core import User as DBUser
+from routes.auth_routes import get_current_user_optional, hash_password
 from schemas.auth_schema import UserResponse
-from services.user_service import user_store
+from schemas.user_schema import UserCreate
+from services.account_service import (
+    apply_internal_plan_change,
+    build_user_response_from_db,
+    create_user_account,
+    get_user_by_email,
+    get_user_by_id,
+)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
 
 @router.post("/", response_model=UserResponse)
-async def create_user(user_data: UserCreate):
-    existing = user_store.get_user_by_email(user_data.email)
+async def create_user(
+    user_data: UserCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await get_user_by_email(db, user_data.email)
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    from passlib.context import CryptContext
-
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-    user = user_store.create_user(
+    user = await create_user_account(
+        db,
         username=user_data.username,
         email=user_data.email,
-        password=pwd_context.hash(user_data.password),
+        hashed_password=hash_password(user_data.password),
         plan=user_data.plan,
+        full_name=user_data.username,
+        organization_name=f"{user_data.username} Studio",
     )
 
-    return UserResponse(
-        user_id=user.user_id,
-        username=user.username,
-        email=user.email,
-        plan=user.plan,
-        role=user.role,
-        is_active=user.is_active,
-    )
+    return await build_user_response_from_db(db, user)
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user(user_id: str):
-    user = user_store.get_user(user_id)
+async def get_user(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    user = await get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    return UserResponse(
-        user_id=user.user_id,
-        username=user.username,
-        email=user.email,
-        plan=user.plan,
-        role=user.role,
-        is_active=user.is_active,
-    )
+    return await build_user_response_from_db(db, user)
 
 
 @router.get("/", response_model=List[UserResponse])
-async def list_users():
-    users = user_store.get_all_users()
-    return [
-        UserResponse(
-            user_id=u.user_id,
-            username=u.username,
-            email=u.email,
-            plan=u.plan,
-            role=u.role,
-            is_active=u.is_active,
-        )
-        for u in users
-    ]
+async def list_users(
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(DBUser).order_by(DBUser.created_at.desc(), DBUser.id.desc())
+    )
+    users = result.scalars().all()
+    return [await build_user_response_from_db(db, user) for user in users]
 
 
 @router.patch("/{user_id}/plan")
-async def update_user_plan(user_id: str, new_plan: str):
-    success = user_store.update_user_plan(user_id, new_plan)
-    if not success:
+async def update_user_plan(
+    user_id: str,
+    new_plan: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserResponse | None = Depends(get_current_user_optional),
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if current_user.user_id != user_id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=403, detail="Not allowed to change this user plan"
+        )
+
+    user = await get_user_by_id(db, user_id)
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"message": "Plan updated", "new_plan": new_plan}
+
+    try:
+        previous_plan, current_plan = await apply_internal_plan_change(
+            db, user, new_plan
+        )
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Plan not found")
+
+    return {
+        "message": f"Plan activado internamente: {previous_plan} -> {current_plan}",
+        "previous_plan": previous_plan,
+        "current_plan": current_plan,
+        "activation_mode": "internal_manual",
+        "effective_immediately": True,
+    }

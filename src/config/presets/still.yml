@@ -1,0 +1,736 @@
+presets:
+  system_cinematic_portrait_20260416080014:
+    backend: still
+    category: still
+    created_at: '2026-04-16T08:00:14.692796'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260416080534:
+    backend: still
+    category: still
+    created_at: '2026-04-16T08:05:34.681678'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260416083845:
+    backend: still
+    category: still
+    created_at: '2026-04-16T08:38:45.584498'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260416093931:
+    backend: still
+    category: still
+    created_at: '2026-04-16T09:39:31.573804'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260416094149:
+    backend: still
+    category: still
+    created_at: '2026-04-16T09:41:49.052097'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260416094822:
+    backend: still
+    category: still
+    created_at: '2026-04-16T09:48:22.673003'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260416095615:
+    backend: still
+    category: still
+    created_at: '2026-04-16T09:56:15.643135'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260416095829:
+    backend: still
+    category: still
+    created_at: '2026-04-16T09:58:29.500295'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260416105632:
+    backend: still
+    category: still
+    created_at: '2026-04-16T10:56:32.927706'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260416105748:
+    backend: still
+    category: still
+    created_at: '2026-04-16T10:57:48.181808'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260416111032:
+    backend: still
+    category: still
+    created_at: '2026-04-16T11:10:32.472420'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260417160740:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:07:40.295677'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260417160909:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:09:09.788970'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260417161030:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:10:30.746113'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260417161109:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:11:09.245818'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260417161145:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:11:45.668113'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260417161255:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:12:55.167339'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260417165423:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:54:23.704286'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260417165517:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:55:17.437029'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260417165536:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:55:36.479580'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260417184521:
+    backend: still
+    category: still
+    created_at: '2026-04-17T18:45:21.548061'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
+  system_fast_storyboard_20260416080014:
+    backend: still
+    category: still
+    created_at: '2026-04-16T08:00:14.694084'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260416080534:
+    backend: still
+    category: still
+    created_at: '2026-04-16T08:05:34.689222'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260416083845:
+    backend: still
+    category: still
+    created_at: '2026-04-16T08:38:45.593463'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260416093931:
+    backend: still
+    category: still
+    created_at: '2026-04-16T09:39:31.585322'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260416094149:
+    backend: still
+    category: still
+    created_at: '2026-04-16T09:41:49.067145'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260416094822:
+    backend: still
+    category: still
+    created_at: '2026-04-16T09:48:22.698887'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260416095615:
+    backend: still
+    category: still
+    created_at: '2026-04-16T09:56:15.674259'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260416095829:
+    backend: still
+    category: still
+    created_at: '2026-04-16T09:58:29.525633'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260416105632:
+    backend: still
+    category: still
+    created_at: '2026-04-16T10:56:32.972326'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260416105748:
+    backend: still
+    category: still
+    created_at: '2026-04-16T10:57:48.271346'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260416111032:
+    backend: still
+    category: still
+    created_at: '2026-04-16T11:10:32.513304'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260417160740:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:07:40.337031'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260417160909:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:09:09.831429'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260417161030:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:10:30.807152'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260417161109:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:11:09.311352'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260417161145:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:11:45.729652'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260417161255:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:12:55.272425'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260417165423:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:54:23.762731'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260417165517:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:55:17.497020'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260417165536:
+    backend: still
+    category: still
+    created_at: '2026-04-17T16:55:36.555344'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260417184521:
+    backend: still
+    category: still
+    created_at: '2026-04-17T18:45:21.617266'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame

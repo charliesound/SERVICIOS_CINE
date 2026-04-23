@@ -2,7 +2,8 @@
 
 > Estado: documentacion historica de desarrollo.
 > Util para contexto de sesiones anteriores, pero no para operar el despliegue actual.
-> Para la documentacion vigente usa `README.md`, `README_WSL2.md`, `README_TAILSCALE.md` y `docs/DOCUMENTACION_VIGENTE.md`.
+> Para operar el MVP actual usa primero `README.md` y `directivas/MVP_V1_IMPLEMENTATION_REFERENCE.md`.
+> Para la documentacion vigente del sistema usa `README_WSL2.md`, `README_TAILSCALE.md` y `docs/DOCUMENTACION_VIGENTE.md`.
 
 ## Que es esto?
 Coleccion de sesiones de handoff para el proyecto SERVICIOS_CINE.

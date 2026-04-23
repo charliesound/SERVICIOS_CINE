@@ -13,9 +13,27 @@
         X-XSS-Protection "1; mode=block"
     }
 
-    @protected path /cine /cine/* /app /app/* /n8n /n8n/* /qdrant /qdrant/* /automation /automation/* /docs /redoc /openapi.json
-    basic_auth @protected {
-        {$CADDY_BASIC_AUTH_USER} {$CADDY_BASIC_AUTH_PASSWORD_HASH}
+    # @protected path /cine /cine/* /app /app/* /n8n /n8n/* /qdrant /qdrant/* /automation /automation/* /docs /redoc /openapi.json /comfyui-image /comfyui-image/*
+    # basic_auth @protected {
+    #     {$CADDY_BASIC_AUTH_USER} {$CADDY_BASIC_AUTH_PASSWORD_HASH}
+    # }
+
+    # CINE API - must come before general /api/*
+    handle /cine/api/* {
+        rewrite /cine/api/health /api/health
+        reverse_proxy cine-platform-api:3000
+    }
+
+    handle /cine/health {
+        reverse_proxy cine-platform-api:3000
+    }
+
+    handle /cine {
+        redir /cine/ 308
+    }
+
+    handle_path /cine/* {
+        reverse_proxy servicios_cine_frontend:80
     }
 
     # Landing / CRM Web Ailink_Cinema APIs
@@ -51,24 +69,6 @@
         reverse_proxy backend:8000
     }
 
-    # CINE AI Platform API
-    handle_path /cine/api/* {
-        reverse_proxy cine-api:3000
-    }
-
-    handle /cine/health {
-        rewrite * /api/health
-        reverse_proxy cine-api:3000
-    }
-
-    handle /cine {
-        redir /cine/ 308
-    }
-
-    handle_path /cine/* {
-        reverse_proxy cine-web:80
-    }
-
     # Automation Engine
     handle_path /automation/* {
         reverse_proxy automation-engine:8000
@@ -83,6 +83,11 @@
         reverse_proxy n8n:5678
     }
 
+    # ComfyUI image preview proxy
+    handle_path /comfyui-image/* {
+        reverse_proxy host.docker.internal:8188
+    }
+
     # Qdrant
     handle /qdrant {
         redir /qdrant/ 308
@@ -93,11 +98,12 @@
     }
 
     # Acceso amigable a la app operativa
-    @app_path path /app /app/*
-    redir @app_path /cine/ 308
+    handle /app* {
+        redir /cine/ 308
+    }
 
     # Landing principal
-    handle / {
+    handle {
         reverse_proxy landing-web:3000
     }
 }
@@ -114,9 +120,27 @@
         X-XSS-Protection "1; mode=block"
     }
 
-    @protected_secure path /cine /cine/* /app /app/* /n8n /n8n/* /qdrant /qdrant/* /automation /automation/* /docs /redoc /openapi.json
-    basic_auth @protected_secure {
-        {$CADDY_BASIC_AUTH_USER} {$CADDY_BASIC_AUTH_PASSWORD_HASH}
+    # @protected_secure path /cine /cine/* /app /app/* /n8n /n8n/* /qdrant /qdrant/* /automation /automation/* /docs /redoc /openapi.json /comfyui-image /comfyui-image/*
+    # basic_auth @protected_secure {
+    #     {$CADDY_BASIC_AUTH_USER} {$CADDY_BASIC_AUTH_PASSWORD_HASH}
+    # }
+
+    # CINE API - must come first
+    handle /cine/api/* {
+        rewrite /cine/api/health /api/health
+        reverse_proxy cine-platform-api:3000
+    }
+
+    handle /cine/health {
+        reverse_proxy cine-platform-api:3000
+    }
+
+    handle /cine {
+        redir /cine/ 308
+    }
+
+    handle_path /cine/* {
+        reverse_proxy servicios_cine_frontend:80
     }
 
     # Landing / CRM Web Ailink_Cinema APIs
@@ -148,28 +172,6 @@
         reverse_proxy backend:8000
     }
 
-    handle /workflows/* {
-        reverse_proxy backend:8000
-    }
-
-    # CINE AI Platform API
-    handle_path /cine/api/* {
-        reverse_proxy cine-api:3000
-    }
-
-    handle /cine/health {
-        rewrite * /api/health
-        reverse_proxy cine-api:3000
-    }
-
-    handle /cine {
-        redir /cine/ 308
-    }
-
-    handle_path /cine/* {
-        reverse_proxy cine-web:80
-    }
-
     # Automation Engine
     handle_path /automation/* {
         reverse_proxy automation-engine:8000
@@ -184,6 +186,11 @@
         reverse_proxy n8n:5678
     }
 
+    # ComfyUI image preview proxy
+    handle_path /comfyui-image/* {
+        reverse_proxy host.docker.internal:8188
+    }
+
     # Qdrant
     handle /qdrant {
         redir /qdrant/ 308
@@ -194,11 +201,12 @@
     }
 
     # Acceso amigable a la app operativa
-    @app_path_secure path /app /app/*
-    redir @app_path_secure /cine/ 308
+    handle /app* {
+        redir /cine/ 308
+    }
 
     # Landing principal
-    handle / {
+    handle {
         reverse_proxy landing-web:3000
     }
 }

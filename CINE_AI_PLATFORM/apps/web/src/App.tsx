@@ -25,6 +25,7 @@ import SemanticContextPanel from "./components/SemanticContextPanel";
 import ShotSemanticContextSummary from "./components/ShotSemanticContextSummary";
 import SequenceExecutionPanel from "./components/SequenceExecutionPanel";
 import ShotBuilderPanel from "./components/ShotBuilderPanel";
+import ComfyDashboardPanel from "./components/ComfyDashboardPanel";
 import { useAuthStore } from "./store/authStore";
 
 import type { Project } from "./types/project";
@@ -539,7 +540,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa] text-gray-900 font-sans p-6 md:p-10">
+    <div className="min-h-screen px-4 py-6 text-gray-900 md:px-8 md:py-8">
       <input
         ref={importFileInputRef}
         type="file"
@@ -548,149 +549,260 @@ function App() {
         style={{ display: "none" }}
       />
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-        <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-gray-500">CINE AI PLATFORM</div>
-          <div className="text-sm text-gray-700">
-            {user.email} <span className="text-gray-400">·</span> <span className="font-semibold">{user.role}</span>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => void logout()}
-          className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-        >
-          Cerrar sesion
-        </button>
-      </div>
+      <div className="mito-shell">
+        <div className="mito-panel mb-6 overflow-hidden rounded-[32px] p-5 sm:p-6 md:p-7">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_380px] lg:items-stretch">
+            <div className="space-y-4">
+              <div>
+                <div className="mito-eyebrow">CINE AI PLATFORM</div>
+                <h1 className="mt-4 max-w-4xl text-3xl font-semibold tracking-[-0.05em] text-gray-950 md:text-5xl">Panel editorial y operativo</h1>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-[#6a645b] md:text-base">
+                  Gestiona proyectos, shots, contexto semantico y seguimiento de ejecuciones desde una sola vista.
+                </p>
+              </div>
 
-      {isReadOnly ? (
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Modo lectura activo para este rol.
-        </div>
-      ) : null}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleImportProject}
+                  className="rounded-full bg-[#1f1b17] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#312a24]"
+                >
+                  Importar Proyecto
+                </button>
+                <a
+                  href="#comfy-dashboard"
+                  className="rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-gray-800 transition hover:bg-[#f6f0e7]"
+                >
+                  Ir a ComfyUI
+                </a>
+                <a
+                  href="#operations-panel"
+                  className="rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-gray-800 transition hover:bg-[#f6f0e7]"
+                >
+                  Ir a Operations
+                </a>
+              </div>
 
-      <div className={isReadOnly ? "pointer-events-none select-none opacity-70" : ""}>
-        <h1>Cine AI Platform</h1>
-        <h2>Proyectos</h2>
+              <div className="flex flex-wrap gap-3">
+                <div className="rounded-2xl border border-black/8 bg-[#f7f2ea] px-4 py-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7b7468]">Sesion</div>
+                  <div className="mt-1 text-sm font-medium text-gray-900">{user.email}</div>
+                </div>
+                <div className="rounded-2xl border border-[#d8b491] bg-[#fff5ea] px-4 py-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9b6032]">Rol</div>
+                  <div className="mt-1 text-sm font-semibold text-[#6b3f1f]">{user.role}</div>
+                </div>
+                <div className="rounded-2xl border border-black/8 bg-[#f7f2ea] px-4 py-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7b7468]">Proyectos</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900">{projects.length}</div>
+                </div>
+                <div className="rounded-2xl border border-black/8 bg-[#f7f2ea] px-4 py-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7b7468]">Shots</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900">{shots.length}</div>
+                </div>
+              </div>
+            </div>
 
-        {error ? <p>{error}</p> : null}
-        {importStatusMessage ? <p>{importStatusMessage}</p> : null}
+            <div className="relative overflow-hidden rounded-[28px] border border-black/8 bg-[linear-gradient(145deg,_#171411_0%,_#2b241e_52%,_#8e5a34_100%)] p-5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
+              <div className="absolute bottom-0 left-0 h-28 w-full bg-[linear-gradient(180deg,_transparent,_rgba(255,255,255,0.06))]" />
+              <div className="relative flex h-full flex-col justify-between gap-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60">Creative Surface</div>
+                    <div className="mt-2 text-2xl font-semibold tracking-[-0.04em]">De la idea al shot</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void logout()}
+                    className="rounded-full border border-white/15 bg-white/8 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/14"
+                  >
+                    Cerrar sesion
+                  </button>
+                </div>
 
-        {/* Modal de Importación (Misión 15C) */}
-        {importPreview && (
-          <ImportConfirmationModal
-            importPreview={importPreview}
-            onConfirm={handleConfirmImport}
-            onCancel={handleCancelImport}
-            importingStorage={importingStorage}
-          />
-        )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                    <div className="text-[11px] uppercase tracking-[0.18em] text-white/55">Scene 01</div>
+                    <div className="mt-2 text-sm font-medium text-white">Warm daylight storyboard with continuity cues.</div>
+                    <div className="mt-4 h-20 rounded-xl bg-[linear-gradient(135deg,_rgba(255,214,170,0.5),_rgba(255,255,255,0.08))]" />
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                    <div className="text-[11px] uppercase tracking-[0.18em] text-white/55">Scene 02</div>
+                    <div className="mt-2 text-sm font-medium text-white">Editorial review, retries and context in sync.</div>
+                    <div className="mt-4 h-20 rounded-xl bg-[linear-gradient(135deg,_rgba(255,255,255,0.14),_rgba(200,111,49,0.48))]" />
+                  </div>
+                </div>
 
-        {importStatusMessage && !importPreview ? (
-          <div className="mb-6 px-4 py-3 bg-green-50 text-green-700 text-sm rounded-xl border border-green-100 animate-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              {importStatusMessage}
+                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/15 px-4 py-3 text-sm">
+                  <div>
+                    <div className="text-white/55">Selected flow</div>
+                    <div className="mt-1 font-semibold text-white">Projects + Operations + Semantic Context</div>
+                  </div>
+                  <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#3a281b]">Live</div>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+
+        {isReadOnly ? (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-[#fff4df] px-4 py-3 text-sm text-amber-900 shadow-sm">
+            Modo lectura activo para este rol.
+          </div>
         ) : null}
 
-        {loadState === "loading" ? <p>Cargando datos...</p> : null}
-        {loadState === "empty" ? (
-          <ProjectEmptyState
-            onSeedDemo={handleInitializeStorage}
-            seedLoading={seedLoading}
-            onImportProject={handleImportProject}
-            importingStorage={importingStorage}
-            seedError={seedError}
-          />
-        ) : null}
+        <div className={isReadOnly ? "pointer-events-none select-none opacity-70" : ""}>
+          <section className="mito-panel-soft mb-6 rounded-[32px] p-5 sm:p-6 md:p-7">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <div className="mito-kicker">Workspace</div>
+                <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-gray-950 md:text-3xl">Proyectos</h2>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-[#6a645b]">Explora el proyecto activo, organiza personajes y selecciona un shot para editarlo en el panel lateral.</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <div className="rounded-2xl border border-black/8 bg-[#f7f2ea] px-4 py-3 text-sm text-gray-700">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7b7468]">Escenas</div>
+                  <div className="mt-1 text-lg font-semibold text-gray-900">{scenes.length}</div>
+                </div>
+                <div className="rounded-2xl border border-black/8 bg-[#f7f2ea] px-4 py-3 text-sm text-gray-700">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7b7468]">Personajes</div>
+                  <div className="mt-1 text-lg font-semibold text-gray-900">{characters.length}</div>
+                </div>
+              </div>
+            </div>
 
-        {loadState === "success" ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 360px",
-              gap: 24,
-              alignItems: "start",
-            }}
-          >
-            <div>
-              {projects.map((project) => {
-                const projectCharacters = characters.filter((character) => character.project_id === project.id);
-                const projectScenes = scenes.filter((scene) => scene.project_id === project.id);
+            {error ? <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
-                return (
-                  <ProjectCard
-                    key={`${project.id}:${project.title}`}
-                    project={project}
-                    characters={projectCharacters}
-                    scenes={projectScenes}
-                    shots={shots}
-                    selectedShotId={selectedShot ? selectedShot.id : null}
-                    onSelectShot={(s) => setSelectedShot(s)}
-                    onRenameProject={handleRenameProject}
-                    renamingProjectId={renamingProjectId}
-                    onResetStorage={handleResetStorage}
-                    resettingStorage={resettingStorage}
-                    onExportProject={handleExportProject}
-                    exportingProjectId={exportingProjectId}
-                    onImportProject={handleImportProject}
-                    importingStorage={importingStorage}
-                    onAddCharacterToProject={handleCreateCharacter}
-                    creatingCharacterProjectId={creatingCharacterProjectId}
-                    onDeleteCharacter={handleDeleteCharacter}
-                    deletingCharacterId={deletingCharacterId}
-                    onUpdateCharacter={handleUpdateCharacter}
-                    updatingCharacterId={updatingCharacterId}
-                    onAddSceneToProject={handleCreateScene}
-                    creatingSceneProjectId={creatingSceneProjectId}
-                    onDeleteScene={handleDeleteScene}
-                    deletingSceneId={deletingSceneId}
-                    onAddShotToScene={handleCreateShot}
-                    creatingShotSceneId={creatingShotSceneId}
-                    onDeleteShot={async (shotId) => {
-                      const shotToDelete = shots.find((shot) => shot.id === shotId);
-                      if (!shotToDelete) {
-                        return;
-                      }
+            {/* Modal de Importación (Misión 15C) */}
+            {importPreview && (
+              <ImportConfirmationModal
+                importPreview={importPreview}
+                onConfirm={handleConfirmImport}
+                onCancel={handleCancelImport}
+                importingStorage={importingStorage}
+              />
+            )}
 
-                      await handleDeleteShot(shotToDelete.id);
-                    }}
+            {importStatusMessage && !importPreview ? (
+              <div className="mt-5 rounded-2xl border border-green-100 bg-green-50 px-4 py-3 text-sm text-green-700 animate-in slide-in-from-top-4 duration-300">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  {importStatusMessage}
+                </div>
+              </div>
+            ) : null}
+
+            {loadState === "loading" ? <p className="mt-6 text-sm text-gray-500">Cargando datos...</p> : null}
+            {loadState === "empty" ? (
+              <ProjectEmptyState
+                onSeedDemo={handleInitializeStorage}
+                seedLoading={seedLoading}
+                onImportProject={handleImportProject}
+                importingStorage={importingStorage}
+                seedError={seedError}
+              />
+            ) : null}
+
+            {loadState === "success" ? (
+              <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+                <div>
+                  {projects.map((project) => {
+                    const projectCharacters = characters.filter((character) => character.project_id === project.id);
+                    const projectScenes = scenes.filter((scene) => scene.project_id === project.id);
+
+                    return (
+                      <ProjectCard
+                        key={`${project.id}:${project.title}`}
+                        project={project}
+                        characters={projectCharacters}
+                        scenes={projectScenes}
+                        shots={shots}
+                        selectedShotId={selectedShot ? selectedShot.id : null}
+                        onSelectShot={(s) => setSelectedShot(s)}
+                        onRenameProject={handleRenameProject}
+                        renamingProjectId={renamingProjectId}
+                        onResetStorage={handleResetStorage}
+                        resettingStorage={resettingStorage}
+                        onExportProject={handleExportProject}
+                        exportingProjectId={exportingProjectId}
+                        onImportProject={handleImportProject}
+                        importingStorage={importingStorage}
+                        onAddCharacterToProject={handleCreateCharacter}
+                        creatingCharacterProjectId={creatingCharacterProjectId}
+                        onDeleteCharacter={handleDeleteCharacter}
+                        deletingCharacterId={deletingCharacterId}
+                        onUpdateCharacter={handleUpdateCharacter}
+                        updatingCharacterId={updatingCharacterId}
+                        onAddSceneToProject={handleCreateScene}
+                        creatingSceneProjectId={creatingSceneProjectId}
+                        onDeleteScene={handleDeleteScene}
+                        deletingSceneId={deletingSceneId}
+                        onAddShotToScene={handleCreateShot}
+                        creatingShotSceneId={creatingShotSceneId}
+                        onDeleteShot={async (shotId) => {
+                          const shotToDelete = shots.find((shot) => shot.id === shotId);
+                          if (!shotToDelete) {
+                            return;
+                          }
+
+                          await handleDeleteShot(shotToDelete.id);
+                        }}
+                        deletingShot={deletingShot}
+                      />
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-6 xl:sticky xl:top-6">
+                  <ShotBuilderPanel
+                    shot={selectedShot}
+                    onUpdateShot={handleUpdateShot}
+                    onDeleteShot={() => selectedShot && handleDeleteShot(selectedShot.id)}
                     deletingShot={deletingShot}
                   />
-                );
-              })}
-            </div>
 
-            <div className="space-y-6">
-              <ShotBuilderPanel
-                shot={selectedShot}
-                onUpdateShot={handleUpdateShot}
-                onDeleteShot={() => selectedShot && handleDeleteShot(selectedShot.id)}
-                deletingShot={deletingShot}
-              />
+                  <ShotSemanticContextSummary
+                    selectedShot={selectedShot}
+                    selectedScene={selectedScene}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </section>
 
-              <ShotSemanticContextSummary
-                selectedShot={selectedShot}
-                selectedScene={selectedScene}
-              />
-            </div>
-          </div>
+        {loadState !== "loading" ? (
+          <ComfyDashboardPanel />
         ) : null}
 
-        {loadState !== "loading" ? <SequenceExecutionPanel defaultProjectId={projects[0]?.id} /> : null}
-      </div>
+        {loadState !== "loading" ? (
+          <section id="operations-panel" className="mito-panel-soft rounded-[32px] p-5 sm:p-6 md:p-7">
+            <div className="mb-5">
+                <div className="mito-kicker">Operations</div>
+                <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-gray-950 md:text-3xl">Sequence plan, render y monitoreo</h2>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-[#6a645b]">Sigue ejecuciones, alertas, webhooks y revision editorial sin salir del panel.</p>
+              </div>
+              <SequenceExecutionPanel defaultProjectId={projects[0]?.id} />
+            </section>
+          ) : null}
+        </div>
 
-      {loadState !== "loading" ? (
-        <SemanticContextPanel
-          defaultProjectId={projects[0]?.id}
-          scenes={scenes}
-          selectedShot={selectedShot}
-          isReadOnly={isReadOnly}
-        />
-      ) : null}
+        {loadState !== "loading" ? (
+          <section className="mito-panel-soft mt-6 rounded-[32px] p-5 sm:p-6 md:p-7">
+            <div className="mb-5">
+              <div className="mito-kicker">Context</div>
+              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-gray-950 md:text-3xl">Semantic Context</h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#6a645b]">Consulta, busca e ingiere contexto semantico para enriquecer escenas y shots del proyecto activo.</p>
+            </div>
+            <SemanticContextPanel
+              defaultProjectId={projects[0]?.id}
+              scenes={scenes}
+              selectedShot={selectedShot}
+              isReadOnly={isReadOnly}
+            />
+          </section>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -1,0 +1,121 @@
+import api from './client'
+
+export interface Project {
+  id: string
+  organization_id: string
+  name: string
+  description?: string
+  status: string
+  script_text?: string
+}
+
+export interface CreateProjectPayload {
+  name: string
+  description?: string
+}
+
+export interface UpdateScriptPayload {
+  script_text: string
+}
+
+export interface ProjectJob {
+  id: string
+  organization_id: string
+  project_id: string
+  job_type: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  result_data: Record<string, unknown> | null
+  error_message: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+}
+
+export const projectsApi = {
+  list: async (): Promise<{ projects: Project[] }> => {
+    const { data } = await api.get<{ projects: Project[] }>('/projects')
+    return data
+  },
+
+  create: async (payload: CreateProjectPayload): Promise<Project> => {
+    const { data } = await api.post<Project>('/projects', payload)
+    return data
+  },
+
+  get: async (projectId: string): Promise<Project> => {
+    const { data } = await api.get<Project>(`/projects/${projectId}`)
+    return data
+  },
+
+  updateScript: async (projectId: string, payload: UpdateScriptPayload): Promise<Project> => {
+    const { data } = await api.put<Project>(`/projects/${projectId}/script`, payload)
+    return data
+  },
+
+  analyze: async (projectId: string): Promise<{
+    document_id: string
+    doc_type: string
+    confidence_score: number | null
+    structured_payload: Record<string, unknown>
+  }> => {
+    const { data } = await api.post(`/projects/${projectId}/analyze`)
+    return data
+  },
+
+  storyboard: async (projectId: string): Promise<{
+    project_id: string
+    total_scenes: number
+    scenes: Array<{
+      scene_number: number
+      heading: string
+      location: string
+      time_of_day: string
+      shots: Array<{ shot_number: number; shot_type: string; description: string }>
+    }>
+  }> => {
+    const { data } = await api.post(`/projects/${projectId}/storyboard`)
+    return data
+  },
+
+  getJobs: async (projectId: string): Promise<ProjectJob[]> => {
+    const { data } = await api.get<{ jobs: ProjectJob[] }>(`/projects/${projectId}/jobs`)
+    return data.jobs
+  },
+
+  retryJob: async (projectId: string, jobId: string): Promise<ProjectJob> => {
+    const { data } = await api.post<ProjectJob>(`/projects/${projectId}/jobs/${jobId}/retry`)
+    return data
+  },
+
+  getAssets: async (projectId: string): Promise<Array<{
+    id: string; project_id: string; job_id: string | null;
+    file_name: string; file_extension: string; asset_type: string;
+    asset_source: string | null; content_ref?: string | null;
+    metadata_json?: Record<string, unknown> | null;
+    status: string; created_at: string | null;
+  }>> => {
+    const { data } = await api.get<{ assets: Array<{
+      id: string; project_id: string; job_id: string | null;
+      file_name: string; file_extension: string; asset_type: string;
+      asset_source: string | null; content_ref?: string | null;
+      metadata_json?: Record<string, unknown> | null;
+      status: string; created_at: string | null;
+    }> }>(`/projects/${projectId}/assets`)
+    return data.assets
+  },
+
+  exportJson: async (projectId: string): Promise<Blob> => {
+    const { data } = await api.get(`/projects/${projectId}/export/json`, {
+      responseType: 'blob',
+    })
+    return data
+  },
+
+  exportZip: async (projectId: string): Promise<Blob> => {
+    const { data } = await api.get(`/projects/${projectId}/export/zip`, {
+      responseType: 'blob',
+    })
+    return data
+  },
+}

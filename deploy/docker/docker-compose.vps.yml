@@ -1,0 +1,47 @@
+services:
+  backend:
+    build:
+      context: ../../src
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:////app/data/ailinkcinema_s2.db}
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 8000
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ${BACKEND_DATA_DIR:-./data/vps/backend}:/app/data
+      - ${HOST_DEMO_INGEST_PATH:-./data/vps/demo_ingest}:/data/demo_ingest:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../../src_frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    depends_on:
+      - frontend
+      - backend
+    environment:
+      CADDY_SITE: ${CADDY_SITE:-:80}
+      CADDY_EMAIL: ${CADDY_EMAIL:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.vps:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,50 @@
+# AILinkCinema - Deployment Caddyfile
+# Use this for both Home and VPS deployments
+
+{
+    auto_https disable_redirects
+}
+
+# HTTP port
+:80 {
+    encode gzip
+    
+    # Security headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+    }
+
+    # Health endpoint
+    handle /health {
+        reverse_proxy backend:8000
+    }
+
+    # API endpoints
+    handle /auth/* {
+        reverse_proxy backend:8000
+    }
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+    handle /docs {
+        reverse_proxy backend:8000
+    }
+    handle /redoc {
+        reverse_proxy backend:8000
+    }
+    handle /openapi.json {
+        reverse_proxy backend:8000
+    }
+
+    # Everything else goes to frontend
+    handle /* {
+        reverse_proxy frontend:80
+    }
+
+    # Websocket support for frontend
+    handle /ws {
+        reverse_proxy backend:8000
+    }
+}

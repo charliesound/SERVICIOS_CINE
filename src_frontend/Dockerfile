@@ -1,7 +1,10 @@
 # Build stage
-FROM node:20-alpine as build
+FROM node:20-alpine AS build
 
 WORKDIR /app
+
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
 
 # Copy package files
 COPY package*.json ./
@@ -22,7 +25,7 @@ FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Copy nginx config
-RUN echo 'server { listen 80; location / { root /usr/share/nginx/html; index index.html; try_files $uri $uri/ /index.html; } location /api/ { proxy_pass http://backend:8000; } }' > /etc/nginx/conf.d/default.conf
+COPY nginx.default.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

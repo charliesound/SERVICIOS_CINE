@@ -3100,213 +3100,287 @@ export default function SequenceExecutionPanel({ defaultProjectId }: SequenceExe
   }
 
   return (
-    <section className="mt-8 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm text-left">
-      <div className="flex flex-col gap-1 mb-6">
-        <h3 className="text-xl font-bold text-gray-900 m-0">Sequence Plan and Render</h3>
-        <p className="text-sm text-gray-500 m-0">
-          Ejecuta plan-and-render por request_id y reintenta shots individuales.
-        </p>
+    <section className="text-left">
+      <div className="overflow-hidden rounded-[30px] border border-black/8 bg-[linear-gradient(145deg,_#171411_0%,_#2a221d_48%,_#8b5732_100%)] p-6 text-white shadow-[0_24px_70px_rgba(25,22,18,0.10)]">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px] xl:items-stretch">
+          <div>
+            <div className="mito-eyebrow border-white/15 bg-white/8 text-white/80">Sequence Plan and Render</div>
+            <h3 className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-white md:text-4xl">Orquesta plan, render y revision desde un solo canvas</h3>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-white/72 md:text-base">
+              Ejecuta plan-and-render por request_id, monitoriza estados y reintenta shots individuales sin perder continuidad editorial.
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-white/55">Polling</div>
+                <div className="mt-2 text-lg font-semibold text-white">{pollingEnabled ? "Activo" : "Pausado"}</div>
+                <div className="mt-1 text-xs text-white/60">{pollingEnabled ? `${Math.round(pollingIntervalMs / 1000)}s` : "manual"}</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-white/55">Colecciones</div>
+                <div className="mt-2 text-lg font-semibold text-white">{collectionsDashboard?.total_collections ?? collections.length}</div>
+                <div className="mt-1 text-xs text-white/60">vision global</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-white/55">Notificaciones</div>
+                <div className="mt-2 text-lg font-semibold text-white">{notifications.length}</div>
+                <div className="mt-1 text-xs text-white/60">bandeja activa</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.14),_rgba(255,255,255,0.05))] p-5 backdrop-blur-sm">
+            <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative flex h-full flex-col justify-between gap-4">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/55">Creative Prompt Surface</div>
+                <div className="mt-3 rounded-2xl border border-white/10 bg-black/10 p-4">
+                  <div className="text-xs text-white/55">Style Profile</div>
+                  <div className="mt-1 text-sm font-semibold text-white">{styleProfile || "cinematic still"}</div>
+                  <div className="mt-4 h-28 rounded-2xl bg-[linear-gradient(135deg,_rgba(255,225,188,0.55),_rgba(255,255,255,0.08)),radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_34%)]" />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-black/15 p-4">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-white/55">Quick Actions</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => execution && loadExecution(execution.request_id)}
+                    disabled={!execution || refreshing}
+                    className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/16 disabled:opacity-45"
+                  >
+                    Refrescar estado
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void loadCollectionsDashboard(false)}
+                    disabled={collectionsDashboardLoading}
+                    className="rounded-full border border-white/15 bg-white px-4 py-2 text-xs font-semibold text-[#38261b] transition hover:bg-[#f7ede2] disabled:opacity-45"
+                  >
+                    Actualizar dashboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={runPlanAndRender}>
-        <div className="md:col-span-2">
-          <label className="text-xs font-semibold text-gray-600">script_text *</label>
-          <textarea
-            value={scriptText}
-            onChange={(event) => setScriptText(event.target.value)}
-            rows={5}
-            placeholder="Escribe un fragmento de guion o texto narrativo"
-            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
-        </div>
+      <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
+        <form className="rounded-[28px] border border-black/8 bg-[linear-gradient(180deg,_rgba(255,252,247,0.98),_rgba(249,244,236,0.95))] p-5 shadow-[0_18px_50px_rgba(25,22,18,0.05)] md:grid md:grid-cols-2 md:gap-4 md:p-6" onSubmit={runPlanAndRender}>
+          <div className="md:col-span-2 mb-2">
+            <div className="mito-kicker">Launch</div>
+            <h4 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Lanzar plan-and-render</h4>
+            <p className="mt-2 text-sm leading-6 text-[#6a645b]">Prepara la secuencia, ajusta continuidad y dispara el flujo desde una caja de mando más visual.</p>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-gray-600">project_id</label>
-          <input
-            type="text"
-            value={projectId}
-            onChange={(event) => setProjectId(event.target.value)}
-            placeholder="project_001"
-            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-semibold text-gray-600">sequence_id</label>
-          <input
-            type="text"
-            value={sequenceId}
-            onChange={(event) => setSequenceId(event.target.value)}
-            placeholder="seq_001"
-            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-semibold text-gray-600">style_profile</label>
-          <input
-            type="text"
-            value={styleProfile}
-            onChange={(event) => setStyleProfile(event.target.value)}
-            placeholder="cinematic still"
-            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-semibold text-gray-600">continuity_mode</label>
-          <input
-            type="text"
-            value={continuityMode}
-            onChange={(event) => setContinuityMode(event.target.value)}
-            placeholder="strict"
-            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-semibold text-gray-600">semantic prompt enrichment</label>
-          <label className="mt-2 flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={semanticPromptEnrichmentEnabled}
-              onChange={(event) => setSemanticPromptEnrichmentEnabled(event.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
+          <div className="md:col-span-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[#736b60]">script_text *</label>
+            <textarea
+              value={scriptText}
+              onChange={(event) => setScriptText(event.target.value)}
+              rows={6}
+              placeholder="Escribe un fragmento de guion o texto narrativo…"
+              className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-4 text-sm text-gray-900 outline-none transition focus-visible:border-[#c86f31] focus-visible:ring-4 focus-visible:ring-[#f3dbc8]"
             />
-            activar refuerzo semántico
-          </label>
-        </div>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-gray-600">semantic max_chars</label>
-          <input
-            type="number"
-            min={0}
-            max={2000}
-            value={semanticPromptEnrichmentMaxChars}
-            onChange={(event) => setSemanticPromptEnrichmentMaxChars(event.target.value)}
-            placeholder="400"
-            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
-        </div>
-
-        <div className="md:col-span-2 flex gap-3 mt-1">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white border border-blue-600 disabled:opacity-50"
-          >
-            {submitting ? "Ejecutando..." : "Lanzar plan-and-render"}
-          </button>
-        </div>
-      </form>
-
-      <div className="mt-6 p-4 rounded-xl border border-gray-200 bg-gray-50/50">
-        <label className="text-xs font-semibold text-gray-600">Consultar por request_id</label>
-        <div className="mt-1 flex flex-col md:flex-row gap-3">
-          <input
-            type="text"
-            value={requestIdInput}
-            onChange={(event) => setRequestIdInput(event.target.value)}
-            placeholder="request_id"
-            className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
-          <button
-            type="button"
-            disabled={refreshing}
-            onClick={() => loadExecution(requestIdInput)}
-            className="px-4 py-2 text-sm font-semibold rounded-lg bg-white text-gray-700 border border-gray-300 disabled:opacity-50"
-          >
-            {refreshing ? "Consultando..." : "Cargar ejecución"}
-          </button>
-          <button
-            type="button"
-            disabled={refreshing || !execution}
-            onClick={() => execution && loadExecution(execution.request_id)}
-            className="px-4 py-2 text-sm font-semibold rounded-lg bg-white text-gray-700 border border-gray-300 disabled:opacity-50"
-          >
-            Refrescar
-          </button>
-        </div>
-
-        <div className="mt-3 flex flex-col md:flex-row md:items-center gap-3 text-xs text-gray-600">
-          <label className="inline-flex items-center gap-2">
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[#736b60]">project_id</label>
             <input
-              type="checkbox"
-              checked={pollingEnabled}
-              onChange={(event) => setPollingEnabled(event.target.checked)}
+              type="text"
+              value={projectId}
+              onChange={(event) => setProjectId(event.target.value)}
+              placeholder="project_001…"
+              className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus-visible:border-[#c86f31] focus-visible:ring-4 focus-visible:ring-[#f3dbc8]"
             />
-            Auto refresh
-          </label>
+          </div>
 
-          <label className="inline-flex items-center gap-2">
-            intervalo (ms)
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[#736b60]">sequence_id</label>
+            <input
+              type="text"
+              value={sequenceId}
+              onChange={(event) => setSequenceId(event.target.value)}
+              placeholder="seq_001…"
+              className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus-visible:border-[#c86f31] focus-visible:ring-4 focus-visible:ring-[#f3dbc8]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[#736b60]">style_profile</label>
+            <input
+              type="text"
+              value={styleProfile}
+              onChange={(event) => setStyleProfile(event.target.value)}
+              placeholder="cinematic still…"
+              className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus-visible:border-[#c86f31] focus-visible:ring-4 focus-visible:ring-[#f3dbc8]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[#736b60]">continuity_mode</label>
+            <input
+              type="text"
+              value={continuityMode}
+              onChange={(event) => setContinuityMode(event.target.value)}
+              placeholder="strict…"
+              className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus-visible:border-[#c86f31] focus-visible:ring-4 focus-visible:ring-[#f3dbc8]"
+            />
+          </div>
+
+          <div className="rounded-2xl border border-black/8 bg-[#f8f2e9] px-4 py-4">
+            <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[#736b60]">semantic prompt enrichment</label>
+            <label className="mt-3 flex items-center gap-3 text-sm text-gray-800">
+              <input
+                type="checkbox"
+                checked={semanticPromptEnrichmentEnabled}
+                onChange={(event) => setSemanticPromptEnrichmentEnabled(event.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              activar refuerzo semántico
+            </label>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[#736b60]">semantic max_chars</label>
             <input
               type="number"
-              min={1000}
-              step={500}
-              value={pollingIntervalMs}
-              disabled={!pollingEnabled}
-              onChange={(event) => {
-                const parsed = Number(event.target.value);
-                if (!Number.isFinite(parsed)) {
-                  return;
-                }
-                setPollingIntervalMs(Math.max(1000, Math.trunc(parsed)));
-              }}
-              className="w-24 px-2 py-1 rounded border border-gray-300 bg-white disabled:bg-gray-100"
+              min={0}
+              max={2000}
+              value={semanticPromptEnrichmentMaxChars}
+              onChange={(event) => setSemanticPromptEnrichmentMaxChars(event.target.value)}
+              placeholder="400…"
+              className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus-visible:border-[#c86f31] focus-visible:ring-4 focus-visible:ring-[#f3dbc8]"
             />
-          </label>
+          </div>
 
-          <span
-            className="inline-flex items-center gap-2 px-2 py-1 rounded-md border"
-            style={
-              pollingEnabled && hasActiveJobs
-                ? pollingInFlight
-                  ? getStatusStyle("running")
-                  : getStatusStyle("queued")
-                : getStatusStyle("succeeded")
-            }
-          >
-            <span
-              className="inline-block w-2 h-2 rounded-full"
-              style={{
-                backgroundColor:
+          <div className="md:col-span-2 mt-1 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-full bg-[#1f1b17] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#312923] disabled:opacity-50"
+            >
+              {submitting ? "Ejecutando…" : "Lanzar plan-and-render"}
+            </button>
+          </div>
+        </form>
+
+        <div className="rounded-[28px] border border-black/8 bg-[linear-gradient(180deg,_rgba(255,252,247,0.98),_rgba(249,244,236,0.95))] p-5 shadow-[0_18px_50px_rgba(25,22,18,0.05)] md:p-6">
+          <div className="mito-kicker">Lookup</div>
+          <h4 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Consultar por request_id</h4>
+          <p className="mt-2 text-sm leading-6 text-[#6a645b]">Carga una ejecución concreta y deja el auto-refresh listo para seguir el progreso.</p>
+
+          <div className="mt-5 space-y-3">
+            <input
+              type="text"
+              value={requestIdInput}
+              onChange={(event) => setRequestIdInput(event.target.value)}
+              placeholder="request_id…"
+              className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus-visible:border-[#c86f31] focus-visible:ring-4 focus-visible:ring-[#f3dbc8]"
+            />
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={refreshing}
+                onClick={() => loadExecution(requestIdInput)}
+                className="rounded-full bg-[#1f1b17] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#312923] disabled:opacity-50"
+              >
+                {refreshing ? "Consultando…" : "Cargar ejecución"}
+              </button>
+              <button
+                type="button"
+                disabled={refreshing || !execution}
+                onClick={() => execution && loadExecution(execution.request_id)}
+                className="rounded-full border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-gray-800 transition hover:bg-[#f6f0e7] disabled:opacity-50"
+              >
+                Refrescar
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-black/8 bg-[#f8f2e9] p-4 text-sm text-gray-700">
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={pollingEnabled}
+                  onChange={(event) => setPollingEnabled(event.target.checked)}
+                />
+                Auto refresh
+              </label>
+
+              <label className="mt-3 flex items-center gap-3 text-sm text-gray-700">
+                <span>intervalo (ms)</span>
+                <input
+                  type="number"
+                  min={1000}
+                  step={500}
+                  value={pollingIntervalMs}
+                  disabled={!pollingEnabled}
+                  onChange={(event) => {
+                    const parsed = Number(event.target.value);
+                    if (!Number.isFinite(parsed)) {
+                      return;
+                    }
+                    setPollingIntervalMs(Math.max(1000, Math.trunc(parsed)));
+                  }}
+                  className="w-28 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm disabled:bg-gray-100"
+                />
+              </label>
+
+              <span
+                className="mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold"
+                style={
                   pollingEnabled && hasActiveJobs
                     ? pollingInFlight
-                      ? "#92400e"
-                      : "#1d4ed8"
-                    : "#166534",
-              }}
-            />
-            {pollingEnabled && hasActiveJobs
-              ? pollingInFlight
-                ? "Auto refresh consultando..."
-                : `Auto refresh activo cada ${Math.round(pollingIntervalMs / 1000)}s`
-              : pollingEnabled
-                ? "Auto refresh en espera (sin jobs activos)"
-                : "Auto refresh desactivado"}
-          </span>
+                      ? getStatusStyle("running")
+                      : getStatusStyle("queued")
+                    : getStatusStyle("succeeded")
+                }
+              >
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{
+                    backgroundColor:
+                      pollingEnabled && hasActiveJobs
+                        ? pollingInFlight
+                          ? "#92400e"
+                          : "#1d4ed8"
+                        : "#166534",
+                  }}
+                />
+                {pollingEnabled && hasActiveJobs
+                  ? pollingInFlight
+                    ? "Auto refresh consultando…"
+                    : `Auto refresh activo cada ${Math.round(pollingIntervalMs / 1000)}s`
+                  : pollingEnabled
+                    ? "Auto refresh en espera (sin jobs activos)"
+                    : "Auto refresh desactivado"}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 p-4 rounded-xl border border-gray-200 bg-white">
-        <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="mt-6 rounded-[28px] border border-black/8 bg-[linear-gradient(180deg,_rgba(255,252,247,0.98),_rgba(249,244,236,0.95))] p-5 shadow-[0_18px_50px_rgba(25,22,18,0.05)] md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-xs font-semibold text-gray-600">Dashboard global de colecciones</div>
-            <div className="text-xs text-gray-500">
-              Vista agregada del estado editorial y operativo de todas las colecciones.
-            </div>
+            <div className="mito-kicker">Dashboard</div>
+            <h4 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Dashboard global de colecciones</h4>
+            <p className="mt-2 text-sm leading-6 text-[#6a645b]">Vista agregada del estado editorial y operativo de todas las colecciones.</p>
           </div>
           <button
             type="button"
             disabled={collectionsDashboardLoading}
             onClick={() => void loadCollectionsDashboard(false)}
-            className="px-3 py-1 text-xs font-semibold rounded border border-gray-300 bg-white text-gray-700 disabled:opacity-50"
+            className="rounded-full border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-gray-800 transition hover:bg-[#f6f0e7] disabled:opacity-50"
           >
-            {collectionsDashboardLoading ? "Actualizando dashboard..." : "Actualizar dashboard"}
+            {collectionsDashboardLoading ? "Actualizando dashboard…" : "Actualizar dashboard"}
           </button>
         </div>
+
+        <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-4">
 
         {collectionsDashboardError ? (
           <div className="mt-3 px-2 py-2 rounded border border-red-200 bg-red-50 text-[11px] text-red-700">{collectionsDashboardError}</div>
@@ -3463,6 +3537,7 @@ export default function SequenceExecutionPanel({ defaultProjectId }: SequenceExe
             ) : null}
           </div>
         ) : null}
+        </div>
       </div>
 
       <div className="mt-4 p-4 rounded-xl border border-gray-200 bg-white">

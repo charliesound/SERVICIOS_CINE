@@ -169,22 +169,29 @@ export default function ProjectCard({
   const btnDanger = "bg-white text-red-600 border border-red-100 hover:bg-red-50 hover:text-red-700";
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-6 mb-6 shadow-sm hover:shadow-md transition-all">
-      <div className="flex flex-col gap-1 mb-2">
-        <h3 className="text-xl font-bold text-gray-900 tracking-tight m-0">{project.title}</h3>
-        {project.description && <p className="text-gray-500 text-sm mt-1">{project.description}</p>}
-        <code className="text-[10px] text-gray-400 font-mono tracking-widest uppercase mt-1">ID: {project.id}</code>
+    <div className="mb-6 rounded-[28px] border border-black/8 bg-[linear-gradient(180deg,_rgba(255,252,247,0.98),_rgba(249,244,236,0.95))] p-6 shadow-[0_18px_40px_rgba(25,22,18,0.05)] transition-all hover:-translate-y-0.5 hover:shadow-[0_22px_46px_rgba(25,22,18,0.08)]">
+      <div className="mb-4 flex flex-col gap-2 border-b border-black/6 pb-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="m-0 text-2xl font-semibold tracking-[-0.04em] text-gray-950">{project.title}</h3>
+            {project.description && <p className="mt-2 text-sm leading-6 text-[#6a645b]">{project.description}</p>}
+          </div>
+          <div className="rounded-full border border-[#d8b491] bg-[#fff4e7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a552d]">
+            Proyecto activo
+          </div>
+        </div>
+        <code className="w-fit text-[10px] text-[#7b7468] font-mono tracking-widest uppercase mt-1">ID: {project.id}</code>
       </div>
 
-      <div className="flex gap-4 mb-4">
-        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
-          <span className="font-bold text-gray-700">{scenes.length}</span> Escenas
+      <div className="mb-4 flex flex-wrap gap-3">
+        <div className="flex items-center gap-1.5 rounded-xl border border-black/8 bg-[#f7f2ea] px-3 py-2 text-[11px] text-[#6a645b]">
+          <span className="font-bold text-gray-900">{scenes.length}</span> Escenas
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
-          <span className="font-bold text-gray-700">{shots.length}</span> Planos
+        <div className="flex items-center gap-1.5 rounded-xl border border-black/8 bg-[#f7f2ea] px-3 py-2 text-[11px] text-[#6a645b]">
+          <span className="font-bold text-gray-900">{shots.length}</span> Planos
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
-          <span className="font-bold text-gray-700">{characters.length}</span> Personajes
+        <div className="flex items-center gap-1.5 rounded-xl border border-black/8 bg-[#f7f2ea] px-3 py-2 text-[11px] text-[#6a645b]">
+          <span className="font-bold text-gray-900">{characters.length}</span> Personajes
         </div>
       </div>
 

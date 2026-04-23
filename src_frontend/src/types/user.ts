@@ -22,6 +22,17 @@ export interface UserPlanStatus {
   can_submit_active: boolean
   can_submit_queued: boolean
   priority_score: number
+  projects_count: number
+  jobs_count: number
+  analyses_count: number
+  storyboards_count: number
+  max_projects: number
+  max_total_jobs: number
+  max_analyses: number
+  max_storyboards: number
+  export_json: boolean
+  export_zip: boolean
+  recommended_upgrade?: string | null
 }
 
 export interface PlanInfo {
@@ -34,6 +45,12 @@ export interface PlanInfo {
     max_active_jobs: number
     max_queued_jobs: number
     priority_score: number
+    max_projects: number
+    max_total_jobs: number
+    max_analyses: number
+    max_storyboards: number
+    export_json: boolean
+    export_zip: boolean
     allowed_task_types: string[]
   }
   features: string[]

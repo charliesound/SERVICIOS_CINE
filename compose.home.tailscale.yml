@@ -1,0 +1,43 @@
+services:
+  tailscale:
+    image: tailscale/tailscale:stable
+    container_name: ailinkcinema_tailscale
+    hostname: ${TS_HOSTNAME:-ailinkcinema-home-demo}
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: ${TS_USERSPACE:-false}
+      TS_ACCEPT_DNS: ${TS_ACCEPT_DNS:-false}
+      TS_EXTRA_ARGS: ${TS_EXTRA_ARGS:-}
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+    networks:
+      - public_net
+
+  reverse-proxy-tailscale:
+    image: caddy:2-alpine
+    container_name: ailinkcinema_reverse_proxy_tailscale
+    network_mode: service:tailscale
+    depends_on:
+      tailscale:
+        condition: service_started
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    volumes:
+      - ./Caddyfile.deploy:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy_tailscale_data:/data
+    restart: unless-stopped
+
+volumes:
+  tailscale_state:
+    name: ailinkcinema_tailscale_state
+  caddy_tailscale_data:
+    name: ailinkcinema_caddy_tailscale_data

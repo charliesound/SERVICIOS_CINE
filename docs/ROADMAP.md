@@ -1,4 +1,8 @@
-# Roadmap SERVICIOS_CINE
+# Roadmap SERVICIOS_CINE (DEPRECATED)
+> [!CAUTION]
+> This document is **DEPRECATED**. It does not reflect the current SEED/FLOW/IMPACT architecture.
+> Please refer to: [MASTER_TECHNICAL_ROADMAP.md](file:///wsl.localhost/Ubuntu/opt/SERVICIOS_CINE/docs/MASTER_TECHNICAL_ROADMAP.md) for the official development path.
+
 
 ## Fase 0: Auditoria e Integracion
 

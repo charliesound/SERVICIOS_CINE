@@ -1,8 +1,12 @@
 from typing import AsyncGenerator
 
+import uuid
+import json
+
 from sqlalchemy import event, inspect, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.pool import NullPool
 
 from config import get_database_settings
 from services.producer_catalog import DEMO_OPPORTUNITIES, parse_catalog_deadline
@@ -45,12 +49,17 @@ IS_SQLITE = is_sqlite_url(DATABASE_URL)
 RUNTIME_SCHEMA_SYNC = bool(DATABASE_SETTINGS.get("runtime_schema_sync", True))
 SQLITE_LEGACY_BOOTSTRAP = bool(DATABASE_SETTINGS.get("sqlite_legacy_bootstrap", True))
 
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,
-    future=True,
-    connect_args={"check_same_thread": False, "timeout": 30} if IS_SQLITE else {},
-)
+engine_kwargs = {
+    "echo": False,
+    "future": True,
+}
+if IS_SQLITE:
+    engine_kwargs["connect_args"] = {"check_same_thread": False, "timeout": 60}
+    engine_kwargs["poolclass"] = NullPool
+else:
+    engine_kwargs["pool_pre_ping"] = True
+
+engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 
 
 if IS_SQLITE:
@@ -60,6 +69,9 @@ if IS_SQLITE:
         del connection_record
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA busy_timeout=60000")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
         cursor.close()
 
 
@@ -77,31 +89,31 @@ async def _bootstrap_sqlite_schema(conn) -> None:
             "ALTER TABLE saved_opportunities ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
         )
 
-    demo_request_columns = await _get_sqlite_columns(conn, "producer_demo_requests")
+    demo_request_columns = await _get_sqlite_columns(conn, "demo_request_records")
     if "source" not in demo_request_columns:
         await conn.exec_driver_sql(
-            "ALTER TABLE producer_demo_requests ADD COLUMN source VARCHAR(100) DEFAULT 'website'"
+            "ALTER TABLE demo_request_records ADD COLUMN source VARCHAR(100) DEFAULT 'website'"
         )
     if "status" not in demo_request_columns:
         await conn.exec_driver_sql(
-            "ALTER TABLE producer_demo_requests ADD COLUMN status VARCHAR(50) DEFAULT 'new'"
+            "ALTER TABLE demo_request_records ADD COLUMN status VARCHAR(50) DEFAULT 'new'"
         )
     if "created_at" not in demo_request_columns:
         await conn.exec_driver_sql(
-            "ALTER TABLE producer_demo_requests ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+            "ALTER TABLE demo_request_records ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
         )
 
     await conn.exec_driver_sql(
-        "CREATE INDEX IF NOT EXISTS ix_saved_opportunities_created_at ON saved_opportunities(created_at)"
+        "CREATE INDEX IF NOT EXISTS ix_demo_request_records_created_at ON demo_request_records(created_at)"
     )
     await conn.exec_driver_sql(
-        "CREATE INDEX IF NOT EXISTS ix_producer_demo_requests_created_at ON producer_demo_requests(created_at)"
-    )
-    await conn.exec_driver_sql(
-        "CREATE INDEX IF NOT EXISTS ix_producer_demo_requests_status_created_at ON producer_demo_requests(status, created_at)"
+        "CREATE INDEX IF NOT EXISTS ix_demo_request_records_status_created_at ON demo_request_records(status, created_at)"
     )
 
+    await _bootstrap_core_schema(conn)
+    await _bootstrap_account_schema(conn)
     await _bootstrap_review_delivery_schema(conn)
+    await _bootstrap_ingest_document_schema(conn)
 
 
 async def _get_sqlite_columns(conn, table_name: str) -> list[str]:
@@ -255,6 +267,183 @@ async def _bootstrap_review_delivery_schema(conn) -> None:
         )
 
 
+async def _bootstrap_core_schema(conn) -> None:
+    organization_columns = await _get_sqlite_columns(conn, "organizations")
+    if "is_active" not in organization_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE organizations ADD COLUMN is_active BOOLEAN DEFAULT 1"
+        )
+    if "created_at" not in organization_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE organizations ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        )
+    await conn.exec_driver_sql(
+        "UPDATE organizations SET is_active = COALESCE(is_active, 1)"
+    )
+    await conn.exec_driver_sql(
+        "UPDATE organizations SET created_at = COALESCE(created_at, CURRENT_TIMESTAMP) WHERE created_at IS NULL"
+    )
+
+    project_columns = await _get_sqlite_columns(conn, "projects")
+    if "status" not in project_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE projects ADD COLUMN status VARCHAR(50) DEFAULT 'active'"
+        )
+    if "script_text" not in project_columns:
+        await conn.exec_driver_sql("ALTER TABLE projects ADD COLUMN script_text TEXT")
+    if "created_at" not in project_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE projects ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        )
+    await conn.exec_driver_sql(
+        "UPDATE projects SET status = COALESCE(NULLIF(trim(status), ''), 'active')"
+    )
+    await conn.exec_driver_sql(
+        "UPDATE projects SET created_at = COALESCE(created_at, CURRENT_TIMESTAMP) WHERE created_at IS NULL"
+    )
+
+    user_columns = await _get_sqlite_columns(conn, "users")
+    if "full_name" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN full_name VARCHAR(255)"
+        )
+    if "role" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN role VARCHAR(8) DEFAULT 'user'"
+        )
+    if "is_active" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1"
+        )
+    if "created_at" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        )
+    await conn.exec_driver_sql(
+        "UPDATE users SET role = COALESCE(NULLIF(trim(role), ''), 'user')"
+    )
+    await conn.exec_driver_sql("UPDATE users SET is_active = COALESCE(is_active, 1)")
+    await conn.exec_driver_sql(
+        "UPDATE users SET created_at = COALESCE(created_at, CURRENT_TIMESTAMP) WHERE created_at IS NULL"
+    )
+
+    project_job_columns = await _get_sqlite_columns(conn, "project_jobs")
+    if "status" not in project_job_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE project_jobs ADD COLUMN status VARCHAR(20) DEFAULT 'pending'"
+        )
+    if "result_data" not in project_job_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE project_jobs ADD COLUMN result_data TEXT"
+        )
+    if "error_message" not in project_job_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE project_jobs ADD COLUMN error_message VARCHAR(2000)"
+        )
+    if "created_by" not in project_job_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE project_jobs ADD COLUMN created_by VARCHAR(36)"
+        )
+    if "updated_at" not in project_job_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE project_jobs ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        )
+    if "completed_at" not in project_job_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE project_jobs ADD COLUMN completed_at DATETIME"
+        )
+    await conn.exec_driver_sql(
+        "UPDATE project_jobs SET status = COALESCE(NULLIF(trim(status), ''), 'pending')"
+    )
+    await conn.exec_driver_sql(
+        "UPDATE project_jobs SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL"
+    )
+
+
+async def _bootstrap_account_schema(conn) -> None:
+    organization_columns = await _get_sqlite_columns(conn, "organizations")
+    if "billing_plan" not in organization_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE organizations ADD COLUMN billing_plan VARCHAR(50) DEFAULT 'free'"
+        )
+    await conn.exec_driver_sql(
+        "UPDATE organizations SET billing_plan = COALESCE(NULLIF(trim(billing_plan), ''), 'free')"
+    )
+
+    user_columns = await _get_sqlite_columns(conn, "users")
+    if "username" not in user_columns:
+        await conn.exec_driver_sql("ALTER TABLE users ADD COLUMN username VARCHAR(100)")
+    if "billing_plan" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN billing_plan VARCHAR(50) DEFAULT 'free'"
+        )
+    if "program" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN program VARCHAR(50) DEFAULT 'demo'"
+        )
+    if "signup_type" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN signup_type VARCHAR(50) DEFAULT 'cid_user'"
+        )
+    if "account_status" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN account_status VARCHAR(50) DEFAULT 'active'"
+        )
+    if "access_level" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN access_level VARCHAR(50) DEFAULT 'standard'"
+        )
+    if "cid_enabled" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN cid_enabled BOOLEAN DEFAULT 1"
+        )
+    if "onboarding_completed" not in user_columns:
+        await conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN DEFAULT 0"
+        )
+    if "company" not in user_columns:
+        await conn.exec_driver_sql("ALTER TABLE users ADD COLUMN company VARCHAR(255)")
+    if "country" not in user_columns:
+        await conn.exec_driver_sql("ALTER TABLE users ADD COLUMN country VARCHAR(100)")
+
+    await conn.exec_driver_sql(
+        "UPDATE users SET username = COALESCE(NULLIF(trim(username), ''), NULLIF(trim(full_name), ''), substr(email, 1, instr(email, '@') - 1), 'user')"
+    )
+    await conn.exec_driver_sql(
+        "UPDATE users SET billing_plan = COALESCE(NULLIF(trim(billing_plan), ''), 'free')"
+    )
+    await conn.exec_driver_sql(
+        "UPDATE users SET program = COALESCE(NULLIF(trim(program), ''), 'demo')"
+    )
+    await conn.exec_driver_sql(
+        "UPDATE users SET signup_type = COALESCE(NULLIF(trim(signup_type), ''), 'cid_user')"
+    )
+    await conn.exec_driver_sql(
+        "UPDATE users SET account_status = COALESCE(NULLIF(trim(account_status), ''), 'active')"
+    )
+    await conn.exec_driver_sql(
+        "UPDATE users SET access_level = COALESCE(NULLIF(trim(access_level), ''), 'standard')"
+    )
+    await conn.exec_driver_sql(
+        "UPDATE users SET cid_enabled = COALESCE(cid_enabled, 1)"
+    )
+    await conn.exec_driver_sql(
+        "UPDATE users SET onboarding_completed = COALESCE(onboarding_completed, 0)"
+    )
+
+
+async def _bootstrap_ingest_document_schema(conn) -> None:
+    if await _has_table(conn, "ingest_events"):
+        ingest_event_columns = await _get_sqlite_columns(conn, "ingest_events")
+        if "document_asset_id" not in ingest_event_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE ingest_events ADD COLUMN document_asset_id VARCHAR(36)"
+            )
+        await conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_ingest_events_document_asset_id ON ingest_events(document_asset_id)"
+        )
+
+
 async def _seed_funding_catalog() -> None:
     from models.producer import FundingOpportunity
 
@@ -275,11 +464,14 @@ async def _seed_funding_catalog() -> None:
                     description=opportunity.get("description"),
                     amount_range=opportunity.get("amount_range"),
                     deadline=parse_catalog_deadline(opportunity.get("deadline")),
-                    metadata_json={
-                        "source_id": opportunity.get("source_id"),
-                        "eligibility": opportunity.get("eligibility", []),
-                        "tags": opportunity.get("tags", []),
-                    },
+                    metadata_json=json.dumps(
+                        {
+                            "source_id": opportunity.get("source_id"),
+                            "eligibility": opportunity.get("eligibility", []),
+                            "tags": opportunity.get("tags", []),
+                        },
+                        ensure_ascii=False,
+                    ),
                 )
             )
 
@@ -320,6 +512,22 @@ async def init_db():
         SavedOpportunity,
     )
     from models.visual import Shot, VisualAsset
+    from models.document import (
+        DocumentAsset,
+        DocumentClassification,
+        DocumentExtraction,
+        DocumentLink,
+        DocumentStructuredData,
+    )
+    from models.report import CameraReport, DirectorNote, ScriptNote, SoundReport
+    from models.storage import (
+        IngestEvent,
+        IngestScan,
+        MediaAsset,
+        StorageAuthorization,
+        StorageSource,
+        StorageWatchPath,
+    )
 
     del (
         Organization,
@@ -341,6 +549,21 @@ async def init_db():
         SavedOpportunity,
         Shot,
         VisualAsset,
+        DocumentAsset,
+        DocumentClassification,
+        DocumentExtraction,
+        DocumentLink,
+        DocumentStructuredData,
+        CameraReport,
+        DirectorNote,
+        ScriptNote,
+        SoundReport,
+        IngestEvent,
+        IngestScan,
+        MediaAsset,
+        StorageAuthorization,
+        StorageSource,
+        StorageWatchPath,
     )
 
     use_alembic = os.getenv("USE_ALEMBIC", "").lower() in ("1", "true", "yes")

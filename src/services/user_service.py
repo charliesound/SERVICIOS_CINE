@@ -24,8 +24,18 @@ class User:
     hashed_password: str
     plan: str = "free"
     role: str = "user"
+    organization_id: Optional[str] = None
     created_at: datetime = field(default_factory=datetime.utcnow)
     is_active: bool = True
+    program: str = "demo"
+    signup_type: str = "cid_user"
+    account_status: str = "active"
+    access_level: str = "standard"
+    cid_enabled: bool = True
+    onboarding_completed: bool = False
+    full_name: Optional[str] = None
+    company: Optional[str] = None
+    country: Optional[str] = None
 
 
 class UserStore:
@@ -37,14 +47,22 @@ class UserStore:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def create_user(self, username: str, email: str, password: str, plan: str = "free") -> User:
+    def create_user(
+        self,
+        username: str,
+        email: str,
+        password: str,
+        plan: str = "free",
+        organization_id: Optional[str] = None,
+    ) -> User:
         user_id = str(uuid.uuid4())[:8]
         user = User(
             user_id=user_id,
             username=username,
             email=email,
             hashed_password=password,
-            plan=plan
+            plan=plan,
+            organization_id=organization_id,
         )
         self._users[user_id] = user
         return user

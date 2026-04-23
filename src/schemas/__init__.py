@@ -4,3 +4,5 @@ from .job_schema import *
 from .queue_schema import *
 from .workflow_schema import *
 from .plan_schema import *
+from .review_schema import *
+from .delivery_schema import *

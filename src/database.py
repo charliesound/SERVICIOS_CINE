@@ -444,6 +444,168 @@ async def _bootstrap_ingest_document_schema(conn) -> None:
         )
 
 
+async def _bootstrap_funding_catalog_schema(conn) -> None:
+    if await _has_table(conn, "funding_sources"):
+        funding_source_columns = await _get_sqlite_columns(conn, "funding_sources")
+        if "agency_name" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN agency_name VARCHAR(255)"
+            )
+        if "description" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN description TEXT"
+            )
+        if "region_scope" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN region_scope VARCHAR(32) DEFAULT 'spain'"
+            )
+        if "country_or_program" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN country_or_program VARCHAR(100)"
+            )
+        if "source_type" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN source_type VARCHAR(30) DEFAULT 'institutional'"
+            )
+        if "verification_status" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN verification_status VARCHAR(20) DEFAULT 'official'"
+            )
+        if "updated_at" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+            )
+        await conn.exec_driver_sql(
+            "UPDATE funding_sources SET region_scope = COALESCE(region_scope, region, 'spain')"
+        )
+        await conn.exec_driver_sql(
+            "UPDATE funding_sources SET country_or_program = COALESCE(country_or_program, territory, name)"
+        )
+        await conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_funding_source_code ON funding_sources(code)"
+        )
+
+    if await _has_table(conn, "funding_calls"):
+        funding_call_columns = await _get_sqlite_columns(conn, "funding_calls")
+        for statement in (
+            ("region_scope", "ALTER TABLE funding_calls ADD COLUMN region_scope VARCHAR(32) DEFAULT 'spain'"),
+            ("country_or_program", "ALTER TABLE funding_calls ADD COLUMN country_or_program VARCHAR(100) DEFAULT 'Espana'"),
+            ("agency_name", "ALTER TABLE funding_calls ADD COLUMN agency_name VARCHAR(255) DEFAULT ''"),
+            ("open_date", "ALTER TABLE funding_calls ADD COLUMN open_date DATETIME"),
+            ("close_date", "ALTER TABLE funding_calls ADD COLUMN close_date DATETIME"),
+            ("max_award_per_project", "ALTER TABLE funding_calls ADD COLUMN max_award_per_project FLOAT"),
+            ("total_budget_pool", "ALTER TABLE funding_calls ADD COLUMN total_budget_pool FLOAT"),
+            ("currency", "ALTER TABLE funding_calls ADD COLUMN currency VARCHAR(3) DEFAULT 'EUR'"),
+            ("eligibility_json", "ALTER TABLE funding_calls ADD COLUMN eligibility_json TEXT"),
+            ("requirements_json", "ALTER TABLE funding_calls ADD COLUMN requirements_json TEXT"),
+            ("collaboration_rules_json", "ALTER TABLE funding_calls ADD COLUMN collaboration_rules_json TEXT"),
+            ("point_system_json", "ALTER TABLE funding_calls ADD COLUMN point_system_json TEXT"),
+            ("eligible_formats_json", "ALTER TABLE funding_calls ADD COLUMN eligible_formats_json TEXT"),
+            ("notes_json", "ALTER TABLE funding_calls ADD COLUMN notes_json TEXT"),
+            ("created_at", "ALTER TABLE funding_calls ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"),
+            ("updated_at", "ALTER TABLE funding_calls ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP"),
+        ):
+            if statement[0] not in funding_call_columns:
+                await conn.exec_driver_sql(statement[1])
+        await conn.exec_driver_sql(
+            "UPDATE funding_calls SET region_scope = COALESCE(region_scope, region, 'spain')"
+        )
+        await conn.exec_driver_sql(
+            "UPDATE funding_calls SET country_or_program = COALESCE(country_or_program, territory, 'Espana')"
+        )
+        await conn.exec_driver_sql(
+            "UPDATE funding_calls SET close_date = COALESCE(close_date, deadline)"
+        )
+        await conn.exec_driver_sql(
+            "UPDATE funding_calls SET currency = COALESCE(currency, 'EUR')"
+        )
+        await conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_funding_call_region_scope ON funding_calls(region_scope)"
+        )
+
+    if not await _has_table(conn, "funding_requirements"):
+        await conn.exec_driver_sql(
+            """
+            CREATE TABLE funding_requirements (
+                id VARCHAR(36) NOT NULL PRIMARY KEY,
+                call_id VARCHAR(36) NOT NULL,
+                category VARCHAR(50) NOT NULL DEFAULT 'general',
+                requirement_text TEXT NOT NULL,
+                is_mandatory BOOLEAN DEFAULT 1,
+                display_order INTEGER DEFAULT 0,
+                notes_json TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(call_id) REFERENCES funding_calls (id) ON DELETE CASCADE
+            )
+            """
+        )
+    await conn.exec_driver_sql(
+        "CREATE INDEX IF NOT EXISTS ix_funding_requirement_call_id ON funding_requirements(call_id)"
+    )
+    await conn.exec_driver_sql(
+        "CREATE INDEX IF NOT EXISTS ix_funding_requirement_category ON funding_requirements(category)"
+    )
+
+
+async def _bootstrap_project_funding_matcher_schema(conn) -> None:
+    if not await _has_table(conn, "project_funding_matches"):
+        await conn.exec_driver_sql(
+            """
+            CREATE TABLE project_funding_matches (
+                id VARCHAR(36) NOT NULL PRIMARY KEY,
+                project_id VARCHAR(36) NOT NULL,
+                organization_id VARCHAR(36) NOT NULL,
+                funding_call_id VARCHAR(36) NOT NULL,
+                match_score FLOAT DEFAULT 0.0,
+                baseline_score FLOAT,
+                rag_enriched_score FLOAT,
+                fit_level VARCHAR(20),
+                fit_summary TEXT,
+                blocking_reasons TEXT,
+                missing_documents TEXT,
+                recommended_actions TEXT,
+                evidence_chunks_json TEXT,
+                rag_rationale TEXT,
+                rag_missing_requirements TEXT,
+                confidence_level VARCHAR(20),
+                rag_confidence_level VARCHAR(20),
+                matcher_mode VARCHAR(30) DEFAULT 'classic',
+                evaluation_version VARCHAR(20),
+                computed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(funding_call_id) REFERENCES funding_calls (id)
+            )
+            """
+        )
+    else:
+        matcher_columns = await _get_sqlite_columns(conn, "project_funding_matches")
+        for statement in (
+            ("organization_id", "ALTER TABLE project_funding_matches ADD COLUMN organization_id VARCHAR(36) DEFAULT ''"),
+            ("baseline_score", "ALTER TABLE project_funding_matches ADD COLUMN baseline_score FLOAT"),
+            ("rag_enriched_score", "ALTER TABLE project_funding_matches ADD COLUMN rag_enriched_score FLOAT"),
+            ("fit_level", "ALTER TABLE project_funding_matches ADD COLUMN fit_level VARCHAR(20)"),
+            ("evidence_chunks_json", "ALTER TABLE project_funding_matches ADD COLUMN evidence_chunks_json TEXT"),
+            ("rag_rationale", "ALTER TABLE project_funding_matches ADD COLUMN rag_rationale TEXT"),
+            ("rag_missing_requirements", "ALTER TABLE project_funding_matches ADD COLUMN rag_missing_requirements TEXT"),
+            ("confidence_level", "ALTER TABLE project_funding_matches ADD COLUMN confidence_level VARCHAR(20)"),
+            ("rag_confidence_level", "ALTER TABLE project_funding_matches ADD COLUMN rag_confidence_level VARCHAR(20)"),
+            ("matcher_mode", "ALTER TABLE project_funding_matches ADD COLUMN matcher_mode VARCHAR(30) DEFAULT 'classic'"),
+            ("evaluation_version", "ALTER TABLE project_funding_matches ADD COLUMN evaluation_version VARCHAR(20)"),
+        ):
+            if statement[0] not in matcher_columns:
+                await conn.exec_driver_sql(statement[1])
+
+    await conn.exec_driver_sql(
+        "CREATE INDEX IF NOT EXISTS ix_match_project_id ON project_funding_matches(project_id)"
+    )
+    await conn.exec_driver_sql(
+        "CREATE INDEX IF NOT EXISTS ix_match_project_org ON project_funding_matches(project_id, organization_id)"
+    )
+    await conn.exec_driver_sql(
+        "CREATE INDEX IF NOT EXISTS ix_match_funding_call_id ON project_funding_matches(funding_call_id)"
+    )
+
+
 async def _seed_funding_catalog() -> None:
     from models.producer import FundingOpportunity
 
@@ -478,6 +640,13 @@ async def _seed_funding_catalog() -> None:
         await session.commit()
 
 
+async def _seed_institutional_funding_catalog() -> None:
+    from services.funding_ingestion_service import funding_ingestion_service
+
+    async with AsyncSessionLocal() as session:
+        await funding_ingestion_service.seed_catalog(session, force=False)
+
+
 async def _verify_database_connection() -> None:
     async with engine.connect() as conn:
         await conn.execute(text("SELECT 1"))
@@ -491,6 +660,14 @@ async def _seed_funding_catalog_if_ready() -> None:
     await _seed_funding_catalog()
 
 
+async def _seed_institutional_funding_catalog_if_ready() -> None:
+    async with engine.connect() as conn:
+        if not await _has_table(conn, "funding_sources"):
+            return
+
+    await _seed_institutional_funding_catalog()
+
+
 async def init_db():
     """Initialize the configured database.
 
@@ -500,7 +677,7 @@ async def init_db():
     - SQLite default: Legacy runtime bootstrap (for dev convenience)
     """
     import os
-    from models import Organization, Project, User
+    from models import JobHistory, Organization, Project, User
     from models.delivery import Deliverable
     from models.review import ApprovalDecision, Review, ReviewComment
     from models.narrative import Character, Scene, Sequence, scene_character_link
@@ -512,14 +689,37 @@ async def init_db():
         SavedOpportunity,
     )
     from models.visual import Shot, VisualAsset
+    from models.storyboard import StoryboardShot
     from models.document import (
+        DocumentChunk,
         DocumentAsset,
         DocumentClassification,
         DocumentExtraction,
         DocumentLink,
+        ProjectDocument,
         DocumentStructuredData,
     )
+    from models.integration import (
+        ExternalDocumentSyncState,
+        IntegrationConnection,
+        IntegrationToken,
+        ProjectExternalFolderLink,
+    )
     from models.report import CameraReport, DirectorNote, ScriptNote, SoundReport
+    from models.production import (
+        BudgetLine,
+        BudgetScenario,
+        DepartmentLineItem,
+        FundingCall,
+        FundingRequirement,
+        FundingSource,
+        PrivateFundingSource,
+        PrivateOpportunity,
+        ProductionBreakdown,
+        ProjectBudget,
+        ProjectFundingMatch,
+        ProjectFundingSource,
+    )
     from models.storage import (
         IngestEvent,
         IngestScan,
@@ -530,6 +730,7 @@ async def init_db():
     )
 
     del (
+        JobHistory,
         Organization,
         Project,
         User,
@@ -549,15 +750,34 @@ async def init_db():
         SavedOpportunity,
         Shot,
         VisualAsset,
+        StoryboardShot,
+        DocumentChunk,
         DocumentAsset,
         DocumentClassification,
         DocumentExtraction,
         DocumentLink,
+        ProjectDocument,
         DocumentStructuredData,
+        ExternalDocumentSyncState,
+        IntegrationConnection,
+        IntegrationToken,
+        ProjectExternalFolderLink,
         CameraReport,
         DirectorNote,
         ScriptNote,
         SoundReport,
+        BudgetLine,
+        BudgetScenario,
+        DepartmentLineItem,
+        FundingCall,
+        FundingRequirement,
+        FundingSource,
+        PrivateFundingSource,
+        PrivateOpportunity,
+        ProductionBreakdown,
+        ProjectBudget,
+        ProjectFundingMatch,
+        ProjectFundingSource,
         IngestEvent,
         IngestScan,
         MediaAsset,
@@ -566,12 +786,14 @@ async def init_db():
         StorageWatchPath,
     )
 
-    use_alembic = os.getenv("USE_ALEMBIC", "").lower() in ("1", "true", "yes")
+    use_alembic_env = os.getenv("USE_ALEMBIC", "").lower() in ("1", "true", "yes")
+    use_alembic_config = DATABASE_SETTINGS.get("use_alembic", False)
     is_postgresql = not IS_SQLITE
 
-    if is_postgresql or use_alembic:
+    if is_postgresql or use_alembic_env or use_alembic_config:
         await _verify_database_connection()
         await _seed_funding_catalog_if_ready()
+        await _seed_institutional_funding_catalog_if_ready()
         return
 
     if IS_SQLITE and RUNTIME_SCHEMA_SYNC:
@@ -580,12 +802,16 @@ async def init_db():
 
             if SQLITE_LEGACY_BOOTSTRAP:
                 await _bootstrap_sqlite_schema(conn)
+                await _bootstrap_funding_catalog_schema(conn)
+                await _bootstrap_project_funding_matcher_schema(conn)
 
         await _seed_funding_catalog()
+        await _seed_institutional_funding_catalog()
         return
 
     await _verify_database_connection()
     await _seed_funding_catalog_if_ready()
+    await _seed_institutional_funding_catalog_if_ready()
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import os
 import time
 
 from config import load_config
@@ -27,10 +28,24 @@ from routes.storage_routes import router as storage_router
 from routes.ingest_routes import router as ingest_router
 from routes.document_routes import router as document_router
 from routes.report_routes import router as report_router
+from routes.presentation_routes import router as presentation_router
+from routes.shot_routes import router as shot_router
+from routes.funding_routes import router as funding_router
+from routes.funding_catalog_routes import router as funding_catalog_router
+from routes.funding_private_routes import private_source_router
+from routes.admin_funding_routes import router as admin_funding_router
+from routes.intake_routes import router as intake_router
+from routes.budget_routes import router as budget_router
+from routes.project_funding_routes import router as project_funding_router
+from routes.project_document_routes import router as project_document_router
+from routes.google_drive_routes import router as google_drive_router
 
 # Services
 from services.logging_service import logger, request_logger
 from services.metrics_service import metrics_collector
+from services.instance_registry import registry
+from services.job_scheduler import scheduler
+from services.queue_service import queue_service
 from middleware.rate_limiter import rate_limit_middleware
 from database import init_db
 
@@ -133,6 +148,17 @@ app.include_router(storage_router, tags=["storage-sources"])
 app.include_router(ingest_router, tags=["ingest"])
 app.include_router(document_router, tags=["documents"])
 app.include_router(report_router, tags=["structured-reports"])
+app.include_router(presentation_router, tags=["presentation"])
+app.include_router(shot_router, tags=["shots"])
+app.include_router(funding_router, tags=["funding"])
+app.include_router(funding_catalog_router, tags=["funding-public"])
+app.include_router(private_source_router, tags=["funding-private"])
+app.include_router(admin_funding_router, tags=["admin-funding"])
+app.include_router(intake_router, tags=["intake"])
+app.include_router(budget_router, tags=["budget"])
+app.include_router(project_funding_router, tags=["project-funding"])
+app.include_router(project_document_router, tags=["project-documents"])
+app.include_router(google_drive_router, tags=["google-drive-integrations"])
 
 if features.get("postproduction", False):
     app.include_router(postproduction_router, tags=["postproduction"])
@@ -158,6 +184,20 @@ async def startup_event():
     """Initialize database on startup."""
     await init_db()
     logger.info("Database initialized successfully")
+    instance_config_path = os.getenv("INSTANCE_CONFIG_PATH")
+    registry.load_config(instance_config_path if instance_config_path else None)
+    logger.info("Backend registry loaded")
+
+    recovery_summary = queue_service.recover_on_startup()
+    logger.info("Queue recovery summary: %s", recovery_summary)
+
+    auto_start_scheduler = os.getenv(
+        "QUEUE_AUTO_START_SCHEDULER", "1"
+    ).strip().lower() not in {"0", "false", "no", "off"}
+    if auto_start_scheduler:
+        await scheduler.start()
+    else:
+        logger.warning("Scheduler autostart disabled by QUEUE_AUTO_START_SCHEDULER")
 
     if config.get("queue", {}).get("persistence_mode", "memory").lower() == "memory":
         logger.warning(
@@ -185,6 +225,11 @@ async def startup_event():
                 logger.info(f"Narrative project auto-seeded: {result}")
         except Exception as e:
             logger.warning(f"Auto-seed failed: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await scheduler.stop()
 
 
 logger.info(

@@ -72,3 +72,19 @@
 | 2026-04-30 | Release Manager | docs/README_MASTER.md.bak | OLD/code_archive/backups/docs/README_MASTER.md.bak | Backup documental de README_MASTER generado durante limpieza | code_archive | No | Verificado que es backup documental y no afecta runtime demo |
 | 2026-04-30 | Release Manager | Caddyfile | OLD/legacy_stacks/Caddyfile | Proxy legacy no oficial; sustituido por Caddyfile.deploy en runtime demo | legacy_stacks | No | Verificado que el runtime oficial usa Caddyfile.deploy y compose.*.yml |
 | 2026-04-30 | Release Manager | docker-compose.yml | OLD/legacy_stacks/docker-compose.yml | Compose legacy no oficial; sustituido por compose.base.yml + overlays oficiales | legacy_stacks | No | Verificado que el runtime oficial usa Caddyfile.deploy y compose.*.yml |
+
+## DB snapshots relocation - 2026-04-30
+
+- Destination: `OLD/sensitive_review/db_snapshots/`
+- Retrospective manifest: `OLD/sensitive_review/db_snapshots/MANIFEST_MOVED_DBS_RETRO_20260430_215753.tsv`
+- Scope: moved/isolated `smoke_*.db` and `test_alembic.db` test databases.
+- Verification: no `smoke_*.db` or `test_alembic.db` remain outside the snapshot folder.
+
+Snapshot files:
+- `OLD/sensitive_review/db_snapshots/smoke_davinci_manual_validation.db`
+- `OLD/sensitive_review/db_snapshots/smoke_dual_system_fcpxml.db`
+- `OLD/sensitive_review/db_snapshots/smoke_dual_system_reconcile.db`
+- `OLD/sensitive_review/db_snapshots/smoke_editorial_mvp.db`
+- `OLD/sensitive_review/db_snapshots/smoke_editorial_package.db`
+- `OLD/sensitive_review/db_snapshots/smoke_fcpxml_real_paths.db`
+- `OLD/sensitive_review/db_snapshots/test_alembic.db`

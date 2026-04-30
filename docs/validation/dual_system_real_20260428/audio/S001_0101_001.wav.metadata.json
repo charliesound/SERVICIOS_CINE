@@ -1,0 +1,27 @@
+{
+  "sample_rate": 48000,
+  "channels": 2,
+  "duration_seconds": 12.0,
+  "bit_depth": 24,
+  "codec": "PCM",
+  "file_size": 1152000,
+  "bext": {
+    "description": "APARTMENT S1 T1",
+    "originator": "Sound Devices 888",
+    "originator_reference": "S001_0101_001",
+    "origination_date": "2026-04-28",
+    "origination_time": "10:00:00",
+    "time_reference_samples": 1728000
+  },
+  "ixml": {
+    "project": "APARTMENT",
+    "scene": "1",
+    "shot": "1",
+    "take": 1,
+    "tape": "S001",
+    "circled": true,
+    "note": "Interior apartment - wide",
+    "start_timecode": "01:00:00:00",
+    "fps": 24
+  }
+}

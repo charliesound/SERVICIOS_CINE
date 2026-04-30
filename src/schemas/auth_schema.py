@@ -1,16 +1,16 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 
 class UserRegister(BaseModel):
     username: str
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=6)
 
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=6)
 
 
 class TokenResponse(BaseModel):
@@ -40,7 +40,7 @@ class UserResponse(BaseModel):
 class RegisterCIDPayload(BaseModel):
     username: str
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=6)
     program: Optional[str] = "demo"
     full_name: Optional[str] = None
     company: Optional[str] = None
@@ -56,7 +56,7 @@ class RegisterDemoPayload(BaseModel):
     need: str
     project_size: Optional[str] = None
     message: Optional[str] = None
-    password: Optional[str] = None
+    password: Optional[str] = Field(default=None, min_length=6)
 
 
 class RegisterPartnerPayload(BaseModel):
@@ -65,7 +65,7 @@ class RegisterPartnerPayload(BaseModel):
     company: str
     collaboration_type: str
     message: Optional[str] = None
-    password: Optional[str] = None
+    password: Optional[str] = Field(default=None, min_length=6)
 
 
 class TenantContext(BaseModel):

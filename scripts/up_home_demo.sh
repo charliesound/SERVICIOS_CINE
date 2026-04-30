@@ -11,6 +11,11 @@ echo ""
 
 cd "${REPO_ROOT}"
 
+if [ -f .env ] && ! grep -Eq '^ENABLE_DEMO_ROUTES=1' .env; then
+    echo "WARNING: ENABLE_DEMO_ROUTES is not explicitly enabled in .env"
+    echo "         Home demo expects ENABLE_DEMO_ROUTES=1"
+fi
+
 echo "[1/4] Building images..."
 docker compose -f compose.base.yml -f compose.home.yml build
 

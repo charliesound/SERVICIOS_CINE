@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-04-28T10:00:00Z",
+  "project_id": "project-dual-system-test",
+  "assembly_id": "assembly-20260428-001",
+  "clip_count": 2,
+  "total_duration_seconds": 20.0,
+  "total_duration_frames": 480,
+  "fps": 24.0,
+  "scenes": [
+    1
+  ],
+  "shots": [
+    1,
+    2
+  ],
+  "dual_system_matched": 2,
+  "dual_system_audio_export": "partial"
+}

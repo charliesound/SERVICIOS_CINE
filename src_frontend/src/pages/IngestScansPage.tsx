@@ -40,9 +40,9 @@ export default function IngestScansPage() {
         <div>
           <h1 className="heading-lg flex items-center gap-3">
             <Search className="h-6 w-6 text-amber-400" />
-            Ingest Scans
+            Media Scans
           </h1>
-          <p className="mt-1 text-slate-400">Manual scan executions and their indexing counters.</p>
+          <p className="mt-1 text-slate-400">Escaneo de carpetas con media existente. CID lee y indexa, no mueve ni copia archivos.</p>
         </div>
 
         <div className="flex gap-3">
@@ -90,7 +90,7 @@ export default function IngestScansPage() {
           </div>
         )}
 
-        {scansQuery.isLoading && <div className="text-sm text-slate-400">Loading ingest scans...</div>}
+        {scansQuery.isLoading && <div className="text-sm text-slate-400">Loading media scans...</div>}
 
         {!scansQuery.isLoading && !scansQuery.error && (!scansQuery.data || scansQuery.data.length === 0) && (
           <div className="rounded-xl border border-dashed border-white/10 px-6 py-10 text-center text-sm text-slate-400">

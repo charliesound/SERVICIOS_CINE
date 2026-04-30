@@ -74,9 +74,9 @@ export default function DocumentsPage() {
         <div>
           <h1 className="heading-lg flex items-center gap-3">
             <FileText className="h-6 w-6 text-amber-400" />
-            Documents
+            Documentos
           </h1>
-          <p className="mt-1 text-slate-400">Register indexed files as documents and prepare them for human review.</p>
+          <p className="mt-1 text-slate-400">CID ingiere reports, script notes, camera reports y otros documentos. Se extraen, clasifican y estructuran.</p>
         </div>
         <button className="btn-secondary flex items-center gap-2" onClick={() => documentsQuery.refetch()}>
           <RefreshCw className={`h-4 w-4 ${documentsQuery.isFetching ? 'animate-spin' : ''}`} />

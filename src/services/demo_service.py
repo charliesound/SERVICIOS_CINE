@@ -434,7 +434,7 @@ class DemoService:
         )
         db_user.cid_enabled = True
         db_user.onboarding_completed = True
-        db_user.company = "AILinkCinema Demo"
+        db_user.company = self.RELEASE_DEMO_LABEL
         db_user.country = "ES"
 
     async def _seed_projects_for_org(
@@ -540,7 +540,7 @@ class DemoService:
                     in {"creator", "producer", "studio", "enterprise"}
                     else "demo"
                 )
-                user.company = "AILinkCinema Demo"
+                user.company = self.RELEASE_DEMO_LABEL
                 user.country = "ES"
 
                 await self._upsert_demo_user_in_db(
@@ -842,10 +842,9 @@ class DemoService:
             self._demo_jobs[user_id] = jobs
 
     def _hash_password(self, password: str) -> str:
-        from passlib.context import CryptContext
+        import bcrypt
 
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        return pwd_context.hash(password)
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
     async def reset_demo_data(self) -> Dict[str, Any]:
         self._demo_jobs.clear()

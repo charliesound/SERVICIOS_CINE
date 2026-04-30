@@ -1,0 +1,11 @@
+CID editorial export package
+project=DaVinci Manual Validation 9ed9f7
+assembly_cut_id=9cb59a40-f2ed-436d-8190-610f485289d7
+generated_at=2026-04-28T08:30:59.328395+00:00
+fcpxml_valid=True
+clips=3
+resolved_media=6
+offline_media=0
+
+warnings:
+- none

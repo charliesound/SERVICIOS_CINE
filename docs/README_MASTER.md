@@ -1,5 +1,25 @@
 # SERVICIOS_CINE - Documentacion Maestra
 
+## Fuente operativa para esta demo
+
+Para operar la demo oficial actual, usar como fuente principal:
+
+- `README.md`
+- `docs/DEPLOY_HOME.md`
+- `docs/DEPLOY_VPS.md`
+- `docs/RELEASE_DEMO_GUIDE.md`
+- `docs/PRODUCTION_CANDIDATE_STATUS.md`
+
+Stack oficial de esta demo:
+
+- Home: `compose.base.yml` + `compose.home.yml`
+- VPS: `compose.base.yml` + `compose.vps.yml`
+- Proxy oficial demo: `Caddyfile.deploy`
+- Frontend oficial: `src_frontend`
+- Backend oficial: `src`
+
+No forman parte del runtime oficial de esta demo: `OLD/legacy_stacks/docker-compose.yml`, `OLD/legacy_stacks/Caddyfile`, `Web Ailink_Cinema`, `CINE_AI_PLATFORM`, `CID_SERVER/automation-engine`, `automation-engine`, `n8n` y `qdrant`.
+
 ## Que es SERVICIOS_CINE?
 
 SERVICIOS_CINE es una plataforma orquestadora de servicios audiovisuales con IA, diseñada para estudios cinematográficos que necesitan:
@@ -93,8 +113,11 @@ D:\SERVICIOS_CINE
 
 ## Como Empezar
 
-- Despliegue en WSL2: `README_WSL2.md`
-- Acceso por Tailscale: `README_TAILSCALE.md`
+- Operacion demo oficial: `docs/DEPLOY_HOME.md` o `docs/DEPLOY_VPS.md`
+- Checklist release demo: `docs/RELEASE_DEMO_GUIDE.md`
+- Estado honesto: `docs/PRODUCTION_CANDIDATE_STATUS.md`
+- Despliegue en WSL2: `OLD/historical_docs/README_WSL2.md`
+- Acceso por Tailscale: `../OLD/sensitive_review/historical_docs/README_TAILSCALE.md`
 - Documentacion vigente: `docs/DOCUMENTACION_VIGENTE.md`
 
 ### 1. Backend
@@ -116,10 +139,12 @@ npm run dev
 curl -X POST http://localhost:8000/api/demo/quick-start
 ```
 
+Estas rutas manuales sirven para desarrollo local, no como arranque oficial de la demo release.
+
 ## Orden Recomendado para Trabajar
 
 1. Leer este README
-2. Revisar MAPA_DEL_SISTEMA.md
+2. Revisar ../OLD/historical_docs/MAPA_DEL_SISTEMA.md
 3. Consultar ROADMAP.md para contexto
 4. Usar sesiones en handoff/ para desarrollo
 
@@ -127,7 +152,7 @@ curl -X POST http://localhost:8000/api/demo/quick-start
 
 - Documentacion: `docs/`
 - Sesiones de desarrollo: `handoff/`
-- API Docs: http://localhost:8000/docs
+- API Docs: bloqueado en la demo oficial (`/docs` -> `404`)
 - Frontend dev: http://localhost:3000
 - Frontend principal docker: http://localhost
-- WSL2: `README_WSL2.md`
+- WSL2: `OLD/historical_docs/README_WSL2.md`

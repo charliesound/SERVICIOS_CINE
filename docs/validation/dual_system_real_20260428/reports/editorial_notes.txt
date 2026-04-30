@@ -1,0 +1,33 @@
+EDITORIAL NOTES - DUAL-SYSTEM TEST ASSEMBLY
+========================================
+Project: Apartment
+Scene: 1
+Date: 2026-04-28
+Fixture Type: synthetic-realistic
+
+CLIPS:
+------
+S1 SH1 TK1: Camera A001_0101_001.mov / Audio S001_0101_001.WAV
+  - Duration: 12.0s (288 frames @ 24fps)
+  - TC: 01:00:00:00
+  - Status: CIRCLED, BEST TAKE
+  - Sync: exact_scene_shot_take (confidence 0.98)
+
+S1 SH2 TK1: Camera A001_0102_001.mov / Audio S002_0102_001.WAV
+  - Duration: 8.0s (192 frames @ 24fps)
+  - TC: 01:00:12:00
+  - Status: CIRCLED, BEST TAKE
+  - Sync: exact_scene_shot_take (confidence 0.98)
+
+DUAL-SYSTEM AUDIO EXPORT STATUS:
+---------------------------
+Audio exported as resources with annotation notes.
+Linked audio advanced sync not yet implemented.
+See media_relink_report.json for full details.
+
+NEXT STEPS:
+----------
+1. Import conservative FCPXML into DaVinci
+2. Validate video import works
+3. Test experimental FCPXML with linked audio
+4. Decision: CONSERVATIVE ONLY vs LINKED AUDIO CANDIDATE

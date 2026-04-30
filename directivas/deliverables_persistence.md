@@ -35,6 +35,8 @@ Persistir el PDF de Presentation como deliverable tenant-segregated reutilizando
   - `mime_type`
   - `category = presentation_pdf`
   - `generated_at`
+  - `manifest_summary` con resumen headless del filmstrip
+  - `manifest_file_path` y `manifest_file_name` cuando exista sidecar JSON
 
 ## Limites MVP
 

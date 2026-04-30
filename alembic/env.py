@@ -1,96 +1,84 @@
 from __future__ import annotations
 
-import asyncio
 import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
+from dotenv import load_dotenv
 
 from alembic import context
-from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import async_engine_from_config
-
+from sqlalchemy import pool, create_engine
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-SRC_DIR = ROOT_DIR / "src"
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
+if str(ROOT_DIR / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR / "src"))
 
-from database import Base  # noqa: E402
-from models import (  # noqa: F401,E402
-    ApprovalDecision,
-    AssemblyCut,
-    Character,
-    Clip,
-    Deliverable,
-    DemoRequestRecord,
-    FundingOpportunity,
-    LeadGenEvent,
-    Organization,
-    Project,
-    Review,
-    ReviewComment,
-    SavedOpportunity,
-    Scene,
-    Sequence,
-    Shot,
-    User,
-    VisualAsset,
-    scene_character_link,
-)
-
+# Load .env file
+load_dotenv(ROOT_DIR / ".env")
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-database_url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
-config.set_main_option("sqlalchemy.url", database_url)
-target_metadata = Base.metadata
+# For Alembic, we use a synchronous SQLite URL pointing to the absolute path of the database
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    if database_url.startswith("sqlite+aiosqlite:///"):
+        # Extract the relative path (everything after sqlite+aiosqlite:///)
+        relative_path = database_url[len("sqlite+aiosqlite:///"):]
+        # Make it absolute relative to the project root (ROOT_DIR)
+        # If the relative_path is already absolute, we keep it, but note that it's relative to the current filesystem root.
+        # However, the relative_path from the URL is likely relative to the current working directory.
+        # We'll resolve it relative to ROOT_DIR to be safe.
+        if not os.path.isabs(relative_path):
+            absolute_path = (ROOT_DIR / relative_path).resolve()
+        else:
+            absolute_path = Path(relative_path).resolve()
+        # Form the SQLAlchemy SQLite URL for an absolute path: sqlite:////<absolute_path>
+        # Note: For absolute paths, we need four slashes: sqlite:////absolute/path/to/db
+        database_url = f"sqlite:////{absolute_path}"
+    # If it's already a synchronous SQLite URL, we might still need to make the path absolute.
+    elif database_url.startswith("sqlite:///"):
+        relative_path = database_url[len("sqlite:///"):]
+        if not os.path.isabs(relative_path):
+            absolute_path = (ROOT_DIR / relative_path).resolve()
+            database_url = f"sqlite:////{absolute_path}"
+        # If it's already absolute, we leave it as is (but note: the URL for absolute path should have four slashes? Actually, sqlite:///absolute/path is not correct; it should be sqlite:////absolute/path)
+        # However, if the user provided an absolute path in the URL, it might already be in the correct format.
+        # We'll assume that if it's sqlite:/// and the path is absolute, then it's missing a slash.
+        # But to keep it simple, we'll only adjust if it's not absolute.
+    # If it's not a SQLite URL, we leave it as is (for other databases, but we don't support them in this project).
+    config.set_main_option("sqlalchemy.url", database_url)
 
 
 def run_migrations_offline() -> None:
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=config.get_main_option("sqlalchemy.url"),
-        target_metadata=target_metadata,
+        url=url,
+        target_metadata=None,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=True,
-        compare_server_default=True,
     )
 
     with context.begin_transaction():
         context.run_migrations()
-
-
-def do_run_migrations(connection) -> None:
-    context.configure(
-        connection=connection,
-        target_metadata=target_metadata,
-        compare_type=True,
-        compare_server_default=True,
-    )
-
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-async def run_async_migrations() -> None:
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-        future=True,
-    )
-
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
-
-    await connectable.dispose()
 
 
 def run_migrations_online() -> None:
-    asyncio.run(run_async_migrations())
+    connectable = create_engine(
+        config.get_main_option("sqlalchemy.url"),
+        poolclass=pool.NullPool,
+        connect_args={"check_same_thread": False},
+    )
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=None,
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
 
 
 if context.is_offline_mode():

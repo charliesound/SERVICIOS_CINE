@@ -335,3 +335,19 @@ presets:
     - clone
     - dubbing
     workflow_key: dubbing_voice_clone_single
+  system_voice_clone_basic_20260418072402:
+    backend: dubbing
+    category: dubbing
+    created_at: '2026-04-18T07:24:02.566828'
+    created_by: system
+    description: "Clonaci\xF3n de voz b\xE1sica para doblaje"
+    inputs:
+      similarity: 0.8
+      stability: 0.7
+    name: Voice Clone Basic
+    public: true
+    tags:
+    - voice
+    - clone
+    - dubbing
+    workflow_key: dubbing_voice_clone_single

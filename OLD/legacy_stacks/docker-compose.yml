@@ -1,0 +1,234 @@
+services:
+  # ==================== SERVICIOS PRINCIPALES ====================
+  
+  # Backend Principal (AILinkCinema)
+  backend:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    container_name: servicios_cine_backend
+    env_file:
+      - ./.env
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      BACKEND_HOST: ${BACKEND_HOST:-0.0.0.0}
+      BACKEND_PORT: ${BACKEND_PORT:-8000}
+    networks:
+      - servicios_cine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # Frontend Principal (AILinkCinema)
+  frontend:
+    build:
+      context: ./src_frontend
+      dockerfile: Dockerfile
+    container_name: servicios_cine_frontend
+    ports:
+      - "3000:80"
+    networks:
+      - servicios_cine
+    restart: unless-stopped
+
+  # Landing / CRM comercial (Web Ailink_Cinema)
+  landing-web:
+    build:
+      context: ./Web Ailink_Cinema
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_CINEMA_API_URL: ${NEXT_PUBLIC_CINEMA_API_URL:-http://cine-api:3000}
+        AUTOMATION_ENGINE_URL: ${AUTOMATION_ENGINE_URL:-http://automation-engine:8000}
+    container_name: servicios_cine_landing
+    env_file:
+      - ./Web Ailink_Cinema/.env.local
+    environment:
+      CINEMA_API_URL: ${CINEMA_API_URL:-http://cine-api:3000}
+      NEXT_PUBLIC_CINEMA_API_URL: ${NEXT_PUBLIC_CINEMA_API_URL:-http://cine-api:3000}
+      AUTOMATION_ENGINE_URL: ${AUTOMATION_ENGINE_URL:-http://automation-engine:8000}
+      AUTOMATION_ENGINE_TIMEOUT_MS: ${AUTOMATION_ENGINE_TIMEOUT_MS:-5000}
+      AUTOMATION_ENGINE_RETRIES: ${AUTOMATION_ENGINE_RETRIES:-1}
+    depends_on:
+      cine-api:
+        condition: service_healthy
+      automation-engine:
+        condition: service_started
+    networks:
+      - servicios_cine
+    restart: unless-stopped
+
+  # ==================== CINE AI PLATFORM ====================
+  
+  # API de CINE AI Platform
+  cine-api:
+    build:
+      context: ./CINE_AI_PLATFORM/apps/api
+      dockerfile: Dockerfile
+    container_name: cine-platform-api
+    env_file:
+      - ./.env
+    restart: unless-stopped
+    environment:
+      APP_NAME: CINE AI PLATFORM API
+      APP_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 3000
+      CORS_ORIGINS: ${CINE_CORS_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:8080,http://127.0.0.1:8080,http://${TAILSCALE_IP},https://${TAILSCALE_IP}}
+      FRONTEND_ORIGINS: ${CINE_FRONTEND_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080,http://${TAILSCALE_IP},https://${TAILSCALE_IP}}
+      COMFYUI_BASE_URL: ${COMFYUI_STILL:-http://host.docker.internal:8188}
+      QDRANT_BASE_URL: http://qdrant:6333
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./CINE_AI_PLATFORM/apps/api/data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - servicios_cine
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/api/health', timeout=5).read()"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Web de CINE AI Platform
+  cine-web:
+    build:
+      context: ./CINE_AI_PLATFORM/apps/web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /cine/api
+        VITE_BASE_PATH: /cine/
+    container_name: cine-platform-web
+    restart: unless-stopped
+    depends_on:
+      cine-api:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    networks:
+      - servicios_cine
+
+  # ==================== AUTOMATION ENGINE ====================
+  
+  automation-engine:
+    build:
+      context: ./CID_SERVER/automation-engine
+      dockerfile: Dockerfile
+    container_name: automation-engine
+    env_file:
+      - ./.env
+    ports:
+      - "8001:8000"
+    environment:
+      PORT: 8000
+      LOG_LEVEL: INFO
+      API_BASE_URL: ${API_BASE_URL:-http://backend:8000}
+    networks:
+      - servicios_cine
+    restart: unless-stopped
+
+  # ==================== AUTOMATIZACION Y VECTOR DB ====================
+
+  redis:
+    image: redis:7-alpine
+    container_name: servicios-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - servicios_cine
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.16.3
+    container_name: servicios-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - servicios_cine
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n:2.16.1
+    container_name: servicios-n8n
+    env_file:
+      - ./.env
+    environment:
+      N8N_HOST: ${PUBLIC_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${PUBLIC_PROTOCOL:-http}
+      N8N_PATH: /
+      N8N_EDITOR_BASE_URL: ${PUBLIC_PROTOCOL:-http}://${PUBLIC_HOST:-localhost}:5678/
+      WEBHOOK_URL: ${PUBLIC_PROTOCOL:-http}://${PUBLIC_HOST:-localhost}:5678/
+      N8N_SECURE_COOKIE: "false"
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-servicios-cine-n8n-key-change-me}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-UTC}
+      TZ: ${GENERIC_TIMEZONE:-UTC}
+      QDRANT_URL: http://qdrant:6333
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - servicios_cine
+    restart: unless-stopped
+
+  # ==================== PROXY REVERSO (CADDY) ====================
+  
+  caddy:
+    image: caddy:2-alpine
+    container_name: servicios-caddy
+    env_file:
+      - ./.env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+    depends_on:
+      - backend
+      - frontend
+      - landing-web
+      - cine-api
+      - cine-web
+      - n8n
+    networks:
+      - servicios_cine
+    restart: unless-stopped
+
+networks:
+  servicios_cine:
+    driver: bridge
+
+volumes:
+  caddy_data:
+    name: servicios_cine_caddy_data
+    external: true
+  redis_data:
+    name: servicios_cine_redis-data
+    external: true
+  qdrant_data:
+    name: servicios_cine_qdrant-data
+    external: true
+  n8n_data:
+    name: servicios_cine_n8n-data

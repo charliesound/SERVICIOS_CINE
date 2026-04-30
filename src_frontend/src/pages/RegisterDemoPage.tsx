@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Clapperboard, Mail, ArrowRight, Check } from 'lucide-react'
 import { authApi } from '@/api'
 import { useAuthStore, getPrimaryCIDTarget } from '@/store'
 import type { RegisterDemoPayload } from '@/types'
+import { getApiErrorMessage } from '@/utils/apiErrors'
 
 export default function RegisterDemoPage() {
-  const navigate = useNavigate()
-  const { login, user } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
   const [form, setForm] = useState<RegisterDemoPayload>({
     full_name: '',
     email: '',
@@ -33,13 +33,9 @@ export default function RegisterDemoPage() {
         ...form,
         password: tempPassword,
       })
-      await login(form.email, tempPassword)
       setStep('success')
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Error en la solicitud'
-      setError(message)
+      setError(getApiErrorMessage(err, 'Error en la solicitud'))
     } finally {
       setIsLoading(false)
     }
@@ -52,16 +48,21 @@ export default function RegisterDemoPage() {
           <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-6">
             <Check className="w-8 h-8 text-blue-400" />
           </div>
-          <h1 className="text-2xl font-bold mb-4">¡Solicitud enviada!</h1>
+          <h1 className="text-2xl font-bold mb-4">Solicitud enviada</h1>
           <p className="text-gray-400 mb-8">
-            Hemos recibido tu solicitud de demo. El equipo de AILinkCinema te contactará en las próximas 24 horas.
+            Hemos recibido tu solicitud de demo guiada. El equipo de AILinkCinema te contactara en las proximas 24 horas.
           </p>
-          <button
-            onClick={() => navigate(getPrimaryCIDTarget(user))}
-            className="px-8 py-3 bg-blue-500 hover:bg-blue-400 text-black font-medium rounded-xl transition-colors flex items-center gap-2 mx-auto"
-          >
-            Ir al dashboard <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex flex-col items-center gap-3">
+            <Link
+              to={isAuthenticated ? getPrimaryCIDTarget(useAuthStore.getState().user) : '/register/cid'}
+              className="px-8 py-3 bg-amber-500 hover:bg-amber-400 text-black font-medium rounded-xl transition-colors flex items-center gap-2"
+            >
+              Quiero entrar ahora a CID <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link to="/" className="text-sm text-slate-400 hover:text-white transition-colors">
+              Volver al inicio
+            </Link>
+          </div>
         </div>
       </div>
     )
@@ -78,7 +79,7 @@ export default function RegisterDemoPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
               <Clapperboard className="w-4 h-4 text-black" />
             </div>
-            <span className="text-sm font-medium">Solicitar Demo</span>
+            <span className="text-sm font-medium">Demo guiada</span>
           </div>
           <div className="w-16" />
         </div>
@@ -87,8 +88,16 @@ export default function RegisterDemoPage() {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2">Solicitar una demo personalizada</h1>
-            <p className="text-gray-400 text-sm">Te contactamos en 24h con una sesión adaptada a tu equipo.</p>
+            <h1 className="text-2xl font-bold mb-2">Solicitar una demo guiada</h1>
+            <p className="text-gray-400 text-sm">Esta opcion es para una sesion con el equipo. Si quieres entrar ahora a CID, usa el acceso demo gratuito.</p>
+          </div>
+
+          <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+            <p className="font-medium text-amber-300">Quieres entrar ahora mismo?</p>
+            <p className="mt-1 text-amber-100/90">Crea una cuenta en el plan Demo de CID y accede directamente a la plataforma.</p>
+            <Link to="/register/cid" className="mt-3 inline-flex items-center gap-2 text-amber-300 hover:text-amber-200 transition-colors">
+              Ir al acceso demo CID <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -183,6 +192,22 @@ export default function RegisterDemoPage() {
                 className="input min-h-[80px] resize-none"
               />
             </div>
+
+            <p className="text-xs leading-5 text-slate-500">
+              Al enviar esta solicitud aceptas que AILinkCinema trate tus datos para gestionar la demo, de acuerdo con la{' '}
+              <Link to="/legal/privacidad" className="text-blue-400 hover:text-blue-300">
+                política de privacidad
+              </Link>
+              , el{' '}
+              <Link to="/legal/aviso-legal" className="text-blue-400 hover:text-blue-300">
+                aviso legal
+              </Link>{' '}
+              y las condiciones de{' '}
+              <Link to="/legal/ia-y-contenidos" className="text-blue-400 hover:text-blue-300">
+                IA y contenidos
+              </Link>
+              .
+            </p>
 
             {error && (
               <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">

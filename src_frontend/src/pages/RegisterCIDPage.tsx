@@ -4,6 +4,7 @@ import { Clapperboard, Mail, Lock, User, ArrowRight } from 'lucide-react'
 import { useAuthStore } from '@/store'
 import { authApi } from '@/api'
 import type { CIDProgram, RegisterCIDPayload } from '@/types'
+import { getApiErrorMessage } from '@/utils/apiErrors'
 
 const programs: { id: CIDProgram; label: string; desc: string; badge: string }[] = [
   { id: 'demo', label: 'Demo', desc: 'Acceso gratuito para probar la plataforma', badge: 'Gratis' },
@@ -53,10 +54,7 @@ export default function RegisterCIDPage() {
       const target = `/cid/${selectedProgram}`
       navigate(target, { replace: true })
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Error en el registro'
-      setError(message)
+      setError(getApiErrorMessage(err, 'Error en el registro'))
     } finally {
       setIsLoading(false)
     }
@@ -225,11 +223,11 @@ export default function RegisterCIDPage() {
                   />
                   <span className="text-sm text-gray-400">
                     Acepto los{' '}
-                    <Link to="/terms" className="text-amber-400 hover:text-amber-300">
+                    <Link to="/legal/terminos" className="text-amber-400 hover:text-amber-300">
                       términos y condiciones
                     </Link>{' '}
                     y la{' '}
-                    <Link to="/privacy" className="text-amber-400 hover:text-amber-300">
+                    <Link to="/legal/privacidad" className="text-amber-400 hover:text-amber-300">
                       política de privacidad
                     </Link>
                   </span>

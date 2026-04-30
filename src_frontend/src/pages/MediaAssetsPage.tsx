@@ -46,9 +46,9 @@ export default function MediaAssetsPage() {
         <div>
           <h1 className="heading-lg flex items-center gap-3">
             <FileSearch className="h-6 w-6 text-amber-400" />
-            Media Assets
+            Media Indexada
           </h1>
-          <p className="mt-1 text-slate-400">Indexed files discovered by manual ingest scans.</p>
+          <p className="mt-1 text-slate-400">Archivos indexados de rutas existentes. Son referencias, no copias. CID no mueve ni renombra.</p>
         </div>
 
         <div className="flex gap-3">

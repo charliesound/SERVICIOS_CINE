@@ -62,6 +62,7 @@ def start_server() -> subprocess.Popen:
         stdout=log_handle,
         stderr=log_handle,
     )
+    log_handle.close()
     wait_for_server(process)
     return process
 

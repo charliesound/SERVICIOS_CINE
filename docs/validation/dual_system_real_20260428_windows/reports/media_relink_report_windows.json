@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-04-28T10:00:00Z",
+  "project_id": "project-dual-system-test",
+  "assembly_cut_id": "assembly-20260428-001",
+  "platform": "windows",
+  "resources": {
+    "media-video-001": {
+      "status": "resolved",
+      "filename": "A001_0101_001.mov",
+      "asset_type": "video",
+      "resolved_path": "C:/CID_Dual_System_Validation_20260428/media/A001_0101_001.mov",
+      "fcpxml_uri": "file:///C:/CID_Dual_System_Validation_20260428/media/A001_0101_001.mov",
+      "scene_number": 1,
+      "shot_number": 1,
+      "take_number": 1
+    },
+    "media-video-002": {
+      "status": "resolved",
+      "filename": "A001_0102_001.mov",
+      "asset_type": "video",
+      "resolved_path": "C:/CID_Dual_System_Validation_20260428/media/A001_0102_001.mov",
+      "fcpxml_uri": "file:///C:/CID_Dual_System_Validation_20260428/media/A001_0102_001.mov",
+      "scene_number": 1,
+      "shot_number": 2,
+      "take_number": 1
+    },
+    "media-audio-001": {
+      "status": "resolved",
+      "filename": "S001_0101_001.WAV",
+      "asset_type": "audio",
+      "resolved_path": "C:/CID_Dual_System_Validation_20260428/media/S001_0101_001.WAV",
+      "fcpxml_uri": "file:///C:/CID_Dual_System_Validation_20260428/media/S001_0101_001.WAV",
+      "scene_number": 1,
+      "shot_number": 1,
+      "take_number": 1,
+      "ixml_metadata": {
+        "project": "APARTMENT",
+        "scene": "1",
+        "shot": "1",
+        "take": 1,
+        "tape": "S001",
+        "circled": true,
+        "start_timecode": "01:00:00:00",
+        "fps": 24
+      },
+      "bext_metadata": {
+        "description": "APARTMENT S1 T1",
+        "originator": "Sound Devices 888",
+        "time_reference_samples": 1728000
+      }
+    },
+    "media-audio-002": {
+      "status": "resolved",
+      "filename": "S002_0102_001.WAV",
+      "asset_type": "audio",
+      "resolved_path": "C:/CID_Dual_System_Validation_20260428/media/S002_0102_001.WAV",
+      "fcpxml_uri": "file:///C:/CID_Dual_System_Validation_20260428/media/S002_0102_001.WAV",
+      "scene_number": 1,
+      "shot_number": 2,
+      "take_number": 1,
+      "ixml_metadata": {
+        "project": "APARTMENT",
+        "scene": "1",
+        "shot": "2",
+        "take": 1,
+        "tape": "S002",
+        "circled": true,
+        "start_timecode": "01:00:12:00",
+        "fps": 24
+      },
+      "bext_metadata": {
+        "description": "APARTMENT S1 T2",
+        "originator": "Sound Devices 888",
+        "time_reference_samples": 3456000
+      }
+    }
+  },
+  "dual_system_summary": {
+    "total_items": 2,
+    "matched": 2,
+    "dual_system_audio_export": "partial",
+    "notes": "Audio exported as resource with note. Linked audio not yet implemented."
+  }
+}

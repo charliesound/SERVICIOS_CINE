@@ -1,0 +1,19 @@
+# Camera Report - Day 1 - 2026-04-28
+# synthetic-realistic fixture
+
+CAMERA A - ARRI Alexa Mini
+CAMERA B - ARRI Alexa Mini (B-CAM)
+
+ROLL|CAMERA|SCENE|SHOT|TAKE|DURATION|TC IN|TC OUT|CIRCLED|FILE
+C001|A|1|1|01|00:00:12:00|01:00:00:00|01:00:12:00|*|A001_0101_001.mov
+C002|A|1|2|01|00:00:08:00|01:00:12:00|01:00:20:00|*|A001_0102_001.mov
+C003|A|1|2|02|00:00:15:00|01:00:20:00|01:00:35:00||A001_0102_002.mov
+C004|B|1|1|01|00:00:12:00|01:00:00:00|01:00:12:00|*|B001_0101_001.mov
+C005|B|1|2|01|00:00:08:00|01:00:12:00|01:00:20:00|*|B001_0102_001.mov
+
+LENS|APERTURE|FOCAL|ISO|TEMP|K
+ZEISS Ultra Prime 35mm|T2.0|50mm|800|5600K
+
+NOTES: Scene 1: Interior apartment - dialogue between MARIA and JOSE.
+Take 1: Wide shot master.
+Take 2: Coverage - two-shot.

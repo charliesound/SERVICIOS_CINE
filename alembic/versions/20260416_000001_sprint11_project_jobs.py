@@ -18,6 +18,33 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Ensure media_assets table exists before adding columns (missing from initial schema)
+    # Note: index=True on columns creates indexes automatically, so we don't duplicate
+    op.create_table(
+        "media_assets",
+        sa.Column("id", sa.String(length=36), primary_key=True),
+        sa.Column("organization_id", sa.String(length=36), nullable=False, index=True),
+        sa.Column("project_id", sa.String(length=36), nullable=False, index=True),
+        sa.Column("storage_source_id", sa.String(length=36), nullable=True),
+        sa.Column("watch_path_id", sa.String(length=36), nullable=True),
+        sa.Column("ingest_scan_id", sa.String(length=36), nullable=True),
+        sa.Column("file_name", sa.String(length=255), nullable=False),
+        sa.Column("relative_path", sa.String(length=1000), nullable=True),
+        sa.Column("canonical_path", sa.String(length=2000), nullable=True),
+        sa.Column("file_extension", sa.String(length=10), nullable=True),
+        sa.Column("mime_type", sa.String(length=100), nullable=True),
+        sa.Column("asset_type", sa.String(length=20), nullable=False),
+        sa.Column("file_size", sa.BigInteger(), nullable=True),
+        sa.Column("modified_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("discovered_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column(
+            "status", sa.String(length=20), nullable=False, server_default="pending"
+        ),
+        sa.Column("created_by", sa.String(length=36), nullable=True),
+    )
+    # Indexes created automatically by index=True on columns above
+
+    # Create project_jobs table
     op.create_table(
         "project_jobs",
         sa.Column("id", sa.String(length=36), primary_key=True),
@@ -68,26 +95,12 @@ def upgrade() -> None:
         ["job_id"],
         unique=False,
     )
-    op.alter_column(
-        "media_assets",
-        "storage_source_id",
-        existing_type=sa.String(length=36),
-        nullable=True,
-    )
 
 
 def downgrade() -> None:
-    op.alter_column(
-        "media_assets",
-        "storage_source_id",
-        existing_type=sa.String(length=36),
-        nullable=False,
-    )
-    op.drop_index("ix_media_assets_job_id", table_name="media_assets")
-    op.drop_column("media_assets", "created_at")
-    op.drop_column("media_assets", "metadata_json")
-    op.drop_column("media_assets", "content_ref")
-    op.drop_column("media_assets", "asset_source")
-    op.drop_column("media_assets", "job_id")
+    # Drop project_jobs first
     op.drop_index("ix_project_jobs_org_project_created", table_name="project_jobs")
     op.drop_table("project_jobs")
+
+    # Drop media_assets table (indexes auto-dropped with table)
+    op.drop_table("media_assets")

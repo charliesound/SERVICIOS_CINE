@@ -4,12 +4,16 @@ Este indice separa la documentacion operativa actual de la documentacion histori
 
 ## Documentacion vigente
 
-- `README.md` -> vision general y accesos principales
-- `README_WSL2.md` -> despliegue actual en Ubuntu/WSL2 con Docker
-- `README_TAILSCALE.md` -> acceso remoto por Tailscale
-- `DOCKER.md` -> stack Docker actual
+- `README.md` -> entrada principal de la demo oficial
+- `docs/DEPLOY_HOME.md` -> arranque oficial home demo
+- `docs/DEPLOY_VPS.md` -> arranque oficial VPS demo
+- `docs/RELEASE_DEMO_GUIDE.md` -> checklist operativo de la release demo
+- `docs/PRODUCTION_CANDIDATE_STATUS.md` -> estado honesto y riesgos abiertos
+- `../OLD/historical_docs/README_WSL2.md` -> despliegue actual en Ubuntu/WSL2 con Docker
+- `../OLD/sensitive_review/historical_docs/README_TAILSCALE.md` -> acceso remoto por Tailscale
+- `../OLD/historical_docs/DOCKER.md` -> stack Docker actual
 - `docs/README_MASTER.md` -> mapa general del repositorio
-- `docs/MAPA_DEL_SISTEMA.md` -> arquitectura funcional
+- `../OLD/historical_docs/MAPA_DEL_SISTEMA.md` -> arquitectura funcional
 
 ## Documentacion historica o de contexto
 
@@ -17,19 +21,24 @@ Estas carpetas contienen material util como referencia, pero no deben usarse com
 
 - `handoff/` -> sesiones historicas de desarrollo
 - `scripts/README.md` -> flujo antiguo centrado en Windows y scripts manuales
-- `docs/ARRANQUE_EN_SERVIDOR.md` -> arranque manual antiguo
-- `docs/GUIA_DESPLIEGUE_SERVIDOR.md` -> despliegue antiguo en Windows/disco local
+- `../OLD/sensitive_review/historical_docs/ARRANQUE_EN_SERVIDOR.md` -> arranque manual antiguo
+- `../OLD/sensitive_review/historical_docs/GUIA_DESPLIEGUE_SERVIDOR.md` -> despliegue antiguo en Windows/disco local
 - `PROYECTO FINAL V1/` -> propuesta/integracion legacy
 - `Web Ailink_Cinema/` -> frontend heredado
 
 ## Ruta recomendada de lectura
 
 1. `README.md`
-2. `README_WSL2.md`
-3. `README_TAILSCALE.md`
-4. `DOCKER.md`
-5. `docs/MAPA_DEL_SISTEMA.md`
+2. `docs/DEPLOY_HOME.md` o `docs/DEPLOY_VPS.md`
+3. `docs/RELEASE_DEMO_GUIDE.md`
+4. `docs/PRODUCTION_CANDIDATE_STATUS.md`
+5. `../OLD/historical_docs/README_WSL2.md`
+6. `../OLD/sensitive_review/historical_docs/README_TAILSCALE.md`
+7. `../OLD/historical_docs/DOCKER.md`
+8. `../OLD/historical_docs/MAPA_DEL_SISTEMA.md`
 
 ## Regla practica
 
 Si un documento menciona rutas como `D:\SERVICIOS_CINE`, despliegues manuales en Windows, o puertos distintos de las rutas unificadas por Caddy, tratalo como historico salvo que se indique lo contrario.
+
+Para esta demo oficial, si un documento empuja a usar `../OLD/legacy_stacks/docker-compose.yml`, `../OLD/legacy_stacks/Caddyfile`, `n8n`, `qdrant`, `automation-engine`, `CINE_AI_PLATFORM` o `Web Ailink_Cinema` como runtime activo, consideralo fuera de alcance de la release demo actual.

@@ -1,0 +1,19 @@
+{
+  "project": "APARTMENT",
+  "scene": "1",
+  "shot": "1",
+  "take": 1,
+  "tape": "S001",
+  "circled": true,
+  "note": "Interior apartment - wide shot",
+  "start_timecode": "01:00:00:00",
+  "fps": 24,
+  "user": "Sound Mixer",
+  "date": "2026-04-28",
+  "device": "Sound Devices 888",
+  "location": {
+    "latitude": 40.4168,
+    "longitude": -3.7038,
+    "place": "Madrid Production Studio"
+  }
+}

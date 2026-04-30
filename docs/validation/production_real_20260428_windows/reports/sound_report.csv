@@ -1,0 +1,7 @@
+reel,scene,shot,take,roll,circular,notes,sync
+S001,01,01,01,001,OK,Good sound,Slate
+S001,01,01,02,001,OK,Good sound,Slate
+S001,01,02,01,001,OK,Good sound,Slate
+S001,01,02,02,001,Noisy,Background noise,Slate
+S001,02,01,01,002,OK,Good sound,Slate
+S001,02,01,02,002,OK,Good sound,Slate

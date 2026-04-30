@@ -1,7 +1,10 @@
 from datetime import datetime, timezone
+from io import BytesIO
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from PIL import Image as PILImage
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -154,7 +157,13 @@ async def persist_project_filmstrip_pdf(
     except PdfRenderError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    source_endpoint = f"/api/projects/{project_id}/presentation/export/pdf"
     filename = _build_pdf_filename(str(payload.project.name))
+    manifest_summary = presentation_service.build_delivery_manifest(
+        payload,
+        source_endpoint=source_endpoint,
+        pdf_file_name=filename,
+    )
     deliverable = await delivery_service.create_project_file_deliverable(
         db,
         project_id=str(payload.project.id),
@@ -168,8 +177,9 @@ async def persist_project_filmstrip_pdf(
         payload_extra={
             "project_name": payload.project.name,
             "presentation_generated_at": datetime.now(timezone.utc).isoformat(),
-            "source_endpoint": f"/api/projects/{project_id}/presentation/export/pdf",
+            "source_endpoint": source_endpoint,
         },
+        manifest_payload=manifest_summary,
     )
     return _deliverable_response(deliverable)
 
@@ -202,6 +212,71 @@ async def preview_project_asset(
         return JSONResponse(content=payload["payload"])
 
     raise HTTPException(status_code=500, detail="Unexpected asset preview control flow")
+
+
+IMAGE_THUMB_MIME_TYPES = {"image/png", "image/jpeg", "image/webp"}
+THUMB_WIDTH = 320
+THUMB_FORMATS = {"image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WEBP"}
+
+
+@router.get("/{project_id}/presentation/assets/{asset_id}/thumbnail")
+async def thumbnail_project_asset(
+    project_id: str,
+    asset_id: str,
+    w: int = Query(default=320, ge=80, le=800),
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+):
+    try:
+        payload = await presentation_service.get_asset_preview_payload(
+            db,
+            project_id=project_id,
+            asset_id=asset_id,
+            tenant=tenant,
+        )
+    except ValueError as exc:
+        _raise_presentation_http_error(exc)
+
+    if payload["kind"] != "file":
+        raise HTTPException(status_code=404, detail="Thumbnail not available for this asset type")
+
+    media_type = payload["media_type"]
+    if media_type not in IMAGE_THUMB_MIME_TYPES:
+        raise HTTPException(status_code=404, detail="Asset is not an image type")
+
+    file_path = Path(payload["path"])
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Asset file not found")
+
+    try:
+        with PILImage.open(file_path) as img:
+            if img.mode not in ("RGB", "RGBA"):
+                img = img.convert("RGB")
+
+            ratio = w / img.width
+            new_height = max(1, int(img.height * ratio))
+            img_thumb = img.resize((w, new_height), PILImage.LANCZOS)
+
+            out = BytesIO()
+            fmt = THUMB_FORMATS.get(media_type, "JPEG")
+            if fmt == "JPEG":
+                img_thumb.save(out, format=fmt, quality=75, optimize=True)
+            elif fmt == "PNG":
+                img_thumb.save(out, format=fmt, optimize=True)
+            else:
+                img_thumb.save(out, format=fmt, quality=75)
+
+            out.seek(0)
+            return Response(
+                content=out.getvalue(),
+                media_type=media_type,
+                headers={
+                    "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600",
+                    "Vary": "Accept",
+                },
+            )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Thumbnail generation failed") from exc
 
 
 @router.post("/{project_id}/presentation/export-pdf", response_model=PresentationPdfExportResponse)

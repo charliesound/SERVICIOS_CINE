@@ -1,0 +1,7 @@
+reel,scene,shot,take,filmroll,camera,lens,rate,fps,circular,notes
+R001,01,01,01,A001,cam1,35mm,24,24,NG,Focus issue
+R001,01,01,02,A001,cam1,35mm,24,24,OK,Good take
+R001,01,02,01,A001,cam1,35mm,24,24,OK,Good take
+R001,01,02,02,A001,cam1,35mm,24,24,NG,Frame out
+R001,02,01,01,A002,cam1,35mm,24,24,OK,Good take
+R001,02,01,02,A002,cam1,35mm,24,24,OK,Good take

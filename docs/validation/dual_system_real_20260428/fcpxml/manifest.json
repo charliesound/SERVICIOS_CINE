@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-04-28T15:23:17.452473+00:00",
+  "project_name": "Apartment",
+  "assembly_cut_id": "assembly-20260428-001",
+  "clip_count": 2,
+  "fps": 24.0,
+  "variants": {
+    "conservative": {
+      "filename": "Apartment_conservative.fcpxml",
+      "linked_audio": false,
+      "audio_state": "resource_note_only"
+    },
+    "experimental": {
+      "filename": "Apartment_linked_audio_experimental.fcpxml",
+      "linked_audio": true,
+      "audio_state": "synchronized_track_attempted"
+    }
+  },
+  "resolved_media_count": 4
+}

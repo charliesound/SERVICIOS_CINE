@@ -4,7 +4,7 @@ import zipfile
 from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
@@ -14,9 +14,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from models.core import Project, ProjectJob, User as DBUser
 from models.storage import MediaAsset, MediaAssetType, MediaAssetStatus
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
+from routes.auth_routes import get_current_user_optional, get_tenant_context
+from schemas.auth_schema import UserResponse, TenantContext
 from services.document_service import document_service
+from services.job_tracking_service import job_tracking_service
 from services.plan_limits_service import plan_limits_service
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
@@ -58,6 +59,32 @@ class StoryboardResponse(BaseModel):
     scenes: list[StoryboardScene]
 
 
+class ProjectJobHistoryResponse(BaseModel):
+    id: str
+    event_type: str
+    status_from: Optional[str] = None
+    status_to: Optional[str] = None
+    message: Optional[str] = None
+    detail: Optional[str] = None
+    metadata_json: Optional[Any] = None
+    created_by: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class ProjectJobAssetResponse(BaseModel):
+    id: str
+    job_id: Optional[str] = None
+    file_name: str
+    file_extension: str
+    asset_type: str
+    asset_source: Optional[str] = None
+    content_ref: Optional[str] = None
+    mime_type: Optional[str] = None
+    status: str
+    metadata_json: Optional[Any] = None
+    created_at: Optional[str] = None
+
+
 class ProjectJobResponse(BaseModel):
     id: str
     organization_id: str
@@ -70,6 +97,8 @@ class ProjectJobResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime]
+    history: list[ProjectJobHistoryResponse] = Field(default_factory=list)
+    assets: list[ProjectJobAssetResponse] = Field(default_factory=list)
 
 
 class ProjectJobListResponse(BaseModel):
@@ -100,6 +129,42 @@ def _project_dict(project: Project) -> dict:
         "status": str(project.status),
         "script_text": project.script_text,
     }
+
+
+async def _record_project_job_event(
+    db: AsyncSession,
+    *,
+    job: ProjectJob,
+    event_type: str,
+    status_from: Optional[str],
+    status_to: Optional[str],
+    message: str,
+    detail: Optional[str] = None,
+    metadata_json: Optional[dict[str, Any]] = None,
+) -> None:
+    await job_tracking_service.record_project_job_event(
+        db,
+        job=job,
+        event_type=event_type,
+        status_from=status_from,
+        status_to=status_to,
+        message=message,
+        detail=detail,
+        metadata_json=metadata_json,
+    )
+
+
+async def _job_detail_dict(db: AsyncSession, job: ProjectJob) -> dict[str, Any]:
+    payload = _job_dict(job)
+    payload.update(
+        await job_tracking_service.build_job_tracking_payload(
+            db,
+            job_id=str(job.id),
+            organization_id=str(job.organization_id),
+            project_id=str(job.project_id),
+        )
+    )
+    return payload
 
 
 def _resolve_effective_plan(plan_name: Optional[str]) -> str:
@@ -328,6 +393,313 @@ async def get_project(
     return _project_dict(project)
 
 
+@router.get("/{project_id}/dashboard")
+async def get_project_dashboard(
+    project_id: str,
+    role: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user_org_id = await _get_user_org_id(current_user.user_id, db)
+    if not user_org_id:
+        raise HTTPException(status_code=403, detail="User has no organization")
+
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if project.organization_id != user_org_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    from sqlalchemy import func, select
+    from models.core import User
+    
+    result = await db.execute(select(User).where(User.id == current_user.user_id))
+    user = result.scalar_one_or_none()
+    user_role = user.role if user else "viewer"
+    
+    from services.role_permission_service import (
+        get_role_default,
+        get_permissions_for_role,
+        get_user_dashboard_roles,
+        get_module_order_for_role,
+        has_admin_access,
+        filter_actions_by_permissions,
+    )
+    
+    canonical_user_role = get_role_default(user_role)
+    permissions = get_permissions_for_role(canonical_user_role)
+    available_roles = get_user_dashboard_roles(user_role)
+    
+    target_role = role if role and has_admin_access(canonical_user_role) else canonical_user_role
+    target_permissions = get_permissions_for_role(target_role)
+    
+    module_order = get_module_order_for_role(target_role)
+    from models.ingest_scan import MediaAsset
+    from models.storage import MediaAssetStatus
+    from models.storyboard import StoryboardShot, StoryboardSequence
+    from models.ingest_document import DocumentAsset
+    from models.editorial import AssemblyCut, Take
+
+    media_count_result = await db.execute(
+        select(func.count()).select_from(MediaAsset).where(
+            MediaAsset.project_id == project_id,
+            MediaAsset.status == MediaAssetStatus.INDEXED,
+        )
+    )
+    media_count = media_count_result.scalar_one() or 0
+
+    document_count_result = await db.execute(
+        select(func.count()).select_from(DocumentAsset).where(
+            DocumentAsset.project_id == project_id,
+        )
+    )
+    document_count = document_count_result.scalar_one() or 0
+
+    storyboard_shots_result = await db.execute(
+        select(func.count()).select_from(StoryboardShot).where(
+            StoryboardShot.project_id == project_id,
+        )
+    )
+    storyboard_count = storyboard_shots_result.scalar_one() or 0
+
+    has_script_analysis = bool(project.script_text)
+
+    assembly_result = await db.execute(
+        select(func.count()).select_from(AssemblyCut).where(
+            AssemblyCut.project_id == project_id,
+        )
+    )
+    assembly_count = assembly_result.scalar_one() or 0
+
+    takes_result = await db.execute(
+        select(func.count()).select_from(Take).where(
+            Take.project_id == project_id,
+        )
+    )
+    takes_count = takes_result.scalar_one() or 0
+
+    from services.budget_estimator_service import get_active_budget
+    budget = await get_active_budget(db, project_id)
+    has_budget = budget is not None
+
+    from models.production import FundingCall
+    funding_match_result = await db.execute(
+        select(func.count()).select_from(FundingCall).where(
+            FundingCall.status == "active",
+        )
+    )
+    funding_opportunity_count = funding_match_result.scalar_one() or 0
+    has_funding = funding_opportunity_count > 0
+
+    from models.producer_pitch import ProducerPitchPack
+    pack_result = await db.execute(
+        select(func.count()).select_from(ProducerPitchPack).where(
+            ProducerPitchPack.project_id == project_id,
+            ProducerPitchPack.status.in_(["generated", "approved"]),
+        )
+    )
+    pack_count = pack_result.scalar_one() or 0
+    has_producer_pack = pack_count > 0
+
+    from models.distribution import DistributionPack
+    dist_result = await db.execute(
+        select(func.count()).select_from(DistributionPack).where(
+            DistributionPack.project_id == project_id,
+            DistributionPack.status.in_(["generated", "approved"]),
+        )
+    )
+    dist_count = dist_result.scalar_one() or 0
+    has_distribution = dist_count > 0
+
+    from models.crm import CRMOpportunity
+    crm_result = await db.execute(
+        select(func.count()).select_from(CRMOpportunity).where(
+            CRMOpportunity.project_id == project_id,
+        )
+    )
+    crm_count = crm_result.scalar_one() or 0
+    has_crm = crm_count > 0
+
+    modules = {}
+
+    if project.script_text:
+        if has_script_analysis:
+            modules["script"] = {
+                "status": "ready",
+                "summary": "Guion analizado",
+            }
+        else:
+            modules["script"] = {
+                "status": "partial",
+                "summary": "Guion cargado, pendiente de análisis",
+            }
+    else:
+        modules["script"] = {
+            "status": "missing",
+            "summary": "Sin guion cargado",
+        }
+
+    modules["storyboard"] = {
+        "status": "ready" if storyboard_count > 0 else "missing",
+        "summary": f"{storyboard_count} frames" if storyboard_count > 0 else "Sin storyboard",
+    }
+
+    modules["breakdown"] = {
+        "status": "missing",
+        "summary": "En roadmap — Pending",
+    }
+
+    modules["budget"] = {
+        "status": "ready" if has_budget else "missing",
+        "summary": f"€{budget.total_estimated:,.0f}" if has_budget else "Sin presupuesto estimado",
+    }
+
+    modules["funding"] = {
+        "status": "ready" if has_funding else "missing",
+        "summary": f"{funding_opportunity_count} oportunidades" if has_funding else "Ver oportunidades de ayudas",
+    }
+
+    modules["producer_pack"] = {
+        "status": "ready" if has_producer_pack else "missing",
+        "summary": f"{pack_count} dossier" if has_producer_pack else "Generar dossier productor",
+    }
+
+    modules["distribution"] = {
+        "status": "ready" if has_distribution else "missing",
+        "summary": f"{dist_count} pack" if has_distribution else "Generar pack distribución",
+    }
+
+    modules["crm"] = {
+        "status": "ready" if has_crm else "missing",
+        "summary": f"{crm_count} oportunidad" if has_crm else "Sin oportunidades comerciales",
+    }
+
+    modules["media"] = {
+        "status": "ready" if media_count > 0 else "missing",
+        "summary": f"{media_count} archivos indexados" if media_count > 0 else "Sin media escaneada",
+    }
+
+    modules["documents"] = {
+        "status": "ready" if document_count > 0 else "missing",
+        "summary": f"{document_count} documentos" if document_count > 0 else "Sin documentos ingeridos",
+    }
+
+    modules["editorial"] = {
+        "status": "ready" if assembly_count > 0 else "missing",
+        "summary": f"{assembly_count} AssemblyCut, {takes_count} takes" if assembly_count > 0 else "Sin AssemblyCut",
+    }
+
+    ready_count = sum(1 for m in modules.values() if m.get("status") == "ready")
+    partial_count = sum(1 for m in modules.values() if m.get("status") == "partial")
+    overall_progress = int((ready_count * 100 + partial_count * 50) / (len(modules) * 100) * 100)
+
+    recommended_actions = []
+
+    if project.script_text and not has_script_analysis:
+        recommended_actions.append({
+            "label": "Analizar guion",
+            "route": f"/projects/{project_id}",
+            "priority": "high",
+        })
+
+    if not storyboard_count:
+        recommended_actions.append({
+            "label": "Generar storyboard",
+            "route": f"/projects/{project_id}/storyboard-builder",
+            "priority": "high",
+        })
+
+    if not has_budget:
+        recommended_actions.append({
+            "label": "Generar presupuesto estimado",
+            "route": f"/projects/{project_id}/budget",
+            "priority": "high",
+            "permission": "budget.generate",
+        })
+
+    if not has_funding:
+        recommended_actions.append({
+            "label": "Buscar ayudas y subvenciones",
+            "route": f"/projects/{project_id}/funding",
+            "priority": "high",
+            "permission": "funding.view",
+        })
+
+    if not has_producer_pack:
+        recommended_actions.append({
+            "label": "Generar dossier productor",
+            "route": f"/projects/{project_id}/producer-pitch",
+            "priority": "medium",
+            "permission": "producer_pack.generate",
+        })
+
+    if not has_distribution:
+        recommended_actions.append({
+            "label": "Generar pack distribución",
+            "route": f"/projects/{project_id}/distribution",
+            "priority": "medium",
+            "permission": "distribution.manage",
+        })
+
+    if not has_crm:
+        recommended_actions.append({
+            "label": "Crear oportunidad comercial",
+            "route": f"/projects/{project_id}/crm",
+            "priority": "medium",
+            "permission": "crm.manage",
+        })
+
+    if not media_count:
+        recommended_actions.append({
+            "label": "Escanear media",
+            "route": "/ingest/scans",
+            "priority": "medium",
+        })
+
+    if ready_count or assembly_count:
+        recommended_actions.append({
+            "label": "Exportar a DaVinci",
+            "route": f"/projects/{project_id}/editorial",
+            "priority": "medium",
+            "permission": "davinci.export",
+        })
+
+    from services.change_governance_service import get_pending_changes_count
+    try:
+        pending_changes = await get_pending_changes_count(db, project_id)
+        if pending_changes.get("total", 0) > 0:
+            recommended_actions.append({
+                "label": f"Revisar {pending_changes['total']} cambio(s) pendientes",
+                "route": f"/projects/{project_id}/change-requests",
+                "priority": "high",
+            })
+    except:
+        pass
+
+    recommended_actions = filter_actions_by_permissions(recommended_actions, target_role)
+
+    return {
+        "project_id": project_id,
+        "title": project.name,
+        "status": project.status or "active",
+        "overall_progress": overall_progress,
+        "modules": modules,
+        "recommended_next_actions": recommended_actions,
+        "warnings": [],
+        "role_dashboard": {
+            "active_role": target_role,
+            "available_roles": available_roles,
+            "permissions": target_permissions,
+            "user_role": canonical_user_role,
+        },
+    }
+
+
 @router.put("/{project_id}/script", response_model=ProjectResponse)
 async def update_project_script(
     project_id: str,
@@ -533,9 +905,27 @@ async def analyze_project_script(
     )
     db.add(job)
     await db.flush()
+    await _record_project_job_event(
+        db,
+        job=job,
+        event_type="job_created",
+        status_from=None,
+        status_to=job.status,
+        message="Project analysis job created",
+        metadata_json={"job_type": job.job_type},
+    )
 
     try:
+        previous_status = job.status
         job.status = "processing"
+        await _record_project_job_event(
+            db,
+            job=job,
+            event_type="job_running",
+            status_from=previous_status,
+            status_to=job.status,
+            message="Project analysis job started",
+        )
         await db.commit()
         await db.refresh(job)
 
@@ -578,7 +968,7 @@ async def analyze_project_script(
         job.result_data = json.dumps(result_payload, ensure_ascii=False)
         job.completed_at = datetime.now(timezone.utc)
 
-        await _upsert_project_asset(
+        asset = await _upsert_project_asset(
             db,
             organization_id=user_org_id,
             project_id=project_id,
@@ -588,6 +978,20 @@ async def analyze_project_script(
             asset_source="script_analysis",
             metadata_json=result_payload,
             created_by=current_user.user_id,
+        )
+        await _record_project_job_event(
+            db,
+            job=job,
+            event_type="job_succeeded",
+            status_from="processing",
+            status_to=job.status,
+            message="Project analysis job completed",
+            metadata_json={
+                "document_id": result_payload.get("document_id"),
+                "doc_type": result_payload.get("doc_type"),
+                "asset_id": str(asset.id),
+                "asset_source": asset.asset_source,
+            },
         )
 
         await db.commit()
@@ -602,9 +1006,19 @@ async def analyze_project_script(
             structured_payload=structured_payload,
         )
     except Exception as exc:
+        previous_status = job.status
         job.status = "failed"
         job.error_message = str(exc)[:2000]
         job.completed_at = datetime.now(timezone.utc)
+        await _record_project_job_event(
+            db,
+            job=job,
+            event_type="job_failed",
+            status_from=previous_status,
+            status_to=job.status,
+            message="Project analysis job failed",
+            detail=job.error_message,
+        )
         await db.commit()
         raise
 
@@ -657,9 +1071,27 @@ async def generate_storyboard(
     )
     db.add(job)
     await db.flush()
+    await _record_project_job_event(
+        db,
+        job=job,
+        event_type="job_created",
+        status_from=None,
+        status_to=job.status,
+        message="Storyboard job created",
+        metadata_json={"job_type": job.job_type},
+    )
 
     try:
+        previous_status = job.status
         job.status = "processing"
+        await _record_project_job_event(
+            db,
+            job=job,
+            event_type="job_running",
+            status_from=previous_status,
+            status_to=job.status,
+            message="Storyboard job started",
+        )
         await db.commit()
         await db.refresh(job)
 
@@ -691,7 +1123,7 @@ async def generate_storyboard(
         job.result_data = json.dumps(result_payload, ensure_ascii=False)
         job.completed_at = datetime.now(timezone.utc)
 
-        await _upsert_project_asset(
+        asset = await _upsert_project_asset(
             db,
             organization_id=user_org_id,
             project_id=project_id,
@@ -702,15 +1134,38 @@ async def generate_storyboard(
             metadata_json=result_payload,
             created_by=current_user.user_id,
         )
+        await _record_project_job_event(
+            db,
+            job=job,
+            event_type="job_succeeded",
+            status_from="processing",
+            status_to=job.status,
+            message="Storyboard job completed",
+            metadata_json={
+                "total_scenes": result_payload.get("total_scenes"),
+                "asset_id": str(asset.id),
+                "asset_source": asset.asset_source,
+            },
+        )
 
         await db.commit()
         await db.refresh(job)
 
         return storyboard
     except Exception as exc:
+        previous_status = job.status
         job.status = "failed"
         job.error_message = str(exc)[:2000]
         job.completed_at = datetime.now(timezone.utc)
+        await _record_project_job_event(
+            db,
+            job=job,
+            event_type="job_failed",
+            status_from=previous_status,
+            status_to=job.status,
+            message="Storyboard job failed",
+            detail=job.error_message,
+        )
         await db.commit()
         raise
 
@@ -829,44 +1284,17 @@ async def _upsert_project_asset(
     metadata_json: dict[str, Any],
     created_by: Optional[str],
 ) -> MediaAsset:
-    result = await db.execute(
-        select(MediaAsset).where(
-            MediaAsset.project_id == project_id,
-            MediaAsset.job_id == job_id,
-            MediaAsset.asset_source == asset_source,
-        )
+    return await job_tracking_service.upsert_job_asset(
+        db,
+        organization_id=organization_id,
+        project_id=project_id,
+        job_id=job_id,
+        file_name=file_name,
+        content_ref=content_ref,
+        asset_source=asset_source,
+        metadata_json=metadata_json,
+        created_by=created_by,
     )
-    asset = result.scalar_one_or_none()
-
-    if asset is None:
-        asset = MediaAsset(
-            organization_id=organization_id,
-            project_id=project_id,
-            storage_source_id=None,
-            file_name=file_name,
-            relative_path=content_ref,
-            canonical_path=content_ref,
-            content_ref=content_ref,
-            file_extension="json",
-            mime_type="application/json",
-            asset_type=MediaAssetType.DOCUMENT,
-            metadata_json=json.dumps(metadata_json, ensure_ascii=False),
-            asset_source=asset_source,
-            job_id=str(job_id),
-            status=MediaAssetStatus.INDEXED,
-            created_by=created_by,
-            created_at=datetime.now(timezone.utc),
-        )
-        db.add(asset)
-    else:
-        asset.file_name = file_name
-        asset.relative_path = content_ref
-        asset.canonical_path = content_ref
-        asset.content_ref = content_ref
-        asset.metadata_json = json.dumps(metadata_json, ensure_ascii=False)
-        asset.status = MediaAssetStatus.INDEXED
-
-    return asset
 
 
 @router.get("/{project_id}/jobs", response_model=ProjectJobListResponse)
@@ -929,7 +1357,38 @@ async def get_project_job(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    return _job_dict(job)
+    return await _job_detail_dict(db, job)
+
+
+# Direct job lookup (no project_id required for cross-endpoint compatibility)
+@router.get("/jobs/{job_id}")
+async def get_job_by_id(
+    job_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user_org_id = await _get_user_org_id(current_user.user_id, db)
+    if not user_org_id:
+        raise HTTPException(status_code=403, detail="User has no organization")
+
+    result = await db.execute(
+        select(ProjectJob).where(
+            ProjectJob.id == job_id,
+            ProjectJob.organization_id == user_org_id,
+        )
+    )
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    return {
+        "id": job.id,
+        "status": job.status,
+        "result_data": json.loads(job.result_data) if job.result_data else None,
+    }
 
 
 @router.post("/{project_id}/jobs/{job_id}/retry", response_model=ProjectJobResponse)
@@ -963,15 +1422,34 @@ async def retry_project_job(
             detail=f"Cannot retry job with status '{job.status}'. Only failed jobs can be retried.",
         )
 
+    previous_status = job.status
     job.status = "pending"
     job.error_message = None
     job.result_data = None
     job.completed_at = None
+    await _record_project_job_event(
+        db,
+        job=job,
+        event_type="job_retry_requested",
+        status_from=previous_status,
+        status_to=job.status,
+        message="Project job retry requested",
+        metadata_json={"job_type": job.job_type},
+    )
     await db.commit()
     await db.refresh(job)
 
     try:
+        previous_status = job.status
         job.status = "processing"
+        await _record_project_job_event(
+            db,
+            job=job,
+            event_type="job_running",
+            status_from=previous_status,
+            status_to=job.status,
+            message="Retried project job started",
+        )
         await db.commit()
         await db.refresh(job)
 
@@ -1020,7 +1498,7 @@ async def retry_project_job(
             job.status = "completed"
             job.result_data = json.dumps(result_payload, ensure_ascii=False)
             job.completed_at = datetime.now(timezone.utc)
-            await _upsert_project_asset(
+            asset = await _upsert_project_asset(
                 db,
                 organization_id=user_org_id,
                 project_id=project_id,
@@ -1030,6 +1508,20 @@ async def retry_project_job(
                 asset_source="script_analysis",
                 metadata_json=result_payload,
                 created_by=current_user.user_id,
+            )
+            await _record_project_job_event(
+                db,
+                job=job,
+                event_type="job_succeeded",
+                status_from="processing",
+                status_to=job.status,
+                message="Retried project analysis completed",
+                metadata_json={
+                    "document_id": result_payload.get("document_id"),
+                    "doc_type": result_payload.get("doc_type"),
+                    "asset_id": str(asset.id),
+                    "asset_source": asset.asset_source,
+                },
             )
 
         elif job.job_type == "storyboard":
@@ -1058,7 +1550,7 @@ async def retry_project_job(
             job.status = "completed"
             job.result_data = json.dumps(result_payload, ensure_ascii=False)
             job.completed_at = datetime.now(timezone.utc)
-            await _upsert_project_asset(
+            asset = await _upsert_project_asset(
                 db,
                 organization_id=user_org_id,
                 project_id=project_id,
@@ -1069,6 +1561,19 @@ async def retry_project_job(
                 metadata_json=result_payload,
                 created_by=current_user.user_id,
             )
+            await _record_project_job_event(
+                db,
+                job=job,
+                event_type="job_succeeded",
+                status_from="processing",
+                status_to=job.status,
+                message="Retried storyboard completed",
+                metadata_json={
+                    "total_scenes": result_payload.get("total_scenes"),
+                    "asset_id": str(asset.id),
+                    "asset_source": asset.asset_source,
+                },
+            )
         else:
             raise ValueError(f"Unknown job type: {job.job_type}")
 
@@ -1076,13 +1581,23 @@ async def retry_project_job(
         await db.refresh(job)
 
     except Exception as exc:
+        previous_status = job.status
         job.status = "failed"
         job.error_message = str(exc)[:2000]
         job.completed_at = datetime.now(timezone.utc)
+        await _record_project_job_event(
+            db,
+            job=job,
+            event_type="job_failed",
+            status_from=previous_status,
+            status_to=job.status,
+            message="Retried project job failed",
+            detail=job.error_message,
+        )
         await db.commit()
         await db.refresh(job)
 
-    return _job_dict(job)
+    return await _job_detail_dict(db, job)
 
 
 class ProjectAssetResponse(BaseModel):
@@ -1095,6 +1610,7 @@ class ProjectAssetResponse(BaseModel):
     asset_source: Optional[str]
     content_ref: Optional[str]
     metadata_json: Optional[dict[str, Any]]
+    canonical_path: Optional[str] = None
     status: str
     created_at: Optional[datetime]
 
@@ -1154,6 +1670,7 @@ async def list_project_assets(
                 metadata_json=(
                     json.loads(a.metadata_json) if a.metadata_json else None
                 ),
+                canonical_path=a.canonical_path,
                 status=str(a.status),
                 created_at=a.created_at,
             )
@@ -1282,4 +1799,99 @@ async def export_project_zip(
         headers={
             "Content-Disposition": f'attachment; filename="project-{project_id}.zip"'
         },
+    )
+
+
+IMAGE_MIME_TYPES = {"image/png", "image/jpeg", "image/webp"}
+
+
+class ProjectImageAssetItem(BaseModel):
+    asset_id: str
+    file_name: str
+    mime_type: str
+    created_at: datetime
+    preview_url: str
+    thumbnail_url: str
+
+
+class ProjectImageAssetPaginationMeta(BaseModel):
+    page: int
+    size: int
+    total_items: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+
+class ProjectImageAssetsResponse(BaseModel):
+    items: list[ProjectImageAssetItem]
+    meta: ProjectImageAssetPaginationMeta
+
+
+@router.get("/{project_id}/assets/image-assets", response_model=ProjectImageAssetsResponse)
+async def list_project_image_assets(
+    project_id: str,
+    page: int = 1,
+    size: int = 20,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+):
+    """
+    Paginated list of image assets for the Asset Picker Modal.
+    Tenant-safe: only returns assets belonging to the user's organization.
+    Filters to image/* mime types only.
+    """
+    if page < 1:
+        page = 1
+    if size < 1:
+        size = 20
+    if size > 100:
+        size = 100
+
+    project_result = await db.execute(select(Project).where(Project.id == project_id))
+    project = project_result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if project.organization_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    base_query = select(MediaAsset).where(
+        MediaAsset.project_id == project_id,
+        MediaAsset.organization_id == tenant.organization_id,
+        MediaAsset.mime_type.in_(IMAGE_MIME_TYPES),
+        MediaAsset.status == MediaAssetStatus.INDEXED,
+    )
+
+    count_result = await db.execute(
+        select(func.count()).select_from(base_query.subquery())
+    )
+    total_items = count_result.scalar_one() or 0
+    total_pages = (total_items + size - 1) // size if total_items > 0 else 1
+
+    offset = (page - 1) * size
+    query = base_query.order_by(MediaAsset.created_at.desc()).offset(offset).limit(size)
+    assets = (await db.execute(query)).scalars().all()
+
+    items = [
+        ProjectImageAssetItem(
+            asset_id=str(a.id),
+            file_name=str(a.file_name),
+            mime_type=str(a.mime_type) if a.mime_type else "image/unknown",
+            created_at=a.created_at,
+            preview_url=f"/api/projects/{project_id}/presentation/assets/{a.id}/preview",
+            thumbnail_url=f"/api/projects/{project_id}/presentation/assets/{a.id}/thumbnail",
+        )
+        for a in assets
+    ]
+
+    return ProjectImageAssetsResponse(
+        items=items,
+        meta=ProjectImageAssetPaginationMeta(
+            page=page,
+            size=size,
+            total_items=total_items,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1,
+        ),
     )

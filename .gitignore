@@ -26,6 +26,12 @@ build/
 certs/
 logs/
 data/
+!data/
+!data/smoke_tenant_A/
+!data/smoke_tenant_A/project_alpha/
+!data/smoke_tenant_A/project_alpha/storyboard/
+!data/smoke_tenant_A/project_alpha/storyboard/seqA_shot01.png
+!data/smoke_tenant_A/project_alpha/storyboard/seqA_shot02.png
 caddy_data/
 
 # OS and editors
@@ -40,3 +46,18 @@ Thumbs.db
 # Embedded/legacy repos excluded from root commit
 Web Ailink_Cinema/
 CINE_AI_PLATFORM/.git.embedded-backup/
+# Local OS/cache artifacts
+OLD/local_envs_and_caches/
+*:Zone.Identifier
+nul
+.msys*
+.vs/
+# Runtime / smoke artifacts not versioned
+OLD/runtime_artifacts/
+OLD/smoke_artifacts/
+# Binary validation media not versioned
+docs/validation/**/*.mov
+docs/validation/**/*.wav
+docs/validation/**/*.mp3
+docs/validation/**/*.mp4
+docs/validation/**/*.zip

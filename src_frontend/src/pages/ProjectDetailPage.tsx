@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { projectsApi } from '@/api'
+import { storyboardApi } from '@/api/storyboard'
 import { useAuthStore } from '@/store'
 import { useUserPlanStatus } from '@/hooks/usePlans'
 import { getThumbnailUrl, isComfyAsset } from '@/vite-env'
@@ -8,16 +9,24 @@ import {
   ArrowLeft, FileText, Layers, Eye, Save,
   MapPin, Clock, Film, ChevronRight, Sparkles,
   History, RefreshCw, AlertCircle, CheckCircle2, Loader2,
-  FileJson, FolderOpen, Download, Crown
+  FileJson, FolderOpen, Download, Crown, Pencil
 } from 'lucide-react'
 
 type Tab = 'script' | 'analysis' | 'storyboard' | 'history'
 
 interface AnalysisResult {
-  document_id: string
-  doc_type: string
-  confidence_score: number | null
-  structured_payload: Record<string, unknown>
+  source: 'breakdown' | 'document'
+  document_id?: string
+  doc_type?: string
+  confidence_score?: number | null
+  structured_payload?: Record<string, unknown>
+  status?: string
+  scenes_count?: number
+  characters_count?: number
+  locations_count?: number
+  sequences_count?: number
+  summary?: Record<string, unknown>
+  scenes?: Array<Record<string, unknown>>
 }
 
 interface Shot {
@@ -62,6 +71,11 @@ interface ProjectAsset {
   metadata_json?: Record<string, unknown> | null
   status: string
   created_at: string | null
+}
+
+interface JobAssetEntry {
+  id: string
+  file_name: string
 }
 
 interface ProjectJob {
@@ -149,8 +163,6 @@ export default function ProjectDetailPage() {
   const [assets, setAssets] = useState<ProjectAsset[]>([])
   const [assetsLoading, setAssetsLoading] = useState(false)
   const [exportingFormat, setExportingFormat] = useState<'json' | 'zip' | null>(null)
-  const [exportJobId, setExportJobId] = useState<string | null>(null)
-  const [exportStatus, setExportStatus] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'grid' | 'presentation'>('list')
 
   // Group assets by sequence from metadata_json
@@ -188,20 +200,69 @@ export default function ProjectDetailPage() {
     return fallback
   }
 
-  useState(() => {
+  const loadAnalysisState = async () => {
     if (!projectId) return
-    projectsApi.get(projectId).then((p) => {
-      setProject(p)
-      setScriptText(p.script_text || '')
-      setIsLoading(false)
-    }).catch(() => setIsLoading(false))
-  })
+    try {
+      const [summaryRaw, scenesRaw] = await Promise.all([
+        projectsApi.getAnalysisSummary(projectId),
+        projectsApi.getBreakdownScenes(projectId),
+      ])
+      const summary = summaryRaw as Record<string, unknown>
+      if (summary?.status && summary.status !== 'not_found') {
+        setAnalysisData({
+          source: 'breakdown',
+          status: String(summary.status || 'completed'),
+          scenes_count: Number(summary.scenes_count || 0),
+          characters_count: Number(summary.characters_count || 0),
+          locations_count: Number(summary.locations_count || 0),
+          sequences_count: Number(summary.sequences_count || 0),
+          summary: (summary.summary as Record<string, unknown>) || {},
+          scenes: scenesRaw.scenes,
+        })
+        return
+      }
+      const projectJobs = await projectsApi.getJobs(projectId)
+      const fallbackJob = projectJobs.find((job) => job.job_type === 'analyze' && job.status === 'completed' && job.result_data)
+      if (fallbackJob?.result_data) {
+        const result = fallbackJob.result_data as Record<string, unknown>
+        setAnalysisData({
+          source: 'document',
+          document_id: String(result.document_id || ''),
+          doc_type: String(result.doc_type || 'unknown'),
+          confidence_score: typeof result.confidence_score === 'number' ? result.confidence_score : null,
+          structured_payload: (result.structured_payload as Record<string, unknown>) || {},
+        })
+        return
+      }
+      setAnalysisData(null)
+    } catch {
+      setAnalysisData(null)
+    }
+  }
+
+  useEffect(() => {
+    if (!projectId) return
+    let active = true
+    Promise.all([projectsApi.get(projectId), loadAnalysisState()])
+      .then(([p]) => {
+        if (!active) return
+        setProject(p)
+        setScriptText(p.script_text || '')
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [projectId])
 
   const loadJobs = () => {
     if (!projectId) return
     setJobsLoading(true)
     projectsApi.getJobs(projectId)
-      .then(setJobs)
+      .then((items) => setJobs(items as unknown as ProjectJob[]))
       .catch(() => {})
       .finally(() => setJobsLoading(false))
   }
@@ -248,8 +309,8 @@ export default function ProjectDetailPage() {
     setActiveTab('analysis')
     try {
       await projectsApi.updateScript(projectId, { script_text: scriptText })
-      const result = await projectsApi.analyze(projectId)
-      setAnalysisData(result)
+      await projectsApi.runAnalysis(projectId)
+      await loadAnalysisState()
       loadJobs()
       loadAssets()
     } catch (err) {
@@ -262,15 +323,44 @@ export default function ProjectDetailPage() {
 
   const handleStoryboard = async () => {
     if (!projectId || !scriptText.trim()) return
-    if (!confirm('Generar storyboard del guion? Esto parseara escenas y sugerira tipos de plano.')) return
+    if (!confirm('Generar storyboard completo del guion? Para modos por secuencia usa el editor avanzado.')) return
 
     setIsStoryboarding(true)
     setError('')
     setActiveTab('storyboard')
     try {
       await projectsApi.updateScript(projectId, { script_text: scriptText })
-      const sb = await projectsApi.storyboard(projectId)
-      setStoryboardData(sb)
+      await projectsApi.runAnalysis(projectId)
+      const job = await storyboardApi.generate(projectId, {
+        mode: 'FULL_SCRIPT',
+        shots_per_scene: 3,
+        style_preset: 'cinematic_realistic',
+        overwrite: true,
+      })
+      const storyboardScope = await storyboardApi.getStoryboard(projectId, { mode: 'FULL_SCRIPT' })
+      const groupedScenes = storyboardScope.shots.reduce((acc, shot) => {
+        const key = shot.scene_number || 0
+        if (!acc[key]) {
+          acc[key] = {
+            scene_number: key,
+            heading: shot.scene_heading || `ESCENA ${key}`,
+            location: shot.sequence_id || '',
+            time_of_day: '',
+            shots: [],
+          }
+        }
+        acc[key].shots.push({
+          shot_number: shot.sequence_order,
+          shot_type: shot.shot_type || 'MS',
+          description: shot.narrative_text || 'Shot generado',
+        })
+        return acc
+      }, {} as Record<number, Scene>)
+      setStoryboardData({
+        project_id: projectId,
+        total_scenes: job.total_scenes,
+        scenes: Object.values(groupedScenes).sort((a, b) => a.scene_number - b.scene_number),
+      })
       loadJobs()
       loadAssets()
     } catch (err) {
@@ -300,8 +390,6 @@ export default function ProjectDetailPage() {
       if (format === 'zip') {
         // Use async export via delivery service
         const result = await projectsApi.triggerExport(projectId)
-        setExportJobId(result.job_id)
-        setExportStatus(result.status)
         // Poll for status
         pollExportStatus(result.job_id)
       } else {
@@ -319,21 +407,18 @@ export default function ProjectDetailPage() {
     const checkStatus = async () => {
       try {
         const job = await projectsApi.getJobStatus(jobId)
-        setExportStatus(job.status)
-        
+
         if (job.status === 'completed') {
           // Get the deliverable and download
-          const deliverableId = job.result_data?.deliverable_id
+          const deliverableId = typeof job.result_data?.deliverable_id === 'string'
+            ? job.result_data.deliverable_id
+            : null
           if (deliverableId) {
             const blob = await projectsApi.downloadDeliverable(deliverableId)
             downloadExport(blob, 'zip')
           }
-          setExportJobId(null)
-          setExportStatus(null)
         } else if (job.status === 'failed') {
           setError(parseApiError('La exportación ZIP ha fallado.')(null))
-          setExportJobId(null)
-          setExportStatus(null)
         } else {
           // Still running, poll again
           setTimeout(checkStatus, 2000)
@@ -420,9 +505,37 @@ export default function ProjectDetailPage() {
             disabled={!!exportingFormat || !planStatus?.export_zip}
             className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-40"
           >
-            <Download className="w-4 h-4" />
-            {exportingFormat === 'zip' ? 'Empaquetando ZIP...' : 'Export ZIP'}
+              <Download className="w-4 h-4" />
+              {exportingFormat === 'zip' ? 'Empaquetando ZIP...' : 'Export ZIP'}
           </button>
+          <Link
+            to={`/projects/${projectId}/funding`}
+            className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Funding
+          </Link>
+          <Link
+            to={`/projects/${projectId}/dashboard`}
+            className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2"
+          >
+            <FolderOpen className="w-4 h-4" />
+            Dashboard
+          </Link>
+          <Link
+            to={`/projects/${projectId}/storyboard-builder`}
+            className="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-medium transition-colors flex items-center gap-2"
+          >
+            <Pencil className="w-4 h-4" />
+            Editar Storyboard
+          </Link>
+          <Link
+            to={`/projects/${projectId}/editorial`}
+            className="px-4 py-2 text-sm border border-emerald-500/20 hover:border-emerald-400/30 text-emerald-300 rounded-xl transition-colors flex items-center gap-2"
+          >
+            <Film className="w-4 h-4" />
+            Premontaje / Assembly
+          </Link>
         </div>
       </div>
 
@@ -632,7 +745,6 @@ export default function ProjectDetailPage() {
             </div>
           ) : analysisData ? (
             <div className="space-y-4">
-              {/* Summary card */}
               <div className="card bg-dark-200/80 border border-white/5 p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
@@ -642,54 +754,61 @@ export default function ProjectDetailPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="p-4 bg-white/5 rounded-xl">
-                    <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Tipo</p>
+                    <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Fuente</p>
                     <p className="text-white font-semibold capitalize">
-                      {analysisData.doc_type.replace(/_/g, ' ')}
+                      {analysisData.source === 'breakdown' ? 'Scene breakdown' : (analysisData.doc_type || 'document').replace(/_/g, ' ')}
                     </p>
                   </div>
                   <div className="p-4 bg-white/5 rounded-xl">
-                    <p className="text-gray-400 text-xs mb-2 uppercase tracking-wider">Confianza</p>
-                    <ConfidenceBar score={analysisData.confidence_score} />
+                    <p className="text-gray-400 text-xs mb-2 uppercase tracking-wider">Escenas</p>
+                    <p className="text-white font-semibold">{analysisData.scenes_count ?? analysisData.scenes?.length ?? 0}</p>
                   </div>
                   <div className="p-4 bg-white/5 rounded-xl">
-                    <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Caracteres</p>
+                    <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Personajes</p>
                     <p className="text-white font-semibold">
-                      {scriptText.length.toLocaleString()}
+                      {analysisData.characters_count ?? '—'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Structured payload */}
-              {(() => {
-                const sp = analysisData.structured_payload as unknown as Record<string, unknown>
-                const summary = sp?.summary as Record<string, unknown> | undefined
-                return (
+              {analysisData.source === 'breakdown' ? (
+                <>
                   <div className="card bg-dark-200/80 border border-white/5 p-6">
-                    <h4 className="text-sm font-semibold mb-4 text-gray-300">Datos estructurados</h4>
-                    {summary ? (
-                      <div className="space-y-3">
-                        {Object.entries(summary).map(([key, value]) => (
-                          <div key={key} className="flex items-start gap-3 py-2 border-b border-white/5 last:border-0">
-                            <span className="text-gray-400 text-xs uppercase tracking-wider w-28 flex-shrink-0 pt-0.5">
-                              {key.replace(/_/g, ' ')}
-                            </span>
-                            <span className="text-gray-200 text-sm">
-                              {typeof value === 'object' && value !== null
-                                ? JSON.stringify(value)
-                                : String(value ?? '—')}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-sm">
-                        Documento ID: <span className="font-mono text-gray-400">{analysisData.document_id}</span>
-                      </p>
-                    )}
+                    <h4 className="text-sm font-semibold mb-4 text-gray-300">Desglose</h4>
+                    <div className="grid gap-3 md:grid-cols-3 text-sm text-slate-300">
+                      <p><span className="text-slate-500">Localizaciones:</span> {analysisData.locations_count ?? '—'}</p>
+                      <p><span className="text-slate-500">Secuencias:</span> {analysisData.sequences_count ?? '—'}</p>
+                      <p><span className="text-slate-500">Estado:</span> {analysisData.status || 'completed'}</p>
+                    </div>
                   </div>
-                )
-              })()}
+                  <div className="card bg-dark-200/80 border border-white/5 p-6">
+                    <h4 className="text-sm font-semibold mb-4 text-gray-300">Escenas detectadas</h4>
+                    <div className="space-y-3">
+                      {(analysisData.scenes || []).slice(0, 8).map((scene, index) => (
+                        <div key={`${scene.scene_id || index}`} className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
+                          <p className="font-medium text-white">{String(scene.heading || scene.scene_id || `Escena ${index + 1}`)}</p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            {String(scene.location || 'sin localizacion')} · {String(scene.time_of_day || 'DAY')}
+                          </p>
+                          <p className="mt-2 text-sm text-slate-300">
+                            Personajes: {Array.isArray(scene.characters) ? scene.characters.join(', ') || '—' : '—'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="card bg-dark-200/80 border border-white/5 p-6">
+                  <h4 className="text-sm font-semibold mb-4 text-gray-300">Analisis documental</h4>
+                  <div className="grid gap-3 md:grid-cols-2 text-sm text-slate-300">
+                    <p><span className="text-slate-500">Documento:</span> {analysisData.document_id || '—'}</p>
+                    <p><span className="text-slate-500">Tipo:</span> {(analysisData.doc_type || 'unknown').replace(/_/g, ' ')}</p>
+                    <div className="md:col-span-2"><ConfidenceBar score={analysisData.confidence_score ?? null} /></div>
+                  </div>
+                </div>
+              )}
 
               <button
                 onClick={() => setActiveTab('script')}
@@ -963,10 +1082,11 @@ export default function ProjectDetailPage() {
                                   setRetryingJobId(job.id)
                                   projectsApi.retryJob(projectId!, job.id)
                                     .then((updated) => {
-                                      setJobs(prev => prev.map(j => j.id === updated.id ? updated : j))
+                                      setJobs(prev => prev.map(j => j.id === updated.id ? updated as unknown as ProjectJob : j))
                                       if (updated.job_type === 'analyze') {
                                         setActiveTab('analysis')
                                         setAnalysisData({
+                                          source: 'document',
                                           document_id: String((updated.result_data as unknown as { document_id?: string })?.document_id || ''),
                                           doc_type: String((updated.result_data as unknown as { doc_type?: string })?.doc_type || ''),
                                           confidence_score: (updated.result_data as unknown as { confidence_score?: number })?.confidence_score ?? null,
@@ -1131,7 +1251,6 @@ export default function ProjectDetailPage() {
                 <div className="space-y-4">
                   {Object.keys(assetsBySequence).sort().map(seqId => {
                     const seqAssets = assetsBySequence[seqId]
-                    const hasMetadata = seqAssets.some(a => a.metadata_json)
                     return (
                       <div key={seqId} className="card bg-dark-200/80 border border-white/5 overflow-hidden">
                         <div className="px-4 py-2 bg-white/[0.02] border-b border-white/5">
@@ -1221,7 +1340,13 @@ export default function ProjectDetailPage() {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+<div className="flex items-center gap-2">
+          <Link
+            to={`/projects/${projectId}/dashboard`}
+            className="btn-secondary"
+          >
+            Dashboard
+          </Link>
                               {seqModes.includes('flux') && (
                                 <span className="px-2 py-1 rounded bg-purple-500/20 text-purple-400 text-xs">
                                   Premium

@@ -4,6 +4,7 @@ import { Clapperboard, Mail, ArrowRight, Check } from 'lucide-react'
 import { authApi } from '@/api'
 import { useAuthStore, getPrimaryCIDTarget } from '@/store'
 import type { RegisterPartnerPayload } from '@/types'
+import { getApiErrorMessage } from '@/utils/apiErrors'
 
 export default function RegisterPartnerPage() {
   const navigate = useNavigate()
@@ -34,10 +35,7 @@ export default function RegisterPartnerPage() {
       await login(form.email, tempPassword)
       setStep('success')
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Error en la solicitud'
-      setError(message)
+      setError(getApiErrorMessage(err, 'Error en la solicitud'))
     } finally {
       setIsLoading(false)
     }
@@ -155,6 +153,22 @@ export default function RegisterPartnerPage() {
                 className="input min-h-[80px] resize-none"
               />
             </div>
+
+            <p className="text-xs leading-5 text-slate-500">
+              Al enviar esta solicitud aceptas que AILinkCinema trate tus datos para valorar la colaboración, de acuerdo con la{' '}
+              <Link to="/legal/privacidad" className="text-purple-400 hover:text-purple-300">
+                política de privacidad
+              </Link>
+              , el{' '}
+              <Link to="/legal/aviso-legal" className="text-purple-400 hover:text-purple-300">
+                aviso legal
+              </Link>{' '}
+              y las condiciones de{' '}
+              <Link to="/legal/ia-y-contenidos" className="text-purple-400 hover:text-purple-300">
+                IA y contenidos
+              </Link>
+              .
+            </p>
 
             {error && (
               <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">

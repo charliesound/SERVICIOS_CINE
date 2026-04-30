@@ -28,7 +28,9 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        sans: ['Space Grotesk', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        display: ['Cormorant Garamond', 'Georgia', 'serif'],
+        mono: ['IBM Plex Mono', 'monospace'],
       },
       boxShadow: {
         'soft': '0 2px 15px rgba(0,0,0,0.3)',

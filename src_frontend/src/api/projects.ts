@@ -63,6 +63,32 @@ export const projectsApi = {
     return data
   },
 
+  runAnalysis: async (projectId: string): Promise<{
+    breakdown_id: string
+    status: string
+    scenes_count: number
+    characters_count: number
+    locations_count: number
+  }> => {
+    const { data } = await api.post(`/projects/${projectId}/analysis/run`)
+    return data
+  },
+
+  getAnalysisSummary: async (projectId: string): Promise<Record<string, unknown>> => {
+    const { data } = await api.get(`/projects/${projectId}/analysis/summary`)
+    return data
+  },
+
+  getBreakdownScenes: async (projectId: string): Promise<{ project_id: string; scenes: Array<Record<string, unknown>> }> => {
+    const { data } = await api.get(`/projects/${projectId}/breakdown/scenes`)
+    return data
+  },
+
+  getBreakdownDepartments: async (projectId: string): Promise<Record<string, unknown>> => {
+    const { data } = await api.get(`/projects/${projectId}/breakdown/departments`)
+    return data
+  },
+
   storyboard: async (projectId: string): Promise<{
     project_id: string
     total_scenes: number
@@ -112,6 +138,24 @@ export const projectsApi = {
     return data
   },
 
+  triggerExport: async (projectId: string): Promise<{ job_id: string; status: string }> => {
+    const { data } = await api.post<{ job_id: string; status: string }>(`/delivery/projects/${projectId}/export`)
+    return data
+  },
+
+  getJobStatus: async (jobId: string): Promise<{ id: string; status: string; result_data: Record<string, unknown> | null }> => {
+    const { data } = await api.get(`/projects/jobs/${jobId}`)
+    return data
+  },
+
+  downloadDeliverable: async (deliverableId: string): Promise<Blob> => {
+    const { data } = await api.get(`/delivery/deliverables/${deliverableId}/download`, {
+      responseType: 'blob',
+    })
+    return data
+  },
+
+  // Legacy/Direct export (might still work for some backends, but ZIP is now async)
   exportZip: async (projectId: string): Promise<Blob> => {
     const { data } = await api.get(`/projects/${projectId}/export/zip`, {
       responseType: 'blob',

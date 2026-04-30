@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 import os
 import time
 
-from config import load_config
+from config import load_config, validate_runtime_security
 
 # Imports de routers
 from routes.auth_routes import router as auth_router
@@ -19,7 +19,6 @@ from routes.demo_routes import router as demo_router
 from routes.metrics_routes import router as metrics_router
 from routes.events_routes import router as events_router
 from routes.project_routes import router as project_router
-from routes.visual_routes import router as visual_router
 from routes.postproduction_routes import router as postproduction_router
 from routes.review_routes import router as review_router
 from routes.delivery_routes import router as delivery_router
@@ -30,6 +29,7 @@ from routes.document_routes import router as document_router
 from routes.report_routes import router as report_router
 from routes.presentation_routes import router as presentation_router
 from routes.shot_routes import router as shot_router
+from routes.storyboard_routes import router as storyboard_router
 from routes.funding_routes import router as funding_router
 from routes.funding_catalog_routes import router as funding_catalog_router
 from routes.funding_private_routes import private_source_router
@@ -39,6 +39,17 @@ from routes.budget_routes import router as budget_router
 from routes.project_funding_routes import router as project_funding_router
 from routes.project_document_routes import router as project_document_router
 from routes.google_drive_routes import router as google_drive_router
+from routes.matcher_routes import router as matcher_router
+from routes.editorial_routes import router as editorial_router
+from routes.script_version_routes import router as script_version_router
+from routes.project_member_routes import router as project_member_router
+from routes.change_governance_routes import router as change_governance_router
+from routes.shotlist_routes import router as shotlist_router
+from routes.shooting_plan_routes import router as shooting_plan_router
+from routes.producer_pitch_routes import router as producer_pitch_router
+from routes.distribution_pack_routes import router as distribution_pack_router
+from routes.sales_targets_routes import router as sales_targets_router
+from routes.crm_routes import router as crm_router
 
 # Services
 from services.logging_service import logger, request_logger
@@ -51,6 +62,7 @@ from database import init_db
 
 
 config = load_config()
+validate_runtime_security(config)
 
 app_config = config.get("app", {})
 cors_config = config.get("cors", {})
@@ -69,6 +81,8 @@ app.add_middleware(
     allow_methods=cors_config.get("allow_methods", ["*"]),
     allow_headers=cors_config.get("allow_headers", ["*"]),
 )
+
+app.middleware("http")(rate_limit_middleware)
 
 
 @app.middleware("http")
@@ -140,7 +154,6 @@ app.include_router(ops_router, tags=["ops"])
 app.include_router(metrics_router, tags=["metrics"])
 app.include_router(events_router, tags=["events"])
 app.include_router(project_router, tags=["projects"])
-app.include_router(visual_router, tags=["visual-pipeline"])
 app.include_router(review_router, tags=["reviews"])
 app.include_router(delivery_router, tags=["delivery"])
 app.include_router(producer_router, tags=["producer"])
@@ -150,15 +163,27 @@ app.include_router(document_router, tags=["documents"])
 app.include_router(report_router, tags=["structured-reports"])
 app.include_router(presentation_router, tags=["presentation"])
 app.include_router(shot_router, tags=["shots"])
+app.include_router(storyboard_router, tags=["storyboard"])
 app.include_router(funding_router, tags=["funding"])
 app.include_router(funding_catalog_router, tags=["funding-public"])
 app.include_router(private_source_router, tags=["funding-private"])
 app.include_router(admin_funding_router, tags=["admin-funding"])
 app.include_router(intake_router, tags=["intake"])
 app.include_router(budget_router, tags=["budget"])
+app.include_router(change_governance_router, tags=["change-governance"])
+app.include_router(shotlist_router, tags=["shotlist"])
+app.include_router(shooting_plan_router, tags=["shooting-plans"])
 app.include_router(project_funding_router, tags=["project-funding"])
 app.include_router(project_document_router, tags=["project-documents"])
 app.include_router(google_drive_router, tags=["google-drive-integrations"])
+app.include_router(matcher_router, tags=["matcher"])
+app.include_router(editorial_router, tags=["editorial"])
+app.include_router(script_version_router, tags=["script-versioning"])
+app.include_router(project_member_router, tags=["project-members"])
+app.include_router(producer_pitch_router, tags=["producer-pitch"])
+app.include_router(distribution_pack_router, tags=["distribution"])
+app.include_router(sales_targets_router, tags=["sales-targets"])
+app.include_router(crm_router, tags=["commercial-crm"])
 
 if features.get("postproduction", False):
     app.include_router(postproduction_router, tags=["postproduction"])
@@ -198,6 +223,10 @@ async def startup_event():
         await scheduler.start()
     else:
         logger.warning("Scheduler autostart disabled by QUEUE_AUTO_START_SCHEDULER")
+
+    # Start matcher worker service
+    from services.matcher_worker_service import matcher_worker_service
+    await matcher_worker_service.start()
 
     if config.get("queue", {}).get("persistence_mode", "memory").lower() == "memory":
         logger.warning(

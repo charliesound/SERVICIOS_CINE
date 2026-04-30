@@ -29,7 +29,7 @@ const navItems = [
   { to: '/workflows', icon: GitBranch, label: 'Workflows' },
   { to: '/plans', icon: CreditCard, label: 'Planes' },
   { to: '/storage-sources', icon: HardDrive, label: 'Storage' },
-  { to: '/ingest/scans', icon: Search, label: 'Ingesta' },
+  { to: '/ingest/scans', icon: Search, label: 'Escanear' },
   { to: '/documents', icon: FileText, label: 'Documentos' },
   { to: '/reports/camera', icon: ClipboardList, label: 'Reportes' },
   { to: '/history', icon: History, label: 'Historial' },

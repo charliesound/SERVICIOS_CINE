@@ -47,10 +47,13 @@ class ReviewService:
         self,
         db: AsyncSession,
         project_id: str,
+        organization_id: str,
         target_type: str | None = None,
         status: str | None = None,
     ) -> list[Review]:
-        query = select(Review).where(Review.project_id == project_id)
+        query = select(Review).where(
+            Review.project_id == project_id, Review.organization_id == organization_id
+        )
         normalized_target_type = self._normalized_target_type(target_type)
 
         if normalized_target_type:
@@ -62,13 +65,15 @@ class ReviewService:
         result = await db.execute(query)
         return result.scalars().all()
 
-    async def get_review(self, db: AsyncSession, review_id: str) -> Review | None:
+    async def get_review(
+        self, db: AsyncSession, review_id: str, organization_id: str
+    ) -> Review | None:
         result = await db.execute(
             select(Review)
             .options(
                 selectinload(Review.approval_decisions), selectinload(Review.comments)
             )
-            .where(Review.id == review_id)
+            .where(Review.id == review_id, Review.organization_id == organization_id)
         )
         return result.scalar_one_or_none()
 
@@ -76,12 +81,14 @@ class ReviewService:
         self,
         db: AsyncSession,
         project_id: str,
+        organization_id: str,
         target_id: str,
         target_type: str,
         status: str | None = None,
     ) -> Review:
         review = Review(
             project_id=project_id,
+            organization_id=organization_id,
             target_id=self._normalize_required_text(target_id, "target_id"),
             target_type=self._normalize_required_text(target_type, "target_type"),
             status=self._normalize_review_status(status),
@@ -117,6 +124,7 @@ class ReviewService:
         normalized_status = self._normalize_review_status(status_applied)
         decision = ApprovalDecision(
             review_id=review.id,
+            organization_id=review.organization_id,
             author_name=self._normalize_optional_text(author_name),
             status_applied=normalized_status,
             rationale_note=self._normalize_optional_text(rationale_note),
@@ -135,20 +143,28 @@ class ReviewService:
         return decision
 
     async def list_comments(
-        self, db: AsyncSession, review_id: str
+        self, db: AsyncSession, review_id: str, organization_id: str
     ) -> list[ReviewComment]:
         result = await db.execute(
             select(ReviewComment)
-            .where(ReviewComment.review_id == review_id)
+            .where(
+                ReviewComment.review_id == review_id,
+                ReviewComment.organization_id == organization_id,
+            )
             .order_by(ReviewComment.created_at.asc(), ReviewComment.id.asc())
         )
         return result.scalars().all()
 
     async def add_comment(
-        self, db: AsyncSession, review_id: str, body: str, author_name: str | None
+        self,
+        db: AsyncSession,
+        review: Review,
+        body: str,
+        author_name: str | None,
     ) -> ReviewComment:
         comment = ReviewComment(
-            review_id=review_id,
+            review_id=review.id,
+            organization_id=review.organization_id,
             body=self._normalize_required_text(body, "body"),
             author_name=self._normalize_optional_text(author_name),
         )

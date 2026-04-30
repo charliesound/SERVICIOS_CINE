@@ -377,6 +377,24 @@ presets:
     - cinematic
     - dramatic
     workflow_key: still_img2img_cinematic
+  system_cinematic_portrait_20260418072402:
+    backend: still
+    category: still
+    created_at: '2026-04-18T07:24:02.195694'
+    created_by: system
+    description: "Retratos cinematogr\xE1ficos con iluminaci\xF3n dram\xE1tica"
+    inputs:
+      negative_prompt: blurry, low quality
+      prompt: cinematic portrait, dramatic lighting, film grain
+      steps: 30
+      strength: 0.7
+    name: Cinematic Portrait
+    public: true
+    tags:
+    - portrait
+    - cinematic
+    - dramatic
+    workflow_key: still_img2img_cinematic
   system_fast_storyboard_20260416080014:
     backend: still
     category: still
@@ -721,6 +739,23 @@ presets:
     backend: still
     category: still
     created_at: '2026-04-17T18:45:21.617266'
+    created_by: system
+    description: "Generaci\xF3n r\xE1pida de frames para storyboard"
+    inputs:
+      aspect_ratio: '16:9'
+      prompt: professional storyboard frame
+      steps: 20
+    name: Fast Storyboard
+    public: true
+    tags:
+    - storyboard
+    - fast
+    - production
+    workflow_key: still_storyboard_frame
+  system_fast_storyboard_20260418072402:
+    backend: still
+    category: still
+    created_at: '2026-04-18T07:24:02.414703'
     created_by: system
     description: "Generaci\xF3n r\xE1pida de frames para storyboard"
     inputs:

@@ -1,0 +1,29 @@
+[
+  {
+    "scene": 1, "shot": 1, "take": 1, "camera_file": "S01_SH01_TK01_CAM.mov", "sound_file": "S01_SH01_TK01_SOUND.wav", "duration": 15.0, "tc": "01:00:00:00", "circled": true
+  },
+  {
+    "scene": 1, "shot": 1, "take": 2, "camera_file": "S01_SH01_TK02_CAM.mov", "sound_file": "S01_SH01_TK02_SOUND.wav", "duration": 12.0, "tc": "01:00:15:00", "circled": false
+  },
+  {
+    "scene": 1, "shot": 2, "take": 1, "camera_file": "S01_SH02_TK01_CAM.mov", "sound_file": "S01_SH02_TK01_SOUND.wav", "duration": 18.0, "tc": "01:00:27:00", "circled": true
+  },
+  {
+    "scene": 1, "shot": 2, "take": 2, "camera_file": "S01_SH02_TK02_CAM.mov", "sound_file": "S01_SH02_TK02_SOUND.wav", "duration": 15.0, "tc": "01:00:45:00", "circled": false
+  },
+  {
+    "scene": 1, "shot": 3, "take": 1, "camera_file": "S01_SH03_TK01_CAM.mov", "sound_file": "S01_SH03_TK01_SOUND.wav", "duration": 10.0, "tc": "01:01:00:00", "circled": true
+  },
+  {
+    "scene": 2, "shot": 1, "take": 1, "camera_file": "S02_SH01_TK01_CAM.mov", "sound_file": "S02_SH01_TK01_SOUND.wav", "duration": 20.0, "tc": "01:01:10:00", "circled": true
+  },
+  {
+    "scene": 2, "shot": 1, "take": 2, "camera_file": "S02_SH01_TK02_CAM.mov", "sound_file": "S02_SH01_TK02_SOUND.wav", "duration": 18.0, "tc": "01:01:30:00", "circled": false
+  },
+  {
+    "scene": 2, "shot": 2, "take": 1, "camera_file": "S02_SH02_TK01_CAM.mov", "sound_file": "S02_SH02_TK01_SOUND.wav", "duration": 22.0, "tc": "01:01:48:00", "circled": true
+  },
+  {
+    "scene": 2, "shot": 3, "take": 1, "camera_file": "S02_SH03_TK01_CAM.mov", "sound_file": "S02_SH03_TK01_SOUND.wav", "duration": 12.0, "tc": "01:02:10:00", "circled": true
+  }
+]

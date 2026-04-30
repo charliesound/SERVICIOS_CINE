@@ -68,6 +68,12 @@ class Review(Base):
         nullable=False,
         index=True,
     )
+    organization_id = Column(
+        String(36),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     target_id = Column(String(36), nullable=False)
     target_type = Column(String(50), nullable=False)
     status = Column(
@@ -133,6 +139,12 @@ class ApprovalDecision(Base):
         nullable=False,
         index=True,
     )
+    organization_id = Column(
+        String(36),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     author_id = Column(
         String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
@@ -163,6 +175,12 @@ class ReviewComment(Base):
         String(36),
         ForeignKey("reviews.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
+    )
+    organization_id = Column(
+        String(36),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=True,
         index=True,
     )
     author_id = Column(

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Dict, Callable, Awaitable, Optional
 
@@ -9,6 +10,12 @@ from .comfyui_client_factory import factory, ComfyUIClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+SCHEDULER_POLL_INTERVAL = int(os.getenv("SCHEDULER_POLL_INTERVAL", "5"))
+SCHEDULER_JOB_TIMEOUT = int(os.getenv("SCHEDULER_JOB_TIMEOUT", "3600"))
+SCHEDULER_MAX_ERRORS = int(os.getenv("SCHEDULER_MAX_CONSECUTIVE_ERRORS", "5"))
+SCHEDULER_INITIAL_BACKOFF = int(os.getenv("SCHEDULER_INITIAL_BACKOFF", "2"))
+SCHEDULER_MAX_BACKOFF = int(os.getenv("SCHEDULER_MAX_BACKOFF", "30"))
 
 
 class JobScheduler:
@@ -64,7 +71,7 @@ class JobScheduler:
 
     async def _process_queues(self):
         backends = ["still", "video", "dubbing", "lab"]
-        
+
         for backend_key in backends:
             if not queue_service.can_accept_job(backend_key):
                 continue
@@ -94,7 +101,7 @@ class JobScheduler:
         try:
             async with client:
                 result = await client.post_prompt({}, item.task_type)
-                
+
                 if "prompt_id" in result:
                     prompt_id = result["prompt_id"]
                     await self._wait_for_completion(item, client, prompt_id)
@@ -104,7 +111,9 @@ class JobScheduler:
             logger.error(f"Job {item.job_id} failed: {e}")
             return False
 
-    async def _wait_for_completion(self, item: QueueItem, client: ComfyUIClient, prompt_id: str):
+    async def _wait_for_completion(
+        self, item: QueueItem, client: ComfyUIClient, prompt_id: str
+    ):
         max_wait = self._job_timeout
         elapsed = 0
         poll_interval = 2
@@ -127,10 +136,11 @@ class JobScheduler:
 
     async def _check_timeouts(self):
         running_jobs = [
-            item for item in queue_service._job_map.values()
+            item
+            for item in queue_service._job_map.values()
             if item.status == QueueStatus.RUNNING
         ]
-        
+
         for item in running_jobs:
             if item.started_at:
                 elapsed = (datetime.utcnow() - item.started_at).total_seconds()
@@ -143,7 +153,7 @@ class JobScheduler:
             "running": self._running,
             "poll_interval": self._poll_interval,
             "job_timeout": self._job_timeout,
-            "queue_status": queue_service.get_all_status()
+            "queue_status": queue_service.get_all_status(),
         }
 
 

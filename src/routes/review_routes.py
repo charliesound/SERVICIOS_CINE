@@ -22,8 +22,12 @@ from schemas.review_schema import (
     ReviewUpdate,
 )
 from services.review_service import review_service
-from routes.auth_routes import get_current_user_optional, check_project_ownership
-from schemas.auth_schema import UserResponse
+from routes.auth_routes import (
+    get_current_user_optional,
+    check_project_ownership,
+    get_tenant_context,
+)
+from schemas.auth_schema import UserResponse, TenantContext
 from services.logging_service import logger
 
 
@@ -74,16 +78,21 @@ async def list_reviews(
     target_type: Optional[str] = None,
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> ReviewListResponse:
-    reviews = await review_service.list_reviews(db, project_id, target_type, status)
+    reviews = await review_service.list_reviews(
+        db, project_id, tenant.organization_id, target_type, status
+    )
     return ReviewListResponse(reviews=[_review_response(review) for review in reviews])
 
 
 @router.get("/{review_id}", response_model=ReviewDetailResponse)
 async def get_review_detail(
-    review_id: str, db: AsyncSession = Depends(get_db)
+    review_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> ReviewDetailResponse:
-    review = await review_service.get_review(db, review_id)
+    review = await review_service.get_review(db, review_id, tenant.organization_id)
 
     if review is None:
         raise HTTPException(status_code=404, detail="Review not found")
@@ -113,27 +122,21 @@ async def create_review(
     project_id: str,
     review: ReviewCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> ReviewResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    project_result = await db.execute(select(Project).where(Project.id == project_id))
+    project_result = await db.execute(
+        select(Project).where(
+            Project.id == project_id, Project.organization_id == tenant.organization_id
+        )
+    )
     project = project_result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    user_id = current_user.user_id
-    has_ownership = await check_project_ownership(project_id, user_id, db)
-    if not has_ownership:
-        logger.warning(
-            f"Forbidden: user={user_id} tried to create review for project={project_id}"
-        )
-        raise HTTPException(status_code=403, detail="Access denied to this project")
-
     db_review = await review_service.create_review(
         db,
         project_id=project_id,
+        organization_id=tenant.organization_id,
         target_id=review.target_id,
         target_type=review.target_type,
         status=review.status,
@@ -146,22 +149,12 @@ async def update_review_status(
     review_id: str,
     update: ReviewUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> ReviewResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    result = await db.execute(select(Review).where(Review.id == review_id))
-    review = result.scalar_one_or_none()
+    review = await review_service.get_review(db, review_id, tenant.organization_id)
 
     if review is None:
         raise HTTPException(status_code=404, detail="Review not found")
-
-    user_id = current_user.user_id
-    has_ownership = await check_project_ownership(str(review.project_id), user_id, db)
-    if not has_ownership:
-        logger.warning(f"Forbidden: user={user_id} tried to update review={review_id}")
-        raise HTTPException(status_code=403, detail="Access denied to this project")
 
     if update.status is not None:
         review = await review_service.update_status(db, review, update.status)
@@ -174,40 +167,30 @@ async def add_decision(
     review_id: str,
     decision: ApprovalDecisionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> ApprovalDecisionResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    review_result = await db.execute(select(Review).where(Review.id == review_id))
-    review = review_result.scalar_one_or_none()
+    review = await review_service.get_review(db, review_id, tenant.organization_id)
 
     if review is None:
         raise HTTPException(status_code=404, detail="Review not found")
-
-    user_id = current_user.user_id
-    has_ownership = await check_project_ownership(str(review.project_id), user_id, db)
-    if not has_ownership:
-        logger.warning(
-            f"Forbidden: user={user_id} tried to add decision to review={review_id}"
-        )
-        raise HTTPException(status_code=403, detail="Access denied to this project")
 
     db_decision = await review_service.add_decision(
         db,
         review,
         status_applied=decision.status_applied,
         rationale_note=decision.rationale_note,
-        author_name=decision.author_name or current_user.username,
+        author_name=decision.author_name or f"user_{tenant.user_id[:8]}",
     )
     return _approval_decision_response(db_decision)
 
 
 @router.get("/{review_id}/comments", response_model=CommentListResponse)
 async def list_comments(
-    review_id: str, db: AsyncSession = Depends(get_db)
+    review_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> CommentListResponse:
-    comments = await review_service.list_comments(db, review_id)
+    comments = await review_service.list_comments(db, review_id, tenant.organization_id)
     return CommentListResponse(
         comments=[_comment_response(comment) for comment in comments]
     )
@@ -218,28 +201,16 @@ async def add_comment(
     review_id: str,
     comment: CommentCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> CommentResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    review_result = await db.execute(select(Review).where(Review.id == review_id))
-    review = review_result.scalar_one_or_none()
+    review = await review_service.get_review(db, review_id, tenant.organization_id)
 
     if review is None:
         raise HTTPException(status_code=404, detail="Review not found")
 
-    user_id = current_user.user_id
-    has_ownership = await check_project_ownership(str(review.project_id), user_id, db)
-    if not has_ownership:
-        logger.warning(
-            f"Forbidden: user={user_id} tried to add comment to review={review_id}"
-        )
-        raise HTTPException(status_code=403, detail="Access denied to this project")
-
     db_comment = await review_service.add_comment(
         db,
-        review_id=review_id,
+        review=review,
         body=comment.body,
         author_name=comment.author_name,
     )

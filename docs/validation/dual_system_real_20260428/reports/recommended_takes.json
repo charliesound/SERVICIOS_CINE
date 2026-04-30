@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-04-28T10:00:00Z",
+  "project_id": "project-dual-system-test",
+  "takes": [
+    {
+      "scene_number": 1,
+      "shot_number": 1,
+      "take_number": 1,
+      "camera_filename": "A001_0101_001.mov",
+      "audio_filename": "S001_0101_001.WAV",
+      "camera_roll": "C001",
+      "sound_roll": "S001",
+      "duration_seconds": 12.0,
+      "fps": 24.0,
+      "start_tc": "01:00:00:00",
+      "is_circled": true,
+      "is_best": true,
+      "sync_method": "exact_scene_shot_take",
+      "sync_confidence": 0.98,
+      "dual_system_status": "matched"
+    },
+    {
+      "scene_number": 1,
+      "shot_number": 2,
+      "take_number": 1,
+      "camera_filename": "A001_0102_001.mov",
+      "audio_filename": "S002_0102_001.WAV",
+      "camera_roll": "C002",
+      "sound_roll": "S002",
+      "duration_seconds": 8.0,
+      "fps": 24.0,
+      "start_tc": "01:00:12:00",
+      "is_circled": true,
+      "is_best": true,
+      "sync_method": "exact_scene_shot_take",
+      "sync_confidence": 0.98,
+      "dual_system_status": "matched"
+    }
+  ]
+}

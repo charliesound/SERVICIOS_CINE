@@ -2,9 +2,13 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 import aiohttp
 import asyncio
+import os
 from enum import Enum
 
 from .instance_registry import InstanceRegistry, BackendInstance, BackendType
+
+COMFYUI_HTTP_TIMEOUT = float(os.getenv("COMFYUI_HTTP_TIMEOUT", "30"))
+COMFYUI_CONNECT_TIMEOUT = float(os.getenv("COMFYUI_CONNECT_TIMEOUT", "10"))
 
 
 class JobStatus(Enum):
@@ -36,7 +40,7 @@ class JobRequest:
             "target_instance": self.target_instance,
             "user_id": self.user_id,
             "user_plan": self.user_plan,
-            "parameters": self.parameters or {}
+            "parameters": self.parameters or {},
         }
 
 
@@ -58,7 +62,7 @@ class JobResponse:
             "backend_url": self.backend_url,
             "queue_position": self.queue_position,
             "estimated_time": self.estimated_time,
-            "error": self.error
+            "error": self.error,
         }
 
 
@@ -76,7 +80,7 @@ class JobResult:
             "status": self.status.value,
             "outputs": self.outputs,
             "error": self.error,
-            "execution_time": self.execution_time
+            "execution_time": self.execution_time,
         }
 
 
@@ -85,21 +89,25 @@ class ComfyUIClient:
         self.backend = backend
         self.base_url = backend.base_url
         self.session: Optional[aiohttp.ClientSession] = None
+        self._timeout = aiohttp.ClientTimeout(
+            total=None,
+            connect=COMFYUI_CONNECT_TIMEOUT,
+            sock_read=COMFYUI_HTTP_TIMEOUT,
+        )
 
     async def __aenter__(self):
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(timeout=self._timeout)
         return self
 
     async def __aexit__(self, *args):
         if self.session:
             await self.session.close()
 
-    async def post_prompt(self, prompt: Dict[str, Any], workflow_key: str) -> Dict[str, Any]:
+    async def post_prompt(
+        self, prompt: Dict[str, Any], workflow_key: str
+    ) -> Dict[str, Any]:
         endpoint = f"{self.base_url}/prompt"
-        payload = {
-            "prompt": prompt,
-            "workflow_key": workflow_key
-        }
+        payload = {"prompt": prompt, "workflow_key": workflow_key}
         async with self.session.post(endpoint, json=payload) as resp:
             result = await resp.json()
             return result

@@ -1,0 +1,21 @@
+{
+  "project_id": "401fab28028847b994cd8c4abbab3319",
+  "project_name": "DaVinci Manual Validation 9ed9f7",
+  "assembly_cut_id": "9cb59a40-f2ed-436d-8190-610f485289d7",
+  "clip_count": 3,
+  "fps": 24.0,
+  "route_status": {
+    "resolved": 6,
+    "offline": 0,
+    "missing": 0
+  },
+  "warnings": [],
+  "validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": [],
+    "clip_count": 3,
+    "asset_count": 3,
+    "fps": 24.0
+  }
+}

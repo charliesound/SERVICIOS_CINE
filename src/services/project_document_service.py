@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import uuid
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import List, Tuple
 from xml.etree import ElementTree as ET
 
 from fastapi import HTTPException, UploadFile
@@ -21,7 +23,9 @@ from models.document import (
     ProjectDocumentUploadStatus,
     ProjectDocumentVisibilityScope,
 )
+from models.matcher import MatcherJob, MatcherJobStatus
 from services.project_document_rag_service import project_document_rag_service
+from services.queue_service import queue_service
 
 
 class ProjectDocumentService:
@@ -229,6 +233,16 @@ class ProjectDocumentService:
             )
             document.upload_status = ProjectDocumentUploadStatus.COMPLETED
             document.error_message = None
+            
+            # After successful document processing, enqueue matcher job if this is a PROJECT-scoped document
+            if document.visibility_scope == ProjectDocumentVisibilityScope.PROJECT:
+                await self._enqueue_matcher_job_for_document_update(
+                    db, 
+                    project_id=str(project.id),
+                    organization_id=str(project.organization_id),
+                    document_id=str(document.id),
+                    document_checksum=document.checksum
+                )
         except Exception as exc:
             document.upload_status = ProjectDocumentUploadStatus.ERROR
             document.error_message = str(exc)
@@ -319,5 +333,120 @@ class ProjectDocumentService:
             raise HTTPException(status_code=404, detail="Stored document file not found")
         return file_path
 
+
+    async def _enqueue_matcher_job_for_document_update(
+        self,
+        db: AsyncSession,
+        *,
+        project_id: str,
+        organization_id: str,
+        document_id: str,
+        document_checksum: str
+    ) -> None:
+        """Enqueue a matcher job when a project document is updated/completed.
+        
+        This method implements idempotency by checking if a completed job already exists
+        with the same input hash for the project.
+        """
+        from sqlalchemy import select
+        
+        # Compute input hash based on:
+        # 1. All PROJECT-scoped documents for this project with their checksums
+        # 2. All relevant funding calls for the organization (using ingested_at as version)
+        # 3. Matcher evaluation version (hardcoded for now, could be configurable)
+        
+        # Get all completed PROJECT-scoped documents for this project
+        from models.document import ProjectDocument, ProjectDocumentUploadStatus, ProjectDocumentVisibilityScope
+        
+        docs_result = await db.execute(
+            select(ProjectDocument.id, ProjectDocument.checksum)
+            .where(
+                ProjectDocument.project_id == project_id,
+                ProjectDocument.organization_id == organization_id,
+                ProjectDocument.visibility_scope == ProjectDocumentVisibilityScope.PROJECT,
+                ProjectDocument.upload_status == ProjectDocumentUploadStatus.COMPLETED
+            )
+            .order_by(ProjectDocument.id)  # Order for consistent hash
+        )
+        document_entries = [(str(row.id), str(row.checksum)) for row in docs_result.fetchall()]
+        
+        # Get all funding calls for the organization (relevant for matching)
+        from models.production import FundingCall
+        
+        calls_result = await db.execute(
+            select(FundingCall.id, FundingCall.ingested_at)
+            .where(FundingCall.organization_id == organization_id)
+            .order_by(FundingCall.id)  # Order for consistent hash
+        )
+        call_entries = [(str(row.id), row.ingested_at.isoformat() if row.ingested_at else "") 
+                       for row in calls_result.fetchall()]
+        
+        # Matcher evaluation version (could be made configurable)
+        evaluation_version = "v1.0"
+        
+        # Create input hash
+        hash_input = {
+            "documents": document_entries,
+            "funding_calls": call_entries,
+            "evaluation_version": evaluation_version
+        }
+        
+        hash_string = json.dumps(hash_input, sort_keys=True)
+        input_hash = hashlib.sha256(hash_string.encode()).hexdigest()
+        
+        # Check if we already have a completed job with this input hash
+        existing_job_result = await db.execute(
+            select(MatcherJob)
+            .where(
+                MatcherJob.project_id == project_id,
+                MatcherJob.organization_id == organization_id,
+                MatcherJob.input_hash == input_hash,
+                MatcherJob.status.in_([MatcherJobStatus.COMPLETED, MatcherJobStatus.SKIPPED])
+            )
+        )
+        existing_job = existing_job_result.scalar_one_or_none()
+        
+        if existing_job:
+            # Job already processed, skip
+            return
+            
+        # Check if there's already a pending/queued job with same hash (avoid duplicates in queue)
+        pending_job_result = await db.execute(
+            select(MatcherJob)
+            .where(
+                MatcherJob.project_id == project_id,
+                MatcherJob.organization_id == organization_id,
+                MatcherJob.input_hash == input_hash,
+                MatcherJob.status.in_([MatcherJobStatus.PENDING, MatcherJobStatus.QUEUED, MatcherJobStatus.PROCESSING])
+            )
+        )
+        pending_job = pending_job_result.scalar_one_or_none()
+        
+        if pending_job:
+            # Job already in queue, skip
+            return
+            
+        # Create new matcher job
+        new_job = MatcherJob(
+            project_id=project_id,
+            organization_id=organization_id,
+            trigger_type="document_updated",
+            trigger_ref_id=document_id,
+            input_hash=input_hash,
+            status=MatcherJobStatus.QUEUED
+        )
+        
+        db.add(new_job)
+        await db.flush()  # Get the ID
+        
+        # Enqueue job for processing
+        await queue_service.enqueue(
+            queue_name="matcher",
+            job_data={
+                "job_id": str(new_job.id),
+                "project_id": project_id,
+                "organization_id": organization_id
+            }
+        )
 
 project_document_service = ProjectDocumentService()

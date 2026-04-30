@@ -2,15 +2,29 @@
 
 ## 🚀 Inicio Rápido
 
-### Opción 1: Deploy Completo (Primero uso)
-```batch
-deploy.bat
+### Stack demo oficial
+
+- Home demo: `compose.base.yml` + `compose.home.yml`
+- VPS demo: `compose.base.yml` + `compose.vps.yml`
+- Proxy oficial demo: `Caddyfile.deploy`
+- Frontend oficial: `src_frontend`
+- Backend oficial: `src`
+
+### Arranque seguro mínimo
+
+```bash
+# Home demo
+cp .env.home.example .env
+
+# o VPS demo
+# cp .env.vps.example .env
+
+# Edita .env y define secretos fuertes reales antes de arrancar
+docker compose -f compose.base.yml -f compose.home.yml config
+docker compose -f compose.base.yml -f compose.home.yml up -d --build
 ```
 
-### Opción 2: Inicio Rápido (Si ya tienes dependencias)
-```batch
-iniciar.bat
-```
+Los placeholders de los archivos `.env*.example` no son operativos. No publiques ni versionas el `.env` real.
 
 ---
 
@@ -24,37 +38,62 @@ iniciar.bat
 
 ---
 
-## 🖥️ Acceso
+## 🖥️ Rutas esperadas en la demo
 
-| Entorno | URL |
-|---------|-----|
-| Local | http://localhost |
-| Tailscale IP | http://100.104.219.15 |
-| Nombre recomendado | http://ailinkcinema |
-
-**Nota**: Para dominio personalizado, agregar al archivo `hosts`:
-```
-100.104.219.15    ailinkcinema
-```
+| Ruta | Estado esperado | Componente |
+|------|-----------------|------------|
+| `/` | OK | Frontend React/Vite oficial |
+| `/cid` | OK | Frontend React/Vite oficial; proteccion real en SPA |
+| `/register/select` | OK | Frontend React/Vite oficial |
+| `/legal/privacidad` | OK | Frontend React/Vite oficial |
+| `/api/health` | OK | Backend FastAPI oficial |
+| `/health` | OK | Backend FastAPI oficial |
+| `/docs` | `404` | Bloqueado en demo |
+| `/openapi.json` | `404` | Bloqueado en demo |
+| `/auth/login` | `404` | Bloqueado en demo |
+| `/n8n` | `404` | Fuera del stack oficial demo |
+| `/qdrant` | `404` | Fuera del stack oficial demo |
+| `/automation` | `404` | Fuera del stack oficial demo |
 
 ---
 
-## 👤 Credenciales Demo
+## 🔐 Secretos mínimos
 
-| Rol | Email | Contraseña |
-|-----|-------|------------|
-| Admin | admin@servicios-cine.com | admin123 |
-| Free | demo_free@servicios-cine.com | demo123 |
-| Studio | demo_studio@servicios-cine.com | demo123 |
+Variables obligatorias para cualquier arranque de demo:
+
+- `AUTH_SECRET_KEY`: fuerte, aleatoria y secreta
+- `APP_SECRET_KEY`: obligatoria y distinta de `AUTH_SECRET_KEY`
+- `ACCESS_TOKEN_EXPIRE_MINUTES`: definida de forma explicita
+
+Variables recomendadas solo si la demo usa integraciones:
+
+- `INTEGRATION_TOKEN_ENCRYPTION_KEY`
+- `GOOGLE_DRIVE_OAUTH_STATE_SECRET`
+- `GOOGLE_DRIVE_CLIENT_ID`
+- `GOOGLE_DRIVE_CLIENT_SECRET`
+- `COMFYUI_*` si se necesita render externo real
+
+No publicar ni versionar:
+
+- `.env` real
+- secretos
+- tokens OAuth
+- bases SQLite con datos reales
+- documentos subidos
+- PDFs de usuarios
+- logs con datos sensibles
+- outputs privados de clientes
 
 ---
 
 ## 🔧 Scripts Disponibles
 
+Estos scripts quedan como ayudas locales/manuales y no sustituyen el runtime oficial de demo basado en `compose.base.yml` + `compose.home.yml` o `compose.vps.yml`.
+
 | Script | Función |
 |--------|---------|
-| `deploy.bat` | Instala todo y prepara el proyecto |
-| `iniciar.bat` | Inicia backend y frontend |
+| `deploy.bat` | Flujo local/manual heredado |
+| `iniciar.bat` | Inicio local/manual heredado |
 | `start_backend.bat` | Solo backend |
 | `start_frontend.bat` | Solo frontend |
 | `health_check.ps1` | Verifica estado de servicios |
@@ -64,40 +103,38 @@ iniciar.bat
 
 ---
 
-## 🐳 Docker (Opcional)
+## 🐳 Runtime demo oficial
 
-```batch
-docker-compose up -d
+Usa solo estos comandos para la demo aprobada:
+
+```bash
+# Home demo
+docker compose -f compose.base.yml -f compose.home.yml config
+docker compose -f compose.base.yml -f compose.home.yml up -d --build
+
+# VPS demo
+docker compose -f compose.base.yml -f compose.vps.yml config
+docker compose -f compose.base.yml -f compose.vps.yml up -d --build
 ```
 
-### Servicios principales
+### Stack NO oficial para esta demo
 
-| Servicio | URL local | URL Tailscale |
-|----------|-----------|---------------|
-| Landing principal | http://localhost | http://ailinkcinema |
-| Backend API | http://localhost:8000 | http://ailinkcinema:8000 |
-| API Docs | http://localhost:8000/docs | http://ailinkcinema/docs |
-| CINE Web | http://localhost/cine/ | http://ailinkcinema/cine/ |
-| CINE API | http://localhost/cine/api/ | http://ailinkcinema/cine/api/ |
-| Automation Engine | http://localhost/automation/health | http://ailinkcinema/automation/health |
-| n8n | http://localhost/n8n/ | http://ailinkcinema/n8n/ |
-| Qdrant | http://localhost/qdrant/collections | http://ailinkcinema/qdrant/collections |
+Los siguientes artefactos permanecen en el repositorio por legado, auditoria o trabajo posterior, pero no forman parte del runtime oficial de esta demo:
 
-### Acceso protegido
-
-- La landing en `/` es publica.
-- Las rutas operativas `/cine/`, `/app`, `/n8n/`, `/qdrant/`, `/automation/` y la documentacion tecnica del backend estan protegidas con autenticacion basica de Caddy.
-- La clave no se documenta en el repositorio; se gestiona solo en `.env`.
-
-### HTTP y HTTPS
-
-- Usa `http://` como opcion recomendada para el uso diario en red local y Tailscale.
-- `https://` tambien funciona por Caddy, pero usa certificado autofirmado y el navegador puede mostrar advertencias.
-- Si el navegador te fuerza a HTTPS, acepta la excepcion del certificado o vuelve a entrar con `http://`.
+- `OLD/legacy_stacks/docker-compose.yml`
+- `OLD/legacy_stacks/Caddyfile`
+- `Web Ailink_Cinema`
+- `CINE_AI_PLATFORM`
+- `CID_SERVER/automation-engine`
+- `automation-engine`
+- `n8n`
+- `qdrant`
 
 ---
 
 ## 🌐 ComfyUI Backends
+
+ComfyUI es opcional para esta demo y no quedo validado en el ultimo smoke. Solo configurarlo si la demo necesita render externo real.
 
 Para funcionalidad completa, iniciar 4 instancias ComfyUI:
 
@@ -120,10 +157,14 @@ SERVICIOS_CINE/
 │   ├── schemas/            # Modelos de datos
 │   └── config/             # Configuración YAML
 ├── src_frontend/           # Frontend (React+Vite)
-├── docs/                   # Documentación
+├── docs/                   # Documentacion operativa
 ├── scripts/                # Scripts auxiliares
-├── Caddyfile               # Configuración proxy
-├── docker-compose.yml      # Contenedores
+├── Caddyfile.deploy        # Proxy oficial demo
+├── compose.base.yml        # Base oficial demo
+├── compose.home.yml        # Overlay oficial home demo
+├── compose.vps.yml         # Overlay oficial VPS demo
+├── OLD/legacy_stacks/Caddyfile        # Legacy / no oficial para esta demo
+├── OLD/legacy_stacks/docker-compose.yml # Legacy / no oficial para esta demo
 └── *.bat / *.ps1          # Scripts de utilidad
 ```
 
@@ -131,10 +172,14 @@ SERVICIOS_CINE/
 
 ## 📖 Documentación
 
-- [Guía de Despliegue](docs/GUIA_DESPLIEGUE_SERVIDOR.md)
-- [Mapa del Sistema](docs/MAPA_DEL_SISTEMA.md)
-- [Acceso Tailscale](README_TAILSCALE.md)
-- [Guía WSL2](README_WSL2.md)
+- [Deploy Home Demo](docs/DEPLOY_HOME.md)
+- [Deploy VPS Demo](docs/DEPLOY_VPS.md)
+- [Release Demo Guide](docs/RELEASE_DEMO_GUIDE.md)
+- [Production Candidate Status](docs/PRODUCTION_CANDIDATE_STATUS.md)
+- [Guía de Despliegue](OLD/sensitive_review/historical_docs/GUIA_DESPLIEGUE_SERVIDOR.md) - historica
+- [Mapa del Sistema](OLD/historical_docs/MAPA_DEL_SISTEMA.md)
+- [Acceso Tailscale](OLD/sensitive_review/historical_docs/README_TAILSCALE.md)
+- [Guía WSL2](OLD/historical_docs/README_WSL2.md)
 - [Documentación Vigente](docs/DOCUMENTACION_VIGENTE.md)
 
 ### Documentación Operativa MVP
@@ -150,6 +195,8 @@ SERVICIOS_CINE/
 
 ## 🔧 Desarrollo
 
+Las siguientes rutas manuales sirven para desarrollo local. No son el camino oficial de arranque de la demo release.
+
 ### Backend
 ```bash
 cd src
@@ -164,20 +211,16 @@ npm install
 npm run dev
 ```
 
-### API Docs
-```
-http://localhost:8000/docs
-```
+### Estado honesto de la demo
 
-### CINE Platform
-```
-http://localhost/cine/
-```
-
-### n8n
-```
-http://localhost/n8n/
-```
+- Apta para demo comercial controlada
+- No produccion publica
+- ComfyUI opcional / no validado en el ultimo smoke
+- Queue en `memory` mode
+- Rate limiter basico e in-memory
+- TLS/443 pendiente
+- Revision legal pendiente
+- Limpieza `OLD` pendiente
 
 ---
 
@@ -186,7 +229,7 @@ http://localhost/n8n/
 | Endpoint | Método | Descripción |
 |----------|--------|-------------|
 | `/api/auth/register` | POST | Registrar usuario |
-| `/api/auth/login` | POST | Iniciar sesión |
+| `/api/auth/login` | POST | Login API interno; no se expone como ruta publica `/auth/login` en la demo |
 | `/api/render/jobs` | POST | Crear job |
 | `/api/render/jobs/{id}` | GET | Ver job |
 | `/api/queue/status` | GET | Estado de cola |
@@ -203,6 +246,8 @@ Editar `src/config/config.yaml` para:
 - CORS orígenes permitidos
 - Configuración de queue
 - Features habilitadas
+
+Para entornos `demo` o `production`, `AUTH_SECRET_KEY` y `APP_SECRET_KEY` deben inyectarse desde variables de entorno con valores fuertes y distintos; no usar los placeholders del repositorio.
 
 ---
 

@@ -2,6 +2,7 @@
 
 > Documento historico de planificacion. Algunas secciones (especialmente Sprint 11-12) ya no reflejan el estado real del codigo implementado.
 > Estado operativo actual: `docs/PRODUCTION_CANDIDATE_STATUS.md`, `docs/SPRINT13_RUNBOOK.md`, `docs/RELEASE_DEMO_GUIDE.md`.
+> Actualizacion Sprint 13.3: queue persistence minima sobre DB con recovery de restart ya implementada; los TODO de cola mas abajo quedaron desfasados parcialmente.
 
 > Sprint 10 (Project + Script + Analyze + Storyboard) ✅ CERRADO
 > Este documento: preparación Sprint 11 y Sprint 12. **SIN IMPLEMENTAR.**

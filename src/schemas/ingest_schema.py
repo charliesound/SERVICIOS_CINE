@@ -58,6 +58,10 @@ class MediaAssetResponse(BaseModel):
     discovered_at: datetime
     status: str
     created_by: Optional[str]
+    metadata_json: Optional[str] = None
+    content_ref: Optional[str] = None
+    job_id: Optional[str] = None
+    asset_source: Optional[str] = None
 
 
 class MediaAssetListResponse(BaseModel):

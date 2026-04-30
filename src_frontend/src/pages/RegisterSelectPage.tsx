@@ -7,19 +7,19 @@ const programs = [
   {
     id: 'cid',
     icon: Film,
-    title: 'Programa CID',
-    description: 'Acceso completo a la plataforma de servicios inteligentes para cine. Análisis de guion, desglose y storyboard con IA.',
-    features: ['Análisis automático de guion', 'Desglose cinematográfico', 'Storyboard con IA', 'Reportes de producción'],
-    cta: 'Solicitar acceso CID',
+    title: 'Acceso CID',
+    description: 'Acceso directo a la plataforma. Puedes empezar con el plan Demo gratis y entrar hoy mismo a CID.',
+    features: ['Plan Demo gratis', 'Acceso inmediato', 'Storyboard con IA', 'Reportes de producción'],
+    cta: 'Crear cuenta demo CID',
     color: 'amber',
   },
   {
     id: 'demo',
     icon: Users,
-    title: 'Solicitar Demo',
-    description: 'Solicita una demo personalizada para tu productora o equipo. Te contactamos en 24h.',
+    title: 'Demo guiada',
+    description: 'Solicita una sesion personalizada con el equipo. Esta opcion no crea acceso inmediato a CID.',
     features: ['Demo personalizada de 30 min', 'Casos de uso de tu productora', 'Propuesta adaptada a tu flujo'],
-    cta: 'Solicitar demo',
+    cta: 'Solicitar demo guiada',
     color: 'blue',
   },
   {
@@ -91,13 +91,13 @@ export default function RegisterSelectPage() {
       <div className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-5xl">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              Elige cómo quieres empezar
-            </h1>
-            <p className="text-gray-400 text-lg max-w-xl mx-auto">
-              Selecciona el programa que mejor se adapte a tus necesidades. Puedes cambiar más tarde.
-            </p>
-          </div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">
+                Elige cómo quieres empezar
+              </h1>
+              <p className="text-gray-400 text-lg max-w-xl mx-auto">
+                Si quieres entrar ahora a CID, usa Acceso CID. La demo guiada es una solicitud comercial.
+              </p>
+            </div>
 
           <div className="grid md:grid-cols-3 gap-6">
             {programs.map((program) => {

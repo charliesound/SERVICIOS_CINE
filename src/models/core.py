@@ -1,10 +1,17 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import uuid
 
 from sqlalchemy import String, Boolean, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship, foreign
 from database import Base
+
+if TYPE_CHECKING:
+    from models.history import JobHistory
+    from models.storage import MediaAsset
+    from models.storyboard import StoryboardShot
 
 
 class Organization(Base):
@@ -36,6 +43,28 @@ class Project(Base):
         DateTime, default=datetime.utcnow
     )
 
+    project_jobs: Mapped[list["ProjectJob"]] = relationship(
+        "ProjectJob",
+        back_populates="project",
+        primaryjoin="foreign(ProjectJob.project_id) == Project.id",
+    )
+    job_history_entries: Mapped[list["JobHistory"]] = relationship(
+        "JobHistory",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    media_assets: Mapped[list["MediaAsset"]] = relationship(
+        "MediaAsset",
+        back_populates="project",
+        primaryjoin="foreign(MediaAsset.project_id) == Project.id",
+    )
+    storyboard_shots: Mapped[list["StoryboardShot"]] = relationship(
+        "StoryboardShot",
+        back_populates="project",
+        primaryjoin="foreign(StoryboardShot.project_id) == Project.id",
+        cascade="all, delete-orphan",
+    )
+
 
 class User(Base):
     __tablename__ = "users"
@@ -63,6 +92,16 @@ class User(Base):
         DateTime, default=datetime.utcnow
     )
 
+    created_project_jobs: Mapped[list["ProjectJob"]] = relationship(
+        "ProjectJob",
+        back_populates="creator",
+        primaryjoin="foreign(ProjectJob.created_by) == User.id",
+    )
+    job_history_entries: Mapped[list["JobHistory"]] = relationship(
+        "JobHistory",
+        back_populates="creator",
+    )
+
 
 class ProjectJob(Base):
     __tablename__ = "project_jobs"
@@ -84,3 +123,24 @@ class ProjectJob(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    project: Mapped["Project"] = relationship(
+        "Project",
+        back_populates="project_jobs",
+        primaryjoin="foreign(ProjectJob.project_id) == Project.id",
+    )
+    creator: Mapped[Optional["User"]] = relationship(
+        "User",
+        back_populates="created_project_jobs",
+        primaryjoin="foreign(ProjectJob.created_by) == User.id",
+    )
+    history_entries: Mapped[list["JobHistory"]] = relationship(
+        "JobHistory",
+        back_populates="project_job",
+        cascade="all, delete-orphan",
+    )
+    media_assets: Mapped[list["MediaAsset"]] = relationship(
+        "MediaAsset",
+        back_populates="project_job",
+        primaryjoin="foreign(MediaAsset.job_id) == ProjectJob.id",
+    )

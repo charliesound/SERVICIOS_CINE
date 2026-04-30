@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ payload.project_profile.title }} - Funding Dossier</title>
+  <style>
+    @page { margin: 22mm 16mm; }
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: #1f2937;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+    h1, h2, h3 { margin: 0 0 8px 0; }
+    h1 { font-size: 24px; }
+    h2 {
+      font-size: 15px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #d1d5db;
+      margin-top: 18px;
+    }
+    h3 { font-size: 11px; color: #334155; }
+    p { margin: 0 0 6px 0; }
+    .hero {
+      padding: 18px 20px;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f8fafc 100%);
+      border: 1px solid #cbd5e1;
+      margin-bottom: 16px;
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 8px;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    .meta { color: #475569; }
+    .grid {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 8px;
+      margin: 0 -8px 12px -8px;
+    }
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 10px;
+      vertical-align: top;
+    }
+    .card strong { display: block; font-size: 16px; margin-bottom: 2px; }
+    .muted { color: #64748b; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border-bottom: 1px solid #e5e7eb; padding: 6px 8px; vertical-align: top; }
+    th { background: #f8fafc; font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .amount { text-align: right; }
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .high { background: #dcfce7; color: #166534; }
+    .medium { background: #fef3c7; color: #92400e; }
+    .low { background: #e5e7eb; color: #374151; }
+    .blocked { background: #fee2e2; color: #991b1b; }
+    .region {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+    }
+    .match {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-left: 3px solid #94a3b8;
+      background: #f8fafc;
+    }
+    .match.high { border-left-color: #16a34a; }
+    .match.medium { border-left-color: #d97706; }
+    .match.low, .match.blocked { border-left-color: #dc2626; }
+    ul { margin: 6px 0 0 16px; padding: 0; }
+    li { margin-bottom: 3px; }
+    .footer {
+      margin-top: 18px;
+      font-size: 8px;
+      color: #64748b;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="eyebrow">Funding Dossier ES / EU / LATAM</div>
+    <h1>{{ payload.project_profile.title }}</h1>
+    <p>{{ payload.project_profile.logline or payload.project_profile.synopsis or "Project funding dossier" }}</p>
+    <p class="meta">
+      {{ payload.project_profile.type_of_work }} | {{ payload.project_profile.phase }} |
+      {{ payload.project_profile.language }} | {{ payload.project_profile.countries_involved | join(", ") }}
+    </p>
+  </div>
+
+  <h2>Executive Summary</h2>
+  <table class="grid">
+    <tr>
+      <td class="card"><strong>{{ payload.production_breakdown_summary.scenes_count }}</strong><span class="muted">Scenes</span></td>
+      <td class="card"><strong>EUR {{ "{:,.0f}".format(payload.budget_summary.total_budget) }}</strong><span class="muted">Total budget</span></td>
+      <td class="card"><strong>EUR {{ "{:,.0f}".format(payload.private_funding_summary.current_funding_gap) }}</strong><span class="muted">Current funding gap</span></td>
+      <td class="card"><strong>{{ payload.funding_match_summary.high_count }}</strong><span class="muted">High fit calls</span></td>
+    </tr>
+  </table>
+
+  <h2>Project Snapshot</h2>
+  <p><strong>Project ID:</strong> {{ payload.project_profile.project_id }}</p>
+  <p><strong>Organization ID:</strong> {{ payload.project_profile.organization_id }}</p>
+  <p><strong>Synopsis:</strong> {{ payload.project_profile.synopsis or "Not available" }}</p>
+  <p><strong>Evaluation version:</strong> {{ payload.project_profile.evaluation_version }}</p>
+
+  <h2>Production Snapshot</h2>
+  <p><strong>Complexity flags:</strong> {{ payload.production_breakdown_summary.complexity_flags | join(", ") if payload.production_breakdown_summary.complexity_flags else "None detected" }}</p>
+  <table>
+    <thead>
+      <tr><th>Department</th><th class="amount">Count</th></tr>
+    </thead>
+    <tbody>
+      {% for item in payload.production_breakdown_summary.departments_summary %}
+      <tr>
+        <td>{{ item.department }}</td>
+        <td class="amount">{{ item.count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Budget Top Sheet</h2>
+  <p><strong>Scenario:</strong> {{ payload.budget_summary.scenario or "not_generated" }}</p>
+  <table>
+    <thead>
+      <tr><th>Section</th><th class="amount">Total</th></tr>
+    </thead>
+    <tbody>
+      {% for section, total in payload.budget_summary.section_totals.items() %}
+      <tr>
+        <td>{{ section }}</td>
+        <td class="amount">EUR {{ "{:,.0f}".format(total) }}</td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td><strong>Contingency</strong></td>
+        <td class="amount"><strong>EUR {{ "{:,.0f}".format(payload.budget_summary.contingency) }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Funding Gap</h2>
+  <p><strong>Secured:</strong> EUR {{ "{:,.0f}".format(payload.private_funding_summary.secured) }}</p>
+  <p><strong>Negotiating:</strong> EUR {{ "{:,.0f}".format(payload.private_funding_summary.negotiating) }}</p>
+  <p><strong>Projected:</strong> EUR {{ "{:,.0f}".format(payload.private_funding_summary.projected) }}</p>
+  <p><strong>Current gap:</strong> EUR {{ "{:,.0f}".format(payload.private_funding_summary.current_funding_gap) }}</p>
+  <p><strong>Optimistic gap:</strong> EUR {{ "{:,.0f}".format(payload.private_funding_summary.optimistic_funding_gap) }}</p>
+
+  <h2>Institutional Opportunities</h2>
+  {% for region_key, region_title in [("spain", "Spain"), ("europe", "Europe"), ("iberoamerica_latam", "Ibero-America / LatAm")] %}
+  <div class="region">
+    <h3>{{ region_title }}</h3>
+    {% set recommended = payload.render_context.recommended_by_region[region_key] %}
+    {% set blocked = payload.render_context.low_or_blocked_by_region[region_key] %}
+    {% if recommended %}
+      {% for match in recommended %}
+      <div class="match {{ match.fit_level }}">
+        <span class="badge {{ match.fit_level }}">{{ match.fit_level }}</span>
+        <strong>{{ match.title }}</strong>
+        <p>{{ match.source_name }} | {{ match.opportunity_type }} | Score {{ match.match_score }}</p>
+        <p>{{ match.fit_summary }}</p>
+        {% if match.recommended_actions %}
+        <ul>
+          {% for action in match.recommended_actions %}<li>{{ action }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No high or medium fit recommendations yet.</p>
+    {% endif %}
+    {% if blocked %}
+      <p><strong>Low / blocked signals</strong></p>
+      <ul>
+        {% for match in blocked %}
+        <li>{{ match.title }} — {{ match.fit_level }}{% if match.blocking_reasons_json %}: {{ match.blocking_reasons_json | join(", ") }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <h2>Checklist and Next Steps</h2>
+  <p><strong>Missing documents:</strong> {{ payload.checklist.missing_documents | join(", ") if payload.checklist.missing_documents else "None detected" }}</p>
+  <p><strong>Priority actions:</strong></p>
+  <ul>
+    {% for action in payload.checklist.priority_actions %}
+    <li>{{ action }}</li>
+    {% endfor %}
+  </ul>
+  <p><strong>Deadline risks:</strong></p>
+  <ul>
+    {% for risk in payload.checklist.deadline_risks %}
+    <li>{{ risk.title }} — {{ risk.deadline_at }} ({{ risk.fit_level }})</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Funding Strategy</h2>
+  <ul>
+    {% for item in payload.funding_strategy %}
+    <li>{{ item }}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Methodology Note</h2>
+  <p>
+    This dossier consolidates project profile, production breakdown, budget, private funding gap,
+    and institutional matcher outputs. High and medium fit calls are prioritized; low and blocked
+    calls are shown only as cautionary signals.
+  </p>
+
+  <div class="footer">
+    Generated at {{ payload.generated_at }} | dossier version {{ payload.dossier_version }}
+  </div>
+</body>
+</html>

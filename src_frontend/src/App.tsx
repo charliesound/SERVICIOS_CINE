@@ -9,6 +9,10 @@ import RegisterSelectPage from './pages/RegisterSelectPage'
 import RegisterCIDPage from './pages/RegisterCIDPage'
 import RegisterDemoPage from './pages/RegisterDemoPage'
 import RegisterPartnerPage from './pages/RegisterPartnerPage'
+import LegalPrivacyPage from './pages/legal/LegalPrivacyPage'
+import LegalNoticePage from './pages/legal/LegalNoticePage'
+import LegalTermsPage from './pages/legal/LegalTermsPage'
+import LegalAiContentPage from './pages/legal/LegalAiContentPage'
 import OnboardingPage from './pages/OnboardingPage'
 import PendingAccessPage from './pages/PendingAccessPage'
 import Dashboard from './pages/Dashboard'
@@ -32,11 +36,29 @@ import StorageSourceDetailPage from './pages/StorageSourceDetailPage'
 import ProjectsPage from './pages/ProjectsPage'
 import NewProjectPage from './pages/NewProjectPage'
 import ProjectDetailPage from './pages/ProjectDetailPage'
+import StoryboardBuilderPage from './pages/StoryboardBuilderPage'
+import ProjectFundingPage from './pages/ProjectFundingPage'
+import EditorialAssemblyPage from './pages/EditorialAssemblyPage'
+import ProjectDashboardPage from './pages/ProjectDashboardPage'
+import ProjectMembersPage from './pages/ProjectMembersPage'
+import BudgetEstimatorPage from './pages/BudgetEstimatorPage'
+import ChangeRequestsPage from './pages/ChangeRequestsPage'
+import ProducerPitchPackPage from './pages/ProducerPitchPackPage'
+import DistributionPackPage from './pages/DistributionPackPage'
+import CommercialCrmPage from './pages/CommercialCrmPage'
+import DeliveryOverviewPage from './pages/DeliveryOverviewPage'
+import DeliverableDetailPage from './pages/DeliverableDetailPage'
+import ReviewsOverviewPage from './pages/ReviewsOverviewPage'
+import ReviewDetailPage from './pages/ReviewDetailPage'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/legal/privacidad" element={<LegalPrivacyPage />} />
+      <Route path="/legal/aviso-legal" element={<LegalNoticePage />} />
+      <Route path="/legal/terminos" element={<LegalTermsPage />} />
+      <Route path="/legal/ia-y-contenidos" element={<LegalAiContentPage />} />
 
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />
@@ -50,76 +72,90 @@ export default function App() {
       <Route path="/pending-access" element={<PendingAccessPage />} />
       <Route path="/project/:jobId" element={<ClientPortal />} />
 
-      <Route element={<AppShell />}>
-        <Route
-          path="/cid"
-          element={
-            <CIDRoute>
-              <Dashboard />
-            </CIDRoute>
-          }
-        />
-        <Route
-          path="/cid/demo"
-          element={
-            <PlanRoute program="demo">
-              <Dashboard />
-            </PlanRoute>
-          }
-        />
-        <Route
-          path="/cid/creator"
-          element={
-            <PlanRoute program="creator">
-              <Dashboard />
-            </PlanRoute>
-          }
-        />
-        <Route
-          path="/cid/producer"
-          element={
-            <PlanRoute program="producer">
-              <Dashboard />
-            </PlanRoute>
-          }
-        />
-        <Route
-          path="/cid/studio"
-          element={
-            <PlanRoute program="studio">
-              <Dashboard />
-            </PlanRoute>
-          }
-        />
-        <Route
-          path="/cid/enterprise"
-          element={
-            <PlanRoute program="enterprise">
-              <Dashboard />
-            </PlanRoute>
-          }
-        />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects" element={<ProjectsPage />} />
-        <Route path="/projects/new" element={<NewProjectPage />} />
-        <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
-        <Route path="/create" element={<CreateJob />} />
-        <Route path="/queue" element={<QueuePage />} />
-        <Route path="/history" element={<ProjectHistory />} />
-        <Route path="/workflows" element={<WorkflowsPage />} />
-        <Route path="/plans" element={<PlansPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/storage-sources" element={<StorageSourcesPage />} />
-        <Route path="/storage-sources/:sourceId" element={<StorageSourceDetailPage />} />
-        <Route path="/ingest/scans" element={<IngestScansPage />} />
-        <Route path="/ingest/scans/:scanId" element={<IngestScanDetailPage />} />
-        <Route path="/ingest/assets" element={<MediaAssetsPage />} />
-        <Route path="/ingest/assets/:assetId" element={<MediaAssetDetailPage />} />
-        <Route path="/documents" element={<DocumentsPage />} />
-        <Route path="/documents/:documentId" element={<DocumentDetailPage />} />
-        <Route path="/reports/:reportType" element={<ReportsPage />} />
-        <Route path="/reports/:reportType/:reportId" element={<ReportDetailPage />} />
-      </Route>
+       <Route element={<CIDRoute><AppShell /></CIDRoute>}>
+         <Route
+           path="/cid"
+           element={
+             <CIDRoute>
+               <Dashboard />
+             </CIDRoute>
+           }
+         />
+         <Route
+           path="/cid/demo"
+           element={
+             <PlanRoute program="demo">
+               <Dashboard />
+             </PlanRoute>
+           }
+         />
+         <Route
+           path="/cid/creator"
+           element={
+             <PlanRoute program="creator">
+               <Dashboard />
+             </PlanRoute>
+           }
+         />
+         <Route
+           path="/cid/producer"
+           element={
+             <PlanRoute program="producer">
+               <Dashboard />
+             </PlanRoute>
+           }
+         />
+         <Route
+           path="/cid/studio"
+           element={
+             <PlanRoute program="studio">
+               <Dashboard />
+             </PlanRoute>
+           }
+         />
+         <Route
+           path="/cid/enterprise"
+           element={
+             <PlanRoute program="enterprise">
+               <Dashboard />
+             </PlanRoute>
+           }
+         />
+         <Route path="/dashboard" element={<Dashboard />} />
+         <Route path="/projects" element={<ProjectsPage />} />
+         <Route path="/projects/new" element={<NewProjectPage />} />
+         <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+         <Route path="/projects/:projectId/dashboard" element={<ProjectDashboardPage />} />
+         <Route path="/projects/:projectId/members" element={<ProjectMembersPage />} />
+         <Route path="/projects/:projectId/budget" element={<BudgetEstimatorPage />} />
+         <Route path="/projects/:projectId/change-requests" element={<ChangeRequestsPage />} />
+         <Route path="/projects/:projectId/producer-pitch" element={<ProducerPitchPackPage />} />
+         <Route path="/projects/:projectId/distribution" element={<DistributionPackPage />} />
+         <Route path="/projects/:projectId/crm" element={<CommercialCrmPage />} />
+         <Route path="/projects/:projectId/storyboard-builder" element={<StoryboardBuilderPage />} />
+         <Route path="/projects/:projectId/editorial" element={<EditorialAssemblyPage />} />
+         <Route path="/projects/:projectId/funding" element={<ProjectFundingPage />} />
+         <Route path="/projects/:projectId/reviews" element={<ReviewsOverviewPage />} />
+         <Route path="/projects/:projectId/reviews/:reviewId" element={<ReviewDetailPage />} />
+         <Route path="/projects/:projectId/delivery" element={<DeliveryOverviewPage />} />
+         <Route path="/projects/:projectId/delivery/:deliverableId" element={<DeliverableDetailPage />} />
+         <Route path="/create" element={<CreateJob />} />
+         <Route path="/queue" element={<QueuePage />} />
+         <Route path="/history" element={<ProjectHistory />} />
+         <Route path="/workflows" element={<WorkflowsPage />} />
+         <Route path="/plans" element={<PlansPage />} />
+         <Route path="/admin" element={<AdminPage />} />
+         <Route path="/storage-sources" element={<StorageSourcesPage />} />
+         <Route path="/storage-sources/:sourceId" element={<StorageSourceDetailPage />} />
+         <Route path="/ingest/scans" element={<IngestScansPage />} />
+         <Route path="/ingest/scans/:scanId" element={<IngestScanDetailPage />} />
+         <Route path="/ingest/assets" element={<MediaAssetsPage />} />
+         <Route path="/ingest/assets/:assetId" element={<MediaAssetDetailPage />} />
+         <Route path="/documents" element={<DocumentsPage />} />
+         <Route path="/documents/:documentId" element={<DocumentDetailPage />} />
+         <Route path="/reports/:reportType" element={<ReportsPage />} />
+         <Route path="/reports/:reportType/:reportId" element={<ReportDetailPage />} />
+       </Route>
     </Routes>
   )
 }

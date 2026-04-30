@@ -1,268 +1,146 @@
 # Deploy Home Demo - AILinkCinema
 
-This guide covers deploying AILinkCinema at home with access via Tailscale from a laptop.
+This guide covers the approved home deployment for the current AILinkCinema / CID demo.
 
-## Recommended Topology
+## Official Demo Stack
 
-- Primary: Docker Tailscale sidecar (`tailscale` + `reverse-proxy-tailscale`) for remote laptop access
-- Fallback: Host Tailscale with the existing `compose.home.yml` stack
-- ComfyUI remains outside Docker on the home machine and is never exposed publicly
+- Home demo runtime: `compose.base.yml` + `compose.home.yml`
+- Official demo proxy: `Caddyfile.deploy`
+- Official frontend: `src_frontend`
+- Official backend: `src`
 
-## Architecture
+## Not Part of the Official Runtime
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      HOME NETWORK                        │
-│  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐   │
-│  │  Backend   │──▶│   Frontend  │   │   Caddy    │   │
-│  │  :8000    │   │  :3000     │   │  :80       │   │
-│  └─────┬─────┘   └─────────────┘   └─────────────┘   │
-│        │                                         │
-│        ▼                                         │
-│  ┌─────────────────────────────────────────┐     │
-│  │     DOCKER (public_net)                 │     │
-│  └─────────────────────────────────────────┘     │
-│                                                  │
-│  ComfyUI running OUTSIDE Docker:                   │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐          │
-│  │ :8188  │  │ :8189  │  │ :8190  │          │
-│  │ Still  │  │ Video  │  │ TTS    │          │
-│  └─────────┘  └─────────┘  └─────────┘          │
-└──────────────────┬──────────────────────────────┘
-                   │ Tailscale
-                   ▼
-        ┌──────────────────────────────┐
-        │      LAPTOP (Client)        │
-        │  Access via Tailscale IP   │
-        └──────────────────────────────┘
-```
+The following are outside the official runtime for this demo:
+
+- `OLD/legacy_stacks/docker-compose.yml`
+- `OLD/legacy_stacks/Caddyfile`
+- `Web Ailink_Cinema`
+- `CINE_AI_PLATFORM`
+- `CID_SERVER/automation-engine`
+- `automation-engine`
+- `n8n`
+- `qdrant`
+
+`compose.home.tailscale.yml` can still be used later for optional remote ingress, but it is not part of the official runtime baseline approved for this demo.
 
 ## Prerequisites
 
-1. **Docker + Docker Compose** installed on home machine
-2. **Tailscale** installed and running on both home machine and laptop
-3. **ComfyUI** running locally outside Docker (ports 8188, 8189, 8190, 8191)
+1. Docker and Docker Compose available on the home machine.
+2. `.env` prepared from `.env.home.example`.
+3. Strong secrets generated before startup.
+4. ComfyUI only if the demo needs external real render.
 
-## Quick Start
+## Required Variables
 
-### Primary: Docker + Tailscale Sidecar
+- `AUTH_SECRET_KEY`
+- `APP_SECRET_KEY`
+- `ACCESS_TOKEN_EXPIRE_MINUTES`
+
+Rules:
+
+- `AUTH_SECRET_KEY` must be strong, random and secret.
+- `APP_SECRET_KEY` must be defined explicitly and must be different from `AUTH_SECRET_KEY`.
+- The placeholders in `.env.home.example` are not operational.
+- Do not publish or version the real `.env` file.
+
+### Integration Variables Only If Used
+
+- `INTEGRATION_TOKEN_ENCRYPTION_KEY`
+- `GOOGLE_DRIVE_OAUTH_STATE_SECRET`
+- `GOOGLE_DRIVE_CLIENT_ID`
+- `GOOGLE_DRIVE_CLIENT_SECRET`
+- `COMFYUI_*` if the demo needs external real render
+
+## Safe Startup Flow
 
 ```bash
-# 1. Copy environment file
+cd /opt/SERVICIOS_CINE
+
+# 1. Prepare environment
 cp .env.home.example .env
 
-# 2. Set TS_AUTHKEY in .env
+# 2. Replace placeholders with strong real secrets
+#    AUTH_SECRET_KEY
+#    APP_SECRET_KEY
+#    ACCESS_TOKEN_EXPIRE_MINUTES
 
-# 3. Start home stack with Tailscale ingress
-bash scripts/up_home_tailscale.sh
+# 3. Validate compose configuration
+docker compose -f compose.base.yml -f compose.home.yml config
 
-# 4. Check status
-docker compose -f compose.base.yml -f compose.home.yml -f compose.home.tailscale.yml ps
-```
+# 4. Start the approved home demo runtime
+docker compose -f compose.base.yml -f compose.home.yml up -d --build
 
-### Fallback: Host Tailscale
-
-```bash
-# 1. Copy environment file
-cp .env.home.example .env
-
-# 2. Start services
-bash scripts/up_home_demo.sh
-
-# 3. Check status
+# 5. Check status
 docker compose -f compose.base.yml -f compose.home.yml ps
 ```
 
-## Environment Variables
+## Expected Demo Routes
 
-Key variables in `.env`:
+- `/` -> official React/Vite frontend
+- `/cid` -> official React/Vite frontend; real protection happens in the SPA
+- `/register/select` -> official React/Vite frontend
+- `/legal/privacidad` -> official React/Vite frontend
+- `/api/health` -> backend OK
+- `/health` -> backend OK
+- `/docs` -> `404`
+- `/openapi.json` -> `404`
+- `/auth/login` -> `404`
+- `/n8n` -> `404`
+- `/qdrant` -> `404`
+- `/automation` -> `404`
 
-```bash
-# Backend
-BACKEND_PORT=8000
-
-# ComfyUI on local machine (not Docker)
-COMFYUI_BASE_URL=http://host.docker.internal:8188
-COMFYUI_STILL=http://host.docker.internal:8188
-COMFYUI_VIDEO=http://host.docker.internal:8189
-COMFYUI_DUBBING=http://host.docker.internal:8190
-COMFYUI_LAB=http://host.docker.internal:8191
-```
-
-## Access from Laptop
-
-### Primary: Docker Tailscale Sidecar
-
-1. Get the Tailscale container IP:
-   ```bash
-   docker compose -f compose.base.yml -f compose.home.yml -f compose.home.tailscale.yml exec tailscale tailscale ip -4
-   ```
-
-2. Access from laptop:
-   - Demo: `http://<TAILSCALE_CONTAINER_IP>`
-   - Health: `http://<TAILSCALE_CONTAINER_IP>/health`
-   - Optional MagicDNS: `http://<TS_HOSTNAME>`
-
-### Fallback: Host Tailscale
-
-1. Get your Tailscale IP on the home machine:
-   ```bash
-   tailscale ip -4
-   ```
-
-2. Access from laptop:
-   - Backend API: `http://<TAILSCALE_IP>:8000`
-   - Frontend: `http://<TAILSCALE_IP>:3000`
-   - Health: `http://<TAILSCALE_IP>:8000/health`
-
-## Manual Commands
-
-### Primary: Docker Tailscale Sidecar
+## Minimum Smoke Checklist
 
 ```bash
-# Build
-docker compose -f compose.base.yml -f compose.home.yml -f compose.home.tailscale.yml build
-
-# Start
-docker compose -f compose.base.yml -f compose.home.yml -f compose.home.tailscale.yml up -d
-
-# Stop
-docker compose -f compose.base.yml -f compose.home.yml -f compose.home.tailscale.yml down
-
-# Logs
-docker compose -f compose.base.yml -f compose.home.yml -f compose.home.tailscale.yml logs -f tailscale reverse-proxy-tailscale
+curl -i http://localhost/
+curl -i http://localhost/cid
+curl -i http://localhost/register/select
+curl -i http://localhost/legal/privacidad
+curl -i http://localhost/api/health
+curl -i http://localhost/health
+curl -i http://localhost/docs
+curl -i http://localhost/openapi.json
+curl -i http://localhost/auth/login
 ```
 
-### Fallback: Host Tailscale
+Expected results:
 
-```bash
-# Build
-docker compose -f compose.base.yml -f compose.home.yml build
+- `/`, `/cid`, `/register/select`, `/legal/privacidad`, `/api/health`, `/health` -> OK
+- `/docs`, `/openapi.json`, `/auth/login`, `/n8n`, `/qdrant`, `/automation` -> `404`
+- auth login OK
+- pending blocked
+- render without token -> `401`
+- queue without token -> `401`
 
-# Start
-docker compose -f compose.base.yml -f compose.home.yml up -d
+## Optional Remote Access
 
-# Stop
-docker compose -f compose.base.yml -f compose.home.yml down
+Tailscale can be layered on later for controlled operator access. If used, treat it as an access option around the approved runtime, not as a separate official runtime.
 
-# View logs
-docker compose -f compose.base.yml -f compose.home.yml logs -f
+## What Must Never Be Published
 
-# Restart a service
-docker compose -f compose.base.yml -f compose.home.yml restart backend
-```
+- Real `.env`
+- Secrets
+- OAuth tokens
+- SQLite databases with real data
+- Uploaded documents
+- User PDFs
+- Logs with sensitive data
+- Private client outputs
 
-## Smoke Test
+## Honest Demo Status
 
-Run the smoke test to validate the deployment:
+- Apt for controlled commercial demo
+- Not public production
+- ComfyUI is optional and was not validated in the last smoke
+- Queue remains in `memory` mode
+- Rate limiter remains basic and in-memory
+- TLS/443 remains pending
+- Legal review remains pending
+- OLD cleanup remains pending
 
-```bash
-# Primary ingress path
-docker compose -f compose.base.yml -f compose.home.yml -f compose.home.tailscale.yml exec tailscale tailscale ip -4
+## See Also
 
-# Check remote ComfyUI connectivity (from docker network)
-docker compose -f compose.base.yml -f compose.home.yml exec backend python scripts/check_remote_comfyui.sh
-
-# Or from host/WSL (recommended for Home Demo)
-bash scripts/check_remote_comfyui.sh
-```
-
-## ComfyUI Endpoints
-
-### Runtime URLs vs Check URLs
-
-There are **two different contexts** for ComfyUI URLs:
-
-| Context | Used By | Default |
-|--------|--------|---------|
-| **Runtime** (inside Docker) | Backend containers | `host.docker.internal:PORT` |
-| **Check** (from host/WSL) | `check_remote_comfyui.sh` | `localhost:PORT` |
-| **Remote ingress** (from laptop) | Tailscale sidecar | `http://<TAILSCALE_CONTAINER_IP>` |
-
-### Core vs Optional Endpoints
-
-For commercial demo, only these are **required**:
-- **8188 (Still)**: Image generation - REQUIRED
-- **8189 (Video)**: Video generation - REQUIRED
-
-These are **optional** (warning won't block demo):
-- **8190 (Dubbing/TTS)**: Voice/tts generation - OPTIONAL
-- **8191 (Lab)**: Experimental features - OPTIONAL
-
-### Override Check URLs
-
-To change check URLs from host:
-
-```bash
-# Custom URLs for check script
-CHECK_COMFYUI_BASE_URL=http://localhost:8188 bash scripts/check_remote_comfyui.sh
-CHECK_COMFYUI_VIDEO_URL=http://localhost:8189 bash scripts/check_remote_comfyui.sh
-
-# Require dubbing (normally optional)
-REQUIRE_DUBBING=1 bash scripts/check_remote_comfyui.sh
-```
-
-### Override Runtime URLs
-
-To change runtime URLs inside Docker:
-
-```bash
-# Inside .env for Docker containers
-COMFYUI_BASE_URL=http://host.docker.internal:8188
-COMFYUI_VIDEO_URL=http://host.docker.internal:8189
-COMFYUI_DUBBING=http://host.docker.internal:8190
-```
-
-## Troubleshooting
-
-### Backend not starting
-- Check Docker is running: `docker ps`
-- Check ports available: `netstat -tlnp | grep -E '8000|3000|80'`
-
-### ComfyUI not reachable from Docker
-- Verify ComfyUI is running on local machine (NOT in Docker)
-- Check ports on host: `curl http://localhost:8188/history`
-- The backend in Docker uses `host.docker.internal` to reach the host
-- Ensure `extra_hosts` is in compose: `host.docker.internal:host-gateway`
-
-### 8190 (Dubbing) not running
-- This is OPTIONAL for demo - won't block startup
-- Core features (Still + Video on 8188, 8189) work without it
-- Check script shows WARNING but exits successfully
-
-### 8191 (Lab) not running
-- This is OPTIONAL for demo - purely informational
-- Used only for experimental features
-
-### Tailscale not working
-- Primary mode: check the container node
-  - `docker compose -f compose.base.yml -f compose.home.yml -f compose.home.tailscale.yml exec tailscale tailscale status`
-  - `docker compose -f compose.base.yml -f compose.home.yml -f compose.home.tailscale.yml exec tailscale tailscale ip -4`
-- Fallback mode: check the host node
-  - `tailscale status`
-  - `tailscale ip -4`
-
-### Can't access from laptop
-- Primary mode: verify `reverse-proxy-tailscale` is running and shares the Tailscale namespace
-- Verify the Tailscale auth key is valid and the node joined the tailnet
-- Fallback mode: verify firewall allows inbound connections on the host
-- Check Tailscale ACLs if using Tailscale Zero Trust
-
-## Services
-
-| Service | Port | Container | Purpose |
-|---------|------|----------|---------|
-| backend | 8000 | ailinkcinema_backend | API |
-| frontend | 3000 | ailinkcinema_frontend | Web UI |
-| reverse-proxy | 80 | ailinkcinema_reverse_proxy | Caddy |
-| tailscale | tailnet IP | ailinkcinema_tailscale | Remote ingress namespace |
-| reverse-proxy-tailscale | 80 on tailnet | ailinkcinema_reverse_proxy_tailscale | Caddy over Tailscale |
-
-## Networks
-
-- `public_net` (bridge) - Services exposed to outside
-- `private_net` (bridge) - Internal communication (future use)
-
-## Next Steps
-
-To migrate to VPS later, see [docs/DEPLOY_VPS.md](DEPLOY_VPS.md) and [docs/ARCHITECTURE_HOME_TO_VPS.md](ARCHITECTURE_HOME_TO_VPS.md).
+- `docs/RELEASE_DEMO_GUIDE.md`
+- `docs/PRODUCTION_CANDIDATE_STATUS.md`
+- `docs/DEPLOY_VPS.md`

@@ -1,0 +1,518 @@
+import { useMemo } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { 
+  FileText, Layers, DollarSign, TrendingUp, 
+  Users, Building2, Film, FileSearch, 
+  FolderOpen, Briefcase, ArrowRight, AlertTriangle
+} from 'lucide-react'
+import { useProjectDashboard } from '@/hooks'
+import { StatusBadge } from '@/components/StatusBadge'
+import DemoModePanel from '@/components/DemoModePanel'
+import { DEMO_GUIDE } from '@/data/demoProjectGuide'
+
+function getModuleIcon(moduleKey: string) {
+  const icons: Record<string, React.ElementType> = {
+    script: FileText,
+    storyboard: Layers,
+    breakdown: FileText,
+    budget: DollarSign,
+    funding: TrendingUp,
+    producer_pack: Briefcase,
+    distribution: Building2,
+    crm: Users,
+    media: Film,
+    documents: FileSearch,
+    editorial: FolderOpen,
+  }
+  return icons[moduleKey] || FileText
+}
+
+const MODULE_DISPLAY_NAMES: Record<string, string> = {
+  script: 'Guion y Versiones',
+  storyboard: 'Storyboard',
+  breakdown: 'Desglose',
+  budget: 'Presupuesto estimado',
+  funding: 'Ayudas y financiación',
+  producer_pack: 'Dossier para Productores',
+  distribution: 'Pack de distribución',
+  crm: 'Seguimiento comercial',
+  media: 'Media indexada',
+  documents: 'Ingesta documental',
+  editorial: 'Premontaje / DaVinci',
+}
+
+const getModuleRoute = (key: string, projectId: string) => {
+  switch (key) {
+    case 'script':
+      return `/projects/${projectId}`
+    case 'storyboard':
+      return `/projects/${projectId}/storyboard-builder`
+    case 'budget':
+      return `/projects/${projectId}/budget`
+    case 'funding':
+      return `/projects/${projectId}/funding`
+    case 'producer_pack':
+      return `/projects/${projectId}/producer-pitch`
+    case 'distribution':
+      return `/projects/${projectId}/distribution`
+    case 'crm':
+      return `/projects/${projectId}/crm`
+    case 'media':
+      return `/ingest/scans`
+    case 'documents':
+      return `/projects/${projectId}/documents`
+    case 'editorial':
+      return `/projects/${projectId}/editorial`
+    case 'breakdown':
+      return `/projects/${projectId}`
+    default:
+      return `/projects/${projectId}`
+  }
+}
+
+export default function ProjectDashboardPage() {
+  const { projectId = '' } = useParams()
+  const dashboardQuery = useProjectDashboard(projectId)
+
+  const modules = useMemo(() => {
+    if (!dashboardQuery.data?.modules) return []
+    return Object.entries(dashboardQuery.data.modules).map(([key, value]) => ({
+      key,
+      ...value,
+    }))
+  }, [dashboardQuery.data])
+
+  const actions = useMemo(() => {
+    return dashboardQuery.data?.recommended_next_actions || []
+  }, [dashboardQuery.data])
+
+  if (dashboardQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+
+  if (dashboardQuery.error) {
+    return (
+      <div className="card">
+        <div className="text-red-400">Error loading dashboard</div>
+        <Link to={`/projects/${projectId}`} className="btn-secondary mt-4">
+          Volver al proyecto
+        </Link>
+      </div>
+    )
+  }
+
+   const data = dashboardQuery.data
+
+   return (
+     <>
+       <div className="space-y-8">
+         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+           <div>
+             <div className="flex items-center gap-3">
+               <h1 className="heading-lg">{data?.title || 'Proyecto'}</h1>
+               <span className="badge badge-amber">{data?.status || 'active'}</span>
+             </div>
+             <p className="mt-1 text-slate-400">
+               Progreso general: {data?.overall_progress || 0}%
+             </p>
+           </div>
+           
+           <div className="flex gap-3">
+             <Link to={`/projects/${projectId}`} className="btn-secondary">
+               Ver proyecto
+             </Link>
+           </div>
+         </div>
+   
+         <div className="w-full bg-dark-300 rounded-xl h-3 overflow-hidden">
+           <div 
+             className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500"
+             style={{ width: `${data?.overall_progress || 0}%` }}
+           />
+         </div>
+   
+         {/* Commercial Description */}
+         <section className="space-y-4">
+           <p className="text-slate-400 max-w-lg">
+             CID acompaña el proyecto desde el guion hasta la venta y la postproducción, 
+             organizando análisis, presupuesto, financiación, pitch, distribución, CRM y 
+             premontaje DaVinci.
+           </p>
+         </section>
+         
+         {/* Demo Mode Panel */}
+         <DemoModePanel 
+           projectId={projectId} 
+           onClose={() => {
+             // Could add logic to remember dismissal state
+           }}
+         />
+       </div>
+   
+       {/* Development Phase */}
+       <section className="space-y-4">
+         <h2 className="heading-md">Desarrollo</h2>
+         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+           {[ 'script', 'storyboard', 'breakdown' ]
+             .filter(key => modules.some(m => m.key === key))
+             .map(key => {
+               const module = modules.find(m => m.key === key)!
+               const Icon = getModuleIcon(key)
+               const route = getModuleRoute(key, projectId)
+               return (
+                 <Link
+                   key={key}
+                   to={route}
+                   className="card card-hover"
+                 >
+                   <div className="flex items-start gap-4">
+                     <div className="p-3 rounded-xl bg-dark-300">
+                       <Icon className="w-5 h-5 text-amber-400" />
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <div className="flex items-center justify-between gap-2">
+                         <h3 className="font-semibold text-white capitalize">
+                           {MODULE_DISPLAY_NAMES[key]}
+                         </h3>
+                         <StatusBadge status={module.status} size="sm" />
+                       </div>
+                       <p className="mt-1 text-sm text-slate-400 truncate">
+                         {module.summary}
+                       </p>
+                     </div>
+                   </div>
+                 </Link>
+               )
+             })}
+         </div>
+       </section>
+       
+       {/* Production/Financing Phase */}
+       <section className="space-y-4">
+         <h2 className="heading-md">Producción/Financiación</h2>
+         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+           {[ 'budget', 'funding', 'editorial' ]
+             .filter(key => modules.some(m => m.key === key))
+             .map(key => {
+               const module = modules.find(m => m.key === key)!
+               const Icon = getModuleIcon(key)
+               const route = getModuleRoute(key, projectId)
+               return (
+                 <Link
+                   key={key}
+                   to={route}
+                   className="card card-hover"
+                 >
+                   <div className="flex items-start gap-4">
+                     <div className="p-3 rounded-xl bg-dark-300">
+                       <Icon className="w-5 h-5 text-amber-400" />
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <div className="flex items-center justify-between gap-2">
+                         <h3 className="font-semibold text-white capitalize">
+                           {MODULE_DISPLAY_NAMES[key]}
+                         </h3>
+                         <StatusBadge status={module.status} size="sm" />
+                       </div>
+                       <p className="mt-1 text-sm text-slate-400 truncate">
+                         {module.summary}
+                       </p>
+                     </div>
+                   </div>
+                 </Link>
+               )
+             })}
+         </div>
+       </section>
+       
+       {/* Commercial Phase */}
+       <section className="space-y-4">
+         <h2 className="heading-md">Comercial</h2>
+         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+           {[ 'producer_pack', 'distribution', 'crm' ]
+             .filter(key => modules.some(m => m.key === key))
+             .map(key => {
+               const module = modules.find(m => m.key === key)!
+               const Icon = getModuleIcon(key)
+               const route = getModuleRoute(key, projectId)
+               return (
+                 <Link
+                   key={key}
+                   to={route}
+                   className="card card-hover"
+                 >
+                   <div className="flex items-start gap-4">
+                     <div className="p-3 rounded-xl bg-dark-300">
+                       <Icon className="w-5 h-5 text-amber-400" />
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <div className="flex items-center justify-between gap-2">
+                         <h3 className="font-semibold text-white capitalize">
+                           {MODULE_DISPLAY_NAMES[key]}
+                         </h3>
+                         <StatusBadge status={module.status} size="sm" />
+                       </div>
+                       <p className="mt-1 text-sm text-slate-400 truncate">
+                         {module.summary}
+                       </p>
+                     </div>
+                   </div>
+                 </Link>
+               )
+             })}
+         </div>
+       </section>
+       
+       {/* Post-production Phase */}
+       <section className="space-y-4">
+         <h2 className="heading-md">Postproducción</h2>
+         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+           {[ 'media', 'documents' ]
+             .filter(key => modules.some(m => m.key === key))
+             .map(key => {
+               const module = modules.find(m => m.key === key)!
+               const Icon = getModuleIcon(key)
+               const route = getModuleRoute(key, projectId)
+               return (
+                 <Link
+                   key={key}
+                   to={route}
+                   className="card card-hover"
+                 >
+                   <div className="flex items-start gap-4">
+                     <div className="p-3 rounded-xl bg-dark-300">
+                       <Icon className="w-5 h-5 text-amber-400" />
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <div className="flex items-center justify-between gap-2">
+                         <h3 className="font-semibold text-white capitalize">
+                           {MODULE_DISPLAY_NAMES[key]}
+                         </h3>
+                         <StatusBadge status={module.status} size="sm" />
+                       </div>
+                       <p className="mt-1 text-sm text-slate-400 truncate">
+                         {module.summary}
+                       </p>
+                     </div>
+                   </div>
+                 </Link>
+               )
+             })}
+         </div>
+       </section>
+     </>
+   )
+      </div>
+
+      <div className="w-full bg-dark-300 rounded-xl h-3 overflow-hidden">
+        <div 
+          className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500"
+          style={{ width: `${data?.overall_progress || 0}%` }}
+        />
+      </div>
+
+
+
+       <>
+         {/* Desarrollo Phase */}
+         <section className="space-y-4">
+           <h2 className="heading-md">Desarrollo</h2>
+           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[ 'script', 'storyboard', 'breakdown' ]
+                .filter(key => modules.some(m => m.key === key))
+                .map(key => {
+                  const module = modules.find(m => m.key === key)!
+                  const Icon = getModuleIcon(key)
+                  const route = getModuleRoute(key, projectId)
+                  return (
+                    <Link
+                      key={key}
+                      to={route}
+                      className="card card-hover"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-dark-300">
+                          <Icon className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="font-semibold text-white capitalize">
+                              {MODULE_DISPLAY_NAMES[key]}
+                            </h3>
+                            <StatusBadge status={module.status} size="sm" />
+                          </div>
+                          <p className="mt-1 text-sm text-slate-400 truncate">
+                            {module.summary}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+           </div>
+         </section>
+         
+         {/* Producción/Financiación Phase */}
+         <section className="space-y-4">
+           <h2 className="heading-md">Producción/Financiación</h2>
+           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[ 'budget', 'funding', 'editorial' ]
+                .filter(key => modules.some(m => m.key === key))
+                .map(key => {
+                  const module = modules.find(m => m.key === key)!
+                  const Icon = getModuleIcon(key)
+                  const route = getModuleRoute(key, projectId)
+                  return (
+                    <Link
+                      key={key}
+                      to={route}
+                      className="card card-hover"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-dark-300">
+                          <Icon className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="font-semibold text-white capitalize">
+                              {MODULE_DISPLAY_NAMES[key]}
+                            </h3>
+                            <StatusBadge status={module.status} size="sm" />
+                          </div>
+                          <p className="mt-1 text-sm text-slate-400 truncate">
+                            {module.summary}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+           </div>
+         </section>
+         
+         {/* Comercial Phase */}
+         <section className="space-y-4">
+           <h2 className="heading-md">Comercial</h2>
+           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[ 'producer_pack', 'distribution', 'crm' ]
+                .filter(key => modules.some(m => m.key === key))
+                .map(key => {
+                  const module = modules.find(m => m.key === key)!
+                  const Icon = getModuleIcon(key)
+                  const route = getModuleRoute(key, projectId)
+                  return (
+                    <Link
+                      key={key}
+                      to={route}
+                      className="card card-hover"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-dark-300">
+                          <Icon className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="font-semibold text-white capitalize">
+                              {MODULE_DISPLAY_NAMES[key]}
+                            </h3>
+                            <StatusBadge status={module.status} size="sm" />
+                          </div>
+                          <p className="mt-1 text-sm text-slate-400 truncate">
+                            {module.summary}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+           </div>
+         </section>
+         
+         {/* Postproducción Phase */}
+         <section className="space-y-4">
+           <h2 className="heading-md">Postproducción</h2>
+           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[ 'media', 'documents' ]
+                .filter(key => modules.some(m => m.key === key))
+                .map(key => {
+                  const module = modules.find(m => m.key === key)!
+                  const Icon = getModuleIcon(key)
+                  const route = getModuleRoute(key, projectId)
+                  return (
+                    <Link
+                      key={key}
+                      to={route}
+                      className="card card-hover"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-dark-300">
+                          <Icon className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="font-semibold text-white capitalize">
+                              {MODULE_DISPLAY_NAMES[key]}
+                            </h3>
+                            <StatusBadge status={module.status} size="sm" />
+                          </div>
+                          <p className="mt-1 text-sm text-slate-400 truncate">
+                            {module.summary}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+           </div>
+         </section>
+       </>
+
+      {actions.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="heading-md">Próximas acciones</h2>
+          <div className="space-y-2">
+            {actions.map((action, i) => (
+              <Link
+                key={i}
+                to={action.locked ? '#' : action.route}
+                onClick={(e) => action.locked && e.preventDefault()}
+                className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
+                  action.locked 
+                    ? 'border-gray-500/20 bg-gray-500/5 text-gray-500 cursor-not-allowed opacity-50'
+                    : 'border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-amber-200'
+                }`}
+              >
+                <span>{action.label}</span>
+                {action.locked ? (
+                  <span className="text-xs px-2 py-1 rounded bg-gray-500/20">Sin permiso</span>
+                ) : (
+                  <ArrowRight className="w-4 h-4" />
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {data?.warnings && data.warnings.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="heading-md flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-400" />
+            Warnings
+          </h2>
+          <div className="space-y-2">
+            {data.warnings.map((warning: string, i: number) => (
+              <div key={i} className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-200">
+                {warning}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}

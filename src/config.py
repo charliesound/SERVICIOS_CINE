@@ -1,10 +1,36 @@
 import os
+import logging
 from pathlib import Path
 from typing import Any, Dict
 import yaml
 
 _CONFIG_CACHE: Dict[str, Any] | None = None
+_SECURITY_VALIDATED = False
 DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./ailinkcinema_s2.db"
+MIN_SECRET_LENGTH = 32
+STRICT_RUNTIME_ENVS = {"demo", "production"}
+KNOWN_INSECURE_SECRETS = {
+    "ailink-cine-secret-key-prod-2024",
+    "auth_secret_key_required_in_env",
+    "app_secret_key_required_in_env",
+    "change-me-in-production-use-strong-random-key",
+}
+INSECURE_SECRET_MARKERS = (
+    "change-me",
+    "changeme",
+    "secret-key",
+    "secret_key",
+    "demo",
+    "admin123",
+    "password",
+    "default",
+    "placeholder",
+    "replace-with",
+    "replace_with",
+    "required_in_env",
+)
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_bool(value: str) -> bool:
@@ -39,6 +65,8 @@ def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
     auth_secret = os.getenv("AUTH_SECRET_KEY")
     if auth_secret:
         auth_config["secret_key"] = auth_secret
+        if not app_secret:
+            app_config["secret_key"] = auth_secret
 
     auth_algorithm = os.getenv("AUTH_ALGORITHM")
     if auth_algorithm:
@@ -81,6 +109,64 @@ def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
     return data
 
 
+def _is_insecure_secret(secret: str) -> bool:
+    normalized = (secret or "").strip()
+    if not normalized:
+        return True
+
+    lowered = normalized.lower()
+    if len(normalized) < MIN_SECRET_LENGTH:
+        return True
+    if lowered in KNOWN_INSECURE_SECRETS:
+        return True
+    return any(marker in lowered for marker in INSECURE_SECRET_MARKERS)
+
+
+def validate_runtime_security(data: Dict[str, Any]) -> None:
+    global _SECURITY_VALIDATED
+
+    if _SECURITY_VALIDATED:
+        return
+
+    app_env = str(data.get("app", {}).get("env", "production")).strip().lower()
+    auth_secret_from_env = os.getenv("AUTH_SECRET_KEY", "")
+    app_secret_from_env = os.getenv("APP_SECRET_KEY", "")
+    effective_auth_secret = str(data.get("auth", {}).get("secret_key", ""))
+    effective_app_secret = str(data.get("app", {}).get("secret_key", ""))
+
+    issues: list[str] = []
+    warnings: list[str] = []
+
+    if app_env in STRICT_RUNTIME_ENVS:
+        if _is_insecure_secret(auth_secret_from_env):
+            issues.append(
+                "AUTH_SECRET_KEY must be set from the environment with a strong value in demo/production"
+            )
+        if _is_insecure_secret(effective_auth_secret):
+            issues.append("Effective auth secret is insecure for demo/production")
+        if app_secret_from_env and _is_insecure_secret(app_secret_from_env):
+            issues.append("APP_SECRET_KEY is insecure for demo/production")
+        if _is_insecure_secret(effective_app_secret):
+            issues.append("Effective app secret is insecure for demo/production")
+    else:
+        if _is_insecure_secret(effective_auth_secret):
+            warnings.append(
+                "AUTH secret is not securely configured; this is only acceptable in local/development environments"
+            )
+        if _is_insecure_secret(effective_app_secret):
+            warnings.append(
+                "APP secret is not securely configured; this is only acceptable in local/development environments"
+            )
+
+    if issues:
+        raise RuntimeError("; ".join(dict.fromkeys(issues)))
+
+    for warning in dict.fromkeys(warnings):
+        logger.warning(warning)
+
+    _SECURITY_VALIDATED = True
+
+
 def get_base_dir() -> Path:
     return Path(__file__).resolve().parent
 
@@ -91,6 +177,10 @@ def get_config_path() -> Path:
 
 def load_config(force_reload: bool = False) -> Dict[str, Any]:
     global _CONFIG_CACHE
+
+    if force_reload:
+        global _SECURITY_VALIDATED
+        _SECURITY_VALIDATED = False
 
     if _CONFIG_CACHE is not None and not force_reload:
         return _CONFIG_CACHE
@@ -141,3 +231,4 @@ def get_database_settings() -> Dict[str, Any]:
 
 
 config = load_config()
+validate_runtime_security(config)

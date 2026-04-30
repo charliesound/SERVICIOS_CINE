@@ -1,0 +1,59 @@
+{
+  "assembly_cut": {
+    "id": "assembly-20260428-001",
+    "project_id": "project-dual-system-test",
+    "organization_id": "org-001",
+    "name": "Apartment_scene_1_assembly",
+    "description": "Dual-system test assembly from synthetic fixture",
+    "status": "draft",
+    "source_scope": "recommended_takes",
+    "source_version": 1,
+    "metadata_json": {
+      "recommended_take_count": 2,
+      "generated_at": "2026-04-28T10:00:00Z",
+      "fixture_type": "synthetic-realistic"
+    },
+    "created_at": "2026-04-28T10:00:00Z",
+    "items": [
+      {
+        "id": "item-001",
+        "assembly_cut_id": "assembly-20260428-001",
+        "take_id": "take-001",
+        "project_id": "project-dual-system-test",
+        "scene_number": 1,
+        "shot_number": 1,
+        "take_number": 1,
+        "source_media_asset_id": "media-video-001",
+        "audio_media_asset_id": "media-audio-001",
+        "start_tc": "01:00:00:00",
+        "end_tc": "01:00:12:00",
+        "timeline_in": 0,
+        "timeline_out": 288,
+        "duration_frames": 288,
+        "fps": 24.0,
+        "recommended_reason": "circled take from camera report",
+        "order_index": 0
+      },
+      {
+        "id": "item-002",
+        "assembly_cut_id": "assembly-20260428-001",
+        "take_id": "take-002",
+        "project_id": "project-dual-system-test",
+        "scene_number": 1,
+        "shot_number": 2,
+        "take_number": 1,
+        "source_media_asset_id": "media-video-002",
+        "audio_media_asset_id": "media-audio-002",
+        "start_tc": "01:00:12:00",
+        "end_tc": "01:00:20:00",
+        "timeline_in": 288,
+        "timeline_out": 480,
+        "duration_frames": 192,
+        "fps": 24.0,
+        "recommended_reason": "circled take from camera report",
+        "order_index": 1
+      }
+    ]
+  },
+  "items_created": 2
+}

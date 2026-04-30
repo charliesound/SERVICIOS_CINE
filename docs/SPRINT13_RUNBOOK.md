@@ -6,7 +6,7 @@ Sprint 13 se certifica ejecutando todo dentro de WSL real sobre `/opt/SERVICIOS_
 
 ```bash
 cd /opt/SERVICIOS_CINE/src
-./.venv/bin/python -m uvicorn app:app --host 127.0.0.1 --port 8000
+APP_ENV=demo ENABLE_DEMO_ROUTES=1 ENABLE_EXPERIMENTAL_ROUTES=0 ENABLE_POSTPRODUCTION_ROUTES=0 ./.venv/bin/python -m uvicorn app:app --host 127.0.0.1 --port 8000
 ```
 
 ## 2. Levantar frontend
@@ -61,3 +61,34 @@ npm run build
 4. Verificar `GET /api/auth/me` y `GET /api/plans/me` => `plan=producer`
 5. Crear proyecto, cargar guion, ejecutar analyze y storyboard
 6. Verificar jobs, assets, metrics, export JSON y export ZIP
+
+## 7. Reinicio / recovery baseline
+
+Validar queue restart recovery real con `QUEUE_PERSISTENCE_MODE=db` y compatibilidad de `memory`:
+
+```bash
+cd /opt/SERVICIOS_CINE
+src/.venv/bin/python scripts/smoke_restart_recovery.py
+```
+
+El smoke verifica:
+
+1. `running -> failed` con `recovery_reason=backend_restart`
+2. `queued -> queued` tras reinicio
+3. `scheduled -> queued` tras reinicio
+4. modo `memory` sigue aceptando jobs
+
+## 8. Backup / rollback basico
+
+SQLite local:
+
+```bash
+mkdir -p /opt/SERVICIOS_CINE/backups
+cp /opt/SERVICIOS_CINE/src/ailinkcinema_s2.db /opt/SERVICIOS_CINE/backups/ailinkcinema_s2.$(date +%Y%m%d_%H%M%S).db
+```
+
+Rollback rapido:
+
+```bash
+cp /opt/SERVICIOS_CINE/backups/<backup>.db /opt/SERVICIOS_CINE/src/ailinkcinema_s2.db
+```

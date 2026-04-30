@@ -5,10 +5,10 @@ app:
   host: "0.0.0.0"
   port: 8000
   reload: false
-  secret_key: "ailink-cine-secret-key-prod-2024"
+  secret_key: "APP_SECRET_KEY_REQUIRED_IN_ENV"
 
 auth:
-  secret_key: "ailink-cine-secret-key-prod-2024"
+  secret_key: "AUTH_SECRET_KEY_REQUIRED_IN_ENV"
   algorithm: "HS256"
   access_token_expire_minutes: 60
 
@@ -65,6 +65,7 @@ database:
   url: "sqlite+aiosqlite:///./ailinkcinema_s2.db"
   runtime_schema_sync: true
   sqlite_legacy_bootstrap: true
+  use_alembic: false
 
 features:
   workflows: true

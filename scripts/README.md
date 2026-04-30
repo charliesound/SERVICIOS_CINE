@@ -18,6 +18,7 @@
 | `smoke_producer_persistence.py` | Smoke reproducible de Producer Sprint 7 |
 | `smoke_review_delivery_persistence.py` | Smoke reproducible de Reviews y Delivery Sprint 7 |
 | `smoke_sprint13_rc.py` | Smoke reproducible de cierre Sprint 13 |
+| `smoke_restart_recovery.py` | Smoke basico de reinicio y recovery |
 | `build_frontend_wsl.sh` | Build frontend reproducible desde WSL |
 
 ### En Servidor (Produccion)

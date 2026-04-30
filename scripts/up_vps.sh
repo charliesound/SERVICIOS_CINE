@@ -18,6 +18,16 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
+if grep -Eq '^ENABLE_DEMO_ROUTES=1' .env; then
+    echo "ERROR: ENABLE_DEMO_ROUTES=1 is not allowed for VPS production candidate deployments"
+    exit 1
+fi
+
+if grep -Eq '^ENABLE_POSTPRODUCTION_ROUTES=1' .env; then
+    echo "ERROR: ENABLE_POSTPRODUCTION_ROUTES=1 would expose a non-production-ready module"
+    exit 1
+fi
+
 echo "[2/5] Building images..."
 docker compose -f compose.base.yml -f compose.vps.yml build
 

@@ -68,6 +68,12 @@ class Deliverable(Base):
         nullable=False,
         index=True,
     )
+    organization_id = Column(
+        String(36),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     source_review_id = Column(
         String(36),
         ForeignKey("reviews.id", ondelete="SET NULL"),

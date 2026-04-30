@@ -23,6 +23,11 @@ if ! grep -Eq '^TS_AUTHKEY=.+' .env; then
     exit 1
 fi
 
+if ! grep -Eq '^ENABLE_DEMO_ROUTES=1' .env; then
+    echo "WARNING: ENABLE_DEMO_ROUTES is not explicitly enabled in .env"
+    echo "         Demo routes are required for the commercial demo seed flow"
+fi
+
 echo "[1/4] Building images..."
 docker compose -f compose.base.yml -f compose.home.yml -f compose.home.tailscale.yml build
 

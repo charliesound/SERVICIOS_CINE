@@ -48,7 +48,7 @@ backends:
       - "lip_sync"
 
   lab:
-    name: "Experimental Lab"
+    name: "Experimental Lab / Storyboard Sketch"
     type: "comfyui"
     host: "127.0.0.1"
     port: 8191
@@ -61,24 +61,33 @@ backends:
       - "experimental"
       - "research"
       - "testing"
+      - "sketch"
 
 routing_rules:
   task_type_mapping:
+    # Image generation
     still: "still"
     image: "still"
     img2img: "still"
     inpaint: "still"
     outpaint: "still"
 
+    # Storyboard modes (dual routing)
+    storyboard_realistic: "still"
+    storyboard_sketch: "lab"
+
+    # Video generation
     video: "video"
     text_to_video: "video"
     img2vid: "video"
 
+    # Dubbing/Audio
     dubbing: "dubbing"
     voice: "dubbing"
     tts: "dubbing"
     voice_clone: "dubbing"
 
+    # Experimental
     experimental: "lab"
     test: "lab"
     research: "lab"

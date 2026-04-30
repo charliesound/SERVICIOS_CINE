@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.core import Project
 from models.review import Review, ReviewComment
 from models.storage import MediaAsset, StorageSource
+from models.storyboard import StoryboardShot
 from schemas.auth_schema import TenantContext
 from schemas.presentation_schema import (
     PresentationCommentItem,
@@ -43,8 +44,18 @@ class PresentationService:
         tenant: TenantContext,
     ) -> PresentationFilmstripResponse:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+        editable_shots = await self._list_storyboard_shots(db, project_id=project_id, tenant=tenant)
         assets = await self._list_project_assets(db, project_id=project_id, tenant=tenant)
         comments = await self._list_project_comments(db, project_id=project_id, tenant=tenant)
+
+        if editable_shots:
+            return await self._build_storyboard_filmstrip(
+                project=project,
+                project_id=project_id,
+                editable_shots=editable_shots,
+                assets=assets,
+                comments=comments,
+            )
 
         sequences: dict[str, list[PresentationShotItem]] = {}
         orphan_assets: list[PresentationShotItem] = []
@@ -89,6 +100,88 @@ class PresentationService:
             orphan_assets_count=len(orphan_assets),
             comments_count=len(review_comments),
             source_assets_count=len(assets),
+        )
+
+        return PresentationFilmstripResponse(
+            project=PresentationProjectSummary(
+                id=str(project.id),
+                organization_id=str(project.organization_id),
+                name=str(project.name),
+                description=project.description,
+                status=str(project.status),
+            ),
+            summary=summary,
+            sequences=sequence_items,
+            orphan_assets=sorted(orphan_assets, key=self._shot_sort_key),
+            review_comments=review_comments,
+            generated_at=datetime.now(timezone.utc),
+        )
+
+    async def _build_storyboard_filmstrip(
+        self,
+        *,
+        project: Project,
+        project_id: str,
+        editable_shots: list[StoryboardShot],
+        assets: list[MediaAsset],
+        comments: list[ReviewComment],
+    ) -> PresentationFilmstripResponse:
+        assets_by_id = {str(asset.id): asset for asset in assets}
+        sequences: dict[str, list[PresentationShotItem]] = {}
+        orphan_assets: list[PresentationShotItem] = []
+
+        sorted_shots = sorted(
+            editable_shots,
+            key=lambda shot: (
+                shot.sequence_id or "",
+                int(shot.sequence_order),
+                shot.created_at.isoformat() if shot.created_at else "",
+                str(shot.id),
+            ),
+        )
+        for shot in sorted_shots:
+            dto_shot = self._build_storyboard_shot_item(
+                shot,
+                project_id=project_id,
+                asset=assets_by_id.get(str(shot.asset_id)) if shot.asset_id else None,
+            )
+            sequence_id = self._optional_text(shot.sequence_id)
+            if sequence_id:
+                sequences.setdefault(sequence_id, []).append(dto_shot)
+            else:
+                orphan_assets.append(dto_shot)
+
+        sequence_items: list[PresentationSequenceItem] = []
+        for sequence_id in sorted(sequences.keys()):
+            shots = sorted(sequences[sequence_id], key=self._shot_sort_key)
+            visual_modes = sorted({shot.visual_mode for shot in shots if shot.visual_mode})
+            sequence_items.append(
+                PresentationSequenceItem(
+                    sequence_id=sequence_id,
+                    title=f"Sequence {sequence_id}",
+                    visual_modes=visual_modes,
+                    shots=shots,
+                )
+            )
+
+        review_comments = [
+            PresentationCommentItem(
+                id=str(comment.id),
+                review_id=str(comment.review_id),
+                author_name=comment.author_name,
+                body=str(comment.body),
+                created_at=comment.created_at,
+            )
+            for comment in comments
+        ]
+
+        linked_assets_count = sum(1 for shot in editable_shots if shot.asset_id)
+        summary = PresentationSummary(
+            sequences_count=len(sequence_items),
+            shots_count=len(editable_shots),
+            orphan_assets_count=len(orphan_assets),
+            comments_count=len(review_comments),
+            source_assets_count=linked_assets_count,
         )
 
         return PresentationFilmstripResponse(
@@ -177,6 +270,41 @@ class PresentationService:
                     )
         return render_payload
 
+    def build_delivery_manifest(
+        self,
+        payload: PresentationFilmstripResponse,
+        *,
+        source_endpoint: str,
+        pdf_file_name: str,
+        pdf_mime_type: str = "application/pdf",
+        format_version: str = "presentation_manifest.v1",
+    ) -> dict:
+        ordered_asset_ids: list[str] = []
+        sequence_ids: list[str] = []
+        for sequence in payload.sequences:
+            sequence_ids.append(sequence.sequence_id)
+            for shot in sequence.shots:
+                ordered_asset_ids.append(shot.asset_id)
+        for shot in payload.orphan_assets:
+            ordered_asset_ids.append(shot.asset_id)
+
+        return {
+            "project_id": str(payload.project.id),
+            "organization_id": str(payload.project.organization_id),
+            "project_name": payload.project.name,
+            "generated_at": payload.generated_at.isoformat(),
+            "sequences_count": payload.summary.sequences_count,
+            "shots_count": payload.summary.shots_count,
+            "orphan_assets_count": payload.summary.orphan_assets_count,
+            "comments_count": payload.summary.comments_count,
+            "sequence_ids": sequence_ids,
+            "asset_ids": ordered_asset_ids,
+            "format_version": format_version,
+            "source_endpoint": source_endpoint,
+            "pdf_file_name": pdf_file_name,
+            "pdf_mime_type": pdf_mime_type,
+        }
+
     async def _get_project_for_tenant(
         self,
         db: AsyncSession,
@@ -242,6 +370,24 @@ class PresentationService:
         result = await db.execute(query)
         return list(result.scalars().all())
 
+    async def _list_storyboard_shots(
+        self,
+        db: AsyncSession,
+        *,
+        project_id: str,
+        tenant: TenantContext,
+    ) -> list[StoryboardShot]:
+        query = select(StoryboardShot).where(StoryboardShot.project_id == project_id)
+        if not tenant.is_admin:
+            query = query.where(StoryboardShot.organization_id == tenant.organization_id)
+        query = query.order_by(
+            StoryboardShot.sequence_id.asc(),
+            StoryboardShot.sequence_order.asc(),
+            StoryboardShot.created_at.asc(),
+        )
+        result = await db.execute(query)
+        return list(result.scalars().all())
+
     async def _attach_pdf_asset_fields(
         self,
         db: AsyncSession,
@@ -303,8 +449,47 @@ class PresentationService:
             visual_mode=self._optional_text(metadata.get("visual_mode")),
             prompt_summary=prompt_summary,
             canonical_path_present=bool(getattr(asset, "canonical_path", None)),
-            thumbnail_url=f"/api/projects/{project_id}/presentation/assets/{asset.id}/preview",
+            thumbnail_url=f"/api/projects/{project_id}/presentation/assets/{asset.id}/thumbnail",
             created_at=getattr(asset, "created_at", None),
+        )
+
+    def _build_storyboard_shot_item(
+        self,
+        shot: StoryboardShot,
+        *,
+        project_id: str,
+        asset: MediaAsset | None,
+    ) -> PresentationShotItem:
+        asset_metadata = self._decode_metadata(asset.metadata_json) if asset is not None else {}
+        file_name = str(asset.file_name) if asset is not None else f"Storyboard Shot {shot.sequence_order}"
+        asset_type = str(asset.asset_type) if asset is not None else "manual"
+        asset_source = getattr(asset, "asset_source", None) if asset is not None else "storyboard_editor"
+        shot_type = self._optional_text(shot.shot_type) or self._optional_text(asset_metadata.get("shot_type"))
+        visual_mode = self._optional_text(shot.visual_mode) or self._optional_text(asset_metadata.get("visual_mode"))
+        prompt_summary = self._optional_text(shot.narrative_text)
+        if not prompt_summary and asset is not None:
+            prompt_summary = self._resolve_prompt_summary(asset, asset_metadata)
+        if not prompt_summary:
+            prompt_summary = f"Editable storyboard shot {shot.sequence_order}"
+
+        return PresentationShotItem(
+            asset_id=str(shot.asset_id or shot.id),
+            job_id=getattr(asset, "job_id", None) if asset is not None else None,
+            file_name=file_name,
+            asset_type=asset_type,
+            asset_source=asset_source,
+            content_ref=getattr(asset, "content_ref", None) if asset is not None else None,
+            shot_order=int(shot.sequence_order),
+            shot_type=shot_type,
+            visual_mode=visual_mode,
+            prompt_summary=prompt_summary,
+            canonical_path_present=bool(getattr(asset, "canonical_path", None)) if asset is not None else False,
+            thumbnail_url=(
+                f"/api/projects/{project_id}/presentation/assets/{asset.id}/thumbnail"
+                if asset is not None
+                else None
+            ),
+            created_at=shot.updated_at or shot.created_at,
         )
 
     def _decode_metadata(self, raw_metadata: str | None) -> dict:

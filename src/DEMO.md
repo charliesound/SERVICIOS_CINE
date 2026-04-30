@@ -151,7 +151,8 @@ This clears all demo jobs and reseeds everything.
 
 ## Production Note
 
-Remove demo routes before production deployment:
-1. Remove `demo_routes.py`
-2. Remove from `app.py` imports
-3. Update `routes/__init__.py`
+Production candidate deployments should keep demo routes disabled by default:
+
+1. Set `APP_ENV=production`
+2. Set `ENABLE_DEMO_ROUTES=0`
+3. Only enable `ENABLE_DEMO_ROUTES=1` for controlled commercial demo environments

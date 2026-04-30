@@ -22,29 +22,58 @@
     }
 
     # API endpoints
-    handle /auth/* {
-        reverse_proxy backend:8000
+    handle /api/health {
+        reverse_proxy backend:8000 {
+            rewrite /health
+        }
     }
     handle /api/* {
         reverse_proxy backend:8000
     }
+    
+    # Block legacy and non-demo endpoints
+    handle /auth {
+        respond 404
+    }
+    handle /auth/* {
+        respond 404
+    }
     handle /docs {
-        reverse_proxy backend:8000
+        respond 404
+    }
+    handle /docs/* {
+        respond 404
     }
     handle /redoc {
-        reverse_proxy backend:8000
+        respond 404
+    }
+    handle /redoc/* {
+        respond 404
     }
     handle /openapi.json {
-        reverse_proxy backend:8000
+        respond 404
+    }
+    handle /n8n {
+        respond 404
+    }
+    handle /n8n/* {
+        respond 404
+    }
+    handle /qdrant {
+        respond 404
+    }
+    handle /qdrant/* {
+        respond 404
+    }
+    handle /automation {
+        respond 404
+    }
+    handle /automation/* {
+        respond 404
     }
 
     # Everything else goes to frontend
     handle /* {
         reverse_proxy frontend:80
-    }
-
-    # Websocket support for frontend
-    handle /ws {
-        reverse_proxy backend:8000
     }
 }

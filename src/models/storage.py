@@ -13,7 +13,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, foreign
 
 from database import Base
 
@@ -331,3 +331,13 @@ class MediaAsset(Base):
     storage_source = relationship("StorageSource")
     watch_path = relationship("StorageWatchPath")
     ingest_scan = relationship("IngestScan")
+    project = relationship(
+        "Project",
+        back_populates="media_assets",
+        primaryjoin="foreign(MediaAsset.project_id) == Project.id",
+    )
+    project_job = relationship(
+        "ProjectJob",
+        back_populates="media_assets",
+        primaryjoin="foreign(MediaAsset.job_id) == ProjectJob.id",
+    )

@@ -6,3 +6,8 @@ from .workflow_schema import *
 from .plan_schema import *
 from .review_schema import *
 from .delivery_schema import *
+from .funding_catalog_schema import *
+from .project_document_schema import *
+from .project_document_rag_schema import *
+from .opportunity_tracking_schema import *
+from .requirement_checklist_item_schema import *

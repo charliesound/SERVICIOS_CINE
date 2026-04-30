@@ -1,0 +1,27 @@
+{
+  "sample_rate": 48000,
+  "channels": 2,
+  "duration_seconds": 15.0,
+  "bit_depth": 24,
+  "codec": "PCM",
+  "file_size": 1440000,
+  "bext": {
+    "description": "LA NOCHE ETERNAL S1 SH1 TK1",
+    "originator": "Sound Devices 888",
+    "originator_reference": "S001",
+    "origination_date": "2026-04-28",
+    "origination_time": "20:00:00",
+    "time_reference_samples": 2160000
+  },
+  "ixml": {
+    "project": "LA NOCHE ETERNAL",
+    "scene": "1",
+    "shot": "1",
+    "take": 1,
+    "tape": "S001",
+    "circled": true,
+    "note": "Alameda Park - Wide clean",
+    "start_timecode": "01:00:00:00",
+    "fps": 24
+  }
+}

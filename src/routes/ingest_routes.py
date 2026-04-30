@@ -85,6 +85,10 @@ def _asset_response(asset: MediaAsset) -> MediaAssetResponse:
         discovered_at=cast(datetime, asset.discovered_at),
         status=str(asset.status),
         created_by=getattr(asset, "created_by", None),
+        metadata_json=getattr(asset, "metadata_json", None),
+        content_ref=getattr(asset, "content_ref", None),
+        job_id=getattr(asset, "job_id", None),
+        asset_source=getattr(asset, "asset_source", None),
     )
 
 

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 import os
 import uuid
@@ -223,6 +224,7 @@ class DeliveryService:
         mime_type: str,
         category: str,
         payload_extra: dict | None = None,
+        manifest_payload: dict | None = None,
     ) -> Deliverable:
         normalized_name = self._normalize_required_text(name, "name")
         normalized_format_type = self._normalize_required_text(format_type, "format_type")
@@ -241,6 +243,16 @@ class DeliveryService:
         file_path = storage_dir / stored_file_name
         file_path.write_bytes(file_bytes)
 
+        manifest_file_path: Path | None = None
+        normalized_manifest_payload = self._normalize_payload(manifest_payload)
+        if normalized_manifest_payload:
+            manifest_file_name = f"{Path(stored_file_name).stem}_manifest.json"
+            manifest_file_path = storage_dir / manifest_file_name
+            manifest_file_path.write_text(
+                json.dumps(normalized_manifest_payload, indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
+
         payload = {
             "file_path": str(file_path),
             "file_name": normalized_file_name,
@@ -250,6 +262,15 @@ class DeliveryService:
             "category": normalized_category,
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
+        if normalized_manifest_payload:
+            payload.update(
+                {
+                    "manifest_summary": normalized_manifest_payload,
+                    "manifest_file_path": str(manifest_file_path),
+                    "manifest_file_name": manifest_file_path.name if manifest_file_path else None,
+                    "manifest_mime_type": "application/json",
+                }
+            )
         payload.update(self._normalize_payload(payload_extra))
 
         deliverable = Deliverable(
@@ -268,6 +289,8 @@ class DeliveryService:
             await db.rollback()
             if file_path.exists():
                 file_path.unlink()
+            if manifest_file_path is not None and manifest_file_path.exists():
+                manifest_file_path.unlink()
             raise
 
         await db.refresh(deliverable)

@@ -447,9 +447,17 @@ async def _bootstrap_ingest_document_schema(conn) -> None:
 async def _bootstrap_funding_catalog_schema(conn) -> None:
     if await _has_table(conn, "funding_sources"):
         funding_source_columns = await _get_sqlite_columns(conn, "funding_sources")
+        if "organization_id" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN organization_id VARCHAR(36) DEFAULT ''"
+            )
         if "agency_name" not in funding_source_columns:
             await conn.exec_driver_sql(
                 "ALTER TABLE funding_sources ADD COLUMN agency_name VARCHAR(255)"
+            )
+        if "official_url" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN official_url VARCHAR(500)"
             )
         if "description" not in funding_source_columns:
             await conn.exec_driver_sql(
@@ -471,10 +479,25 @@ async def _bootstrap_funding_catalog_schema(conn) -> None:
             await conn.exec_driver_sql(
                 "ALTER TABLE funding_sources ADD COLUMN verification_status VARCHAR(20) DEFAULT 'official'"
             )
+        if "is_active" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN is_active BOOLEAN DEFAULT 1"
+            )
+        if "last_synced_at" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN last_synced_at DATETIME"
+            )
+        if "created_at" not in funding_source_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE funding_sources ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+            )
         if "updated_at" not in funding_source_columns:
             await conn.exec_driver_sql(
                 "ALTER TABLE funding_sources ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP"
             )
+        await conn.exec_driver_sql(
+            "UPDATE funding_sources SET organization_id = COALESCE(organization_id, '')"
+        )
         await conn.exec_driver_sql(
             "UPDATE funding_sources SET region_scope = COALESCE(region_scope, region, 'spain')"
         )
@@ -482,7 +505,22 @@ async def _bootstrap_funding_catalog_schema(conn) -> None:
             "UPDATE funding_sources SET country_or_program = COALESCE(country_or_program, territory, name)"
         )
         await conn.exec_driver_sql(
+            "UPDATE funding_sources SET verification_status = COALESCE(NULLIF(trim(verification_status), ''), 'official')"
+        )
+        await conn.exec_driver_sql(
+            "UPDATE funding_sources SET is_active = COALESCE(is_active, 1)"
+        )
+        await conn.exec_driver_sql(
+            "UPDATE funding_sources SET created_at = COALESCE(created_at, CURRENT_TIMESTAMP) WHERE created_at IS NULL"
+        )
+        await conn.exec_driver_sql(
+            "UPDATE funding_sources SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL"
+        )
+        await conn.exec_driver_sql(
             "CREATE INDEX IF NOT EXISTS ix_funding_source_code ON funding_sources(code)"
+        )
+        await conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_funding_source_org_id ON funding_sources(organization_id)"
         )
 
     if await _has_table(conn, "funding_calls"):
@@ -681,7 +719,7 @@ async def init_db():
     from models.delivery import Deliverable
     from models.review import ApprovalDecision, Review, ReviewComment
     from models.narrative import Character, Scene, Sequence, scene_character_link
-    from models.postproduction import AssemblyCut, Clip
+    from models.postproduction import AssemblyCut, AssemblyCutItem, Clip, Take
     from models.producer import (
         DemoRequestRecord,
         FundingOpportunity,
@@ -744,6 +782,8 @@ async def init_db():
         scene_character_link,
         AssemblyCut,
         Clip,
+        Take,
+        AssemblyCutItem,
         DemoRequestRecord,
         FundingOpportunity,
         LeadGenEvent,

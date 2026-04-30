@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding='utf-8'?>
+<fcpxml version="1.10">
+  <resources>
+    <format id="r1" name="FFVideoFormat24p" frameDuration="1/24s" width="1920" height="1080"/>
+    <asset id="r2" name="S01_SH01_TK01_CAM.mov" src="file:///C:/CID_Production_Synthetic_Validation_20260428/media/S01_SH01_TK01_CAM.mov" start="0s" duration="96/24s" hasVideo="1" hasAudio="0" format="r1"/>
+    <asset id="r3" name="S01_SH01_TK01_SOUND.wav" src="file:///C:/CID_Production_Synthetic_Validation_20260428/media/S01_SH01_TK01_SOUND.wav" start="0s" duration="96/24s" hasVideo="0" hasAudio="1" format="r1"/>
+    <asset id="r4" name="S01_SH02_TK01_CAM.mov" src="file:///C:/CID_Production_Synthetic_Validation_20260428/media/S01_SH02_TK01_CAM.mov" start="0s" duration="96/24s" hasVideo="1" hasAudio="0" format="r1"/>
+    <asset id="r5" name="S01_SH02_TK01_SOUND.wav" src="file:///C:/CID_Production_Synthetic_Validation_20260428/media/S01_SH02_TK01_SOUND.wav" start="0s" duration="96/24s" hasVideo="0" hasAudio="1" format="r1"/>
+    <asset id="r6" name="S01_SH02_TK02_CAM.mov" src="file:///C:/CID_Production_Synthetic_Validation_20260428/media/S01_SH02_TK02_CAM.mov" start="0s" duration="96/24s" hasVideo="1" hasAudio="0" format="r1"/>
+    <asset id="r7" name="S01_SH02_TK02_SOUND.wav" src="file:///C:/CID_Production_Synthetic_Validation_20260428/media/S01_SH02_TK02_SOUND.wav" start="0s" duration="96/24s" hasVideo="0" hasAudio="1" format="r1"/>
+    <asset id="r8" name="S02_SH01_TK01_CAM.mov" src="file:///C:/CID_Production_Synthetic_Validation_20260428/media/S02_SH01_TK01_CAM.mov" start="0s" duration="96/24s" hasVideo="1" hasAudio="0" format="r1"/>
+    <asset id="r9" name="S02_SH01_TK01_SOUND.wav" src="file:///C:/CID_Production_Synthetic_Validation_20260428/media/S02_SH01_TK01_SOUND.wav" start="0s" duration="96/24s" hasVideo="0" hasAudio="1" format="r1"/>
+    <asset id="r10" name="S02_SH01_TK02_CAM.mov" src="file:///C:/CID_Production_Synthetic_Validation_20260428/media/S02_SH01_TK02_CAM.mov" start="0s" duration="96/24s" hasVideo="1" hasAudio="0" format="r1"/>
+    <asset id="r11" name="S02_SH01_TK02_SOUND.wav" src="file:///C:/CID_Production_Synthetic_Validation_20260428/media/S02_SH01_TK02_SOUND.wav" start="0s" duration="96/24s" hasVideo="0" hasAudio="1" format="r1"/>
+  </resources>
+  <library>
+    <event name="CID Production Synthetic Validation">
+      <project name="CID_Production_Synthetic_Validation_20260428">
+        <sequence name="Sequence 1" format="r1">
+          <spine>
+            <clip name="S01_SH01_TK01" offset="0s" duration="96/24s" start="0s" format="r1">
+              <track-id>1</track-id>
+              <source-id>r2</source-id>
+            </clip>
+            <clip name="S01_SH01_TK01_AUDIO" offset="0s" duration="96/24s" start="0s" format="r1">
+              <track-id>2</track-id>
+              <source-id>r3</source-id>
+            </clip>
+            <clip name="S01_SH02_TK01" offset="96s" duration="96/24s" start="0s" format="r1">
+              <track-id>1</track-id>
+              <source-id>r4</source-id>
+            </clip>
+            <clip name="S01_SH02_TK01_AUDIO" offset="96s" duration="96/24s" start="0s" format="r1">
+              <track-id>2</track-id>
+              <source-id>r5</source-id>
+            </clip>
+            <clip name="S01_SH02_TK02" offset="192s" duration="96/24s" start="0s" format="r1">
+              <track-id>1</track-id>
+              <source-id>r6</source-id>
+            </clip>
+            <clip name="S01_SH02_TK02_AUDIO" offset="192s" duration="96/24s" start="0s" format="r1">
+              <track-id>2</track-id>
+              <source-id>r7</source-id>
+            </clip>
+            <clip name="S02_SH01_TK01" offset="288s" duration="96/24s" start="0s" format="r1">
+              <track-id>1</track-id>
+              <source-id>r8</source-id>
+            </clip>
+            <clip name="S02_SH01_TK01_AUDIO" offset="288s" duration="96/24s" start="0s" format="r1">
+              <track-id>2</track-id>
+              <source-id>r9</source-id>
+            </clip>
+            <clip name="S02_SH01_TK02" offset="384s" duration="96/24s" start="0s" format="r1">
+              <track-id>1</track-id>
+              <source-id>r10</source-id>
+            </clip>
+            <clip name="S02_SH01_TK02_AUDIO" offset="384s" duration="96/24s" start="0s" format="r1">
+              <track-id>2</track-id>
+              <source-id>r11</source-id>
+            </clip>
+          </spine>
+        </sequence>
+      </project>
+    </event>
+  </library>
+</fcpxml>

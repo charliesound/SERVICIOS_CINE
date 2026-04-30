@@ -19,6 +19,14 @@ export {
 } from './useDocuments'
 export { useCreateReport, useReport, useReports, useUpdateReport } from './useReports'
 export {
+  useFundingChecklist,
+  useFundingMatchEvidence,
+  useFundingMatcherStatus,
+  useFundingMatches,
+  useFundingProfile,
+  useRecomputeFundingMatches,
+} from './useFundingOpportunities'
+export {
   useAuthorizeStorageSource,
   useCreateStorageSource,
   useCreateWatchPath,
@@ -30,3 +38,4 @@ export {
   useUpdateStorageSource,
   useValidateStorageSource,
 } from './useStorage'
+export { useProjectDashboard } from './useProjectDashboard'

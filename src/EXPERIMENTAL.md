@@ -7,11 +7,17 @@ Prototype module for semi-automatic workflow assembly.
 
 ## Activation
 
-Enable in `config/config.yaml`:
+Enable only in non-production environments using env or config:
 ```yaml
-experimental:
-  enabled: true
-  admin_key: "your-secret-key"
+features:
+  experimental: true
+```
+
+Or with environment variables:
+
+```bash
+APP_ENV=demo
+ENABLE_EXPERIMENTAL_ROUTES=1
 ```
 
 ## Endpoints

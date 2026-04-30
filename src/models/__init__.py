@@ -4,12 +4,11 @@ from models.review import ApprovalDecision, Review, ReviewComment
 from models.delivery import Deliverable
 from models.narrative import Character, Scene, Sequence, scene_character_link
 from models.producer import (
-    FundingOpportunity,
     DemoRequestRecord,
     LeadGenEvent,
     SavedOpportunity,
 )
-from models.postproduction import AssemblyCut, Clip
+from models.postproduction import AssemblyCut, AssemblyCutItem, Clip, Take
 from models.visual import VisualAsset, Shot
 from models.storyboard import StoryboardShot
 from models.storage import (
@@ -50,6 +49,53 @@ from models.production import (
     PrivateOpportunity,
     ProjectFundingSource,
 )
+from models.script_versioning import ScriptVersion, ScriptChangeReport, ProjectModuleStatus
+from models.project_member import ProjectMember, PROFESSIONAL_ROLES, PROJECT_PERMISSIONS, ROLE_DEFAULT_PERMISSIONS
+from models.budget_estimator import BudgetEstimate, BudgetLineItem, BUDGET_LEVELS, BUDGET_STATUSES, BUDGET_SOURCES, CONFIDENCE_LEVELS
+from models.producer_pitch import ProducerPitchPack, ProducerPitchSection, PITCH_PACK_STATUSES, PITCH_SECTION_TYPES, SECTION_ORDER
+from models.distribution import (
+    DistributionPack,
+    DistributionPackSection,
+    SalesTarget,
+    ProjectSalesOpportunity,
+    PACK_TYPE,
+    PACK_STATUS,
+    SALES_TARGET_TYPES,
+    SALES_OPPORTUNITY_STATUS,
+    DISTRIBUTION_SECTION_TYPES,
+)
+from models.crm import (
+    CRMContact,
+    CRMOpportunity,
+    CRMCommunication,
+    CRMTask,
+    CONTACT_TYPES,
+    OPPORTUNITY_TYPES,
+    OPPORTUNITY_STATUS,
+    COMMUNICATION_TYPES,
+    COMMUNICATION_DIRECTIONS,
+    TASK_STATUS,
+    TASK_PRIORITIES,
+)
+from models.change_governance import (
+    ProjectChangeRequest,
+    ProjectApproval,
+    ApprovedProjectBaseline,
+    PlannedShot,
+    ShootingPlan,
+    ShootingPlanItem,
+    CHANGE_REQUEST_SOURCE_TYPES,
+    CHANGE_REQUEST_TARGET_MODULES,
+    CHANGE_REQUEST_STATUSES,
+    CHANGE_REQUEST_SEVERITIES,
+    CHANGE_REQUEST_TYPES,
+    BASELINE_TYPES,
+    BASELINE_STATUSES,
+    SHOT_STATUSES,
+    SHOT_PRIORITIES,
+    SHOT_TYPES,
+    PLANNING_ITEM_STATUSES,
+)
 
 __all__ = [
     "Organization",
@@ -70,7 +116,9 @@ __all__ = [
     "LeadGenEvent",
     "SavedOpportunity",
     "AssemblyCut",
+    "AssemblyCutItem",
     "Clip",
+    "Take",
     "VisualAsset",
     "Shot",
     "StoryboardShot",
@@ -107,4 +155,34 @@ __all__ = [
     "PrivateFundingSource",
     "PrivateOpportunity",
     "ProjectFundingSource",
+    "ScriptVersion",
+    "ScriptChangeReport",
+    "ProjectModuleStatus",
+    "ProjectMember",
+    "PROFESSIONAL_ROLES",
+    "PROJECT_PERMISSIONS",
+    "ROLE_DEFAULT_PERMISSIONS",
+    "BudgetEstimate",
+    "BudgetLineItem",
+    "BUDGET_LEVELS",
+    "BUDGET_STATUSES",
+    "BUDGET_SOURCES",
+    "CONFIDENCE_LEVELS",
+    "ProjectChangeRequest",
+    "ProjectApproval",
+    "ApprovedProjectBaseline",
+    "PlannedShot",
+    "ShootingPlan",
+    "ShootingPlanItem",
+    "CHANGE_REQUEST_SOURCE_TYPES",
+    "CHANGE_REQUEST_TARGET_MODULES",
+    "CHANGE_REQUEST_STATUSES",
+    "CHANGE_REQUEST_SEVERITIES",
+    "CHANGE_REQUEST_TYPES",
+    "BASELINE_TYPES",
+    "BASELINE_STATUSES",
+    "SHOT_STATUSES",
+    "SHOT_PRIORITIES",
+    "SHOT_TYPES",
+    "PLANNING_ITEM_STATUSES",
 ]

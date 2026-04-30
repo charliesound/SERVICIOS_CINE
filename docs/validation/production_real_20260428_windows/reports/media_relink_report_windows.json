@@ -1,0 +1,176 @@
+{
+  "generated_at": "2026-04-28T15:44:26.094777+00:00",
+  "project_id": "project-la-noche-eternal",
+  "assembly_cut_id": "assembly-production-001",
+  "platform": "windows",
+  "root_path": "C:/CID_Production_Validation",
+  "resources": {
+    "media-video-1": {
+      "status": "resolved",
+      "filename": "S01_SH01_TK01_CAM.mov",
+      "asset_type": "video",
+      "resolved_path": "C:/CID_Production_Validation/media/S01_SH01_TK01_CAM.mov",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S01_SH01_TK01_CAM.mov",
+      "scene_number": 1,
+      "shot_number": 1,
+      "take_number": 1
+    },
+    "media-audio-2": {
+      "status": "resolved",
+      "filename": "S01_SH01_TK01_SOUND.wav",
+      "asset_type": "audio",
+      "resolved_path": "C:/CID_Production_Validation/media/S01_SH01_TK01_SOUND.wav",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S01_SH01_TK01_SOUND.wav",
+      "scene_number": 1,
+      "shot_number": 1,
+      "take_number": 1,
+      "ixml_metadata": {
+        "scene": "1",
+        "shot": "1",
+        "take": 1,
+        "circled": true,
+        "start_timecode": "01:00:00:00"
+      }
+    },
+    "media-video-3": {
+      "status": "resolved",
+      "filename": "S01_SH02_TK01_CAM.mov",
+      "asset_type": "video",
+      "resolved_path": "C:/CID_Production_Validation/media/S01_SH02_TK01_CAM.mov",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S01_SH02_TK01_CAM.mov",
+      "scene_number": 1,
+      "shot_number": 2,
+      "take_number": 1
+    },
+    "media-audio-4": {
+      "status": "resolved",
+      "filename": "S01_SH02_TK01_SOUND.wav",
+      "asset_type": "audio",
+      "resolved_path": "C:/CID_Production_Validation/media/S01_SH02_TK01_SOUND.wav",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S01_SH02_TK01_SOUND.wav",
+      "scene_number": 1,
+      "shot_number": 2,
+      "take_number": 1,
+      "ixml_metadata": {
+        "scene": "1",
+        "shot": "2",
+        "take": 1,
+        "circled": true,
+        "start_timecode": "01:00:00:00"
+      }
+    },
+    "media-video-5": {
+      "status": "resolved",
+      "filename": "S01_SH03_TK01_CAM.mov",
+      "asset_type": "video",
+      "resolved_path": "C:/CID_Production_Validation/media/S01_SH03_TK01_CAM.mov",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S01_SH03_TK01_CAM.mov",
+      "scene_number": 1,
+      "shot_number": 3,
+      "take_number": 1
+    },
+    "media-audio-6": {
+      "status": "resolved",
+      "filename": "S01_SH03_TK01_SOUND.wav",
+      "asset_type": "audio",
+      "resolved_path": "C:/CID_Production_Validation/media/S01_SH03_TK01_SOUND.wav",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S01_SH03_TK01_SOUND.wav",
+      "scene_number": 1,
+      "shot_number": 3,
+      "take_number": 1,
+      "ixml_metadata": {
+        "scene": "1",
+        "shot": "3",
+        "take": 1,
+        "circled": true,
+        "start_timecode": "01:00:00:00"
+      }
+    },
+    "media-video-7": {
+      "status": "resolved",
+      "filename": "S02_SH01_TK01_CAM.mov",
+      "asset_type": "video",
+      "resolved_path": "C:/CID_Production_Validation/media/S02_SH01_TK01_CAM.mov",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S02_SH01_TK01_CAM.mov",
+      "scene_number": 2,
+      "shot_number": 1,
+      "take_number": 1
+    },
+    "media-audio-8": {
+      "status": "resolved",
+      "filename": "S02_SH01_TK01_SOUND.wav",
+      "asset_type": "audio",
+      "resolved_path": "C:/CID_Production_Validation/media/S02_SH01_TK01_SOUND.wav",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S02_SH01_TK01_SOUND.wav",
+      "scene_number": 2,
+      "shot_number": 1,
+      "take_number": 1,
+      "ixml_metadata": {
+        "scene": "2",
+        "shot": "1",
+        "take": 1,
+        "circled": true,
+        "start_timecode": "01:00:00:00"
+      }
+    },
+    "media-video-9": {
+      "status": "resolved",
+      "filename": "S02_SH02_TK01_CAM.mov",
+      "asset_type": "video",
+      "resolved_path": "C:/CID_Production_Validation/media/S02_SH02_TK01_CAM.mov",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S02_SH02_TK01_CAM.mov",
+      "scene_number": 2,
+      "shot_number": 2,
+      "take_number": 1
+    },
+    "media-audio-10": {
+      "status": "resolved",
+      "filename": "S02_SH02_TK01_SOUND.wav",
+      "asset_type": "audio",
+      "resolved_path": "C:/CID_Production_Validation/media/S02_SH02_TK01_SOUND.wav",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S02_SH02_TK01_SOUND.wav",
+      "scene_number": 2,
+      "shot_number": 2,
+      "take_number": 1,
+      "ixml_metadata": {
+        "scene": "2",
+        "shot": "2",
+        "take": 1,
+        "circled": true,
+        "start_timecode": "01:00:00:00"
+      }
+    },
+    "media-video-11": {
+      "status": "resolved",
+      "filename": "S02_SH03_TK01_CAM.mov",
+      "asset_type": "video",
+      "resolved_path": "C:/CID_Production_Validation/media/S02_SH03_TK01_CAM.mov",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S02_SH03_TK01_CAM.mov",
+      "scene_number": 2,
+      "shot_number": 3,
+      "take_number": 1
+    },
+    "media-audio-12": {
+      "status": "resolved",
+      "filename": "S02_SH03_TK01_SOUND.wav",
+      "asset_type": "audio",
+      "resolved_path": "C:/CID_Production_Validation/media/S02_SH03_TK01_SOUND.wav",
+      "fcpxml_uri": "file:///C:/CID_Production_Validation/media/S02_SH03_TK01_SOUND.wav",
+      "scene_number": 2,
+      "shot_number": 3,
+      "take_number": 1,
+      "ixml_metadata": {
+        "scene": "2",
+        "shot": "3",
+        "take": 1,
+        "circled": true,
+        "start_timecode": "01:00:00:00"
+      }
+    }
+  },
+  "dual_system_summary": {
+    "total_items": 6,
+    "matched": 6,
+    "dual_system_audio_export": "partial"
+  }
+}

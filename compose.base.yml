@@ -19,8 +19,8 @@ services:
       BACKEND_HOST: ${BACKEND_HOST:-0.0.0.0}
       BACKEND_PORT: ${BACKEND_PORT:-8000}
       DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./ailinkcinema.db}
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    expose:
+      - "8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -39,8 +39,8 @@ services:
       context: ./src_frontend
       dockerfile: Dockerfile
     container_name: ailinkcinema_frontend
-    ports:
-      - "${FRONTEND_PORT:-3000}:80"
+    expose:
+      - "80"
     restart: unless-stopped
     depends_on:
       backend:
@@ -75,7 +75,6 @@ services:
       - .env
     ports:
       - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
     volumes:
       - ./Caddyfile.deploy:/etc/caddy/Caddyfile:ro
       - ./certs:/etc/caddy/certs:ro
@@ -93,12 +92,12 @@ services:
 
 networks:
   public_net:
-    name: ailinkcinema_public
+    name: ${PUBLIC_NET_NAME:-ailinkcinema_public}
     driver: bridge
   private_net:
-    name: ailinkcinema_private
+    name: ${PRIVATE_NET_NAME:-ailinkcinema_private}
     driver: bridge
 
 volumes:
   caddy_data:
-    name: ailinkcinema_caddy_data
+    name: ${CADDY_DATA_NAME:-ailinkcinema_caddy_data}

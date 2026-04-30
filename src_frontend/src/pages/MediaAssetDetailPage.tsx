@@ -80,7 +80,7 @@ export default function MediaAssetDetailPage() {
             <p className="mt-2 text-sm text-white break-all">{asset.storage_source_id}</p>
           </div>
           <div className="rounded-xl bg-dark-300/50 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Ingest Scan ID</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">ID de Escaneo</p>
             <p className="mt-2 text-sm text-white break-all">{asset.ingest_scan_id || 'n/a'}</p>
           </div>
           <div className="rounded-xl bg-dark-300/50 p-4">
@@ -133,7 +133,7 @@ export default function MediaAssetDetailPage() {
           </Link>
           {asset.ingest_scan_id && (
             <Link to={`/ingest/scans/${asset.ingest_scan_id}`} className="btn-secondary">
-              Open Ingest Scan
+              Abrir Escaneo
             </Link>
           )}
         </div>

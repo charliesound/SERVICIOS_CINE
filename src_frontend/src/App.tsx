@@ -50,6 +50,7 @@ import DeliveryOverviewPage from './pages/DeliveryOverviewPage'
 import DeliverableDetailPage from './pages/DeliverableDetailPage'
 import ReviewsOverviewPage from './pages/ReviewsOverviewPage'
 import ReviewDetailPage from './pages/ReviewDetailPage'
+import CIDPipelineBuilderPage from './pages/CIDPipelineBuilderPage'
 
 export default function App() {
   return (
@@ -143,6 +144,7 @@ export default function App() {
          <Route path="/queue" element={<QueuePage />} />
          <Route path="/history" element={<ProjectHistory />} />
          <Route path="/workflows" element={<WorkflowsPage />} />
+         <Route path="/cid/pipeline-builder" element={<CIDPipelineBuilderPage />} />
          <Route path="/plans" element={<PlansPage />} />
          <Route path="/admin" element={<AdminPage />} />
          <Route path="/storage-sources" element={<StorageSourcesPage />} />

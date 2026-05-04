@@ -16,6 +16,7 @@ import {
   HardDrive,
   Film,
   FolderOpen,
+  Sparkles,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -26,6 +27,7 @@ const navItems = [
   { to: '/create', icon: PlusCircle, label: 'Crear' },
   { to: '/queue', icon: ListOrdered, label: 'Cola' },
   { to: '/workflows', icon: GitBranch, label: 'Workflows' },
+  { to: '/cid/pipeline-builder', icon: Sparkles, label: 'Pipeline Builder' },
   { to: '/plans', icon: CreditCard, label: 'Planes' },
   { to: '/storage-sources', icon: HardDrive, label: 'Storage' },
   { to: '/ingest/scans', icon: Search, label: 'Escanear' },
@@ -39,6 +41,9 @@ export default function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
+  const isCidHomePath =
+    location.pathname === '/cid' ||
+    /^\/cid\/(demo|creator|producer|studio|enterprise)$/.test(location.pathname)
 
   const handleLogout = () => {
     logout()
@@ -63,7 +68,7 @@ export default function AppShell() {
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map(({ to, icon: Icon, label }) => {
             const isActive = to === '/cid'
-              ? location.pathname === '/cid' || location.pathname.startsWith('/cid')
+              ? isCidHomePath
               : location.pathname === to || location.pathname.startsWith(`${to}/`)
             return (
               <Link

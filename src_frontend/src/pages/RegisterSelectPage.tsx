@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Clapperboard, ArrowRight, Film, Users, Star } from 'lucide-react'
 import { useAuthStore, getPrimaryCIDTarget } from '@/store'
 import { useEffect } from 'react'
+import { useSeo } from '@/hooks/useSeo'
 
 const programs = [
   {
@@ -36,6 +37,13 @@ const programs = [
 export default function RegisterSelectPage() {
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuthStore()
+
+  useSeo({
+    title: 'Solicitar acceso',
+    description: 'Selecciona acceso CID, demo guiada o programa partner dentro de AILinkCinema.',
+    path: '/register/select',
+    robots: 'noindex, nofollow',
+  })
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -74,8 +82,8 @@ export default function RegisterSelectPage() {
               <Clapperboard className="w-5 h-5 text-black" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white tracking-tight">AILink</h1>
-              <p className="text-xs text-amber-400/80 font-medium">CINEMA</p>
+              <p className="text-xl font-bold text-white tracking-tight">AILinkCinema</p>
+              <p className="text-xs text-amber-400/80 font-medium">IA para producción audiovisual</p>
             </div>
           </div>
           <Link
@@ -92,7 +100,7 @@ export default function RegisterSelectPage() {
         <div className="w-full max-w-5xl">
           <div className="text-center mb-12">
               <h1 className="text-3xl md:text-4xl font-bold mb-4">
-                Elige cómo quieres empezar
+                Empieza con AILinkCinema
               </h1>
               <p className="text-gray-400 text-lg max-w-xl mx-auto">
                 Si quieres entrar ahora a CID, usa Acceso CID. La demo guiada es una solicitud comercial.

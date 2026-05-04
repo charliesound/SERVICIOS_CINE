@@ -14,11 +14,45 @@ import {
   publicLegalLinks,
   solutionsMarketingNotes,
 } from '@/data/solutionsContent'
+import { useSeo } from '@/hooks/useSeo'
 import { getPrimaryCIDTarget, useAuthStore } from '@/store'
+import { buildAbsoluteUrl, buildBreadcrumbStructuredData } from '@/utils/seo'
 
 export default function PricingPage() {
   const { isAuthenticated, user } = useAuthStore()
   const cidTarget = getPrimaryCIDTarget(user)
+  const description =
+    'Precios de AILinkCinema para CID, modulos independientes y desarrollo a medida aplicado a produccion, postproduccion y delivery audiovisual.'
+
+  useSeo({
+    title: 'Precios de software IA para cine',
+    description,
+    path: '/pricing',
+    robots: 'index, follow',
+    keywords: ['precios software cine', 'precio storyboard ai', 'precio desglose guion', 'software audiovisual premium'],
+    structuredData: [
+      buildBreadcrumbStructuredData([
+        { name: 'Inicio', path: '/' },
+        { name: 'Precios', path: '/pricing' },
+      ]),
+      {
+        '@context': 'https://schema.org',
+        '@type': 'OfferCatalog',
+        name: 'Catalogo de precios AILinkCinema',
+        url: buildAbsoluteUrl('/pricing'),
+        itemListElement: allSolutions.map((solution) => ({
+          '@type': 'Offer',
+          description: solution.priceLabel,
+          itemOffered: {
+            '@type': 'SoftwareApplication',
+            name: solution.title,
+            description: solution.description,
+            url: buildAbsoluteUrl(solution.path),
+          },
+        })),
+      },
+    ],
+  })
 
   return (
     <div className="landing-shell landing-brand-shell min-h-screen text-white">

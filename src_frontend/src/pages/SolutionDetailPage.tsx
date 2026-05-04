@@ -10,7 +10,9 @@ import {
   publicLegalLinks,
   solutionsMarketingNotes,
 } from '@/data/solutionsContent'
+import { useSeo } from '@/hooks/useSeo'
 import { getPrimaryCIDTarget, useAuthStore } from '@/store'
+import { buildAbsoluteUrl, buildBreadcrumbStructuredData } from '@/utils/seo'
 
 export default function SolutionDetailPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -21,6 +23,34 @@ export default function SolutionDetailPage() {
   if (!solution) {
     return <Navigate to="/solutions" replace />
   }
+
+  useSeo({
+    title: solution.title,
+    description: solution.description,
+    path: solution.path,
+    robots: 'index, follow',
+    keywords: [solution.title, 'modulo audiovisual', 'software para cine', 'pipeline audiovisual'],
+    structuredData: [
+      buildBreadcrumbStructuredData([
+        { name: 'Inicio', path: '/' },
+        { name: 'Soluciones', path: '/solutions' },
+        { name: solution.title, path: solution.path },
+      ]),
+      {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: solution.title,
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        url: buildAbsoluteUrl(solution.path),
+        description: solution.description,
+        offers: {
+          '@type': 'Offer',
+          description: solution.priceLabel,
+        },
+      },
+    ],
+  })
 
   return (
     <div className="landing-shell landing-brand-shell min-h-screen text-white">

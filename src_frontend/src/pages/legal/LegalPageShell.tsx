@@ -1,5 +1,7 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ArrowLeft, ShieldCheck } from 'lucide-react'
+import { useSeo } from '@/hooks/useSeo'
+import { buildBreadcrumbStructuredData } from '@/utils/seo'
 
 interface LegalPageShellProps {
   eyebrow: string
@@ -16,6 +18,19 @@ const legalLinks = [
 ]
 
 export default function LegalPageShell({ eyebrow, title, description, children }: LegalPageShellProps) {
+  const location = useLocation()
+
+  useSeo({
+    title,
+    description,
+    path: location.pathname,
+    robots: 'index, follow',
+    structuredData: buildBreadcrumbStructuredData([
+      { name: 'Inicio', path: '/' },
+      { name: title, path: location.pathname },
+    ]),
+  })
+
   return (
     <div className="landing-shell min-h-screen text-white">
       <div className="landing-noise" />

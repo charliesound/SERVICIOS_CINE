@@ -10,11 +10,43 @@ import {
   publicFooterLinks,
   publicLegalLinks,
 } from '@/data/solutionsContent'
+import { useSeo } from '@/hooks/useSeo'
 import { getPrimaryCIDTarget, useAuthStore } from '@/store'
+import { buildAbsoluteUrl, buildBreadcrumbStructuredData } from '@/utils/seo'
 
 export default function CIDProductPage() {
   const { isAuthenticated, user } = useAuthStore()
   const cidTarget = getPrimaryCIDTarget(user)
+  const description =
+    'CID - Cine Inteligente Digital conecta guion, analisis, storyboard, produccion, postproduccion, distribucion y entrega en una sola plataforma audiovisual.'
+
+  useSeo({
+    title: 'CID - Cine Inteligente Digital',
+    description,
+    path: '/solutions/cid',
+    robots: 'index, follow',
+    keywords: ['cid cine inteligente digital', 'plataforma audiovisual', 'pipeline cine', 'software produccion cine'],
+    structuredData: [
+      buildBreadcrumbStructuredData([
+        { name: 'Inicio', path: '/' },
+        { name: 'Soluciones', path: '/solutions' },
+        { name: 'CID', path: '/solutions/cid' },
+      ]),
+      {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: cidProduct.title,
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        url: buildAbsoluteUrl('/solutions/cid'),
+        description,
+        offers: {
+          '@type': 'Offer',
+          description: cidProduct.priceLabel,
+        },
+      },
+    ],
+  })
 
   return (
     <div className="landing-shell landing-brand-shell min-h-screen text-white">

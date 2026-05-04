@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { renderApi } from '@/api'
 import { Clock, CheckCircle, AlertCircle, Play, Image, Video, Mic, FlaskConical, Share2 } from 'lucide-react'
 import clsx from 'clsx'
+import { useSeo } from '@/hooks/useSeo'
 
 const statusConfig: Record<string, { color: string; bg: string; label: string; icon: any }> = {
   queued: { color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', label: 'Queued', icon: Clock },
@@ -31,11 +31,12 @@ export default function ClientPortal() {
     refetchInterval: 5000,
   })
 
-  useEffect(() => {
-    if (job) {
-      document.title = `${job.status} - Project ${jobId?.slice(0, 8)}`
-    }
-  }, [job, jobId])
+  useSeo({
+    title: job ? `${job.status} - Project ${jobId?.slice(0, 8)}` : 'Estado del proyecto',
+    description: 'Vista privada para revisar el estado de una generacion o entrega audiovisual.',
+    path: jobId ? `/project/${jobId}` : '/project',
+    robots: 'noindex, nofollow',
+  })
 
   if (isLoading) {
     return (

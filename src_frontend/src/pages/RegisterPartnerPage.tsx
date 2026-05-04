@@ -5,6 +5,7 @@ import { authApi } from '@/api'
 import { useAuthStore, getPrimaryCIDTarget } from '@/store'
 import type { RegisterPartnerPayload } from '@/types'
 import { getApiErrorMessage } from '@/utils/apiErrors'
+import { useSeo } from '@/hooks/useSeo'
 
 export default function RegisterPartnerPage() {
   const navigate = useNavigate()
@@ -19,6 +20,13 @@ export default function RegisterPartnerPage() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState<'form' | 'success'>('form')
+
+  useSeo({
+    title: step === 'success' ? 'Solicitud partner enviada' : 'Programa partner',
+    description: 'Formulario privado para partners, integradores y colaboraciones de AILinkCinema.',
+    path: '/register/partner',
+    robots: 'noindex, nofollow',
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

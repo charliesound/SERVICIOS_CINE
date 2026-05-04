@@ -14,11 +14,46 @@ import {
   solutionsMarketingNotes,
   solutionsPageHighlights,
 } from '@/data/solutionsContent'
+import { useSeo } from '@/hooks/useSeo'
 import { getPrimaryCIDTarget, useAuthStore } from '@/store'
+import { buildAbsoluteUrl, buildBreadcrumbStructuredData } from '@/utils/seo'
 
 export default function SolutionsPage() {
   const { isAuthenticated, user } = useAuthStore()
   const cidTarget = getPrimaryCIDTarget(user)
+  const description =
+    'Catalogo de soluciones IA para cine y audiovisual: CID, desglose de guion, storyboard, planificacion de produccion, doblaje, sonido, promo video y VFX.'
+
+  useSeo({
+    title: 'Soluciones IA para cine y audiovisual',
+    description,
+    path: '/solutions',
+    robots: 'index, follow',
+    keywords: ['soluciones ia cine', 'software produccion audiovisual', 'storyboard ai', 'desglose de guion', 'doblaje audiovisual'],
+    structuredData: [
+      buildBreadcrumbStructuredData([
+        { name: 'Inicio', path: '/' },
+        { name: 'Soluciones', path: '/solutions' },
+      ]),
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'Soluciones AILinkCinema',
+        url: buildAbsoluteUrl('/solutions'),
+        description,
+        mainEntity: {
+          '@type': 'ItemList',
+          itemListElement: allSolutions.map((solution, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: solution.title,
+            url: buildAbsoluteUrl(solution.path),
+            description: solution.description,
+          })),
+        },
+      },
+    ],
+  })
 
   return (
     <div className="landing-shell landing-brand-shell min-h-screen text-white">

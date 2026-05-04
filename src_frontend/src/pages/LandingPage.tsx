@@ -12,7 +12,9 @@ import LandingPricingSection from '@/components/landing/LandingPricingSection'
 import LandingFinalCta from '@/components/landing/LandingFinalCta'
 import LandingAmbientScene from '@/components/landing/LandingAmbientScene'
 import { landingContent } from '@/data/landingContent'
+import { useSeo } from '@/hooks/useSeo'
 import { getPrimaryCIDTarget, useAuthStore } from '@/store'
+import { buildAbsoluteUrl, SEO_SITE_NAME } from '@/utils/seo'
 
 export default function LandingPage() {
   const { isAuthenticated, user } = useAuthStore()
@@ -22,6 +24,53 @@ export default function LandingPage() {
   const exploreCidTarget = '/solutions/cid'
   const solutionsTarget = '/solutions'
   const requestDemoTarget = '/pricing'
+  const description =
+    'Soluciones de inteligencia artificial para cine, television y publicidad. Desde guion hasta entrega final con CID, el sistema de produccion audiovisual de AILinkCinema.'
+
+  useSeo({
+    title: 'Inteligencia artificial para cine y produccion audiovisual',
+    description,
+    path: '/',
+    robots: 'index, follow',
+    keywords: [
+      'ia para cine',
+      'software audiovisual',
+      'produccion audiovisual',
+      'storyboard con ia',
+      'desglose de guion',
+      'postproduccion audiovisual',
+      'doblaje',
+      'delivery audiovisual',
+    ],
+    structuredData: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: SEO_SITE_NAME,
+        url: buildAbsoluteUrl('/'),
+        description,
+        inLanguage: 'es',
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: SEO_SITE_NAME,
+        url: buildAbsoluteUrl('/'),
+        logo: buildAbsoluteUrl('/assets/ailinkcinema-logo.png'),
+        description,
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'CID - Cine Inteligente Digital',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        url: buildAbsoluteUrl('/solutions/cid'),
+        description:
+          'Plataforma premium para coordinar guion, storyboard, produccion, doblaje, postproduccion, distribucion y entrega dentro del pipeline audiovisual.',
+      },
+    ],
+  })
 
   useEffect(() => {
     const shell = shellRef.current
@@ -40,17 +89,6 @@ export default function LandingPage() {
       if (rafId) return
       rafId = window.requestAnimationFrame(updateParallax)
     }
-
-    document.title = 'AILinkCinema — Inteligencia artificial para cine y produccion audiovisual'
-
-    const description = 'Soluciones de inteligencia artificial para cine, television y publicidad. Desde guion hasta entrega final con CID — Cine Inteligente Digital.'
-    let meta = document.querySelector('meta[name="description"]')
-    if (!meta) {
-      meta = document.createElement('meta')
-      meta.setAttribute('name', 'description')
-      document.head.appendChild(meta)
-    }
-    meta.setAttribute('content', description)
 
     updateParallax()
     window.addEventListener('scroll', onScroll, { passive: true })

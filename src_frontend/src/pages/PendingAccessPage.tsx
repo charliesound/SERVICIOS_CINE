@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/store'
 import { Mail, Clock, ArrowRight } from 'lucide-react'
+import { useSeo } from '@/hooks/useSeo'
 
 export default function PendingAccessPage() {
   const { user } = useAuthStore()
@@ -10,6 +11,13 @@ export default function PendingAccessPage() {
     demo_request: 'Demo personalizada',
     partner_interest: 'Programa Partner',
   }
+
+  useSeo({
+    title: 'Acceso pendiente',
+    description: 'Estado privado de revision de acceso en AILinkCinema.',
+    path: '/pending-access',
+    robots: 'noindex, nofollow',
+  })
 
   return (
     <div className="min-h-screen bg-dark-300 flex items-center justify-center px-6">

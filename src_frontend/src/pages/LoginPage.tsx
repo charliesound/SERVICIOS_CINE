@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore, getPrimaryCIDTarget } from '@/store'
 import { Clapperboard, Mail, Lock, ArrowRight } from 'lucide-react'
+import { useSeo } from '@/hooks/useSeo'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -10,6 +11,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  useSeo({
+    title: 'Iniciar sesion',
+    description: 'Acceso privado a la plataforma CID de AILinkCinema.',
+    path: '/login',
+    robots: 'noindex, nofollow',
+  })
 
   useEffect(() => {
     if (isAuthenticated) {

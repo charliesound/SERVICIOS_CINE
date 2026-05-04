@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store'
 import { authApi } from '@/api'
 import type { CIDProgram, RegisterCIDPayload } from '@/types'
 import { getApiErrorMessage } from '@/utils/apiErrors'
+import { useSeo } from '@/hooks/useSeo'
 
 const programs: { id: CIDProgram; label: string; desc: string; badge: string }[] = [
   { id: 'demo', label: 'Demo', desc: 'Acceso gratuito para probar la plataforma', badge: 'Gratis' },
@@ -30,6 +31,13 @@ export default function RegisterCIDPage() {
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  useSeo({
+    title: 'Registro CID',
+    description: 'Alta privada para acceder a los planes CID de AILinkCinema.',
+    path: '/register/cid',
+    robots: 'noindex, nofollow',
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

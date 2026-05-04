@@ -5,6 +5,7 @@ import { authApi } from '@/api'
 import { useAuthStore, getPrimaryCIDTarget } from '@/store'
 import type { RegisterDemoPayload } from '@/types'
 import { getApiErrorMessage } from '@/utils/apiErrors'
+import { useSeo } from '@/hooks/useSeo'
 
 export default function RegisterDemoPage() {
   const { isAuthenticated } = useAuthStore()
@@ -20,6 +21,13 @@ export default function RegisterDemoPage() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState<'form' | 'success'>('form')
+
+  useSeo({
+    title: step === 'success' ? 'Solicitud de demo enviada' : 'Solicitar demo guiada',
+    description: 'Formulario privado para solicitar una demo guiada de AILinkCinema y CID.',
+    path: '/register/demo',
+    robots: 'noindex, nofollow',
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

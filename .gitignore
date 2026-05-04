@@ -65,3 +65,8 @@ docs/validation/**/*.zip
 # Sensitive DB snapshots
 OLD/sensitive_review/db_snapshots/
 OLD/sensitive_review/tools/
+
+# SQLite databases - never commit
+*.db
+*.sqlite
+*.sqlite3

@@ -451,7 +451,7 @@ export default function CIDProductPage() {
         <section className="relative py-24">
           <div className="mx-auto max-w-6xl px-5 text-center md:px-6 lg:px-8">
             <div className="landing-brand-final-cta rounded-[2.4rem] p-8 sm:p-10 lg:p-12">
-              <p className="editorial-kicker text-amber-300">Cierrre</p>
+              <p className="editorial-kicker text-amber-300">Cierre</p>
               <h2 className="mt-4 max-w-4xl mx-auto font-display text-4xl font-semibold leading-[0.92] text-white md:text-6xl">
                 La inteligencia artificial no sustituye la creatividad. La organiza, la acelera y la conecta.
               </h2>

@@ -52,6 +52,9 @@ export default function LandingFinalCta({
                   {content.secondaryCta}
                   <ChevronRight className="h-4 w-4" />
                 </LandingActionButton>
+                <LandingActionButton destination="/pricing" variant="ghost">
+                  Ver precios
+                </LandingActionButton>
               </div>
             </div>
           </div>

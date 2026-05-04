@@ -37,12 +37,12 @@ export const landingContent = {
     subtitle:
       'Creamos herramientas inteligentes para desarrollar, producir, analizar, organizar y entregar proyectos audiovisuales con flujos de trabajo pensados para la industria real.',
     description:
-      'AILinkCinema crea herramientas de inteligencia artificial disenadas para el sector cinematografico.',
-    chips: ['Marca principal', 'Producto flagship: CID', 'Apps especializadas'],
+      'AILinkCinema crea herramientas de inteligencia artificial disenadas para el sector cinematografico, desde soluciones a medida hasta producto flagship y apps especializadas.',
+    chips: ['Partner tecnologico', 'Producto flagship: CID', 'Apps especializadas'],
     proof: [
-      { label: 'Industria real', text: 'Flujos pensados para desarrollo, produccion y entrega audiovisual.' },
-      { label: 'Producto premium', text: 'Interfaz clara, narrativa comercial y software serio para equipos creativos.' },
-      { label: 'IA aplicada', text: 'Herramientas especificas para guion, storyboard, dubbing, promo y sonido.' },
+      { label: 'Industria real', text: 'Flujos pensados para desarrollo, produccion, postproduccion y entrega audiovisual.' },
+      { label: 'Acompanamiento', text: 'Diagnostico, configuracion y evolucion de producto segun el momento de cada produccion.' },
+      { label: 'IA aplicada', text: 'Herramientas concretas para guion, storyboard, dubbing, promo, planificacion y sonido.' },
     ],
     visualProducts: [
       { name: 'DubbingTake Studio AI', label: 'dubbing / QC / takes', tone: 'cyan' },
@@ -62,9 +62,14 @@ export const landingContent = {
   },
   about: {
     eyebrow: 'Que es AILinkCinema',
-    title: 'Una marca enfocada en crear herramientas de IA para el trabajo cinematografico real.',
+    title: 'Una empresa que combina producto, soluciones a medida y acompanamiento para cine y audiovisual.',
     description:
-      'AILinkCinema funciona como plataforma, laboratorio y socio de producto para equipos audiovisuales que necesitan software especializado, procesos claros y soluciones adaptadas a su pipeline.',
+      'AILinkCinema funciona como partner tecnologico para productoras, estudios y equipos que necesitan software especializado, criterio de industria y despliegues adaptados a su flujo real.',
+    supportStrip: [
+      'Empresa enfocada en IA aplicada al sector cinematografico.',
+      'Soluciones a medida para equipos, estudios y partners.',
+      'Acompanamiento desde diagnostico hasta operacion del flujo.',
+    ],
     pillars: [
       {
         icon: Sparkles,
@@ -73,13 +78,13 @@ export const landingContent = {
       },
       {
         icon: Briefcase,
-        title: 'Producto + soluciones a medida',
-        text: 'Combinamos productos propios con herramientas especificas para estudios, productoras, laboratorios y partners.',
+        title: 'Producto + despliegue a medida',
+        text: 'Combinamos software propio con adaptaciones, integraciones y configuracion segun el modelo operativo del cliente.',
       },
       {
         icon: Users,
-        title: 'Pensado para equipos y departamentos',
-        text: 'Direccion, desarrollo, produccion, post y negocio pueden operar sobre una misma logica de trabajo.',
+        title: 'Acompanamiento por pipeline y equipos',
+        text: 'Direccion, desarrollo, produccion, post y negocio pueden operar con una misma lectura del proyecto sin perder especializacion.',
       },
     ],
   },
@@ -89,6 +94,8 @@ export const landingContent = {
     title: 'El producto central de AILinkCinema para desarrollar y operar una produccion audiovisual de extremo a extremo.',
     description:
       'CID organiza el proyecto como una cadena continua de decisiones, materiales y validaciones. No es una app aislada: es el nucleo del flujo audiovisual cuando creatividad, operativa y entrega necesitan hablar el mismo idioma.',
+    priceLine: 'Setup inicial desde 1.500 EUR + cuota mensual desde 299 EUR/mes.',
+    supportLine: 'Incluye todos los modulos y requiere demo o diagnostico previo para adaptar el flujo al proyecto real.',
     phases: [
       'Guion y desarrollo',
       'Analisis narrativo',
@@ -119,40 +126,88 @@ export const landingContent = {
   },
   solutions: {
     eyebrow: 'Soluciones especializadas',
-    title: 'Apps separadas para necesidades concretas del ecosistema cinematografico.',
+    title: 'Apps independientes con precio propio, tambien incluidas dentro de CID.',
     description:
-      'Ademas de CID, AILinkCinema articula productos especificos para departamentos y casos de uso donde una herramienta especializada aporta mas velocidad y precision.',
+      'Ademas de CID, AILinkCinema articula aplicaciones especializadas para departamentos concretos. Cada una puede contratarse por separado o entrar dentro del despliegue completo de CID.',
     items: [
       {
         icon: Mic2,
         title: 'DubbingTake Studio AI',
         description: 'App para doblaje, control de takes, QC de voz, sincronias y procesos supervisados.',
         tag: 'Dubbing / Voice / QC',
+        price: 'Desde 79 EUR/mes',
+        href: '/solutions/dubbing',
+        includedLabel: 'Incluido en CID',
       },
       {
         icon: Clapperboard,
         title: 'Storyboard AI Studio',
         description: 'Creacion de storyboard, previz, referencias visuales y lectura cinematografica por secuencias.',
         tag: 'Storyboard / Previz',
+        price: 'Desde 59 EUR/mes',
+        href: '/solutions/storyboard',
+        includedLabel: 'Incluido en CID',
       },
       {
         icon: MonitorPlay,
         title: 'Promo Video AI',
         description: 'Generacion de videos promocionales, teasers, piezas cortas y material para pitch comercial.',
         tag: 'Promo / Teaser / Pitch',
+        price: 'Desde 89 EUR/mes',
+        href: '/solutions/promo-video',
+        includedLabel: 'Incluido en CID',
       },
       {
         icon: PenSquare,
         title: 'Script & Breakdown AI',
         description: 'Asistencia para guion, analisis, desglose, deteccion de necesidades y plan de rodaje.',
         tag: 'Script / Breakdown',
+        price: 'Desde 49 EUR/mes',
+        href: '/solutions/script-breakdown',
+        includedLabel: 'Incluido en CID',
+      },
+      {
+        icon: LayoutTemplate,
+        title: 'Production Planner AI',
+        description: 'Plan de rodaje, jornadas, recursos, secuencias, localizaciones y necesidades de produccion.',
+        tag: 'Planning / Production',
+        price: 'Desde 69 EUR/mes',
+        href: '/solutions/production-planner',
+        includedLabel: 'Incluido en CID',
       },
       {
         icon: AudioWaveform,
         title: 'Sound Post AI',
         description: 'Herramientas para limpieza, spotting, stems, preparacion de audio y entregables de post.',
         tag: 'Sound / Post / Delivery',
+        price: 'Desde 79 EUR/mes',
+        href: '/solutions/sound-post',
+        includedLabel: 'Incluido en CID',
       },
+      {
+        icon: Sparkles,
+        title: 'VFX & Enhancement AI',
+        description: 'Apoyo en VFX, mejora de planos, referencias visuales y assets para postproduccion.',
+        tag: 'VFX / Enhancement',
+        price: 'Desde 99 EUR/mes',
+        href: '/solutions/vfx',
+        includedLabel: 'Incluido en CID',
+      },
+    ],
+  },
+  pricing: {
+    eyebrow: 'Precios y despliegue',
+    title: 'Modelo comercial claro para producto completo, apps independientes y soluciones a medida.',
+    description:
+      'CID se implementa con setup inicial porque se adapta al flujo real de cada produccion. Las apps pueden contratarse por separado y AILinkCinema tambien ofrece desarrollo a medida bajo presupuesto.',
+    cidSetup: 'Configuracion inicial del producto flagship para adaptar estructura, departamentos, validaciones y recorrido del pipeline.',
+    cidMonthly: 'Operacion mensual del entorno con todos los modulos incluidos dentro de la capa principal de producto.',
+    modulePricing: 'Los servicios/apps empiezan desde 49 EUR/mes y permiten entrar por una necesidad concreta sin desplegar todo CID.',
+    custom: 'Para estudios, productoras o partners que necesitan una solucion especifica, AILinkCinema ofrece desarrollo y adaptacion bajo presupuesto.',
+    bullets: [
+      'Cada modulo puede contratarse por separado.',
+      'Todos los modulos pueden quedar incluidos dentro de CID.',
+      'CID requiere demo o diagnostico previo para ajustar el flujo real.',
     ],
   },
   audience: {
@@ -268,17 +323,17 @@ export const landingContent = {
     ],
   },
   finalCta: {
-    eyebrow: 'Solicitar demo',
-    title: 'Si tu proyecto necesita software y flujos de IA pensados para cine, hablemos.',
+    eyebrow: 'Demo, precios y siguiente paso',
+    title: 'Si tu proyecto necesita software, criterio de industria y una arquitectura de IA pensada para cine, este es el momento de hablar.',
     description:
-      'Explora CID si quieres ver el producto principal. Solicita demo si buscas una conversacion sobre necesidades reales, casos de uso o herramientas a medida para tu pipeline.',
+      'Explora CID si quieres conocer el producto flagship. Revisa precios si estas evaluando modulos o despliegue integral. Solicita demo si buscas una conversacion sobre pipeline real, acompanamiento y soluciones a medida.',
     primaryCta: 'Solicitar demo',
     secondaryCta: 'Explorar CID',
-    bullets: ['Producto principal: CID', 'Suite de apps especializadas', 'Enfoque premium para industria audiovisual'],
+    bullets: ['Producto principal: CID', 'Apps independientes con precio propio', 'Desarrollo a medida para cine y audiovisual'],
   },
   footer: {
     brandLine: 'AILinkCinema',
-    description: 'Herramientas de inteligencia artificial disenadas para el sector cinematografico.',
+    description: 'Herramientas de inteligencia artificial disenadas para el sector cinematografico, desde producto flagship hasta soluciones a medida.',
     links: [
       { label: 'Explorar CID', href: '/solutions/cid' },
       { label: 'Solicitar demo', href: '/register/demo' },
@@ -291,7 +346,7 @@ export const landingContent = {
       { label: 'Terminos', href: '/legal/terminos' },
       { label: 'IA y contenidos', href: '/legal/ia-y-contenidos' },
     ],
-    legal: 'Marca principal: AILinkCinema. Producto principal: CID. Soluciones separadas para workflows audiovisuales especificos.',
+    legal: 'AILinkCinema posiciona a CID como producto flagship y articula apps especializadas para storyboard, produccion, dubbing, sonido, promo y postproduccion.',
   },
 } as const
 

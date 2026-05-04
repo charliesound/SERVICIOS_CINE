@@ -1,3 +1,5 @@
+import { ArrowRight, ChevronRight } from 'lucide-react'
+import LandingActionButton from '@/components/landing/LandingActionButton'
 import type { LucideIcon } from 'lucide-react'
 import LandingReveal from '@/components/landing/LandingReveal'
 import LandingSectionHeading from '@/components/landing/LandingSectionHeading'
@@ -8,6 +10,8 @@ interface CidProductSpotlightProps {
     badge: string
     title: string
     description: string
+    priceLine: string
+    supportLine: string
     phases: readonly string[]
     highlights: readonly {
       icon: LucideIcon
@@ -38,10 +42,15 @@ export default function CidProductSpotlight({ content }: CidProductSpotlightProp
                   <p className="mt-3 text-sm leading-7 text-slate-300">
                     El producto principal de AILinkCinema para estructurar el proyecto cinematografico como sistema y no como suma de herramientas aisladas.
                   </p>
+                  <p className="mt-4 text-sm font-medium text-amber-200">{content.priceLine}</p>
                 </div>
                 <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-cyan-100">
                   flagship product
                 </span>
+              </div>
+
+              <div className="mt-5 rounded-[1.3rem] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-slate-200">
+                {content.supportLine}
               </div>
 
               <div className="mt-6 landing-brand-phase-track">
@@ -75,6 +84,19 @@ export default function CidProductSpotlight({ content }: CidProductSpotlightProp
                 </LandingReveal>
               )
             })}
+
+            <LandingReveal delay={260}>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <LandingActionButton destination="/solutions/cid" variant="primary">
+                  Explorar CID
+                  <ArrowRight className="h-4 w-4" />
+                </LandingActionButton>
+                <LandingActionButton destination="/pricing" variant="secondary">
+                  Ver precios
+                  <ChevronRight className="h-4 w-4" />
+                </LandingActionButton>
+              </div>
+            </LandingReveal>
           </div>
         </div>
       </div>

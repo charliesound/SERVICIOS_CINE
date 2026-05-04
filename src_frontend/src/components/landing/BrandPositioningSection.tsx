@@ -7,6 +7,7 @@ interface BrandPositioningSectionProps {
     eyebrow: string
     title: string
     description: string
+    supportStrip: readonly string[]
     pillars: readonly {
       icon: LucideIcon
       title: string
@@ -43,6 +44,16 @@ export default function BrandPositioningSection({ content }: BrandPositioningSec
             )
           })}
         </div>
+
+        <LandingReveal className="lg:col-span-2" delay={120}>
+          <div className="grid gap-4 md:grid-cols-3">
+            {content.supportStrip.map((item) => (
+              <div key={item} className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] px-5 py-5 text-sm leading-7 text-slate-200 backdrop-blur-xl">
+                {item}
+              </div>
+            ))}
+          </div>
+        </LandingReveal>
       </div>
     </section>
   )

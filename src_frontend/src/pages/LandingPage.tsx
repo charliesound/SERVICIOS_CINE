@@ -5,10 +5,8 @@ import BrandHeroSection from '@/components/landing/BrandHeroSection'
 import BrandPositioningSection from '@/components/landing/BrandPositioningSection'
 import CidProductSpotlight from '@/components/landing/CidProductSpotlight'
 import SpecializedSolutionsGrid from '@/components/landing/SpecializedSolutionsGrid'
-import AudienceSection from '@/components/landing/AudienceSection'
-import HowItWorksSection from '@/components/landing/HowItWorksSection'
-import UseCasesSection from '@/components/landing/UseCasesSection'
 import TrustLegalSection from '@/components/landing/TrustLegalSection'
+import LandingPricingSection from '@/components/landing/LandingPricingSection'
 import LandingFinalCta from '@/components/landing/LandingFinalCta'
 import LandingAmbientScene from '@/components/landing/LandingAmbientScene'
 import { landingContent } from '@/data/landingContent'
@@ -19,7 +17,7 @@ export default function LandingPage() {
   const cidTarget = getPrimaryCIDTarget(user)
   const shellRef = useRef<HTMLDivElement | null>(null)
 
-  const exploreCidTarget = isAuthenticated ? cidTarget : '/register/cid'
+  const exploreCidTarget = '/solutions/cid'
   const requestDemoTarget = '/register/demo'
 
   useEffect(() => {
@@ -39,6 +37,17 @@ export default function LandingPage() {
       if (rafId) return
       rafId = window.requestAnimationFrame(updateParallax)
     }
+
+    document.title = 'AILinkCinema | IA para cine, CID y soluciones audiovisuales'
+
+    const description = 'AILinkCinema crea herramientas de inteligencia artificial disenadas para el sector cinematografico: CID como producto flagship, apps especializadas y soluciones a medida para produccion audiovisual.'
+    let meta = document.querySelector('meta[name="description"]')
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.setAttribute('name', 'description')
+      document.head.appendChild(meta)
+    }
+    meta.setAttribute('content', description)
 
     updateParallax()
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -140,9 +149,7 @@ export default function LandingPage() {
         <BrandPositioningSection content={landingContent.about} />
         <CidProductSpotlight content={landingContent.cid} />
         <SpecializedSolutionsGrid content={landingContent.solutions} />
-        <AudienceSection content={landingContent.audience} />
-        <HowItWorksSection content={landingContent.howItWorks} />
-        <UseCasesSection content={landingContent.useCases} />
+        <LandingPricingSection content={landingContent.pricing} />
         <TrustLegalSection content={landingContent.trustLegal} />
         <LandingFinalCta
           content={landingContent.finalCta}

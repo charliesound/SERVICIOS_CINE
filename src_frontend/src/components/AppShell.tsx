@@ -17,6 +17,8 @@ import {
   Film,
   FolderOpen,
   Sparkles,
+  Grid2x2,
+  BadgeEuro,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -28,6 +30,8 @@ const navItems = [
   { to: '/queue', icon: ListOrdered, label: 'Cola' },
   { to: '/workflows', icon: GitBranch, label: 'Workflows' },
   { to: '/cid/pipeline-builder', icon: Sparkles, label: 'Pipeline Builder' },
+  { to: '/solutions', icon: Grid2x2, label: 'Soluciones' },
+  { to: '/pricing', icon: BadgeEuro, label: 'Precios' },
   { to: '/plans', icon: CreditCard, label: 'Planes' },
   { to: '/storage-sources', icon: HardDrive, label: 'Storage' },
   { to: '/ingest/scans', icon: Search, label: 'Escanear' },

@@ -51,11 +51,25 @@ import DeliverableDetailPage from './pages/DeliverableDetailPage'
 import ReviewsOverviewPage from './pages/ReviewsOverviewPage'
 import ReviewDetailPage from './pages/ReviewDetailPage'
 import CIDPipelineBuilderPage from './pages/CIDPipelineBuilderPage'
+import SolutionsPage from './pages/SolutionsPage'
+import CIDProductPage from './pages/CIDProductPage'
+import SolutionDetailPage from './pages/SolutionDetailPage'
+import PricingPage from './pages/PricingPage'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/solutions" element={<SolutionsPage />} />
+      <Route path="/solutions/cid" element={<CIDProductPage />} />
+      <Route path="/solutions/script-breakdown" element={<SolutionDetailPage />} />
+      <Route path="/solutions/storyboard" element={<SolutionDetailPage />} />
+      <Route path="/solutions/production-planner" element={<SolutionDetailPage />} />
+      <Route path="/solutions/dubbing" element={<SolutionDetailPage />} />
+      <Route path="/solutions/sound-post" element={<SolutionDetailPage />} />
+      <Route path="/solutions/promo-video" element={<SolutionDetailPage />} />
+      <Route path="/solutions/vfx" element={<SolutionDetailPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
       <Route path="/legal/privacidad" element={<LegalPrivacyPage />} />
       <Route path="/legal/aviso-legal" element={<LegalNoticePage />} />
       <Route path="/legal/terminos" element={<LegalTermsPage />} />
@@ -141,11 +155,11 @@ export default function App() {
          <Route path="/projects/:projectId/delivery" element={<DeliveryOverviewPage />} />
          <Route path="/projects/:projectId/delivery/:deliverableId" element={<DeliverableDetailPage />} />
          <Route path="/create" element={<CreateJob />} />
-         <Route path="/queue" element={<QueuePage />} />
-         <Route path="/history" element={<ProjectHistory />} />
-         <Route path="/workflows" element={<WorkflowsPage />} />
-         <Route path="/cid/pipeline-builder" element={<CIDPipelineBuilderPage />} />
-         <Route path="/plans" element={<PlansPage />} />
+          <Route path="/queue" element={<QueuePage />} />
+          <Route path="/history" element={<ProjectHistory />} />
+          <Route path="/workflows" element={<WorkflowsPage />} />
+          <Route path="/cid/pipeline-builder" element={<CIDPipelineBuilderPage />} />
+          <Route path="/plans" element={<PlansPage />} />
          <Route path="/admin" element={<AdminPage />} />
          <Route path="/storage-sources" element={<StorageSourcesPage />} />
          <Route path="/storage-sources/:sourceId" element={<StorageSourceDetailPage />} />

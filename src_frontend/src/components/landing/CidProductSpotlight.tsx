@@ -42,23 +42,23 @@ export default function CidProductSpotlight({ content }: CidProductSpotlightProp
                   <p className="editorial-kicker text-amber-300">{content.badge}</p>
                 </div>
                 <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-cyan-100">
-                  sistema completo
+                  sistema + departamentos
                 </span>
               </div>
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.04] p-4">
-                  <p className="text-[10px] uppercase tracking-[0.24em] text-amber-200">Modelo</p>
-                  <p className="mt-3 text-sm leading-7 text-slate-200">{content.priceLine}</p>
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-amber-200">Creatividad + Canvas</p>
+                  <p className="mt-3 text-sm leading-7 text-slate-200">Lienzo colaborativo conectado al pipeline de produccion real.</p>
                 </div>
                 <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.04] p-4">
-                  <p className="text-[10px] uppercase tracking-[0.24em] text-cyan-100">Implementacion</p>
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-cyan-100">Produccion + IA</p>
                   <p className="mt-3 text-sm leading-7 text-slate-200">{content.supportLine}</p>
                 </div>
               </div>
 
               <div className="mt-6">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Departamentos conectados</p>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Lienzo creativo + departamentos</p>
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">

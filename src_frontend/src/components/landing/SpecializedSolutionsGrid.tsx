@@ -33,6 +33,12 @@ export default function SpecializedSolutionsGrid({ content }: SpecializedSolutio
           />
         </LandingReveal>
 
+        <LandingReveal delay={60}>
+          <div className="mt-6 rounded-[1.4rem] border border-amber-300/15 bg-amber-300/10 px-5 py-4 text-sm leading-7 text-amber-50 backdrop-blur-xl">
+            Herramientas por oficio diseñadas para integrarse en el flujo de produccion real.
+          </div>
+        </LandingReveal>
+
         <div className="mt-14 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {content.items.map((item, index) => {
             const Icon = item.icon

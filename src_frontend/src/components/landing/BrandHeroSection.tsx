@@ -62,19 +62,19 @@ export default function BrandHeroSection({
           </div>
           <p className="mt-5 max-w-2xl text-base leading-7 text-slate-400 md:text-lg md:leading-8">{content.description}</p>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <LandingActionButton destination={exploreCidTarget} variant="primary">
-              Explorar CID
-              <ArrowRight className="h-4 w-4" />
-            </LandingActionButton>
-            <LandingActionButton destination={solutionsTarget} variant="secondary">
-              Ver soluciones
-              <ChevronRight className="h-4 w-4" />
-            </LandingActionButton>
-            <LandingActionButton destination={requestDemoTarget} variant="ghost">
-              Solicitar demo
-            </LandingActionButton>
-          </div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <LandingActionButton destination={exploreCidTarget} variant="primary">
+                Ver CID: Creatividad + Produccion
+                <ArrowRight className="h-4 w-4" />
+              </LandingActionButton>
+              <LandingActionButton destination={solutionsTarget} variant="secondary">
+                Canvas + IA + Produccion
+                <ChevronRight className="h-4 w-4" />
+              </LandingActionButton>
+              <LandingActionButton destination={requestDemoTarget} variant="ghost">
+                Unir creatividad y produccion
+              </LandingActionButton>
+            </div>
 
           <div className="mt-8 flex flex-wrap gap-2.5">
             {content.chips.map((chip) => (

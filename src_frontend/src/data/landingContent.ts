@@ -32,41 +32,41 @@ export const landingContent = {
     secondaryCta: 'Explorar CID',
   },
   hero: {
-    eyebrow: 'AILinkCinema / IA para cine y audiovisual',
-    title: 'IA disenada para hacer cine',
+    eyebrow: 'AILinkCinema / Creatividad + Canvas + IA + Produccion',
+    title: 'Creatividad visual, lienzo colaborativo e IA para hacer cine real',
     subtitle:
-      'Desarrollamos herramientas de inteligencia artificial para crear, producir y entregar proyectos audiovisuales, conectando todos los departamentos en un flujo de trabajo real.',
+      'Unimos creatividad visual, canvas colaborativo, inteligencia artificial y sistema real de produccion cinematografica en una sola plataforma.',
     differentialLine:
-      'A diferencia de las herramientas creativas aisladas, AILinkCinema esta disenado para produccion audiovisual completa.',
+      'A diferencia de las herramientas creativas aisladas, AILinkCinema conecta el lienzo creativo con todos los departamentos de una produccion audiovisual.',
     description:
-      'Partner tecnologico para cine, television y publicidad con software, sistema y acompanamiento real para equipos profesionales.',
-    chips: ['Partner tecnologico', 'CID como sistema', 'Acompanamiento real'],
+      'Creatividad, canvas colaborativo, IA y produccion real: una plataforma que une la vision artistica con la ejecucion tecnica de cada departamento.',
+    chips: ['Creatividad + Canvas', 'IA aplicada', 'Produccion real'],
     proof: [
-      { label: 'Produccion completa', text: 'Desde guion y desglose hasta postproduccion, promocion y entrega final.' },
-      { label: 'Por departamentos', text: 'Cada equipo trabaja con informacion util dentro de un mismo sistema de produccion.' },
-      { label: 'Implementacion real', text: 'No solo software: tambien adaptacion, integracion y soporte tecnico especializado.' },
+      { label: 'Creatividad + Canvas', text: 'Lienzo colaborativo para storyboard, previz y desarrollo visual conectado al pipeline.' },
+      { label: 'IA + Produccion', text: 'No solo genera contenido: estructura, planifica y ejecuta produccion real.' },
+      { label: 'Implementacion real', text: 'Acompanamos la transicion de la idea creativa al rodaje y entrega final.' },
     ],
     visualProducts: [
-      { name: 'DubbingTake', label: 'dubbing / QC / takes', tone: 'cyan' },
-      { name: 'Storyboard AI Studio', label: 'previz / visual beats', tone: 'amber' },
-      { name: 'Promo Video AI', label: 'teasers / pitch pieces', tone: 'violet' },
-      { name: 'Script & Breakdown AI', label: 'analysis / planning', tone: 'emerald' },
-      { name: 'Sound Post AI', label: 'cleanup / stems / spotting', tone: 'rose' },
+      { name: 'Storyboard AI Studio', label: 'canvas / previz / visual', tone: 'amber' },
+      { name: 'Script & Breakdown AI', label: 'creative analysis / planning', tone: 'emerald' },
+      { name: 'Promo Video AI', label: 'creative pieces / pitch', tone: 'violet' },
+      { name: 'DubbingTake', label: 'voice / creative QC', tone: 'cyan' },
+      { name: 'Sound Post AI', label: 'audio / post / delivery', tone: 'rose' },
     ],
     heroCore: {
-      eyebrow: 'Sistema principal',
+      eyebrow: 'El lienzo que conecta con la produccion',
       title: 'CID',
-      subtitle: 'Sistema completo de produccion audiovisual',
+      subtitle: 'El producto que une creatividad, canvas e IA con produccion cinematografica real',
       description:
-        'CID conecta guion, desglose, storyboard, planificacion, produccion, doblaje, sonido, VFX, montaje, promocion y entrega.',
-      phases: ['Guion', 'Desglose', 'Storyboard', 'Planificacion', 'Produccion', 'Doblaje', 'Sonido', 'Entrega'],
+        'CID conecta el lienzo creativo con guion, desglose, storyboard, planificacion, produccion, doblaje, sonido, VFX, montaje, promocion y entrega en un flujo real.',
+      phases: ['Idea', 'Canvas', 'Guion', 'Storyboard', 'Produccion', 'Post', 'Entrega'],
     },
   },
   about: {
     eyebrow: 'AILinkCinema',
-    title: 'Un partner tecnologico para cine, television y publicidad.',
+    title: 'Desarrollamos software y sistemas de trabajo para produccion audiovisual basados en IA.',
     description:
-      'AilinkCinema es un partner tecnologico que desarrolla soluciones de IA para cine, television y publicidad, acompanando a equipos desde la idea inicial hasta la entrega final.',
+      'AILinkCinema es un partner tecnologico que une la vision creativa con la ejecucion de produccion, acompanando a equipos desde la idea hasta la entrega final.',
     supportStrip: [
       'Desde la idea inicial hasta la entrega final.',
       'Software, automatizacion y criterio de industria.',
@@ -76,12 +76,12 @@ export const landingContent = {
       {
         icon: Sparkles,
         title: 'Desarrollo de software especializado',
-        text: 'Herramientas pensadas para guion, produccion, postproduccion y entrega dentro del sector audiovisual.',
+        text: 'Herramientas que conectan el lienzo creativo con guion, produccion, postproduccion y entrega.',
       },
       {
         icon: Briefcase,
-        title: 'Automatizacion de procesos de produccion',
-        text: 'Convertimos tareas repetitivas y traspasos manuales en flujos conectados entre departamentos.',
+        title: 'Sistemas de produccion conectados',
+        text: 'Convertimos vision creativa y tareas tecnicas en flujos operativos entre departamentos.',
       },
       {
         icon: Users,
@@ -91,50 +91,48 @@ export const landingContent = {
     ],
   },
   cid: {
-    eyebrow: 'CID',
-    badge: 'CID - Cine Inteligente Digital',
-    title: 'CID no es una herramienta de creacion. Es un sistema completo de produccion audiovisual.',
+    eyebrow: 'CID / Sistema de produccion',
+    badge: 'CID - Creatividad conectada con produccion real',
+    title: 'El sistema que conecta la parte creativa con todos los departamentos de una produccion audiovisual.',
     description:
-      'Organiza el proyecto como un flujo conectado entre desarrollo, produccion, postproduccion y entrega, con continuidad real entre departamentos.',
+      'CID une el lienzo creativo, la inteligencia artificial y la ejecucion tecnica en un flujo conectado que respeta el pipeline cinematografico.',
     priceLine: 'Setup inicial desde 1.500 EUR y cuota mensual desde 299 EUR/mes.',
-    supportLine: 'Incluye todos los modulos y se adapta al flujo real del proyecto antes de entrar en operacion.',
-    departmentLine: 'Todos los departamentos conectados en un mismo flujo de trabajo.',
+    supportLine: 'Incluye todos los modulos adaptados al flujo real del proyecto antes de entrar en operacion.',
+    departmentLine: 'Todos los departamentos conectados en un mismo sistema de produccion.',
     phases: [
+      'Idea',
+      'Canvas',
       'Guion',
-      'Desglose',
       'Storyboard',
-      'Planificacion',
       'Produccion',
       'Doblaje',
       'Sonido',
       'VFX',
-      'Montaje',
-      'Promocion',
       'Entrega',
     ],
     highlights: [
       {
         icon: FileSearch,
-        title: 'Trabajo por departamentos',
-        text: 'Cada area recibe contexto, materiales y tareas utiles sin perder continuidad con el resto del proyecto.',
+        title: 'Creatividad y departamentos',
+        text: 'El lienzo creativo conectado con produccion, post y entrega en un mismo sistema de trabajo.',
       },
       {
         icon: Waypoints,
-        title: 'Continuidad entre fases',
-        text: 'Guion, planificacion, produccion, post y entrega comparten una misma estructura operativa.',
+        title: 'Continuidad del flujo',
+        text: 'Desde la idea visual y el storyboard hasta el rodaje, post y entrega sin romper la estructura operativa.',
       },
       {
         icon: FolderKanban,
         title: 'Sistema orientado a pipeline',
-        text: 'CID conecta decisiones, seguimiento y entregables para reducir friccion en la produccion real.',
+        text: 'CID conecta decisiones, seguimiento de produccion y entregables reduciendo la friccion entre fases.',
       },
     ],
   },
   solutions: {
-    eyebrow: 'Soluciones',
-    title: 'Herramientas profesionales por departamento, tambien incluidas dentro de CID.',
+    eyebrow: 'Soluciones / Por departamento',
+    title: 'Herramientas por departamento diseñadas para integrarse en un flujo de produccion real.',
     description:
-      'Cada aplicacion responde a una necesidad concreta de produccion audiovisual y puede operar por separado o dentro del sistema completo de CID.',
+      'Cada aplicacion responde a un oficio concreto de la produccion audiovisual y puede operar por separado o dentro del sistema CID.',
     items: [
       {
         icon: Mic2,
@@ -203,14 +201,14 @@ export const landingContent = {
   },
   serviceLayer: {
     eyebrow: 'Mas alla de la herramienta',
-    title: 'AILinkCinema no solo desarrolla software.',
+    title: 'Desarrollamos software y sistemas de trabajo para produccion audiovisual basados en IA.',
     description:
-      'Tambien acompana a productoras y equipos creativos en la implementacion real de soluciones de inteligencia artificial en sus proyectos.',
+      'AILinkCinema no solo desarrolla software: implementa sistemas de trabajo que conectan la vision creativa con la ejecucion tecnica de cada departamento.',
     bullets: [
-      'Adaptacion a flujos de produccion reales',
-      'Integracion de herramientas',
-      'Optimizacion de pipelines',
-      'Soporte tecnico especializado',
+      'Software y sistemas de produccion',
+      'Implementacion adaptada al pipeline',
+      'Acompanamiento tecnico especializado',
+      'Soporte que entiende industria cinematografica',
     ],
   },
   pricing: {

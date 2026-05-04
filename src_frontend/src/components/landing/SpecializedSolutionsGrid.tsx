@@ -49,13 +49,13 @@ export default function SpecializedSolutionsGrid({ content }: SpecializedSolutio
                   </div>
                   <h3 className="mt-5 text-2xl font-semibold text-white">{item.title}</h3>
                   <p className="mt-2 text-sm font-medium text-amber-200">{item.price}</p>
-                  <p className="mt-3 text-sm leading-7 text-slate-300">{item.description}</p>
+                  <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
                   <div className="mt-5 flex items-center justify-between gap-3">
                     <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-cyan-100">
                       {item.includedLabel}
                     </span>
                     <Link to={item.href} className="inline-flex items-center gap-2 text-sm font-medium text-white transition-colors hover:text-amber-200">
-                      Ver mas
+                      Ver solucion
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </div>

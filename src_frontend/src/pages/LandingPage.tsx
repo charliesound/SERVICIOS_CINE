@@ -4,7 +4,9 @@ import { LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
 import BrandHeroSection from '@/components/landing/BrandHeroSection'
 import BrandPositioningSection from '@/components/landing/BrandPositioningSection'
 import CidProductSpotlight from '@/components/landing/CidProductSpotlight'
+import LandingReveal from '@/components/landing/LandingReveal'
 import SpecializedSolutionsGrid from '@/components/landing/SpecializedSolutionsGrid'
+import LandingSectionHeading from '@/components/landing/LandingSectionHeading'
 import TrustLegalSection from '@/components/landing/TrustLegalSection'
 import LandingPricingSection from '@/components/landing/LandingPricingSection'
 import LandingFinalCta from '@/components/landing/LandingFinalCta'
@@ -18,7 +20,8 @@ export default function LandingPage() {
   const shellRef = useRef<HTMLDivElement | null>(null)
 
   const exploreCidTarget = '/solutions/cid'
-  const requestDemoTarget = '/register/demo'
+  const solutionsTarget = '/solutions'
+  const requestDemoTarget = '/pricing'
 
   useEffect(() => {
     const shell = shellRef.current
@@ -38,9 +41,9 @@ export default function LandingPage() {
       rafId = window.requestAnimationFrame(updateParallax)
     }
 
-    document.title = 'AILinkCinema | IA para cine, CID y soluciones audiovisuales'
+    document.title = 'AILinkCinema — Inteligencia artificial para cine y produccion audiovisual'
 
-    const description = 'AILinkCinema crea herramientas de inteligencia artificial disenadas para el sector cinematografico: CID como producto flagship, apps especializadas y soluciones a medida para produccion audiovisual.'
+    const description = 'Soluciones de inteligencia artificial para cine, television y publicidad. Desde guion hasta entrega final con CID — Cine Inteligente Digital.'
     let meta = document.querySelector('meta[name="description"]')
     if (!meta) {
       meta = document.createElement('meta')
@@ -77,7 +80,7 @@ export default function LandingPage() {
             <div>
               <p className="text-lg font-semibold tracking-tight text-white">AILinkCinema</p>
               <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-400">
-                AI tools for cinema
+                IA para cine y audiovisual
               </p>
             </div>
           </Link>
@@ -144,16 +147,57 @@ export default function LandingPage() {
         <BrandHeroSection
           content={landingContent.hero}
           exploreCidTarget={exploreCidTarget}
+          solutionsTarget={solutionsTarget}
           requestDemoTarget={requestDemoTarget}
         />
         <BrandPositioningSection content={landingContent.about} />
         <CidProductSpotlight content={landingContent.cid} />
         <SpecializedSolutionsGrid content={landingContent.solutions} />
+        <section id="mas-alla" className="relative border-y border-white/10 bg-[#09111c]/76 py-24">
+          <div className="mx-auto grid max-w-7xl gap-10 px-5 md:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8">
+            <LandingReveal>
+              <LandingSectionHeading
+                eyebrow={landingContent.serviceLayer.eyebrow}
+                title={landingContent.serviceLayer.title}
+                description={landingContent.serviceLayer.description}
+              />
+            </LandingReveal>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {landingContent.serviceLayer.bullets.map((bullet, index) => (
+                <LandingReveal key={bullet} delay={index * 90}>
+                  <div className="landing-panel h-full rounded-[1.7rem] p-6">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-amber-200">
+                      {String(index + 1).padStart(2, '0')}
+                    </p>
+                    <p className="mt-4 text-lg font-medium leading-7 text-white">{bullet}</p>
+                  </div>
+                </LandingReveal>
+              ))}
+            </div>
+          </div>
+        </section>
         <LandingPricingSection content={landingContent.pricing} />
         <TrustLegalSection content={landingContent.trustLegal} />
+        <section id="vision" className="relative py-24">
+          <div className="mx-auto max-w-6xl px-5 md:px-6 lg:px-8">
+            <LandingReveal>
+              <div className="landing-brand-final-cta rounded-[2.4rem] p-8 sm:p-10 lg:p-12">
+                <p className="editorial-kicker text-amber-300">{landingContent.vision.eyebrow}</p>
+                <h2 className="mt-4 max-w-4xl font-display text-4xl font-semibold leading-[0.92] text-white md:text-6xl">
+                  {landingContent.vision.title}
+                </h2>
+                <blockquote className="mt-6 max-w-4xl text-lg leading-9 text-slate-100 md:text-2xl md:leading-[1.6]">
+                  {landingContent.vision.quote}
+                </blockquote>
+              </div>
+            </LandingReveal>
+          </div>
+        </section>
         <LandingFinalCta
           content={landingContent.finalCta}
           exploreCidTarget={exploreCidTarget}
+          solutionsTarget={solutionsTarget}
           requestDemoTarget={requestDemoTarget}
         />
       </main>

@@ -8,6 +8,7 @@ interface BrandHeroSectionProps {
     eyebrow: string
     title: string
     subtitle: string
+    differentialLine: string
     description: string
     chips: readonly string[]
     proof: readonly { label: string; text: string }[]
@@ -21,6 +22,7 @@ interface BrandHeroSectionProps {
     }
   }
   exploreCidTarget: string
+  solutionsTarget: string
   requestDemoTarget: string
 }
 
@@ -35,6 +37,7 @@ const toneClasses: Record<HeroTone, string> = {
 export default function BrandHeroSection({
   content,
   exploreCidTarget,
+  solutionsTarget,
   requestDemoTarget,
 }: BrandHeroSectionProps) {
   return (
@@ -54,14 +57,17 @@ export default function BrandHeroSection({
           <p className="mt-6 max-w-3xl text-lg font-medium leading-8 text-slate-100 md:text-2xl md:leading-10">
             {content.subtitle}
           </p>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-slate-400 md:text-lg">{content.description}</p>
+          <div className="mt-5 inline-flex max-w-3xl rounded-[1.4rem] border border-cyan-300/15 bg-cyan-300/10 px-4 py-3 text-sm leading-7 text-cyan-50 backdrop-blur-xl md:text-base">
+            {content.differentialLine}
+          </div>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-400 md:text-lg md:leading-8">{content.description}</p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <LandingActionButton destination={exploreCidTarget} variant="primary">
               Explorar CID
               <ArrowRight className="h-4 w-4" />
             </LandingActionButton>
-            <LandingActionButton destination="#soluciones" variant="secondary">
+            <LandingActionButton destination={solutionsTarget} variant="secondary">
               Ver soluciones
               <ChevronRight className="h-4 w-4" />
             </LandingActionButton>
@@ -119,7 +125,7 @@ export default function BrandHeroSection({
                 <div className="mt-8 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4">
                   <p className="text-[10px] uppercase tracking-[0.24em] text-slate-500">AILinkCinema stack</p>
                   <p className="mt-3 text-sm leading-7 text-slate-300">
-                    Marca principal arriba. CID como producto central. Aplicaciones especializadas orbitando alrededor del flujo cinematografico.
+                    Marca principal arriba. CID como sistema central. Aplicaciones y departamentos conectados dentro de un flujo de trabajo audiovisual completo.
                   </p>
                 </div>
               </div>

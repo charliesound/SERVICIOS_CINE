@@ -12,12 +12,14 @@ interface LandingFinalCtaProps {
     bullets: readonly string[]
   }
   exploreCidTarget: string
+  solutionsTarget: string
   requestDemoTarget: string
 }
 
 export default function LandingFinalCta({
   content,
   exploreCidTarget,
+  solutionsTarget,
   requestDemoTarget,
 }: LandingFinalCtaProps) {
   return (
@@ -52,8 +54,8 @@ export default function LandingFinalCta({
                   {content.secondaryCta}
                   <ChevronRight className="h-4 w-4" />
                 </LandingActionButton>
-                <LandingActionButton destination="/pricing" variant="ghost">
-                  Ver precios
+                <LandingActionButton destination={solutionsTarget} variant="ghost">
+                  Ver soluciones
                 </LandingActionButton>
               </div>
             </div>

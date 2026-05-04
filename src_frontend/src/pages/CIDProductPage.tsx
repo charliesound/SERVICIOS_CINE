@@ -169,15 +169,15 @@ export default function CIDProductPage() {
         </section>
 
         {/* 2. PROBLEM */}
-        <section className="relative border-y border-white/10 bg-[#09111c]/80 py-24">
+        <section className="relative border-y border-white/10 bg-[#09111c]/80 py-28">
           <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
             <div className="max-w-3xl">
               <p className="editorial-kicker text-amber-300">El problema</p>
-              <h2 className="mt-4 font-display text-4xl text-white md:text-6xl">La produccion audiovisual esta fragmentada</h2>
-              <p className="mt-6 text-lg leading-8 text-slate-300 md:text-xl md:leading-9">
+              <h2 className="mt-6 font-display text-5xl text-white md:text-6xl">La produccion audiovisual esta fragmentada</h2>
+              <p className="mt-8 text-lg leading-9 text-slate-300 md:text-xl md:leading-10">
                 Guion, desglose, storyboard, planificacion, rodaje, sonido, postproduccion y entrega funcionan como piezas separadas. Esto genera perdidas de tiempo, errores de coordinacion y sobrecostes.
               </p>
-              <p className="mt-4 text-base leading-7 text-slate-400">
+              <p className="mt-6 text-base leading-8 text-slate-400">
                 Las herramientas actuales no siempre resuelven el problema: algunas son creativas pero no productivas; otras son tecnicas pero desconectadas del proceso creativo.
               </p>
             </div>
@@ -185,38 +185,38 @@ export default function CIDProductPage() {
         </section>
 
         {/* 3. SOLUTION */}
-        <section className="relative py-24">
+        <section className="relative py-28">
           <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
             <div className="max-w-3xl">
               <p className="editorial-kicker text-amber-300">La solucion</p>
-              <h2 className="mt-4 font-display text-4xl text-white md:text-6xl">CID unifica el proceso completo</h2>
-              <p className="mt-6 text-lg leading-8 text-slate-300 md:text-xl md:leading-9">
-                CID conecta creatividad, analisis y ejecucion en un flujo continuo, permitiendo que los equipos trabajen con coherencia desde el desarrollo hasta la entrega final.
+              <h2 className="mt-6 font-display text-5xl text-white md:text-6xl">CID unifica el proceso completo</h2>
+              <p className="mt-8 text-lg leading-9 text-slate-300 md:text-xl md:leading-10">
+                CID conecta creatividad, planificacion y produccion en un flujo de trabajo real. Desde la idea inicial hasta la entrega final, todos los departamentos trabajan coordinados dentro de un mismo sistema.
               </p>
             </div>
           </div>
         </section>
 
         {/* 4. PIPELINE */}
-        <section className="relative border-y border-white/10 bg-[#09111c]/80 py-24">
+        <section className="relative border-y border-white/10 bg-[#09111c]/80 py-28">
           <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
-            <div className="mb-12 max-w-3xl">
+            <div className="mb-16 max-w-3xl">
               <p className="editorial-kicker text-amber-300">Pipeline</p>
-              <h2 className="mt-4 font-display text-4xl text-white md:text-6xl">Flujo visual del proceso</h2>
-              <p className="mt-4 text-base leading-7 text-slate-400">
+              <h2 className="mt-6 font-display text-5xl text-white md:text-6xl">Flujo visual del proceso</h2>
+              <p className="mt-6 text-base leading-8 text-slate-400">
                 Cada fase no es un bloque aislado. Esta conectada con la siguiente, manteniendo informacion, intencion creativa y trazabilidad durante todo el proceso.
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
               {pipelinePhases.map((phase, index) => (
-                <div key={phase.name} className="landing-panel rounded-[1.7rem] p-6">
+                <div key={phase.name} className="landing-panel rounded-[1.7rem] p-8">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-amber-300">
                     <phase.icon className="h-5 w-5" />
                   </div>
                   <p className="mt-4 text-[11px] uppercase tracking-[0.24em] text-slate-500">0{index + 1}</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">{phase.name}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">{phase.description}</p>
+                  <h3 className="mt-4 text-xl font-semibold text-white">{phase.name}</h3>
+                  <p className="mt-4 text-sm leading-6 text-slate-400">{phase.description}</p>
                 </div>
               ))}
             </div>
@@ -224,21 +224,21 @@ export default function CIDProductPage() {
         </section>
 
         {/* 5. DEPARTMENTS */}
-        <section className="relative py-24">
+        <section className="relative py-28">
           <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
-            <div className="mb-12 max-w-3xl">
+            <div className="mb-16 max-w-3xl">
               <p className="editorial-kicker text-amber-300">Departamentos</p>
-              <h2 className="mt-4 font-display text-4xl text-white md:text-6xl">Diseñado para los departamentos reales de una produccion</h2>
+              <h2 className="mt-6 font-display text-5xl text-white md:text-6xl">Diseñado para los departamentos reales de una produccion</h2>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
               {departments.map((dept) => (
-                <div key={dept.name} className="landing-panel rounded-[1.7rem] p-6">
+                <div key={dept.name} className="landing-panel rounded-[1.7rem] p-8">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-amber-300">
                     <dept.icon className="h-5 w-5" />
                   </div>
-                  <h3 className="mt-4 text-xl font-semibold text-white">{dept.name}</h3>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <h3 className="mt-5 text-2xl font-semibold text-white">{dept.name}</h3>
+                  <div className="mt-5 flex flex-wrap gap-3">
                     {dept.items.map((item) => (
                       <span key={item} className="landing-pill text-slate-200">
                         {item}

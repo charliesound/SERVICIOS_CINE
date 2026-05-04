@@ -5,15 +5,14 @@ import SolutionHero from '@/components/solutions/SolutionHero'
 import SolutionGrid from '@/components/solutions/SolutionGrid'
 import PricingModelBlock from '@/components/solutions/PricingModelBlock'
 import {
-  allSolutions,
-  pricingOverview,
-  publicBrandLinks,
-  publicFooterLinks,
-  publicLegalLinks,
-  solutionsHeroContent,
-  solutionsMarketingNotes,
-  solutionsPageHighlights,
-} from '@/data/solutionsContent'
+   allSolutions,
+   pricingOverview,
+   publicBrandLinks,
+   publicFooterLinks,
+   publicLegalLinks,
+   solutionsMarketingNotes,
+   solutionsPageHighlights,
+ } from '@/data/solutionsContent'
 import { useSeo } from '@/hooks/useSeo'
 import { getPrimaryCIDTarget, useAuthStore } from '@/store'
 import { buildAbsoluteUrl, buildBreadcrumbStructuredData } from '@/utils/seo'
@@ -106,44 +105,44 @@ export default function SolutionsPage() {
         </div>
       </header>
 
-      <main>
-        <SolutionHero
-          eyebrow="AILinkCinema / Soluciones"
-          title={solutionsHeroContent.title}
-          description={solutionsHeroContent.description}
-          primaryLabel="Explorar CID"
-          primaryTo="/solutions/cid"
-          secondaryLabel="Ver precios"
-          secondaryTo="/pricing"
-          highlights={solutionsPageHighlights}
-        />
+       <main>
+         <SolutionHero
+           eyebrow="AILinkCinema / Soluciones"
+           title="Soluciones IA para cine y audiovisual"
+           description="Catalogo de soluciones IA para cine y audiovisual: CID, desglose de guion, storyboard, planificacion de produccion, doblaje, sonido, promo video y VFX."
+           primaryLabel="Explorar CID"
+           primaryTo="/solutions/cid"
+           secondaryLabel="Ver precios"
+           secondaryTo="/pricing"
+           highlights={solutionsPageHighlights}
+         />
 
-        <section className="relative pb-24">
-          <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
-            <div className="mb-12 max-w-3xl">
-              <p className="editorial-kicker text-amber-300">Oferta base</p>
-              <h2 className="mt-4 font-display text-4xl text-white md:text-6xl">Producto principal + modulos que tambien pueden vivir por separado.</h2>
-              <p className="mt-5 text-base leading-8 text-slate-300 md:text-lg">
-                AILinkCinema combina una capa completa de producto con aplicaciones especializadas para que cada equipo pueda entrar por una necesidad concreta o desplegar un flujo integral.
-              </p>
-            </div>
+         <section className="relative pb-28">
+           <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
+             <div className="mb-16 max-w-3xl">
+               <p className="editorial-kicker text-amber-300">Oferta base</p>
+               <h2 className="mt-6 font-display text-5xl text-white md:text-6xl">CID es el producto principal, con aplicaciones especializadas que pueden operar por separado o integradas.</h2>
+               <p className="mt-6 text-lg leading-9 text-slate-300 md:text-xl md:leading-10">
+                 Puedes contratar cada modulo por separado o integrarlos todos dentro de CID para un flujo completo.
+               </p>
+             </div>
 
-            <SolutionGrid solutions={allSolutions} />
-          </div>
-        </section>
+             <SolutionGrid solutions={allSolutions} />
+           </div>
+         </section>
 
-        <section className="relative border-y border-white/10 bg-[#09111c]/80 py-24">
-          <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
-            <PricingModelBlock
-              title={pricingOverview.cidSummary.title}
-              priceLines={[pricingOverview.cidSummary.setup, pricingOverview.cidSummary.monthly]}
-              description={pricingOverview.cidSummary.note}
-              bullets={solutionsMarketingNotes}
-              featured
-            />
-          </div>
-        </section>
-      </main>
+         <section className="relative border-y border-white/10 bg-[#09111c]/80 py-28">
+           <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
+             <PricingModelBlock
+               title={pricingOverview.cidSummary.title}
+               priceLines={[pricingOverview.cidSummary.setup, pricingOverview.cidSummary.monthly]}
+               description={pricingOverview.cidSummary.note}
+               bullets={solutionsMarketingNotes}
+               featured
+             />
+           </div>
+         </section>
+       </main>
 
       <footer className="border-t border-white/10 py-10">
         <div className="mx-auto grid max-w-7xl gap-8 px-5 md:px-6 lg:grid-cols-[1fr_auto] lg:items-center lg:px-8">

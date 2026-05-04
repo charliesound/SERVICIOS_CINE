@@ -32,14 +32,14 @@ export const landingContent = {
     secondaryCta: 'Explorar CID',
   },
   hero: {
-    eyebrow: 'AILinkCinema / Creatividad + Canvas + IA + Produccion',
-    title: 'Creatividad visual, lienzo colaborativo e IA para hacer cine real',
+    eyebrow: 'AILinkCinema / Inteligencia Artificial para Cine',
+    title: 'IA diseñada para crear y producir cine',
     subtitle:
-      'Unimos creatividad visual, canvas colaborativo, inteligencia artificial y sistema real de produccion cinematografica en una sola plataforma.',
+      'AILinkCinema combina creatividad visual, lienzo colaborativo e inteligencia artificial con un sistema real de produccion audiovisual.',
     differentialLine:
-      'A diferencia de las herramientas creativas aisladas, AILinkCinema conecta el lienzo creativo con todos los departamentos de una produccion audiovisual.',
+      'Desde la idea inicial hasta la entrega final, CID conecta guion, storyboard, planificacion, doblaje, sonido, VFX, montaje y distribucion en un mismo flujo de trabajo.',
     description:
-      'Creatividad, canvas colaborativo, IA y produccion real: una plataforma que une la vision artistica con la ejecucion tecnica de cada departamento.',
+      'AILinkCinema transforma la creatividad audiovisual en un sistema de produccion completo con IA aplicada.',
     chips: ['Creatividad + Canvas', 'IA aplicada', 'Produccion real'],
     proof: [
       { label: 'Creatividad + Canvas', text: 'Lienzo colaborativo para storyboard, previz y desarrollo visual conectado al pipeline.' },

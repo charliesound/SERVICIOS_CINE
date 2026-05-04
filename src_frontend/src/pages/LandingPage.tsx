@@ -24,8 +24,8 @@ export default function LandingPage() {
   const exploreCidTarget = '/solutions/cid'
   const solutionsTarget = '/solutions'
   const requestDemoTarget = '/pricing'
-  const description =
-    'Soluciones de inteligencia artificial para cine, television y publicidad. Desde guion hasta entrega final con CID, el sistema de produccion audiovisual de AILinkCinema.'
+   const description =
+     'AILinkCinema: inteligencia artificial para cine, television y publicidad. Desde guion hasta entrega final con CID, el sistema de produccion audiovisual completo.'
 
   useSeo({
     title: 'Inteligencia artificial para cine y produccion audiovisual',
@@ -192,29 +192,29 @@ export default function LandingPage() {
         <CidProductSpotlight content={landingContent.cid} />
         <SpecializedSolutionsGrid content={landingContent.solutions} />
         <section id="mas-alla" className="relative border-y border-white/10 bg-[#09111c]/76 py-24">
-          <div className="mx-auto grid max-w-7xl gap-10 px-5 md:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8">
-            <LandingReveal>
-              <LandingSectionHeading
-                eyebrow={landingContent.serviceLayer.eyebrow}
-                title={landingContent.serviceLayer.title}
-                description={landingContent.serviceLayer.description}
-              />
-            </LandingReveal>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {landingContent.serviceLayer.bullets.map((bullet, index) => (
-                <LandingReveal key={bullet} delay={index * 90}>
-                  <div className="landing-panel h-full rounded-[1.7rem] p-6">
-                    <p className="text-[11px] uppercase tracking-[0.24em] text-amber-200">
-                      {String(index + 1).padStart(2, '0')}
-                    </p>
-                    <p className="mt-4 text-lg font-medium leading-7 text-white">{bullet}</p>
-                  </div>
-                </LandingReveal>
-              ))}
-            </div>
-          </div>
-        </section>
+           <div className="mx-auto grid max-w-7xl gap-10 px-5 md:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8">
+             <LandingReveal>
+               <LandingSectionHeading
+                 eyebrow={landingContent.serviceLayer.eyebrow}
+                 title={landingContent.serviceLayer.title}
+                 description={landingContent.serviceLayer.description}
+               />
+             </LandingReveal>
+ 
+             <div className="grid gap-6 sm:grid-cols-2">
+               {landingContent.serviceLayer.bullets.map((bullet, index) => (
+                 <LandingReveal key={bullet} delay={index * 90}>
+                   <div className="landing-panel h-full rounded-[1.7rem] p-8">
+                     <p className="text-[11px] uppercase tracking-[0.24em] text-amber-200">
+                       {String(index + 1).padStart(2, '0')}
+                     </p>
+                     <p className="mt-6 text-lg font-medium leading-8 text-white">{bullet}</p>
+                   </div>
+                 </LandingReveal>
+               ))}
+             </div>
+           </div>
+         </section>
         <LandingPricingSection content={landingContent.pricing} />
         <TrustLegalSection content={landingContent.trustLegal} />
         <section id="vision" className="relative py-24">

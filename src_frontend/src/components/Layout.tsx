@@ -56,13 +56,10 @@ export default function Layout() {
         {/* Logo */}
         <div className="p-6 border-b border-white/5">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg group-hover:shadow-amber-500/30 transition-shadow">
-              <Clapperboard className="w-5 h-5 text-black" />
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/30 transition-shadow">
+              <Clapperboard className="w-6 h-6 text-black" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-white tracking-tight">AILink</h1>
-              <p className="text-xs text-amber-400/80 font-medium">CINEMA</p>
-            </div>
+            <p className="text-lg font-bold text-white tracking-tight">AILinkCinema</p>
           </Link>
         </div>
 

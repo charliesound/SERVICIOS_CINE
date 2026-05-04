@@ -75,25 +75,22 @@ export default function RegisterSelectPage() {
   return (
     <div className="min-h-screen bg-dark-300 text-white flex flex-col">
       {/* Nav */}
-      <nav className="border-b border-white/5">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
-              <Clapperboard className="w-5 h-5 text-black" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-white tracking-tight">AILinkCinema</p>
-              <p className="text-xs text-amber-400/80 font-medium">IA para producción audiovisual</p>
-            </div>
-          </div>
-          <Link
-            to="/login"
-            className="text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            Ya tengo cuenta
-          </Link>
-        </div>
-      </nav>
+       <nav className="border-b border-white/5">
+         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+               <Clapperboard className="w-6 h-6 text-black" />
+             </div>
+             <p className="text-xl font-bold text-white tracking-tight">AILinkCinema</p>
+           </div>
+           <Link
+             to="/login"
+             className="text-sm text-gray-400 hover:text-white transition-colors"
+           >
+             Ya tengo cuenta
+           </Link>
+         </div>
+       </nav>
 
       {/* Content */}
       <div className="flex-1 flex items-center justify-center px-6 py-16">

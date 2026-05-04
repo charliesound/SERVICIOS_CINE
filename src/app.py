@@ -50,6 +50,7 @@ from routes.producer_pitch_routes import router as producer_pitch_router
 from routes.distribution_pack_routes import router as distribution_pack_router
 from routes.sales_targets_routes import router as sales_targets_router
 from routes.crm_routes import router as crm_router
+from routes.cid_pipeline_routes import router as cid_pipeline_router
 
 # Services
 from services.logging_service import logger, request_logger
@@ -184,6 +185,7 @@ app.include_router(producer_pitch_router, tags=["producer-pitch"])
 app.include_router(distribution_pack_router, tags=["distribution"])
 app.include_router(sales_targets_router, tags=["sales-targets"])
 app.include_router(crm_router, tags=["commercial-crm"])
+app.include_router(cid_pipeline_router, tags=["cid-pipelines"])
 
 if features.get("postproduction", False):
     app.include_router(postproduction_router, tags=["postproduction"])

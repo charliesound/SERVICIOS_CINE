@@ -358,7 +358,7 @@ export const landingContent = {
     description: 'Inteligencia artificial para cine, television y publicidad con software especializado, CID como sistema central y acompanamiento tecnico real.',
     links: [
       { label: 'Explorar CID', href: '/solutions/cid' },
-      { label: 'Solicitar demo', href: '/pricing' },
+      { label: 'Solicitar demo', href: '/register/demo' },
       { label: 'Ver soluciones', href: '/solutions' },
       { label: 'Precios', href: '/pricing' },
     ],

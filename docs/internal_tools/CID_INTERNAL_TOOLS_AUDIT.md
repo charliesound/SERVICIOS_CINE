@@ -391,3 +391,194 @@ Se recomienda **GO** para pasar a implementación, con las siguientes condicione
 6. **No tocar `ailinkcinema_s2.db`**: Usar migraciones Alembic para cambios en DB
 
 El sistema actual tiene las bases sólidas (multi-tenant, planes, auth) para construir CID Internal Tools de forma segura y progresiva.
+
+---
+
+## 17. CID Internal Test Routes — Análisis detallado
+
+> Fuente: `src/routes/cid_test_routes.py` · Auditado: 2026-05-05
+
+### 17.1 Registro del router
+
+```python
+router = APIRouter(prefix="/api/internal-test", tags=["cid-internal-test"])
+```
+
+**Prefijo**: `/api/internal-test`  
+**Tag**: `cid-internal-test`
+
+### 17.2 Guard de acceso — `require_internal_tester`
+
+```python
+async def require_internal_tester(tenant: TenantContext = Depends(get_tenant_context)) -> TenantContext:
+    if not tenant.is_admin:
+        raise HTTPException(status_code=403)
+    if not is_internal_tester(tenant.user.email):
+        raise HTTPException(status_code=403, detail="Not an internal tester")
+    return tenant
+```
+
+**Requisito dual**: el usuario debe ser admin **Y** estar en `CID_INTERNAL_TESTER_EMAILS`.  
+No basta con ser admin — las herramientas de test están estrictamente aisladas del acceso admin estándar.
+
+### 17.3 Endpoints existentes
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/internal-test/demo-project` | Crea proyecto demo simulado en la DB |
+| `POST` | `/api/internal-test/pipeline-simulation` | Simula ejecución completa de pipeline |
+| `GET` | `/api/internal-test/status` | Estado del test mode (plan efectivo, emails activos) |
+
+### 17.4 Servicio de soporte — `cid_test_mode.py`
+
+Ubicación: `src/services/cid_test_mode.py`
+
+| Función | Descripción |
+|---|---|
+| `is_test_mode_enabled()` | Lee `CID_INTERNAL_TEST_MODE_ENABLED` (env var, default `false`) |
+| `get_test_plan()` | Lee `CID_INTERNAL_TEST_PLAN` (env var, default `enterprise`) |
+| `get_tester_emails()` | Lee `CID_INTERNAL_TESTER_EMAILS` (CSV, default vacío) |
+| `is_internal_tester(email)` | Combina `is_test_mode_enabled()` + `get_tester_emails()` |
+| `apply_test_override(original_plan, email)` | Devuelve `(effective_plan, is_override_applied)` |
+
+**Variables de entorno requeridas**:
+```bash
+CID_INTERNAL_TEST_MODE_ENABLED=true
+CID_INTERNAL_TESTER_EMAILS=dev@ailinkcinema.com,qa@ailinkcinema.com
+CID_INTERNAL_TEST_PLAN=enterprise   # default
+```
+
+### 17.5 Notas de seguridad
+- La lista de testers **nunca se expone al frontend** — reside exclusivamente en env vars del servidor.
+- El override de plan solo aplica para el contexto de test, no modifica la DB.
+- `apply_test_override` es idempotente: si el usuario no es tester, devuelve el plan original sin cambios.
+
+---
+
+## 18. CID Pipeline Builder Routes — Análisis
+
+> Fuente: `src/routes/cid_pipeline_routes.py` · Auditado: 2026-05-05
+
+**Prefijo**: `/api/pipelines`  
+**Feature flag**: `CID_PIPELINE_BUILDER_ENABLED` (env var, `0|1|true|false|yes|on`)
+
+### 18.1 Endpoints registrados
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/api/pipelines/presets` | Listar presets de pipeline disponibles |
+| `POST` | `/api/pipelines/validate` | Validar configuración de pipeline |
+| `POST` | `/api/pipelines/generate` | Generar pipeline a partir de prompt/parámetros |
+| `POST` | `/api/pipelines/execute` | Ejecutar pipeline (crea job simulado) |
+| `GET` | `/api/pipelines/jobs` | Listar jobs de pipeline del tenant |
+| `GET` | `/api/pipelines/jobs/{job_id}` | Detalle de job de pipeline |
+
+### 18.2 Servicios de soporte
+
+- `cid_pipeline_builder_service` — Lógica principal de construcción de pipeline
+- `cid_pipeline_preset_service` — Catálogo de presets
+- `cid_pipeline_simulated_job_service` — Jobs simulados (sin ComfyUI real)
+- `cid_pipeline_validation_service` — Validación de configuraciones
+
+### 18.3 Isolación de tenants
+
+La función `_get_project_or_403` verifica:
+```python
+if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    raise HTTPException(status_code=403)
+```
+Los admins pueden acceder a cualquier proyecto (necesario para Internal Tools).
+
+---
+
+## 19. Demo Routes — Análisis
+
+> Fuente: `src/routes/demo_routes.py` · Auditado: 2026-05-05
+
+**Prefijo**: `/api/demo`  
+**Feature flag**: `ENABLE_DEMO_ROUTES` (env var)
+
+### 19.1 Endpoints registrados
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/api/demo/status` | Estado del entorno demo |
+| `GET` | `/api/demo/users` | Usuarios demo disponibles |
+| `POST` | `/api/demo/seed` | Semillar datos de demo en la DB |
+| `POST` | `/api/demo/reset` | Resetear entorno demo |
+| `GET` | `/api/demo/jobs/{user_id}` | Jobs de un usuario demo |
+| `GET` | `/api/demo/projects` | Proyectos demo |
+| `GET` | `/api/demo/narrative-project` | Proyecto narrativo de demo |
+| `GET` | `/api/demo/narrative-html` | HTML narrativo generado |
+| `POST` | `/api/demo/seed-narrative` | Semillar proyecto narrativo |
+| `GET` | `/api/demo/presets` | Presets disponibles en demo |
+| `POST` | `/api/demo/quick-start` | Onboarding rápido de demo |
+
+> ⚠️ **Nota de seguridad**: Estas rutas de demo deben estar desactivadas en producción (`ENABLE_DEMO_ROUTES=false`). Verificar que el seed/reset no pueda ejecutarse sobre la DB de producción.
+
+---
+
+## 20. Admin Routes existentes — Inventario completo
+
+> Fuente: `src/routes/admin_routes.py` · Auditado: 2026-05-05
+
+**Prefijo**: `/api/admin`  
+**Guard**: `_require_admin(tenant)` → `tenant.is_admin == True`
+
+| Método | Ruta | Descripción | Limitación detectada |
+|---|---|---|---|
+| `GET` | `/api/admin/system/overview` | Overview: scheduler, queue, backends | Solo datos de sistema, no usuarios |
+| `GET` | `/api/admin/scheduler/status` | Estado del job scheduler | — |
+| `GET` | `/api/admin/projects` | Todos los proyectos (cross-tenant) | Sin filtros de búsqueda |
+| `GET` | `/api/admin/jobs` | Todos los jobs (cross-tenant) | Sin filtros, no incluye org |
+| `GET` | `/api/admin/organizations` | Todas las orgs con stats básicas | `job_count` es placeholder (hardcoded 0) |
+
+**Gap crítico**: `job_count` en `/api/admin/organizations` siempre devuelve `0` (comentario en código: `"Placeholder for now"`). Requiere join con `ProjectJob` via `Project`.
+
+---
+
+## 21. Hallazgos de frontend — Bugs identificados en audit
+
+### Bug: Duplicate React key en LandingPage footer
+
+**Archivo**: `src_frontend/src/data/landingContent.ts`  
+**Detectado**: Console log de browser, 2026-05-05  
+**Severidad**: Baja (advertencia React, no bloquea funcionalidad)
+
+**Causa**: Dos entradas en `footer.links` compartían el mismo `href: '/pricing'`:
+```ts
+// ANTES (buggy)
+{ label: 'Solicitar demo', href: '/pricing' },  // ← duplicado
+{ label: 'Precios', href: '/pricing' },
+```
+
+**Fix aplicado** en esta sesión:
+```ts
+// DESPUÉS (correcto)
+{ label: 'Solicitar demo', href: '/register/demo' },  // ← href único
+{ label: 'Precios', href: '/pricing' },
+```
+
+**Estado**: ✅ Corregido en `src_frontend/src/data/landingContent.ts` línea 361.
+
+### Advertencias de React Router v6 → v7
+
+**Archivo**: `src_frontend/src/main.tsx` (App Router)  
+**Tipo**: Advertencias de migración, no errores  
+**Advertencias**:
+- `v7_startTransition`: Activar future flag para transiciones de estado
+- `v7_relativeSplatPath`: Activar future flag para resolución de rutas relativas en Splat routes
+
+**Acción recomendada**: Agregar `future` flags al `BrowserRouter` cuando se planifique migración a React Router v7.
+
+```tsx
+// Solución futura (no urgente)
+<BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+```
+
+**Estado**: ⚠️ Pendiente (no urgente, no bloquea funcionamiento).
+
+---
+
+*Audit completado: 2026-05-05 — Versión 1.1*  
+*Próxima acción: Sprint Internal Tools 1 — Backend read-only + AdminAuditLog*

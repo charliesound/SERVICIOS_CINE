@@ -32,6 +32,15 @@ async def get_backend_capabilities(
     force_refresh: bool = Query(False)
 ):
     """Get capabilities for a specific backend."""
+    if backend == "comfyui":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Backend 'comfyui' is an alias. Valid backends are: "
+                "still, video, dubbing, lab"
+            ),
+        )
+
     caps = await capability_service.detect_capabilities(backend, force=force_refresh)
     
     if not caps:

@@ -187,6 +187,11 @@ app.include_router(sales_targets_router, tags=["sales-targets"])
 app.include_router(crm_router, tags=["commercial-crm"])
 app.include_router(cid_pipeline_router, tags=["cid-pipelines"])
 
+if os.getenv("CID_INTERNAL_TEST_MODE_ENABLED", "false").strip().lower() == "true":
+    from routes.cid_test_routes import router as cid_test_router
+
+    app.include_router(cid_test_router, tags=["cid-internal-test"])
+
 if features.get("postproduction", False):
     app.include_router(postproduction_router, tags=["postproduction"])
 

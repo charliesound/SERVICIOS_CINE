@@ -114,6 +114,7 @@ async def _bootstrap_sqlite_schema(conn) -> None:
     await _bootstrap_account_schema(conn)
     await _bootstrap_review_delivery_schema(conn)
     await _bootstrap_ingest_document_schema(conn)
+    await _bootstrap_storyboard_schema(conn)
 
 
 async def _get_sqlite_columns(conn, table_name: str) -> list[str]:
@@ -441,6 +442,36 @@ async def _bootstrap_ingest_document_schema(conn) -> None:
             )
         await conn.exec_driver_sql(
             "CREATE INDEX IF NOT EXISTS ix_ingest_events_document_asset_id ON ingest_events(document_asset_id)"
+        )
+
+
+async def _bootstrap_storyboard_schema(conn) -> None:
+    if await _has_table(conn, "storyboard_shots"):
+        shot_columns = await _get_sqlite_columns(conn, "storyboard_shots")
+        if "scene_number" not in shot_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE storyboard_shots ADD COLUMN scene_number INTEGER"
+            )
+            await conn.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS ix_storyboard_shots_scene_number ON storyboard_shots(scene_number)"
+            )
+        if "scene_heading" not in shot_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE storyboard_shots ADD COLUMN scene_heading VARCHAR(500)"
+            )
+        if "is_active" not in shot_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE storyboard_shots ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1"
+            )
+            await conn.exec_driver_sql(
+                "UPDATE storyboard_shots SET is_active = COALESCE(is_active, 1)"
+            )
+        if "shot_number" not in shot_columns:
+            await conn.exec_driver_sql(
+                "ALTER TABLE storyboard_shots ADD COLUMN shot_number INTEGER"
+            )
+        await conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_storyboard_shots_project_org ON storyboard_shots(project_id, organization_id)"
         )
 
 

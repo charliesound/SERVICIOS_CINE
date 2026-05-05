@@ -263,3 +263,4 @@ Para entornos `demo` o `production`, `AUTH_SECRET_KEY` y `APP_SECRET_KEY` deben 
 ## 📝 Licencia
 
 Privado - AILinkCinema 2024
+# SERVICIOS_CINE

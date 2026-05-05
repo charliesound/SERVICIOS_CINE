@@ -19,6 +19,7 @@ from schemas.auth_schema import UserResponse, TenantContext
 from services.document_service import document_service
 from services.job_tracking_service import job_tracking_service
 from services.plan_limits_service import plan_limits_service
+from services.script_intake_service import analysis_service
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -955,6 +956,27 @@ async def analyze_project_script(
             except Exception:
                 structured_payload = {}
 
+        persisted_structured_payload = json.loads(
+            json.dumps(structured_payload, ensure_ascii=False)
+        )
+
+        analysis_summary = await analysis_service.run_analysis(
+            db,
+            project_id,
+            user_org_id,
+            project.script_text,
+            document_context={
+                "document_id": str(doc.id),
+                "doc_type": str(classification.doc_type) if classification else "unknown",
+                "confidence_score": float(classification.confidence_score)
+                if classification and classification.confidence_score is not None
+                else None,
+                "source_kind": str(doc.source_kind),
+            },
+            structured_payload=persisted_structured_payload,
+        )
+        structured_payload["analysis_summary"] = analysis_summary
+
         result_payload = {
             "document_id": str(doc.id),
             "doc_type": str(classification.doc_type) if classification else "unknown",
@@ -1485,6 +1507,27 @@ async def retry_project_job(
                     )
                 except Exception:
                     structured_payload = {}
+            persisted_structured_payload = json.loads(
+                json.dumps(structured_payload, ensure_ascii=False)
+            )
+            analysis_summary = await analysis_service.run_analysis(
+                db,
+                project_id,
+                user_org_id,
+                project.script_text,
+                document_context={
+                    "document_id": str(doc.id),
+                    "doc_type": str(classification.doc_type)
+                    if classification
+                    else "unknown",
+                    "confidence_score": float(classification.confidence_score)
+                    if classification and classification.confidence_score is not None
+                    else None,
+                    "source_kind": str(doc.source_kind),
+                },
+                structured_payload=persisted_structured_payload,
+            )
+            structured_payload["analysis_summary"] = analysis_summary
             result_payload = {
                 "document_id": str(doc.id),
                 "doc_type": str(classification.doc_type)

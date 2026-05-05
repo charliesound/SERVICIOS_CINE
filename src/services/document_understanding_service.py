@@ -24,6 +24,7 @@ from models.ingest_document import (
 from models.ingest_handshake import IngestEvent, StorageSource
 from models.ingest_scan import MediaAsset
 from services.ingest_scan_service import get_owned_asset
+from services.script_document_classifier import is_probable_screenplay
 from services.storage_handshake_service import (
     get_owned_storage_source,
     log_ingest_event,
@@ -262,17 +263,22 @@ def build_classification_input(
         parts.append(raw_text)
     if extracted_table_json:
         parts.append(json.dumps(extracted_table_json, ensure_ascii=True))
-    return "\n".join(parts).lower()
+    return "\n".join(parts)
 
 
 def classify_document_content(
     raw_text: Optional[str], extracted_table_json: Optional[Dict[str, Any]]
 ) -> Tuple[str, float]:
     corpus = build_classification_input(raw_text, extracted_table_json)
+    is_screenplay, screenplay_confidence, _signals = is_probable_screenplay(corpus)
+    if is_screenplay:
+        return "script", screenplay_confidence
+
+    normalized_corpus = corpus.lower()
     best_type = "unknown_document"
     best_hits = 0
     for doc_type, keywords in DOC_TYPE_RULES.items():
-        hits = sum(1 for keyword in keywords if keyword in corpus)
+        hits = sum(1 for keyword in keywords if keyword in normalized_corpus)
         if hits > best_hits:
             best_type = doc_type
             best_hits = hits
@@ -341,6 +347,13 @@ def generate_structured_payload(
                 "operator_name": None,
                 "department": None,
                 "note": raw_text,
+            }
+        )
+    elif classification.doc_type == "script":
+        payload.update(
+            {
+                "screenplay_excerpt": (raw_text or "")[:2000],
+                "manual_review_required": False,
             }
         )
     else:

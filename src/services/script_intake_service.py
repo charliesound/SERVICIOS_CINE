@@ -11,13 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.core import Project
 from models.production import ProductionBreakdown
+from services.script_document_classifier import SCENE_HEADING_RE
 
 
 class ScriptIntakeService:
-    _SCENE_HEADING_RE = re.compile(
-        r"^(INT\.?|EXT\.?|INT/EXT\.?|I/E\.?)\s+(.+?)(?:\s*-\s*(.+))?$",
-        re.IGNORECASE,
-    )
     _TIME_OF_DAY = (
         "DAY", "NIGHT", "MORNING", "EVENING", "AFTERNOON", "DAWN", "DUSK",
         "CONTINUOUS", "LATER", "MOMENTS LATER", "DIA", "NOCHE", "MANANA", "MAÑANA", "TARDE",
@@ -46,27 +43,20 @@ class ScriptIntakeService:
                     action_buffer.append(line)
                 continue
 
-            heading_match = self._SCENE_HEADING_RE.match(line)
-            if heading_match:
+            heading = self._parse_scene_heading(line)
+            if heading:
                 if current_scene:
                     current_scene["action_blocks"] = action_buffer[:]
                     scenes.append(current_scene)
                     action_buffer = []
 
-                location_raw = heading_match.group(2).strip() if heading_match.group(2) else ""
-                time_of_day_raw = heading_match.group(3).strip() if heading_match.group(3) else ""
-
-                location = location_raw
-                time_of_day = self._detect_time_of_day(time_of_day_raw)
-
-                int_ext = "INT" if line.upper().startswith("INT") else "EXT" if line.upper().startswith("EXT") else "INT/EXT"
-
                 current_scene = {
+                    "scene_number": heading["scene_number"] or (len(scenes) + 1),
                     "scene_id": f"scene_{len(scenes) + 1:03d}",
-                    "heading": line,
-                    "int_ext": int_ext,
-                    "location": location,
-                    "time_of_day": time_of_day,
+                    "heading": heading["heading"],
+                    "int_ext": heading["int_ext"],
+                    "location": heading["location"],
+                    "time_of_day": heading["time_of_day"],
                     "action_blocks": [],
                     "dialogue_blocks": [],
                     "characters_detected": [],
@@ -94,6 +84,51 @@ class ScriptIntakeService:
 
     def _is_character_cue(self, line: str) -> bool:
         return bool(re.match(r"^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\.']+$", line))
+
+    def _parse_scene_heading(self, line: str) -> dict[str, Any] | None:
+        if not SCENE_HEADING_RE.match(line):
+            return None
+
+        match = re.match(
+            r"^\s*(?:(?P<number>\d{1,4})[\.:\)-]?\s+)?(?P<int_ext>INT\.?|EXT\.?|INT/EXT\.?|I/E\.?)\s+(?P<body>.+?)\s*$",
+            line,
+            re.IGNORECASE,
+        )
+        if not match:
+            return None
+
+        scene_number = 0
+        number_group = match.group("number")
+        if number_group:
+            try:
+                scene_number = int(number_group)
+            except ValueError:
+                scene_number = 0
+
+        int_ext_raw = (match.group("int_ext") or "INT").upper().rstrip(".")
+        body = (match.group("body") or "").strip()
+
+        location = body.rstrip(" .-")
+        time_of_day = "DAY"
+        for tod in sorted(self._TIME_OF_DAY, key=len, reverse=True):
+            tod_match = re.search(
+                rf"(?:^|[\s\.-]){re.escape(tod)}\.?$",
+                body,
+                re.IGNORECASE,
+            )
+            if not tod_match:
+                continue
+            location = body[:tod_match.start()].rstrip(" .-") or body.rstrip(" .-")
+            time_of_day = self._detect_time_of_day(tod)
+            break
+
+        return {
+            "scene_number": scene_number or 0,
+            "heading": line,
+            "int_ext": "INT/EXT" if "INT/EXT" in int_ext_raw or "I/E" in int_ext_raw else int_ext_raw,
+            "location": location,
+            "time_of_day": time_of_day,
+        }
 
     def _detect_time_of_day(self, text: str) -> str:
         text_upper = text.upper()
@@ -163,7 +198,7 @@ class ScriptIntakeService:
             props.update(bd.get("props_detected", []))
             if bd.get("int_ext") == "EXT":
                 ext_count += 1
-            if bd.get("time_of_day") == "NIGHT":
+            if bd.get("time_of_day") in {"NIGHT", "NOCHE"}:
                 night_count += 1
             if "high_action" in bd.get("complexity_flags", []):
                 high_action_count += 1
@@ -299,12 +334,22 @@ class AnalysisService:
         project_id: str,
         organization_id: str,
         script_text: str,
+        document_context: dict[str, Any] | None = None,
+        structured_payload: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         scenes = self.script_intake.parse_script(script_text)
         breakdowns = self.script_intake.build_scene_breakdowns(scenes)
         department_breakdown = self.script_intake.build_department_breakdown(breakdowns)
+        document_payload = document_context or {}
+        persisted_structured_payload = structured_payload or {}
 
         analysis_data = {
+            "project_id": project_id,
+            "organization_id": organization_id,
+            "status": "completed",
+            "document": document_payload,
+            "structured_payload": persisted_structured_payload,
+            "summary": department_breakdown,
             "scenes": scenes,
             "breakdowns": breakdowns,
             "department_breakdown": department_breakdown,
@@ -313,6 +358,9 @@ class AnalysisService:
                 "total_scenes": len(scenes),
                 "total_characters": department_breakdown["summary"]["total_characters"],
                 "total_locations": department_breakdown["summary"]["total_locations"],
+                "doc_type": document_payload.get("doc_type"),
+                "confidence_score": document_payload.get("confidence_score"),
+                "source_kind": document_payload.get("source_kind"),
             },
         }
 
@@ -346,6 +394,11 @@ class AnalysisService:
         return {
             "breakdown_id": breakdown_id,
             "status": "completed",
+            "project_id": project_id,
+            "organization_id": organization_id,
+            "document": document_payload,
+            "structured_payload": persisted_structured_payload,
+            "summary": department_breakdown,
             "scenes_count": len(scenes),
             "characters_count": department_breakdown["summary"]["total_characters"],
             "locations_count": department_breakdown["summary"]["total_locations"],
@@ -375,12 +428,21 @@ class AnalysisService:
 
         return {
             "status": breakdown.status,
+            "project_id": breakdown_data.get("project_id") or project_id,
+            "organization_id": breakdown_data.get("organization_id"),
+            "document_id": breakdown_data.get("document", {}).get("document_id"),
+            "doc_type": breakdown_data.get("document", {}).get("doc_type"),
+            "confidence_score": breakdown_data.get("document", {}).get("confidence_score"),
+            "source_kind": breakdown_data.get("document", {}).get("source_kind"),
             "scenes_count": breakdown_data.get("metadata", {}).get("total_scenes", 0),
             "characters_count": breakdown_data.get("metadata", {}).get("total_characters", 0),
             "locations_count": breakdown_data.get("metadata", {}).get("total_locations", 0),
-            "summary": breakdown_data.get("department_breakdown", {}),
+            "summary": breakdown_data.get("summary")
+            or breakdown_data.get("department_breakdown", {}),
+            "structured_payload": breakdown_data.get("structured_payload", {}),
             "sequences_count": len(breakdown_data.get("sequences", [])),
             "generated_at": breakdown.created_at.isoformat() if breakdown.created_at else None,
+            "updated_at": breakdown.updated_at.isoformat() if breakdown.updated_at else None,
         }
 
     async def get_scenes(

@@ -59,6 +59,7 @@ class StructuredReviewStatus:
 
 
 class DocumentType:
+    SCRIPT = "script"
     CAMERA_REPORT = "camera_report"
     SOUND_REPORT = "sound_report"
     SCRIPT_NOTE = "script_note"

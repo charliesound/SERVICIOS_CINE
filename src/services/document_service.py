@@ -30,6 +30,7 @@ from models.document import (
 )
 from models.storage import IngestEvent, IngestEventType, MediaAsset, StorageSource
 from services.report_service import report_service
+from services.script_document_classifier import is_probable_screenplay
 from services.storage_service import storage_service
 
 
@@ -50,6 +51,7 @@ class DocumentService:
         DocumentType.DIRECTOR_NOTE: "director",
     }
     NON_DERIVABLE_TYPES = {
+        DocumentType.SCRIPT: "script",
         DocumentType.UNKNOWN: "unknown_document",
         DocumentType.OPERATOR_NOTE: "operator_note",
     }
@@ -864,9 +866,14 @@ class DocumentService:
             parts.append(extraction.raw_text)
         if extraction.extracted_table_json:
             parts.append(extraction.extracted_table_json)
-        return "\n".join(parts).lower()
+        return "\n".join(parts)
 
     def _classify_text(self, text: str) -> tuple[str, Optional[float]]:
+        is_screenplay, screenplay_confidence, _signals = is_probable_screenplay(text)
+        if is_screenplay:
+            return DocumentType.SCRIPT, screenplay_confidence
+
+        normalized_text = text.lower()
         checks = [
             (DocumentType.SOUND_REPORT, self.SOUND_REPORT_KEYWORDS),
             (DocumentType.CAMERA_REPORT, self.CAMERA_REPORT_KEYWORDS),
@@ -877,7 +884,7 @@ class DocumentService:
         best_type = DocumentType.UNKNOWN
         best_score = 0.0
         for doc_type, keywords in checks:
-            matches = sum(1 for keyword in keywords if keyword in text)
+            matches = sum(1 for keyword in keywords if keyword in normalized_text)
             score = matches / len(keywords)
             if score > best_score:
                 best_type = doc_type

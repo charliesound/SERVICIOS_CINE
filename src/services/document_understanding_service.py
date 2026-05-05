@@ -47,7 +47,7 @@ DOC_TYPE_RULES = {
     "camera_report": ["camera", "mag", "card", "lens", "fps"],
     "script_note": ["continuity", "best take", "editor note"],
     "director_note": ["intention", "pacing", "coverage"],
-    "operator_note": ["operator", "department", "operator note"],
+    "operator_note": ["operator", "operator note", "camera operator", "sound operator"],
 }
 
 

@@ -5,7 +5,7 @@ import re
 
 
 SCENE_HEADING_RE = re.compile(
-    r"^\s*(?:\d{1,4}[\.:\)-]?\s+)?(?:INT\.?|EXT\.?|INT/EXT\.?|I/E\.?)\s+.+$",
+    r"^\s*(?:\d{1,4}[\.:\)-]?\s+)?(?:INT\.?|INTERIOR|EXT\.?|EXTERIOR|INT/EXT\.?|I/E\.?)\s+.+$",
     re.IGNORECASE,
 )
 CHARACTER_CUE_RE = re.compile(
@@ -25,6 +25,8 @@ SCRIPT_KEYWORDS = (
     "screenplay",
     "script",
     "largometraje",
+    "escena",
+    "secuencia",
 )
 SCRIPT_CLASSIFICATION_THRESHOLD = 0.55
 
@@ -80,9 +82,9 @@ def screenplay_confidence(text: str) -> float:
     if signals.character_cue_count >= 8:
         score += 0.18
     elif signals.character_cue_count >= 3:
-        score += 0.12
+        score += 0.14
     elif signals.character_cue_count >= 1:
-        score += 0.06
+        score += 0.08
 
     if signals.text_length >= 10000:
         score += 0.18

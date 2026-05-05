@@ -1,7 +1,28 @@
 from typing import Dict, List, Optional, Any
 from copy import deepcopy
+import random
 
 from .workflow_registry import workflow_registry, WorkflowTemplate, TaskCategory
+
+
+STORYBOARD_RUNTIME_PRESETS = {
+    "storyboard_realistic": {
+        "checkpoint": "Realistic_Vision_V2.0.safetensors",
+        "settings": {
+            "width": 1024,
+            "height": 576,
+            "steps": 20,
+            "cfg": 7.0,
+            "sampler_name": "euler",
+            "scheduler": "normal",
+            "denoise": 1.0,
+        },
+    }
+}
+DEFAULT_STORYBOARD_NEGATIVE = (
+    "blurry, low quality, bad anatomy, deformed hands, extra fingers, duplicate, "
+    "cropped, watermark, text, logo, oversaturated, cartoon, anime, plastic skin"
+)
 
 
 class WorkflowBuilder:
@@ -168,6 +189,115 @@ class WorkflowBuilder:
             "nodes_count": len(template.nodes),
             "node_types": [n.class_type for n in template.nodes],
             "tags": template.tags
+        }
+
+    def build_runtime_prompt(self, workflow_key: str, inputs: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        if self._looks_like_comfyui_prompt(inputs):
+            return inputs
+
+        if workflow_key == "still_storyboard_frame":
+            return self._build_still_storyboard_prompt(inputs)
+        if workflow_key == "still_text_to_image_pro":
+            return self._build_basic_text_to_image_prompt(
+                inputs,
+                checkpoint=str(inputs.get("checkpoint") or "Realistic_Vision_V2.0.safetensors"),
+                filename_prefix=str(inputs.get("filename_prefix") or "text_to_image"),
+            )
+        return None
+
+    def _looks_like_comfyui_prompt(self, payload: Dict[str, Any]) -> bool:
+        if not isinstance(payload, dict) or not payload:
+            return False
+        return all(
+            isinstance(node, dict) and "class_type" in node and "inputs" in node
+            for node in payload.values()
+        )
+
+    def _build_still_storyboard_prompt(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        preset_key = str(inputs.get("preset_key") or "storyboard_realistic")
+        preset = STORYBOARD_RUNTIME_PRESETS.get(preset_key) or STORYBOARD_RUNTIME_PRESETS["storyboard_realistic"]
+        settings = preset.get("settings", {})
+        return self._build_basic_text_to_image_prompt(
+            inputs,
+            checkpoint=str(inputs.get("checkpoint") or preset.get("checkpoint") or "Realistic_Vision_V2.0.safetensors"),
+            filename_prefix=str(inputs.get("filename_prefix") or "storyboard"),
+            width=int(inputs.get("width") or settings.get("width") or 1024),
+            height=int(inputs.get("height") or settings.get("height") or 576),
+            steps=int(inputs.get("steps") or settings.get("steps") or 20),
+            cfg=float(inputs.get("cfg") or settings.get("cfg") or 7.0),
+            sampler_name=str(inputs.get("sampler_name") or settings.get("sampler_name") or "euler"),
+            scheduler=str(inputs.get("scheduler") or settings.get("scheduler") or "normal"),
+            denoise=float(inputs.get("denoise") or settings.get("denoise") or 1.0),
+            negative_prompt=str(inputs.get("negative_prompt") or DEFAULT_STORYBOARD_NEGATIVE),
+        )
+
+    def _build_basic_text_to_image_prompt(
+        self,
+        inputs: Dict[str, Any],
+        *,
+        checkpoint: str,
+        filename_prefix: str,
+        width: int = 1024,
+        height: int = 1024,
+        steps: int = 20,
+        cfg: float = 7.0,
+        sampler_name: str = "euler",
+        scheduler: str = "normal",
+        denoise: float = 1.0,
+        negative_prompt: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        prompt_text = str(inputs.get("prompt") or inputs.get("text") or "").strip()
+        negative_text = str(
+            negative_prompt
+            or inputs.get("negative_prompt")
+            or "blurry, low quality, distorted"
+        ).strip()
+        seed_value = inputs.get("seed")
+        try:
+            seed = int(seed_value) if seed_value is not None else random.randint(1, 2**31 - 1)
+        except (TypeError, ValueError):
+            seed = random.randint(1, 2**31 - 1)
+
+        return {
+            "1": {
+                "class_type": "CheckpointLoaderSimple",
+                "inputs": {"ckpt_name": checkpoint},
+            },
+            "2": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": prompt_text, "clip": ["1", 1]},
+            },
+            "3": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": negative_text, "clip": ["1", 1]},
+            },
+            "4": {
+                "class_type": "EmptyLatentImage",
+                "inputs": {"width": width, "height": height, "batch_size": 1},
+            },
+            "5": {
+                "class_type": "KSampler",
+                "inputs": {
+                    "seed": seed,
+                    "steps": steps,
+                    "cfg": cfg,
+                    "sampler_name": sampler_name,
+                    "scheduler": scheduler,
+                    "denoise": denoise,
+                    "model": ["1", 0],
+                    "positive": ["2", 0],
+                    "negative": ["3", 0],
+                    "latent_image": ["4", 0],
+                },
+            },
+            "6": {
+                "class_type": "VAEDecode",
+                "inputs": {"samples": ["5", 0], "vae": ["1", 2]},
+            },
+            "7": {
+                "class_type": "SaveImage",
+                "inputs": {"filename_prefix": filename_prefix, "images": ["6", 0]},
+            },
         }
 
 

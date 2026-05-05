@@ -52,6 +52,14 @@ class QueueItem:
     user_plan: str
     user_id: Optional[str]
     created_at: datetime
+    workflow_key: Optional[str] = None
+    prompt: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None
+    project_id: Optional[str] = None
+    organization_id: Optional[str] = None
+    created_by: Optional[str] = None
+    target_instance: Optional[str] = None
+    prompt_id: Optional[str] = None
     status: QueueStatus = QueueStatus.QUEUED
     scheduled_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
@@ -141,9 +149,17 @@ class QueueService:
             "job_id": item.job_id,
             "task_type": item.task_type,
             "backend": item.backend,
+            "workflow_key": item.workflow_key,
+            "prompt": item.prompt,
             "priority": item.priority,
             "user_plan": item.user_plan,
             "user_id": item.user_id,
+            "metadata": item.metadata,
+            "project_id": item.project_id,
+            "organization_id": item.organization_id,
+            "created_by": item.created_by,
+            "target_instance": item.target_instance,
+            "prompt_id": item.prompt_id,
             "status": item.status.value,
             "created_at": item.created_at.isoformat() if item.created_at else None,
             "scheduled_at": item.scheduled_at.isoformat()
@@ -190,9 +206,17 @@ class QueueService:
             job_id=record.id,
             task_type=task_type,
             backend=payload.get("backend") or "still",
+            workflow_key=payload.get("workflow_key"),
+            prompt=payload.get("prompt") if isinstance(payload.get("prompt"), dict) else None,
             priority=int(payload.get("priority") or 0),
             user_plan=payload.get("user_plan") or "free",
             user_id=payload.get("user_id") or record.created_by,
+            metadata=payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {},
+            project_id=payload.get("project_id") or record.project_id,
+            organization_id=payload.get("organization_id") or record.organization_id,
+            created_by=payload.get("created_by") or record.created_by,
+            target_instance=payload.get("target_instance"),
+            prompt_id=payload.get("prompt_id"),
             created_at=record.created_at
             or self._parse_datetime(payload.get("created_at"))
             or datetime.utcnow(),
@@ -249,15 +273,17 @@ class QueueService:
                 recovery_reason=recovery_reason,
             )
             if record is None:
+                organization_id = item.organization_id or QUEUE_RUNTIME_ORGANIZATION_ID
+                project_id = item.project_id or QUEUE_RUNTIME_PROJECT_ID
                 record = ProjectJob(
                     id=item.job_id,
-                    organization_id=QUEUE_RUNTIME_ORGANIZATION_ID,
-                    project_id=QUEUE_RUNTIME_PROJECT_ID,
+                    organization_id=organization_id,
+                    project_id=project_id,
                     job_type=self._queue_job_type(item),
                     status=item.status.value,
                     result_data=payload,
                     error_message=item.error,
-                    created_by=item.user_id,
+                    created_by=item.created_by or item.user_id,
                     created_at=item.created_at,
                     updated_at=datetime.utcnow(),
                     completed_at=item.completed_at,
@@ -265,9 +291,11 @@ class QueueService:
                 session.add(record)
                 await session.flush()
             else:
+                expected_org = item.organization_id or QUEUE_RUNTIME_ORGANIZATION_ID
+                expected_project = item.project_id or QUEUE_RUNTIME_PROJECT_ID
                 if (
-                    record.organization_id != QUEUE_RUNTIME_ORGANIZATION_ID
-                    or record.project_id != QUEUE_RUNTIME_PROJECT_ID
+                    record.organization_id != expected_org
+                    or record.project_id != expected_project
                 ):
                     logger.warning(
                         "Skipping durable queue write for non-queue ProjectJob id=%s",
@@ -278,7 +306,7 @@ class QueueService:
                 record.status = item.status.value
                 record.result_data = payload
                 record.error_message = item.error
-                record.created_by = item.user_id
+                record.created_by = item.created_by or item.user_id
                 record.updated_at = datetime.utcnow()
                 record.completed_at = item.completed_at
 
@@ -294,10 +322,13 @@ class QueueService:
                     event=event,
                     task_type=item.task_type,
                     backend=item.backend,
+                    workflow_key=item.workflow_key,
+                    prompt_keys=sorted((item.prompt or {}).keys()),
                     priority=item.priority,
                     user_plan=item.user_plan,
                     retry_count=item.retry_count,
                     error=item.error,
+                    payload_metadata=item.metadata,
                     recovery_reason=recovery_reason,
                     created_record=created_record,
                 )
@@ -418,15 +449,29 @@ class QueueService:
         priority: int,
         user_plan: str,
         user_id: Optional[str] = None,
+        workflow_key: Optional[str] = None,
+        prompt: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        project_id: Optional[str] = None,
+        organization_id: Optional[str] = None,
+        created_by: Optional[str] = None,
+        target_instance: Optional[str] = None,
     ) -> Optional[QueueItem]:
         if backend == "lab" and user_plan not in self._config.PLAN_LAB_ACCESS:
             item = QueueItem(
                 job_id=job_id,
                 task_type=task_type,
                 backend=backend,
+                workflow_key=workflow_key,
+                prompt=prompt,
                 priority=priority,
                 user_plan=user_plan,
                 user_id=user_id,
+                metadata=metadata or {},
+                project_id=project_id,
+                organization_id=organization_id,
+                created_by=created_by or user_id,
+                target_instance=target_instance,
                 created_at=datetime.utcnow(),
                 status=QueueStatus.REJECTED,
                 error="Plan does not have lab access",
@@ -439,9 +484,16 @@ class QueueService:
             job_id=job_id,
             task_type=task_type,
             backend=backend,
+            workflow_key=workflow_key,
+            prompt=prompt,
             priority=priority,
             user_plan=user_plan,
             user_id=user_id,
+            metadata=metadata or {},
+            project_id=project_id,
+            organization_id=organization_id,
+            created_by=created_by or user_id,
+            target_instance=target_instance,
             created_at=datetime.utcnow(),
         )
 

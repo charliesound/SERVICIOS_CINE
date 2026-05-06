@@ -8,10 +8,12 @@ import json
 import urllib.request
 import urllib.error
 
-BASE = "http://127.0.0.1:8010/api"
+API_BASE = "http://127.0.0.1:8010/api"
+ROOT_BASE = "http://127.0.0.1:8010"
 
-def check(method, path, data=None):
-    url = f"{BASE}{path}"
+def check(method, path, data=None, root=False):
+    base = ROOT_BASE if root else API_BASE
+    url = f"{base}{path}"
     try:
         if data:
             req = urllib.request.Request(
@@ -34,7 +36,7 @@ def main():
     errors = []
 
     # 1. Health check
-    r = check("GET", "/health")
+    r = check("GET", "/health", root=True)
     if r and (getattr(r, 'status', None) == 200 or getattr(r, 'code', None) == 200):
         print("PASS: /health")
     else:

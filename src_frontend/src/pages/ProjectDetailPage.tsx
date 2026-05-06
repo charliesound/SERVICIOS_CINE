@@ -312,12 +312,16 @@ export default function ProjectDetailPage() {
     setError('')
     setActiveTab('analysis')
     try {
+      console.debug('[QA] Analyze start', { projectId, scriptLength: scriptText.length })
       await projectsApi.updateScript(projectId, { script_text: scriptText })
-      await projectsApi.runAnalysis(projectId)
+      console.debug('[QA] Script updated, calling runAnalysis...')
+      const result = await projectsApi.runAnalysis(projectId)
+      console.debug('[QA] Analysis result', result)
       await loadAnalysisState()
       loadJobs()
       loadAssets()
     } catch (err) {
+      console.error('[QA] Analyze failed', err)
       setError(parseApiError('Error al analizar el guion. Asegurate de que el guion tenga contenido.')(err))
       setActiveTab('script')
     } finally {
@@ -333,14 +337,17 @@ export default function ProjectDetailPage() {
     setError('')
     setActiveTab('storyboard')
     try {
+      console.debug('[QA] Storyboard start', { projectId })
       await projectsApi.updateScript(projectId, { script_text: scriptText })
       await projectsApi.runAnalysis(projectId)
+      console.debug('[QA] Calling storyboard generate...')
       const job = await storyboardApi.generate(projectId, {
         mode: 'FULL_SCRIPT',
         shots_per_scene: 3,
         style_preset: 'cinematic_realistic',
         overwrite: true,
       })
+      console.debug('[QA] Storyboard job created', job)
       const storyboardScope = await storyboardApi.getStoryboard(projectId, { mode: 'FULL_SCRIPT' })
       const groupedScenes = storyboardScope.shots.reduce((acc, shot) => {
         const key = shot.scene_number || 0
@@ -433,6 +440,25 @@ export default function ProjectDetailPage() {
     }
     checkStatus()
   }
+
+  // Polling simple para jobs activos cada 2 segundos
+  useEffect(() => {
+    if (!projectId) return
+    const hasActiveJobs = jobs.some(j => j.status === 'pending' || j.status === 'processing')
+    if (!hasActiveJobs) return
+
+    const interval = setInterval(async () => {
+      console.debug('[QA] Polling active jobs...')
+      loadJobs()
+      // También refrescar assets si hay jobs completados recientemente
+      const stillActive = jobs.some(j => j.status === 'pending' || j.status === 'processing')
+      if (!stillActive) {
+        loadAssets()
+        clearInterval(interval)
+      }
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [projectId, jobs])
 
   const TABS: { key: Tab; label: string; count?: number | null }[] = [
     { key: 'script', label: 'Guion' },

@@ -1,6 +1,6 @@
 #!/bin/bash
-# audit_windows_launchers.sh - Audit .bat and .ps1 scripts
-set -e
+# audit_windows_launchers.sh - Audit .bat and .ps1 scripts for robustness
+set -euo pipefail
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -9,75 +9,93 @@ NC='\033[0m'
 
 failures=0
 warnings=0
+passes=0
+
+pass() {
+  echo -e "${GREEN}PASS${NC}: $1"
+  passes=$((passes + 1))
+}
+
+fail_msg() {
+  echo -e "${RED}FAIL${NC}: $1"
+  failures=$((failures + 1))
+}
+
+warn_msg() {
+  echo -e "${YELLOW}WARN${NC}: $1"
+  warnings=$((warnings + 1))
+}
 
 echo "=== Windows Launchers Audit ==="
-echo ""
+echo
 
-# 1. Find scripts
+mapfile -t launchers < <(
+  find /opt/SERVICIOS_CINE \
+    -path /opt/SERVICIOS_CINE/OLD -prune -o \
+    \( -iname "*.bat" -o -iname "*.ps1" \) -print | sort
+)
+
 echo "--- Script Discovery ---"
-found=0
-shopt -s nullglob
-for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1; do
-  if [ -f "$f" ]; then
+if [ "${#launchers[@]}" -eq 0 ]; then
+  warn_msg "No .bat/.ps1 launchers found"
+else
+  for f in "${launchers[@]}"; do
     echo -e "${GREEN}FOUND${NC}: $f"
-    found=1
-  fi
-done
-shopt -u nullglob
-if [ $found -eq 0 ]; then
-  echo "No .bat or .ps1 files found at root."
+  done
 fi
-echo ""
 
-# 2. Check hardcoded paths
+echo
+
 echo "--- Hardcoded Paths Check ---"
-for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1; do
-  if [ -f "$f" ]; then
-    if grep -qE "/opt/SERVICIOS_CINE|Ubuntu" "$f" 2>/dev/null; then
-      echo -e "${YELLOW}WARN${NC}: $f has hardcoded WSL path"
-      ((warnings++))
+if [ "${#launchers[@]}" -eq 0 ]; then
+  warn_msg "No launchers to inspect for hardcoded paths"
+else
+  for f in "${launchers[@]}"; do
+    if grep -qE '/opt/SERVICIOS_CINE|Ubuntu' "$f" 2>/dev/null; then
+      warn_msg "$f has hardcoded WSL path or distro reference"
     else
-      echo -e "${GREEN}PASS${NC}: $f no hardcoded paths"
+      pass "$f avoids hardcoded WSL path/distro"
     fi
-  fi
-done
-echo ""
+  done
+fi
 
-# 3. Check destructive commands
+echo
+
 echo "--- Destructive Commands Check ---"
-for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1; do
-  if [ -f "$f" ]; then
-    if grep -qE "git reset|rm -rf|del /|Remove-Item.*-Recurse" "$f" 2>/dev/null; then
-      echo -e "${RED}FAIL${NC}: $f has destructive commands"
-      ((failures++))
+if [ "${#launchers[@]}" -eq 0 ]; then
+  warn_msg "No launchers to inspect for destructive commands"
+else
+  for f in "${launchers[@]}"; do
+    if grep -qE 'git reset|rm -rf|del /|Remove-Item.*-Recurse' "$f" 2>/dev/null; then
+      fail_msg "$f contains potentially destructive commands"
     else
-      echo -e "${GREEN}PASS${NC}: $f no destructive commands"
+      pass "$f no destructive commands"
     fi
-  fi
-done
-echo ""
+  done
+fi
 
-# 4. Check health integration
+echo
+
 echo "--- Health Check Integration ---"
-for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1; do
-  if [ -f "$f" ]; then
-    if grep -qE "health|curl|Invoke-WebRequest" "$f" 2>/dev/null; then
-      echo -e "${GREEN}PASS${NC}: $f has health check"
+if [ "${#launchers[@]}" -eq 0 ]; then
+  warn_msg "No launchers to inspect for health checks"
+else
+  for f in "${launchers[@]}"; do
+    if grep -qEi 'health|curl|Invoke-WebRequest|Invoke-RestMethod' "$f" 2>/dev/null; then
+      pass "$f has health check"
     else
-      echo -e "${YELLOW}WARN${NC}: $f missing health check"
-      ((warnings++))
+      warn_msg "$f missing health check"
     fi
-  fi
-done
-echo ""
+  done
+fi
+
+echo
 
 echo "=== Summary ==="
-echo -e "${GREEN}PASS${NC}: $(( 4 - failures )) checks passed"
+echo -e "${GREEN}PASS${NC}: $passes checks passed"
 echo -e "${RED}FAIL${NC}: $failures checks failed"
 echo -e "${YELLOW}WARN${NC}: $warnings warnings"
-echo ""
 
-if [ $failures -gt 0 ]; then
+if [ "$failures" -gt 0 ]; then
   exit 1
 fi
-exit 0

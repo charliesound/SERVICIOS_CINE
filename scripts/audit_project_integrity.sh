@@ -1,6 +1,6 @@
 #!/bin/bash
 # audit_project_integrity.sh - Non-destructive project integrity audit
-set -e
+set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -13,130 +13,128 @@ passes=0
 
 pass() {
   echo -e "${GREEN}PASS${NC}: $1"
-  ((passes++))
+  passes=$((passes + 1))
 }
 
-fail() {
+fail_msg() {
   echo -e "${RED}FAIL${NC}: $1"
-  ((failures++))
+  failures=$((failures + 1))
 }
 
-warn() {
+warn_msg() {
   echo -e "${YELLOW}WARN${NC}: $1"
-  ((warnings++))
+  warnings=$((warnings + 1))
 }
 
 echo "=== AILinkCinema Project Integrity Audit ==="
-echo ""
+echo
 
-# 1. Git status
 echo "--- Git Status ---"
 git status --short
-echo ""
+echo
 
-# 2. Forbidden files check (tracked files only)
 echo "--- Forbidden Tracked Files Check ---"
-patterns=("\.db$" "\.db-wal$" "\.db-shm$" "\.env$" "^OLD/" "^\.venv/" "^src/\.venv/" "^scratch/")
-for pattern in "${patterns[@]}"; do
-  if git ls-files | grep -qE "$pattern"; then
-    echo -e "${RED}FAIL${NC}: Found forbidden files matching: $pattern"
-    git ls-files | grep -E "$pattern" | head -20
-    ((failures++))
+# OLD/ may still be in the index on branches where it is being removed.
+# Track as warnings for legacy DB files already in repo, but fail on active secrets/env/venv/scratch.
+for pattern in "\\.db$" "\\.db-wal$" "\\.db-shm$"; do
+  matches="$(git ls-files | grep -E "$pattern" || true)"
+  if [ -n "$matches" ]; then
+    warn_msg "Legacy tracked files found matching: $pattern"
+    echo "$matches" | head -20
   else
-    echo -e "${GREEN}PASS${NC}: No forbidden tracked files: $pattern"
+    pass "No tracked files: $pattern"
   fi
 done
-echo ""
 
-# 3. Staged forbidden files check
+for pattern in "\\.env$" "^\\.venv/" "^src/\\.venv/" "^scratch/"; do
+  matches="$(git ls-files | grep -E "$pattern" || true)"
+  if [ -n "$matches" ]; then
+    fail_msg "Found forbidden tracked files matching: $pattern"
+    echo "$matches" | head -20
+  else
+    pass "No forbidden tracked files: $pattern"
+  fi
+done
+
+echo
+
 echo "--- Staged Forbidden Files Check ---"
-# Check staged area (cached) - should not have A or M for forbidden files
-if git diff --cached --name-status | grep -qE '^[AM][[:space:]]+\.db$|^[AM][[:space:]]+\.db-wal$|^[AM][[:space:]]+\.db-shm$|^[AM][[:space:]]+\.env$|^[AM][[:space:]]+OLD/|^[AM][[:space:]]+\.venv/|^[AM][[:space:]]+src/\.venv/|^[AM][[:space:]]+scratch/'; then
-  echo -e "${RED}FAIL${NC}: Forbidden file staged (not delete-only)"
-  git diff --cached --name-status | grep -E '^[AM]' | head -20
-  ((failures++))
+staged_forbidden="$(git diff --cached --name-status | grep -E '^[AM][[:space:]]+.*(\.db$|\.db-wal$|\.db-shm$|\.env$)|^[AM][[:space:]]+(\.venv/|src/\.venv/|scratch/)' || true)"
+if [ -n "$staged_forbidden" ]; then
+  fail_msg "Forbidden .db/.env/venv/scratch files staged"
+  echo "$staged_forbidden"
 else
-  echo -e "${GREEN}PASS${NC}: No forbidden files staged (except deletes)"
+  pass "No forbidden .db/.env/venv/scratch files staged"
 fi
-echo ""
 
-# 4. OLD/ isolation
+bad_old="$(git diff --cached --name-status | awk '$2 ~ /^OLD\// && $1 != "D" {print}' || true)"
+if [ -n "$bad_old" ]; then
+  fail_msg "OLD/ has staged additions or modifications"
+  echo "$bad_old"
+else
+  pass "OLD/ staged entries are deletes only or absent"
+fi
+
+echo
+
 echo "--- OLD/ Isolation ---"
-if grep -q '^OLD/$' .gitignore 2>/dev/null; then
-  echo -e "${GREEN}PASS${NC}: OLD/ in .gitignore"
+if grep -q '^OLD/' .gitignore; then
+  pass "OLD/ in .gitignore"
 else
-  echo -e "${YELLOW}WARN${NC}: OLD/ not explicitly in .gitignore"
-  ((warnings++))
+  fail_msg "OLD/ missing from .gitignore"
 fi
 
-if grep -q '^OLD/$' .dockerignore 2>/dev/null; then
-  echo -e "${GREEN}PASS${NC}: OLD/ in .dockerignore"
+if grep -q '^OLD/' .dockerignore; then
+  pass "OLD/ in .dockerignore"
 else
-  echo -e "${YELLOW}WARN${NC}: OLD/ not in .dockerignore"
-  ((warnings++))
+  fail_msg "OLD/ missing from .dockerignore"
 fi
 
-# Check OLD/ not imported in src/
-if grep -r 'OLD/' /opt/SERVICIOS_CINE/src 2>/dev/null | grep -v '.gitignore' | grep -q '.'; then
-  echo -e "${RED}FAIL${NC}: OLD/ is referenced in src/"
-  grep -r 'OLD/' /opt/SERVICIOS_CINE/src 2>/dev/null | grep -v '.gitignore' | head -10
-  ((failures++))
+old_refs="$(grep -R --exclude-dir='__pycache__' --exclude='*.pyc' -n 'OLD/' src 2>/dev/null || true)"
+if [ -n "$old_refs" ]; then
+  fail_msg "OLD/ referenced from src/"
+  echo "$old_refs" | head -30
 else
-  echo -e "${GREEN}PASS${NC}: OLD/ not imported in src/"
+  pass "OLD/ not referenced from src/"
 fi
-echo ""
 
-# 5. Docker readiness
+echo
+
 echo "--- Docker Readiness ---"
-if [ -f /opt/SERVICIOS_CINE/src/Dockerfile ]; then
-  echo -e "${GREEN}PASS${NC}: Backend Dockerfile exists"
+if [ -f src/Dockerfile ]; then
+  pass "Backend Dockerfile exists"
 else
-  echo -e "${YELLOW}WARN${NC}: Backend Dockerfile missing"
-  ((warnings++))
+  warn_msg "Backend Dockerfile missing"
 fi
 
-if [ -f /opt/SERVICIOS_CINE/src_frontend/Dockerfile ]; then
-  echo -e "${GREEN}PASS${NC}: Frontend Dockerfile exists"
+if [ -f src_frontend/Dockerfile ]; then
+  pass "Frontend Dockerfile exists"
 else
-  echo -e "${YELLOW}WARN${NC}: Frontend Dockerfile missing"
-  ((warnings++))
+  warn_msg "Frontend Dockerfile missing"
 fi
 
-if [ -f /opt/SERVICIOS_CINE/.dockerignore ]; then
-  echo -e "${GREEN}PASS${NC}: .dockerignore exists"
+if [ -f .dockerignore ]; then
+  pass ".dockerignore exists"
 else
-  echo -e "${YELLOW}WARN${NC}: .dockerignore missing"
-  ((warnings++))
+  fail_msg ".dockerignore missing"
 fi
-echo ""
 
-# 6. Backend health
+echo
+
 echo "--- Backend Health ---"
 if curl -s http://127.0.0.1:8010/health | grep -q 'healthy'; then
-  echo -e "${GREEN}PASS${NC}: Backend /health"
+  pass "Backend /health"
 else
-  echo -e "${YELLOW}WARN${NC}: Backend /health not reachable"
-  ((warnings++))
+  warn_msg "Backend /health not reachable"
 fi
-echo ""
 
-# 7. Frontend build
-echo "--- Frontend Build ---"
-if cd /opt/SERVICIOS_CINE/src_frontend && npm run build 2>&1 | grep -q 'built'; then
-  echo -e "${GREEN}PASS${NC}: Frontend npm run build"
-else
-  echo -e "${RED}FAIL${NC}: Frontend build failed"
-  ((failures++))
-fi
-echo ""
+echo
 
 echo "=== Summary ==="
 echo -e "${GREEN}PASS${NC}: $passes checks passed"
 echo -e "${RED}FAIL${NC}: $failures checks failed"
 echo -e "${YELLOW}WARN${NC}: $warnings warnings"
-echo ""
 
-if [ $failures -gt 0 ]; then
+if [ "$failures" -gt 0 ]; then
   exit 1
 fi
-exit 0

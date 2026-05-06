@@ -44,8 +44,11 @@ Thumbs.db
 .opencode/
 
 # Embedded/legacy repos excluded from root commit
-Web Ailink_Cinema/
+Web AilinkCinema/
 CINE_AI_PLATFORM/.git.embedded-backup/
+
+# OLD/ directory - historical archive, not used in runtime
+OLD/
 # Local OS/cache artifacts
 OLD/local_envs_and_caches/
 *:Zone.Identifier

@@ -1,18 +1,31 @@
 #!/usr/bin/env python3
 """
 Smoke test para verificar que los endpoints que usa la UI existen y devuelven estructura compatible.
+Usa urllib estándar, no requests.
 """
 import sys
 import json
-import requests
+import urllib.request
+import urllib.error
 
 BASE = "http://127.0.0.1:8010/api"
 
-def check(method, path, **kwargs):
+def check(method, path, data=None):
     url = f"{BASE}{path}"
     try:
-        resp = requests.request(method, url, timeout=5, **kwargs)
+        if data:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(data).encode('utf-8'),
+                headers={'Content-Type': 'application/json'},
+                method=method
+            )
+        else:
+            req = urllib.request.Request(url, method=method)
+        resp = urllib.request.urlopen(req, timeout=5)
         return resp
+    except urllib.error.HTTPError as e:
+        return e
     except Exception as e:
         print(f"FAIL: {method} {path} -> {e}")
         return None
@@ -22,27 +35,27 @@ def main():
 
     # 1. Health check
     r = check("GET", "/health")
-    if r and r.status_code == 200:
+    if r and (getattr(r, 'status', None) == 200 or getattr(r, 'code', None) == 200):
         print("PASS: /health")
     else:
         errors.append("/health")
 
     # 2. Projects list (requires auth, but endpoint should exist)
     r = check("GET", "/projects")
-    if r and r.status_code in (200, 401, 403):
-        print(f"PASS: GET /projects (status={r.status_code})")
+    if r and hasattr(r, 'code') and r.code in (200, 401, 403):
+        print(f"PASS: GET /projects (status={r.code})")
     else:
-        errors.append(f"GET /projects status={r.status_code if r else 'N/A'}")
+        errors.append(f"GET /projects")
 
     # 3. Analysis endpoint exists
     r = check("POST", "/projects/TEST/analyze")
-    if r and r.status_code in (401, 403, 404):
-        print(f"PASS: POST /projects/{{id}}/analyze (status={r.status_code})")
+    if r and hasattr(r, 'code') and r.code in (401, 403, 404):
+        print(f"PASS: POST /projects/{{id}}/analyze (status={r.code})")
     else:
-        errors.append(f"POST /projects/{{id}}/analyze status={r.status_code if r else 'N/A'}")
+        errors.append(f"POST /projects/{{id}}/analyze")
 
     # 4. Storyboard generate endpoint exists
-    r = check("POST", "/projects/TEST/storyboard/generate", json={
+    r = check("POST", "/projects/TEST/storyboard/generate", data={
         "mode": "SINGLE_SCENE",
         "scene_start": 1,
         "scene_end": 1,
@@ -51,19 +64,18 @@ def main():
         "shots_per_scene": 1,
         "overwrite": True
     })
-    if r and r.status_code in (401, 403, 404):
-        print(f"PASS: POST /projects/{{id}}/storyboard/generate (status={r.status_code})")
+    if r and hasattr(r, 'code') and r.code in (401, 403, 404):
+        print(f"PASS: POST /projects/{{id}}/storyboard/generate (status={r.code})")
     else:
-        errors.append(f"POST /projects/{{id}}/storyboard/generate status={r.status_code if r else 'N/A'}")
+        errors.append(f"POST /projects/{{id}}/storyboard/generate")
 
     # 5. Jobs list endpoint exists
     r = check("GET", "/projects/TEST/jobs")
-    if r and r.status_code in (200, 401, 403, 404):
-        print(f"PASS: GET /projects/{{id}}/jobs (status={r.status_code})")
-        # Check response structure
-        if r.status_code == 200:
+    if r and hasattr(r, 'code') and r.code in (200, 401, 403, 404):
+        print(f"PASS: GET /projects/{{id}}/jobs (status={r.code})")
+        if r.code == 200:
             try:
-                data = r.json()
+                data = json.loads(r.read().decode('utf-8'))
                 if "jobs" in data:
                     print("  -> Response has 'jobs' field")
                 else:
@@ -71,15 +83,15 @@ def main():
             except:
                 pass
     else:
-        errors.append(f"GET /projects/{{id}}/jobs status={r.status_code if r else 'N/A'}")
+        errors.append(f"GET /projects/{{id}}/jobs")
 
     # 6. Progress endpoint exists
     r = check("GET", "/projects/TEST/jobs/FAKE/progress")
-    if r and r.status_code in (200, 401, 403, 404):
-        print(f"PASS: GET /projects/{{id}}/jobs/{{job_id}}/progress (status={r.status_code})")
-        if r.status_code == 200:
+    if r and hasattr(r, 'code') and r.code in (200, 401, 403, 404):
+        print(f"PASS: GET /projects/{{id}}/jobs/{{job_id}}/progress (status={r.code})")
+        if r.code == 200:
             try:
-                data = r.json()
+                data = json.loads(r.read().decode('utf-8'))
                 required = ["job_id", "status", "progress_percent", "progress_stage", "progress_code"]
                 missing = [f for f in required if f not in data]
                 if not missing:
@@ -89,14 +101,14 @@ def main():
             except:
                 pass
     else:
-        errors.append(f"GET /projects/{{id}}/jobs/{{job_id}}/progress status={r.status_code if r else 'N/A'}")
+        errors.append(f"GET /projects/{{id}}/jobs/{{job_id}}/progress")
 
     # 7. Image assets endpoint exists
     r = check("GET", "/projects/TEST/assets/image-assets")
-    if r and r.status_code in (200, 401, 403, 404):
-        print(f"PASS: GET /projects/{{id}}/assets/image-assets (status={r.status_code})")
+    if r and hasattr(r, 'code') and r.code in (200, 401, 403, 404):
+        print(f"PASS: GET /projects/{{id}}/assets/image-assets (status={r.code})")
     else:
-        errors.append(f"GET /projects/{{id}}/assets/image-assets status={r.status_code if r else 'N/A'}")
+        errors.append(f"GET /projects/{{id}}/assets/image-assets")
 
     print("\n--- Result ---")
     if errors:

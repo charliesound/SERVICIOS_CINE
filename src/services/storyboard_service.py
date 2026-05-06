@@ -164,6 +164,7 @@ class StoryboardService:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
         analysis_data = await self._get_analysis_payload(db, project)
         sequences = self._sequence_blocks_from_analysis(analysis_data)
+
         selected_scenes = self._select_scenes(
             analysis_data=analysis_data,
             sequences=sequences,
@@ -196,6 +197,15 @@ class StoryboardService:
         )
         db.add(job)
         await db.flush()
+
+        await job_tracking_service.update_progress(
+            db, job=job, percent=10, stage="Cargando análisis del proyecto", code="loading_project_analysis"
+        )
+
+        await job_tracking_service.update_progress(
+            db, job=job, percent=20, stage="Seleccionando escenas", code="selecting_scenes"
+        )
+
         await job_tracking_service.record_project_job_event(
             db,
             job=job,
@@ -229,6 +239,11 @@ class StoryboardService:
         render_requests: list[dict[str, Any]] = []
         created_shots = 0
         sequence_offsets: dict[str, int] = {}
+
+        await job_tracking_service.update_progress(
+            db, job=job, percent=35, stage="Generando planos de storyboard", code="generating_storyboard_shots"
+        )
+
         for scene in selected_scenes:
             scene_number = self._scene_number(scene)
             sequence_for_scene = self._sequence_for_scene(scene_number, sequences)
@@ -275,8 +290,16 @@ class StoryboardService:
                 created_shots += 1
             sequence_offsets[sequence_scope_id] = current_offset + len(shot_payloads)
 
+        await job_tracking_service.update_progress(
+            db, job=job, percent=50, stage="Creando prompts visuales", code="creating_visual_prompts"
+        )
+
         render_jobs: list[dict[str, Any]] = []
         render_errors: list[dict[str, Any]] = []
+
+        await job_tracking_service.update_progress(
+            db, job=job, percent=65, stage="Encolando render still", code="enqueueing_still_render"
+        )
 
         result_payload = {
             "project_id": project_id,
@@ -294,6 +317,15 @@ class StoryboardService:
             "render_errors": render_errors,
             "scenes": generated_scenes_payload,
         }
+
+        await job_tracking_service.update_progress(
+            db, job=job, percent=75, stage="Render jobs creados", code="render_job_created"
+        )
+
+        await job_tracking_service.update_progress(
+            db, job=job, percent=100, stage="Estructura de storyboard completada", code="storyboard_structure_completed"
+        )
+
         job.status = "completed"
         job.result_data = json.dumps(result_payload, ensure_ascii=False)
         job.completed_at = datetime.now(timezone.utc)

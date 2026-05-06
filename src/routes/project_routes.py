@@ -94,6 +94,9 @@ class ProjectJobResponse(BaseModel):
     status: str
     result_data: Optional[Any]
     error_message: Optional[str]
+    progress_percent: Optional[int] = None
+    progress_stage: Optional[str] = None
+    progress_code: Optional[str] = None
     created_by: Optional[str]
     created_at: datetime
     updated_at: datetime
@@ -1410,6 +1413,42 @@ async def get_job_by_id(
         "id": job.id,
         "status": job.status,
         "result_data": json.loads(job.result_data) if job.result_data else None,
+    }
+
+
+@router.get("/{project_id}/jobs/{job_id}/progress")
+async def get_job_progress(
+    project_id: str,
+    job_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user_org_id = await _get_user_org_id(current_user.user_id, db)
+    if not user_org_id:
+        raise HTTPException(status_code=403, detail="User has no organization")
+
+    result = await db.execute(
+        select(ProjectJob).where(
+            ProjectJob.id == job_id,
+            ProjectJob.project_id == project_id,
+            ProjectJob.organization_id == user_org_id,
+        )
+    )
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    return {
+        "job_id": str(job.id),
+        "job_type": job.job_type,
+        "status": job.status,
+        "progress_percent": job.progress_percent or 0,
+        "progress_stage": job.progress_stage or job.status,
+        "progress_code": job.progress_code or "unknown",
+        "updated_at": job.updated_at.isoformat() if job.updated_at else None,
     }
 
 

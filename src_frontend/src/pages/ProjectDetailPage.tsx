@@ -11,6 +11,7 @@ import {
   History, RefreshCw, AlertCircle, CheckCircle2, Loader2,
   FileJson, FolderOpen, Download, Crown, Pencil
 } from 'lucide-react'
+import { JobProgress } from '@/components/JobProgress'
 
 type Tab = 'script' | 'analysis' | 'storyboard' | 'history'
 
@@ -86,6 +87,9 @@ interface ProjectJob {
   status: 'pending' | 'processing' | 'completed' | 'failed'
   result_data: Record<string, unknown> | null
   error_message: string | null
+  progress_percent?: number | null
+  progress_stage?: string | null
+  progress_code?: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -1075,6 +1079,19 @@ export default function ProjectDetailPage() {
                               )}
                             </p>
                           </div>
+                          {(isProcessing || isPending) && (
+                            <JobProgress
+                              progress_percent={job.progress_percent}
+                              progress_stage={job.progress_stage}
+                              status={job.status}
+                              job_type={job.job_type}
+                            />
+                          )}
+                          {job.error_message && (
+                            <p className="mt-2 text-xs text-red-400 bg-red-500/10 p-2 rounded">
+                              {job.error_message}
+                            </p>
+                          )}
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {isDone && (
                               <button

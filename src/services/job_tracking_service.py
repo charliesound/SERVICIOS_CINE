@@ -129,6 +129,54 @@ class JobTrackingService:
             created_by=job.created_by,
         )
 
+    async def update_progress(
+        self,
+        db: AsyncSession,
+        *,
+        job: ProjectJob,
+        percent: int,
+        stage: str,
+        code: str,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> None:
+        job.progress_percent = max(0, min(100, percent))
+        job.progress_stage = stage
+        job.progress_code = code
+
+        existing = self._decode_json(job.result_data) or {}
+        if isinstance(existing, dict):
+            existing["progress"] = {
+                "percent": job.progress_percent,
+                "stage": stage,
+                "code": code,
+                "updated_at": datetime.utcnow().isoformat(),
+            }
+            if metadata:
+                existing.setdefault("progress_history", []).append({
+                    "percent": job.progress_percent,
+                    "stage": stage,
+                    "code": code,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "metadata": metadata,
+                })
+            job.result_data = self._encode_json(existing)
+
+        await self.record_project_job_event(
+            db,
+            job=job,
+            event_type="progress_update",
+            status_from=job.status,
+            status_to=job.status,
+            message=f"[{percent}%] {stage}",
+            metadata_json={
+                "progress_percent": job.progress_percent,
+                "progress_stage": stage,
+                "progress_code": code,
+                **(metadata or {}),
+            },
+        )
+        await db.flush()
+
     async def upsert_job_asset(
         self,
         db: AsyncSession,

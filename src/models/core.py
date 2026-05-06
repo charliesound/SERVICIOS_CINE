@@ -115,6 +115,9 @@ class ProjectJob(Base):
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
     result_data: Mapped[Optional[str]] = mapped_column(String(16777215), nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True)
+    progress_percent: Mapped[Optional[int]] = mapped_column(default=0, nullable=True)
+    progress_stage: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    progress_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     created_by: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     created_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, default=datetime.utcnow

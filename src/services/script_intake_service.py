@@ -4,13 +4,14 @@ import json
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.core import Project
+from models.core import Project, ProjectJob
 from models.production import ProductionBreakdown
+from services.job_tracking_service import job_tracking_service
 from services.script_document_classifier import SCENE_HEADING_RE
 
 
@@ -336,12 +337,39 @@ class AnalysisService:
         script_text: str,
         document_context: dict[str, Any] | None = None,
         structured_payload: dict[str, Any] | None = None,
+        job: Optional[ProjectJob] = None,
     ) -> dict[str, Any]:
+        if job:
+            await job_tracking_service.update_progress(
+                db, job=job, percent=10, stage="Validando proyecto y documento", code="validating_project"
+            )
+
         scenes = self.script_intake.parse_script(script_text)
+        if job:
+            await job_tracking_service.update_progress(
+                db, job=job, percent=35, stage="Clasificando documento y escenas", code="classifying_document"
+            )
+
         breakdowns = self.script_intake.build_scene_breakdowns(scenes)
+        if job:
+            await job_tracking_service.update_progress(
+                db, job=job, percent=50, stage="Extrayendo escenas y desglose", code="extracting_scenes"
+            )
+
         department_breakdown = self.script_intake.build_department_breakdown(breakdowns)
+        if job:
+            await job_tracking_service.update_progress(
+                db, job=job, percent=65, stage="Analizando desglose por departamentos", code="analyzing_breakdown"
+            )
+
         document_payload = document_context or {}
         persisted_structured_payload = structured_payload or {}
+
+        sequences = self.script_intake.build_sequence_blocks(scenes)
+        if job:
+            await job_tracking_service.update_progress(
+                db, job=job, percent=80, stage="Construyendo payload estructurado", code="building_structured_payload"
+            )
 
         analysis_data = {
             "project_id": project_id,
@@ -353,7 +381,7 @@ class AnalysisService:
             "scenes": scenes,
             "breakdowns": breakdowns,
             "department_breakdown": department_breakdown,
-            "sequences": self.script_intake.build_sequence_blocks(scenes),
+            "sequences": sequences,
             "metadata": {
                 "total_scenes": len(scenes),
                 "total_characters": department_breakdown["summary"]["total_characters"],
@@ -363,6 +391,11 @@ class AnalysisService:
                 "source_kind": document_payload.get("source_kind"),
             },
         }
+
+        if job:
+            await job_tracking_service.update_progress(
+                db, job=job, percent=90, stage="Persistiendo resultados", code="persisting_results"
+            )
 
         result = await db.execute(
             select(ProductionBreakdown).where(
@@ -388,6 +421,11 @@ class AnalysisService:
             breakdown_id = existing.id
         else:
             db.add(breakdown)
+
+        if job:
+            await job_tracking_service.update_progress(
+                db, job=job, percent=100, stage="Análisis completado", code="completed"
+            )
 
         await db.commit()
 

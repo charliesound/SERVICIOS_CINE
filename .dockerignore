@@ -1,0 +1,52 @@
+# Docker ignore for AILinkCinema/CID
+
+# Python / Virtual envs
+.venv/
+src/.venv/
+env/
+bin/
+include/
+lib/
+share/
+
+# Databases
+*.db
+*.db-wal
+*.db-shm
+data/
+sqlite/
+
+# Old / archives / secrets
+OLD/
+local_envs_and_caches/
+sensitive_review/
+runtime_artifacts/
+smoke_artifacts/
+generated_assets/
+
+# Frontend build artifacts (build inside Docker instead)
+src_frontend/dist/
+src_frontend/node_modules/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Env files (use .env.example as template)
+.env
+.env.*
+
+# Scratch / temp
+scratch/
+tmp/
+temp/
+*.log
+*.pyc
+__pycache__/
+
+# Docker itself
+Dockerfile
+docker-compose*.yml
+.deploy/

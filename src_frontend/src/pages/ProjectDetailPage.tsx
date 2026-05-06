@@ -11,6 +11,7 @@ import {
   History, RefreshCw, AlertCircle, CheckCircle2, Loader2,
   FileJson, FolderOpen, Download, Crown, Pencil
 } from 'lucide-react'
+import { JobProgress } from '@/components/JobProgress'
 
 type Tab = 'script' | 'analysis' | 'storyboard' | 'history'
 
@@ -86,6 +87,9 @@ interface ProjectJob {
   status: 'pending' | 'processing' | 'completed' | 'failed'
   result_data: Record<string, unknown> | null
   error_message: string | null
+  progress_percent?: number | null
+  progress_stage?: string | null
+  progress_code?: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -308,12 +312,16 @@ export default function ProjectDetailPage() {
     setError('')
     setActiveTab('analysis')
     try {
+      console.debug('[QA] Analyze start', { projectId, scriptLength: scriptText.length })
       await projectsApi.updateScript(projectId, { script_text: scriptText })
-      await projectsApi.runAnalysis(projectId)
+      console.debug('[QA] Script updated, calling runAnalysis...')
+      const result = await projectsApi.runAnalysis(projectId)
+      console.debug('[QA] Analysis result', result)
       await loadAnalysisState()
       loadJobs()
       loadAssets()
     } catch (err) {
+      console.error('[QA] Analyze failed', err)
       setError(parseApiError('Error al analizar el guion. Asegurate de que el guion tenga contenido.')(err))
       setActiveTab('script')
     } finally {
@@ -329,14 +337,17 @@ export default function ProjectDetailPage() {
     setError('')
     setActiveTab('storyboard')
     try {
+      console.debug('[QA] Storyboard start', { projectId })
       await projectsApi.updateScript(projectId, { script_text: scriptText })
       await projectsApi.runAnalysis(projectId)
+      console.debug('[QA] Calling storyboard generate...')
       const job = await storyboardApi.generate(projectId, {
         mode: 'FULL_SCRIPT',
         shots_per_scene: 3,
         style_preset: 'cinematic_realistic',
         overwrite: true,
       })
+      console.debug('[QA] Storyboard job created', job)
       const storyboardScope = await storyboardApi.getStoryboard(projectId, { mode: 'FULL_SCRIPT' })
       const groupedScenes = storyboardScope.shots.reduce((acc, shot) => {
         const key = shot.scene_number || 0
@@ -429,6 +440,25 @@ export default function ProjectDetailPage() {
     }
     checkStatus()
   }
+
+  // Polling simple para jobs activos cada 2 segundos
+  useEffect(() => {
+    if (!projectId) return
+    const hasActiveJobs = jobs.some(j => j.status === 'pending' || j.status === 'processing')
+    if (!hasActiveJobs) return
+
+    const interval = setInterval(async () => {
+      console.debug('[QA] Polling active jobs...')
+      loadJobs()
+      // También refrescar assets si hay jobs completados recientemente
+      const stillActive = jobs.some(j => j.status === 'pending' || j.status === 'processing')
+      if (!stillActive) {
+        loadAssets()
+        clearInterval(interval)
+      }
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [projectId, jobs])
 
   const TABS: { key: Tab; label: string; count?: number | null }[] = [
     { key: 'script', label: 'Guion' },
@@ -1075,6 +1105,19 @@ export default function ProjectDetailPage() {
                               )}
                             </p>
                           </div>
+                          {(isProcessing || isPending) && (
+                            <JobProgress
+                              progress_percent={job.progress_percent}
+                              progress_stage={job.progress_stage}
+                              status={job.status}
+                              job_type={job.job_type}
+                            />
+                          )}
+                          {job.error_message && (
+                            <p className="mt-2 text-xs text-red-400 bg-red-500/10 p-2 rounded">
+                              {job.error_message}
+                            </p>
+                          )}
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {isDone && (
                               <button

@@ -4,10 +4,14 @@ import os
 from datetime import datetime, timedelta
 from typing import Dict, Callable, Awaitable, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from .queue_service import queue_service, QueueStatus, QueueItem
 from .instance_registry import registry
 from .comfyui_client_factory import factory, ComfyUIClient
 from .workflow_builder import builder as workflow_builder
+from .job_tracking_service import job_tracking_service
+from database import AsyncSessionLocal
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -130,6 +134,14 @@ class JobScheduler:
             return False, error
 
         queue_service.mark_running(item.job_id)
+        # Update progress: scheduled -> running (15%)
+        async with AsyncSessionLocal() as _db:
+            from models.core import ProjectJob as PJ
+            _job = await _db.get(PJ, item.job_id)
+            if _job:
+                await job_tracking_service.update_progress(
+                    _db, job=_job, percent=15, stage="Programado en scheduler", code="scheduled"
+                )
         logger.info(
             "Starting render job_id=%s task_type=%s backend=%s workflow_key=%s prompt_keys=%s",
             item.job_id,
@@ -141,8 +153,24 @@ class JobScheduler:
 
         try:
             async with client:
+                # Update progress: preparing workflow (30%)
+                async with AsyncSessionLocal() as _db:
+                    from models.core import ProjectJob as PJ
+                    _job = await _db.get(PJ, item.job_id)
+                    if _job:
+                        await job_tracking_service.update_progress(
+                            _db, job=_job, percent=30, stage="Preparando workflow", code="preparing_workflow"
+                        )
                 result = await client.post_prompt(runtime_prompt, item.workflow_key)
                 item.prompt_id = result.get("prompt_id") if isinstance(result, dict) else None
+                # Update progress: submitted to ComfyUI (45%)
+                async with AsyncSessionLocal() as _db:
+                    from models.core import ProjectJob as PJ
+                    _job = await _db.get(PJ, item.job_id)
+                    if _job:
+                        await job_tracking_service.update_progress(
+                            _db, job=_job, percent=45, stage="Enviando a ComfyUI", code="submitting_to_comfyui"
+                        )
                 logger.info(
                     "ComfyUI accepted job_id=%s backend=%s workflow_key=%s status=%s prompt_id=%s",
                     item.job_id,
@@ -174,25 +202,59 @@ class JobScheduler:
         elapsed = 0
         poll_interval = 2
 
+        # Update progress: ComfyUI accepted (60%)
+        async with AsyncSessionLocal() as _db:
+            from models.core import ProjectJob as PJ
+            _job = await _db.get(PJ, item.job_id)
+            if _job:
+                await job_tracking_service.update_progress(
+                    _db, job=_job, percent=60, stage="ComfyUI aceptó el prompt", code="comfyui_prompt_accepted"
+                )
+
         while elapsed < max_wait:
             try:
                 history = await client.get_history(prompt_id)
                 if prompt_id in history:
+                    # Update progress: persisting assets (90%)
+                    async with AsyncSessionLocal() as _db:
+                        from models.core import ProjectJob as PJ
+                        _job = await _db.get(PJ, item.job_id)
+                        if _job:
+                            await job_tracking_service.update_progress(
+                                _db, job=_job, percent=90, stage="Guardando assets generados", code="persisting_assets"
+                            )
                     await self._persist_success_assets(
                         item=item,
                         client=client,
                         prompt_id=prompt_id,
                         history_entry=history[prompt_id],
                     )
+                    # Update progress: completed (100%)
+                    async with AsyncSessionLocal() as _db:
+                        from models.core import ProjectJob as PJ
+                        _job = await _db.get(PJ, item.job_id)
+                        if _job:
+                            await job_tracking_service.update_progress(
+                                _db, job=_job, percent=100, stage="Render completado", code="completed"
+                            )
                     queue_service.mark_succeeded(item.job_id)
                     logger.info(f"Job {item.job_id} succeeded")
                     return
+                # Update progress: waiting for ComfyUI (75%)
+                async with AsyncSessionLocal() as _db:
+                    from models.core import ProjectJob as PJ
+                    _job = await _db.get(PJ, item.job_id)
+                    if _job:
+                        await job_tracking_service.update_progress(
+                            _db, job=_job, percent=75, stage="Esperando respuesta de ComfyUI", code="waiting_for_comfyui"
+                        )
                 await asyncio.sleep(poll_interval)
                 elapsed += poll_interval
             except Exception as e:
                 logger.error(f"Error checking job status: {e}")
                 break
 
+        # On timeout, leave progress where it was
         queue_service.mark_timeout(item.job_id)
         logger.warning(f"Job {item.job_id} timed out")
 

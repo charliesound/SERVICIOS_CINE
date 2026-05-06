@@ -1,6 +1,6 @@
 #!/bin/bash
-# audit_windows_launchers.sh - Audit .bat and .ps1 scripts for robustness
-set -euo pipefail
+# audit_windows_launchers.sh - Audit .bat and .ps1 scripts
+set -e
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -10,79 +10,72 @@ NC='\033[0m'
 failures=0
 warnings=0
 
-check() {
-  local msg="$1"
-  shift
-  if eval "$@" >/dev/null 2>&1; then
-    echo -e "${GREEN}PASS${NC}: $msg"
-  else
-    echo -e "${RED}FAIL${NC}: $msg"
-    ((failures++))
-  fi
-}
-
-warn() {
-  local msg="$1"
-  shift
-  if eval "$@" >/dev/null 2>&1; then
-    echo -e "${GREEN}PASS${NC}: $msg"
-  else
-    echo -e "${YELLOW}WARN${NC}: $msg"
-    ((warnings++))
-  fi
-}
-
 echo "=== Windows Launchers Audit ==="
-echo
+echo ""
 
-# 1. Find all .bat and .ps1
+# 1. Find scripts
 echo "--- Script Discovery ---"
+found=0
 shopt -s nullglob
-for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1 /opt/SERVICIOS_CINE/scripts/*.bat /opt/SERVICIOS_CINE/scripts/*.ps1; do
-  echo -e "${GREEN}FOUND${NC}: $f"
+for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1; do
+  if [ -f "$f" ]; then
+    echo -e "${GREEN}FOUND${NC}: $f"
+    found=1
+  fi
 done
 shopt -u nullglob
-echo
+if [ $found -eq 0 ]; then
+  echo "No .bat or .ps1 files found at root."
+fi
+echo ""
 
-# 2. Check for hardcoded paths
+# 2. Check hardcoded paths
 echo "--- Hardcoded Paths Check ---"
-for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1 2>/dev/null; do
-  if grep -qE "/opt/SERVICIOS_CINE|Ubuntu" "$f" 2>/dev/null; then
-    echo -e "${YELLOW}WARN${NC}: $f has hardcoded WSL path (Ubuntu specific)"
-    ((warnings++))
+for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1; do
+  if [ -f "$f" ]; then
+    if grep -qE "/opt/SERVICIOS_CINE|Ubuntu" "$f" 2>/dev/null; then
+      echo -e "${YELLOW}WARN${NC}: $f has hardcoded WSL path"
+      ((warnings++))
+    else
+      echo -e "${GREEN}PASS${NC}: $f no hardcoded paths"
+    fi
   fi
 done
-echo
+echo ""
 
-# 3. Check for destructive commands
+# 3. Check destructive commands
 echo "--- Destructive Commands Check ---"
-for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1 2>/dev/null; do
-  if grep -qE "git reset|rm -rf|del /|Remove-Item.*-Recurse" "$f" 2>/dev/null; then
-    echo -e "${RED}FAIL${NC}: $f contains potentially destructive commands"
-    ((failures++))
-  else
-    echo -e "${GREEN}PASS${NC}: $f no destructive commands"
+for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1; do
+  if [ -f "$f" ]; then
+    if grep -qE "git reset|rm -rf|del /|Remove-Item.*-Recurse" "$f" 2>/dev/null; then
+      echo -e "${RED}FAIL${NC}: $f has destructive commands"
+      ((failures++))
+    else
+      echo -e "${GREEN}PASS${NC}: $f no destructive commands"
+    fi
   fi
 done
-echo
+echo ""
 
-# 4. Check if scripts reference health checks
+# 4. Check health integration
 echo "--- Health Check Integration ---"
-for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1 2>/dev/null; do
-  if grep -qE "health|curl|Invoke-WebRequest" "$f" 2>/dev/null; then
-    echo -e "${GREEN}PASS${NC}: $f has health check"
-  else
-    echo -e "${YELLOW}WARN${NC}: $f missing health check"
-    ((warnings++))
+for f in /opt/SERVICIOS_CINE/*.bat /opt/SERVICIOS_CINE/*.ps1; do
+  if [ -f "$f" ]; then
+    if grep -qE "health|curl|Invoke-WebRequest" "$f" 2>/dev/null; then
+      echo -e "${GREEN}PASS${NC}: $f has health check"
+    else
+      echo -e "${YELLOW}WARN${NC}: $f missing health check"
+      ((warnings++))
+    fi
   fi
 done
-echo
+echo ""
 
 echo "=== Summary ==="
-echo -e "${GREEN}PASS${NC}: $(( 5 - failures )) checks passed"
+echo -e "${GREEN}PASS${NC}: $(( 4 - failures )) checks passed"
 echo -e "${RED}FAIL${NC}: $failures checks failed"
 echo -e "${YELLOW}WARN${NC}: $warnings warnings"
-echo
+echo ""
 
 if [ $failures -gt 0 ]; then
   exit 1

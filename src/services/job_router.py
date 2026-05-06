@@ -135,12 +135,11 @@ class JobRouter:
             target_backend=backend_key,
             user_id=job_request.user_id,
             user_plan=job_request.user_plan,
+            status=JobStatus.QUEUED,
         )
 
         async with self._job_lock:
             self._jobs[job_id] = job
-
-        self.registry.increment_jobs(backend_key)
 
         return JobResponse(
             job_id=job_id,

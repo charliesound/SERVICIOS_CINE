@@ -205,6 +205,18 @@ class ProjectScriptAnalysisFlowIntegrationTest(unittest.TestCase):
         self.assertTrue(summary_json["summary"])
         self.assertGreaterEqual(summary_json["scenes_count"], 2)
         self.assertGreater(summary_json["sequences_count"], 0)
+        
+        # Verify persistence truncation in DB
+        connection = sqlite3.connect(str(TEST_DB_PATH))
+        try:
+            row = connection.execute(
+                "SELECT script_text FROM production_breakdowns WHERE project_id = ?",
+                (PROJECT_ID,),
+            ).fetchone()
+            self.assertIsNotNone(row)
+            self.assertLessEqual(len(row[0]), 10000)
+        finally:
+            connection.close()
 
 
 if __name__ == "__main__":

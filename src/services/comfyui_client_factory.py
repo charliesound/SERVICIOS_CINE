@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 import aiohttp
 import asyncio
+import json
 import os
 from enum import Enum
 
@@ -109,7 +110,18 @@ class ComfyUIClient:
         endpoint = f"{self.base_url}/prompt"
         payload = {"prompt": prompt, "workflow_key": workflow_key}
         async with self.session.post(endpoint, json=payload) as resp:
-            result = await resp.json()
+            raw_body = await resp.text()
+            try:
+                result = json.loads(raw_body) if raw_body else {}
+            except json.JSONDecodeError:
+                result = {"raw_body": raw_body}
+            if resp.status >= 400:
+                detail = result.get("error") if isinstance(result, dict) else result
+                raise RuntimeError(
+                    f"ComfyUI prompt failed ({resp.status}): {detail or raw_body or 'unknown error'}"
+                )
+            if isinstance(result, dict):
+                result["_http_status"] = resp.status
             return result
 
     async def get_history(self, prompt_id: str) -> Dict[str, Any]:

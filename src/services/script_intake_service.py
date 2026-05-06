@@ -90,7 +90,7 @@ class ScriptIntakeService:
             return None
 
         match = re.match(
-            r"^\s*(?:(?P<number>\d{1,4})[\.:\)-]?\s+)?(?P<int_ext>INT\.?|EXT\.?|INT/EXT\.?|I/E\.?)\s+(?P<body>.+?)\s*$",
+            r"^\s*(?:(?P<number>\d{1,4})[\.:\)-]?\s+)?(?P<int_ext>INT\.?|INTERIOR|EXT\.?|EXTERIOR|INT/EXT\.?|I/E\.?)\s+(?P<body>.+?)\s*$",
             line,
             re.IGNORECASE,
         )

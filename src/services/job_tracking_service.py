@@ -402,10 +402,13 @@ class JobTrackingService:
         event: str,
         task_type: str,
         backend: str,
+        workflow_key: Optional[str],
+        prompt_keys: Optional[list[str]],
         priority: int,
         user_plan: str,
         retry_count: int,
         error: Optional[str] = None,
+        payload_metadata: Optional[dict[str, Any]] = None,
         recovery_reason: Optional[str] = None,
         created_record: bool = False,
     ) -> None:
@@ -416,6 +419,12 @@ class JobTrackingService:
             "user_plan": user_plan,
             "retry_count": retry_count,
         }
+        if workflow_key:
+            metadata["workflow_key"] = workflow_key
+        if prompt_keys:
+            metadata["prompt_keys"] = prompt_keys
+        if payload_metadata:
+            metadata["payload_metadata"] = payload_metadata
         if error:
             metadata["error"] = error
         if recovery_reason:

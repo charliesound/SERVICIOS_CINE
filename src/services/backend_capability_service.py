@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 import aiohttp
 import asyncio
@@ -116,6 +116,16 @@ class BackendCapabilityService:
     _instance = None
     _cache: Dict[str, BackendCapabilities] = {}
     _cache_ttl = 60
+    _health_timeout_seconds = 5
+    _discovery_timeout_seconds = 5
+    _model_endpoints = {
+        "checkpoints": "/models/checkpoints",
+        "loras": "/models/loras",
+        "vae": "/models/vae",
+        "controlnet": "/models/controlnet",
+        "upscale_models": "/models/upscale_models",
+        "embeddings": "/models/embeddings",
+    }
 
     def __new__(cls):
         if cls._instance is None:
@@ -154,37 +164,210 @@ class BackendCapabilityService:
             last_check=datetime.utcnow()
         )
 
-        start_time = asyncio.get_event_loop().time()
+        start_time = asyncio.get_running_loop().time()
 
-        try:
-            async with aiohttp.ClientSession() as session:
-                base_url = backend.base_url
+        async with aiohttp.ClientSession() as session:
+            base_url = backend.base_url.rstrip("/")
+            health_data = await self._check_basic_health(
+                session,
+                base_url,
+                capabilities,
+            )
+            if health_data is not None:
+                model_result = await self._discover_models(session, base_url)
+                node_result = await self._discover_nodes(session, base_url)
+                capabilities.models = model_result["models"]
+                capabilities.nodes = node_result["nodes"]
+                capabilities.warnings.extend(model_result["warnings"])
+                capabilities.warnings.extend(node_result["warnings"])
 
-                async with session.get(f"{base_url}/system_stats", timeout=5) as resp:
-                    if resp.status == 200:
-                        capabilities.healthy = True
-                        data = await resp.json()
-                        capabilities.comfyui_version = data.get("version")
-
-                async with session.get(f"{base_url}/api/object_info", timeout=10) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        nodes, models = self._parse_object_info(data)
-                        capabilities.nodes = nodes
-                        capabilities.models = models
-
-        except asyncio.TimeoutError:
-            capabilities.warnings.append("Timeout connecting to backend")
-        except Exception as e:
-            capabilities.warnings.append(f"Connection error: {str(e)}")
-
-        end_time = asyncio.get_event_loop().time()
+        end_time = asyncio.get_running_loop().time()
         capabilities.response_time_ms = (end_time - start_time) * 1000
-
-        capabilities.detected_capabilities = self._infer_capabilities(capabilities)
+        capabilities.detected_capabilities = self._merge_capabilities(
+            backend.capabilities,
+            self._infer_capabilities(capabilities),
+        )
 
         self._cache[backend_key] = capabilities
         return capabilities
+
+    async def _check_basic_health(
+        self,
+        session: aiohttp.ClientSession,
+        base_url: str,
+        capabilities: BackendCapabilities,
+    ) -> Optional[Dict[str, Any]]:
+        try:
+            async with session.get(
+                f"{base_url}/system_stats",
+                timeout=self._health_timeout_seconds,
+            ) as resp:
+                if resp.status != 200:
+                    capabilities.warnings.append(f"system_stats http {resp.status}")
+                    return None
+                data = await resp.json(content_type=None)
+        except asyncio.TimeoutError:
+            capabilities.warnings.append("system_stats timeout")
+            return None
+        except aiohttp.ClientError:
+            capabilities.warnings.append("system_stats connection error")
+            return None
+        except Exception as exc:
+            capabilities.warnings.append(f"system_stats error: {str(exc)}")
+            return None
+
+        capabilities.healthy = True
+        capabilities.comfyui_version = self._extract_comfyui_version(data)
+        return data
+
+    async def _discover_models(
+        self,
+        session: aiohttp.ClientSession,
+        base_url: str,
+    ) -> Dict[str, Any]:
+        models: List[ModelInfo] = []
+        warnings: List[str] = []
+        seen: set[tuple[str, str]] = set()
+        for model_type, path in self._model_endpoints.items():
+            result = await self._fetch_model_endpoint(session, base_url, model_type, path)
+            warnings.extend(result["warnings"])
+            for model in result["models"]:
+                key = (model.model_type, model.model_name)
+                if key in seen:
+                    continue
+                seen.add(key)
+                models.append(model)
+        return {"models": models, "warnings": warnings}
+
+    async def _fetch_model_endpoint(
+        self,
+        session: aiohttp.ClientSession,
+        base_url: str,
+        model_type: str,
+        path: str,
+    ) -> Dict[str, Any]:
+        endpoint_name = path.rsplit("/", 1)[-1]
+        try:
+            async with session.get(
+                f"{base_url}{path}",
+                timeout=self._discovery_timeout_seconds,
+            ) as resp:
+                if resp.status != 200:
+                    return {
+                        "models": [],
+                        "warnings": [f"{endpoint_name} discovery http {resp.status}"],
+                    }
+                data = await resp.json(content_type=None)
+        except asyncio.TimeoutError:
+            return {
+                "models": [],
+                "warnings": [f"{endpoint_name} discovery timeout"],
+            }
+        except aiohttp.ClientError:
+            return {
+                "models": [],
+                "warnings": [f"{endpoint_name} discovery connection error"],
+            }
+        except Exception as exc:
+            return {
+                "models": [],
+                "warnings": [f"{endpoint_name} discovery error: {str(exc)}"],
+            }
+
+        models = [
+            ModelInfo(
+                model_name=item.get("name") or item.get("model_name") or "unknown",
+                model_type=model_type,
+                loaded=bool(item.get("loaded", False)),
+                size_mb=self._coerce_size_mb(item.get("size_mb") or item.get("size")),
+            )
+            for item in self._normalize_model_entries(data)
+        ]
+        return {"models": models, "warnings": []}
+
+    async def _discover_nodes(
+        self,
+        session: aiohttp.ClientSession,
+        base_url: str,
+    ) -> Dict[str, Any]:
+        try:
+            async with session.get(
+                f"{base_url}/object_info",
+                timeout=self._discovery_timeout_seconds,
+            ) as resp:
+                if resp.status != 200:
+                    return {
+                        "nodes": [],
+                        "warnings": [f"object_info discovery http {resp.status}"],
+                    }
+                data = await resp.json(content_type=None)
+        except asyncio.TimeoutError:
+            return {"nodes": [], "warnings": ["object_info discovery timeout"]}
+        except aiohttp.ClientError:
+            return {"nodes": [], "warnings": ["object_info discovery connection error"]}
+        except Exception as exc:
+            return {
+                "nodes": [],
+                "warnings": [f"object_info discovery error: {str(exc)}"],
+            }
+
+        nodes, _models = self._parse_object_info(data)
+        return {"nodes": nodes, "warnings": []}
+
+    def _extract_comfyui_version(self, data: Dict[str, Any]) -> Optional[str]:
+        system = data.get("system") if isinstance(data, dict) else None
+        if isinstance(system, dict):
+            version = system.get("comfyui_version")
+            if version:
+                return str(version)
+        version = data.get("version") if isinstance(data, dict) else None
+        return str(version) if version else None
+
+    def _normalize_model_entries(self, data: Any) -> List[Dict[str, Any]]:
+        if isinstance(data, list):
+            return [self._normalize_model_entry(item) for item in data]
+        if isinstance(data, dict):
+            if isinstance(data.get("models"), list):
+                return [self._normalize_model_entry(item) for item in data["models"]]
+            normalized: List[Dict[str, Any]] = []
+            for key, value in data.items():
+                if isinstance(value, dict):
+                    normalized.append({"name": key, **value})
+                elif isinstance(value, list):
+                    normalized.extend(self._normalize_model_entries(value))
+                else:
+                    normalized.append({"name": str(value or key)})
+            return normalized
+        if data is None:
+            return []
+        return [{"name": str(data)}]
+
+    def _normalize_model_entry(self, item: Any) -> Dict[str, Any]:
+        if isinstance(item, dict):
+            if any(key in item for key in ("name", "model_name", "filename", "title")):
+                return {
+                    "name": item.get("name")
+                    or item.get("model_name")
+                    or item.get("filename")
+                    or item.get("title"),
+                    "loaded": item.get("loaded", False),
+                    "size_mb": item.get("size_mb") or item.get("size"),
+                }
+            if len(item) == 1:
+                key, value = next(iter(item.items()))
+                if isinstance(value, dict):
+                    return {"name": key, **value}
+                return {"name": value or key}
+            return {"name": str(item)}
+        return {"name": str(item)}
+
+    def _coerce_size_mb(self, value: Any) -> Optional[float]:
+        if value is None:
+            return None
+        try:
+            return round(float(value), 2)
+        except (TypeError, ValueError):
+            return None
 
     def _parse_object_info(self, data: Dict) -> tuple[List[NodeInfo], List[ModelInfo]]:
         nodes = []
@@ -253,6 +436,17 @@ class BackendCapabilityService:
             capabilities.append("speech_to_text")
 
         return capabilities
+
+    def _merge_capabilities(
+        self,
+        configured_capabilities: List[str],
+        inferred_capabilities: List[str],
+    ) -> List[str]:
+        merged: List[str] = []
+        for capability in [*(configured_capabilities or []), *inferred_capabilities]:
+            if capability and capability not in merged:
+                merged.append(capability)
+        return merged
 
     async def detect_all_capabilities(self, force: bool = False) -> Dict[str, Any]:
         backends = ["still", "video", "dubbing", "lab"]

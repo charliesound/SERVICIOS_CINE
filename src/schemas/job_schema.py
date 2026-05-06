@@ -45,6 +45,8 @@ class JobSubmit(BaseModel):
     user_plan: str
     priority: int = Field(default=5, ge=0, le=10)
     target_instance: Optional[str] = None
+    parameters: Optional[Dict[str, Any]] = None
+    project_id: Optional[str] = None
 
 
 class JobResponse(BaseModel):

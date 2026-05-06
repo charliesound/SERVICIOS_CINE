@@ -6,7 +6,8 @@ import yaml
 
 _CONFIG_CACHE: Dict[str, Any] | None = None
 _SECURITY_VALIDATED = False
-DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./ailinkcinema_s2.db"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_DATABASE_URL = f"sqlite+aiosqlite:///{PROJECT_ROOT / 'ailinkcinema_s2.db'}"
 MIN_SECRET_LENGTH = 32
 STRICT_RUNTIME_ENVS = {"demo", "production"}
 KNOWN_INSECURE_SECRETS = {
@@ -171,6 +172,10 @@ def get_base_dir() -> Path:
     return Path(__file__).resolve().parent
 
 
+def get_project_root() -> Path:
+    return get_base_dir().parent
+
+
 def get_config_path() -> Path:
     return get_base_dir() / "config" / "config.yaml"
 
@@ -219,7 +224,17 @@ def get_database_url() -> str:
 
     configured_url = get_database_config().get("url")
     if isinstance(configured_url, str) and configured_url.strip():
-        return configured_url.strip()
+        url = configured_url.strip()
+        # Resolve relative SQLite paths against project root
+        if url.startswith("sqlite+aiosqlite:///") or url.startswith("sqlite:///"):
+            # Extract path after the scheme
+            prefix = "sqlite+aiosqlite:///" if url.startswith("sqlite+aiosqlite:///") else "sqlite:///"
+            db_path = url[len(prefix):]
+            if not os.path.isabs(db_path):
+                # Relative path: resolve against project root
+                db_path = str(get_project_root() / db_path)
+                return f"{prefix}{db_path}"
+        return url
 
     return DEFAULT_DATABASE_URL
 

@@ -15,6 +15,7 @@ from models.production import ProductionBreakdown
 from models.storyboard import StoryboardShot
 from schemas.auth_schema import TenantContext
 from services.job_tracking_service import job_tracking_service
+from services.render_job_service import render_job_service
 from services.script_intake_service import script_intake_service
 
 
@@ -54,6 +55,7 @@ class StoryboardService:
         "TRACKING": ["runs", "walks", "follows", "chases", "moves"],
         "POV": ["sees", "notices", "discovers", "finds"],
     }
+    RENDER_ENABLED_STYLES = {"cinematic_realistic", "storyboard_realistic"}
 
     async def get_storyboard_options(
         self,
@@ -224,6 +226,7 @@ class StoryboardService:
             )
 
         generated_scenes_payload: list[dict[str, Any]] = []
+        render_requests: list[dict[str, Any]] = []
         created_shots = 0
         sequence_offsets: dict[str, int] = {}
         for scene in selected_scenes:
@@ -242,25 +245,38 @@ class StoryboardService:
                 }
             )
             for offset, shot in enumerate(shot_payloads, start=1):
-                db.add(
-                    StoryboardShot(
-                        project_id=project_id,
-                        organization_id=tenant.organization_id,
-                        sequence_id=sequence_for_scene.sequence_id if sequence_for_scene else None,
-                        sequence_order=current_offset + offset,
-                        scene_number=scene_number,
-                        scene_heading=scene.get("heading") or f"ESCENA {scene_number}",
-                        narrative_text=shot["description"],
-                        shot_type=shot["shot_type"],
-                        visual_mode=style_preset,
-                        generation_mode=mode,
-                        generation_job_id=str(job.id),
-                        version=version,
-                        is_active=True,
-                    )
+                shot_record = StoryboardShot(
+                    project_id=project_id,
+                    organization_id=tenant.organization_id,
+                    sequence_id=sequence_for_scene.sequence_id if sequence_for_scene else None,
+                    sequence_order=current_offset + offset,
+                    scene_number=scene_number,
+                    scene_heading=scene.get("heading") or f"ESCENA {scene_number}",
+                    narrative_text=shot["description"],
+                    shot_type=shot["shot_type"],
+                    visual_mode=style_preset,
+                    generation_mode=mode,
+                    generation_job_id=str(job.id),
+                    version=version,
+                    is_active=True,
+                )
+                db.add(shot_record)
+                await db.flush()
+                render_requests.append(
+                    {
+                        "shot_id": str(shot_record.id),
+                        "scene": scene,
+                        "shot_payload": shot,
+                        "scene_number": shot_record.scene_number,
+                        "shot_type": shot_record.shot_type,
+                        "prompt_summary": shot_record.narrative_text,
+                    }
                 )
                 created_shots += 1
             sequence_offsets[sequence_scope_id] = current_offset + len(shot_payloads)
+
+        render_jobs: list[dict[str, Any]] = []
+        render_errors: list[dict[str, Any]] = []
 
         result_payload = {
             "project_id": project_id,
@@ -274,6 +290,8 @@ class StoryboardService:
             "version": version,
             "total_scenes": len(generated_scenes_payload),
             "total_shots": created_shots,
+            "render_jobs": render_jobs,
+            "render_errors": render_errors,
             "scenes": generated_scenes_payload,
         }
         job.status = "completed"
@@ -307,6 +325,69 @@ class StoryboardService:
             },
         )
         await db.commit()
+
+        if self._should_enqueue_render(mode=mode, style_preset=style_preset, shots_per_scene=shots_per_scene):
+            for request in render_requests[:1]:
+                prompt_payload = self._build_render_prompt_payload(
+                    project=project,
+                    scene=request["scene"],
+                    shot_payload=request["shot_payload"],
+                    style_preset=style_preset,
+                    shot_id=request["shot_id"],
+                    scene_number=request["scene_number"],
+                )
+                response, queue_item = await render_job_service.submit_job(
+                    tenant=tenant,
+                    task_type="still",
+                    workflow_key="still_storyboard_frame",
+                    prompt=prompt_payload,
+                    priority=5,
+                    target_instance="still",
+                    project_id=project_id,
+                    metadata={
+                        "storyboard_shot_id": request["shot_id"],
+                        "storyboard_job_id": str(job.id),
+                        "storyboard_mode": mode,
+                        "style_preset": style_preset,
+                        "scene_number": request["scene_number"],
+                        "shot_type": request["shot_type"],
+                        "prompt_summary": request["prompt_summary"],
+                    },
+                )
+                if response.status.value == "queued" and queue_item is not None:
+                    render_jobs.append(
+                        {
+                            "job_id": response.job_id,
+                            "backend": response.backend,
+                            "workflow_key": "still_storyboard_frame",
+                            "storyboard_shot_id": request["shot_id"],
+                        }
+                    )
+                else:
+                    render_errors.append(
+                        {
+                            "storyboard_shot_id": request["shot_id"],
+                            "error": response.error or "Render queue unavailable",
+                        }
+                    )
+
+            if render_jobs or render_errors:
+                result_payload["render_jobs"] = render_jobs
+                result_payload["render_errors"] = render_errors
+                job.result_data = json.dumps(result_payload, ensure_ascii=False)
+                await job_tracking_service.upsert_job_asset(
+                    db,
+                    organization_id=tenant.organization_id,
+                    project_id=project_id,
+                    job_id=str(job.id),
+                    file_name=f"{project.name}_storyboard_v{version}.json",
+                    content_ref=f"virtual://{project_id}/{job.id}/storyboard_v{version}.json",
+                    asset_source="script_storyboard",
+                    metadata_json=result_payload,
+                    created_by=tenant.user_id,
+                )
+                await db.commit()
+
         return {
             "job_id": str(job.id),
             "status": "completed",
@@ -319,6 +400,8 @@ class StoryboardService:
             "total_shots": created_shots,
             "created_at": job.created_at,
             "generated_assets": [str(asset.id)],
+            "render_jobs": render_jobs,
+            "render_errors": render_errors,
             "scenes": generated_scenes_payload,
         }
 
@@ -571,6 +654,55 @@ class StoryboardService:
         if len(text.split()) <= 6:
             return "CU"
         return "MS"
+
+    def _should_enqueue_render(self, *, mode: str, style_preset: str, shots_per_scene: int) -> bool:
+        return (
+            mode == StoryboardGenerationMode.SINGLE_SCENE
+            and shots_per_scene == 1
+            and style_preset in self.RENDER_ENABLED_STYLES
+        )
+
+    def _build_render_prompt_payload(
+        self,
+        *,
+        project: Project,
+        scene: dict[str, Any],
+        shot_payload: dict[str, Any],
+        style_preset: str,
+        shot_id: str,
+        scene_number: Optional[int],
+    ) -> dict[str, Any]:
+        scene_heading = scene.get("heading") or "Scene"
+        location = scene.get("location") or "unknown location"
+        time_of_day = scene.get("time_of_day") or "unspecified time"
+        shot_type = shot_payload.get("shot_type") or "MS"
+        tone = "cinematic realistic storyboard frame"
+        project_context = str(project.description or "").strip()
+        prompt_parts = [
+            tone,
+            f"{shot_type} shot",
+            shot_payload.get("description") or shot_record.narrative_text or scene_heading,
+            f"Scene heading: {scene_heading}",
+            f"Location: {location}",
+            f"Time of day: {time_of_day}",
+            f"Project: {project.name}",
+        ]
+        if project_context:
+            prompt_parts.append(f"Project context: {project_context}")
+        return {
+            "preset_key": "storyboard_realistic",
+            "prompt": ", ".join(part for part in prompt_parts if part),
+            "negative_prompt": "blurry, low quality, distorted, deformed hands, extra fingers, watermark, text, logo",
+            "checkpoint": "Realistic_Vision_V2.0.safetensors",
+            "width": 1024,
+            "height": 576,
+            "steps": 20,
+            "cfg": 7.0,
+            "sampler_name": "euler",
+            "scheduler": "normal",
+            "filename_prefix": f"storyboard_{str(project.id)[:8]}_{int(scene_number or 0):03d}_{shot_id[:8]}",
+            "style_preset": style_preset,
+        }
 
     def _scene_number(self, scene: dict[str, Any]) -> int:
         for key in ("scene_number", "scene_no"):

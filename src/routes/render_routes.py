@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.job_schema import JobSubmit, JobResponse, JobDetail
+from services.render_job_service import render_job_service
 from services.job_router import router as job_router, JobRequest
 from services.queue_service import queue_service
 from services.job_tracking_service import job_tracking_service
@@ -35,13 +36,13 @@ def _sanitize_job_error(status: str, error: Optional[str]) -> Optional[str]:
 
 
 async def _get_owned_job_resources(job_id: str, user_id: str):
-    job = await job_router.get_job_status(job_id)
-    if job and job.user_id == user_id:
-        return job, None
-
     queue_item = queue_service.get_status(job_id)
     if queue_item and queue_item.user_id == user_id:
         return None, queue_item
+
+    job = await job_router.get_job_status(job_id)
+    if job and job.user_id == user_id:
+        return job, None
 
     return None, None
 
@@ -107,18 +108,17 @@ async def create_job(
             detail="Current plan does not allow this render task",
         )
 
-    job_request = JobRequest(
-        task_type=job_data.task_type,
-        workflow_key=job_data.workflow_key,
-        prompt=job_data.prompt,
-        priority=job_data.priority,
-        target_instance=job_data.target_instance,
-        user_id=tenant.user_id,
-        user_plan=tenant.plan,
-    )
-
     try:
-        response = await job_router.route_job(job_request)
+        response, queue_item = await render_job_service.submit_job(
+            tenant=tenant,
+            task_type=job_data.task_type,
+            workflow_key=job_data.workflow_key,
+            prompt=job_data.prompt,
+            priority=job_data.priority,
+            target_instance=job_data.target_instance,
+            project_id=job_data.project_id,
+            metadata=job_data.parameters,
+        )
     except Exception:
         raise HTTPException(status_code=503, detail="Render service unavailable")
 
@@ -131,19 +131,8 @@ async def create_job(
             )
         raise HTTPException(status_code=503, detail="Render service unavailable")
 
-    if response.status.value == "queued":
-        queue_item = queue_service.enqueue(
-            job_id=response.job_id,
-            task_type=job_data.task_type,
-            backend=response.backend,
-            priority=job_data.priority + plan.priority_score
-            if plan
-            else job_data.priority,
-            user_plan=tenant.plan,
-            user_id=tenant.user_id,
-        )
-        if queue_item is None:
-            raise HTTPException(status_code=503, detail="Render queue unavailable")
+    if response.status.value == "queued" and queue_item is None:
+        raise HTTPException(status_code=503, detail="Render queue unavailable")
 
     return _public_job_response(response)
 
@@ -163,7 +152,7 @@ async def get_job(
         return JobDetail(
             job_id=queue_item.job_id,
             task_type=queue_item.task_type,
-            workflow_key="",
+            workflow_key=queue_item.workflow_key or "",
             status=queue_item.status.value,
             backend=queue_item.backend,
             created_at=queue_item.created_at.isoformat(),

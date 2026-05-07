@@ -10,6 +10,7 @@ from services.comfyui_model_inventory_service import ComfyUIInventoryError
 from services.concept_art_service import (
     build_project_concept_art_compile_preview,
     build_project_key_visual_compile_preview,
+    list_dry_run_jobs,
 )
 
 
@@ -24,7 +25,7 @@ async def project_concept_art_compile_dry_run(
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> dict:
     try:
-        return await build_project_concept_art_compile_preview(
+        result = await build_project_concept_art_compile_preview(
             db,
             project_id=project_id,
             tenant=tenant,
@@ -36,6 +37,8 @@ async def project_concept_art_compile_dry_run(
             cfg=payload.get("cfg"),
             seed=payload.get("seed"),
         )
+        await db.commit()
+        return result
     except HTTPException:
         raise
     except ValueError as exc:
@@ -61,7 +64,7 @@ async def project_key_visual_compile_dry_run(
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> dict:
     try:
-        return await build_project_key_visual_compile_preview(
+        result = await build_project_key_visual_compile_preview(
             db,
             project_id=project_id,
             tenant=tenant,
@@ -73,6 +76,8 @@ async def project_key_visual_compile_dry_run(
             cfg=payload.get("cfg"),
             seed=payload.get("seed"),
         )
+        await db.commit()
+        return result
     except HTTPException:
         raise
     except ValueError as exc:
@@ -88,3 +93,17 @@ async def project_key_visual_compile_dry_run(
         ) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/{project_id}/concept-art/jobs")
+async def project_concept_art_list_jobs(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> dict:
+    jobs = await list_dry_run_jobs(db, project_id=project_id, tenant=tenant)
+    return {
+        "status": "ok",
+        "project_id": project_id,
+        "jobs": jobs,
+    }

@@ -51,6 +51,7 @@ def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
     demo_config = data.setdefault("demo", {})
     features_config = data.setdefault("features", {})
     queue_config = data.setdefault("queue", {})
+    llm_config = data.setdefault("llm", {})
 
     app_env = os.getenv("APP_ENV", str(app_config.get("env", "production"))).strip()
     app_config["env"] = app_env
@@ -106,6 +107,41 @@ def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
     queue_config["production_ready"] = (
         queue_config["persistence_mode"].lower() != "memory"
     )
+
+    llm_config["provider"] = os.getenv(
+        "LLM_PROVIDER",
+        str(llm_config.get("provider", "ollama")),
+    ).strip()
+    llm_config["ollama_base_url"] = os.getenv(
+        "OLLAMA_BASE_URL",
+        str(llm_config.get("ollama_base_url", "http://127.0.0.1:11434")),
+    ).strip()
+    llm_config["ollama_model"] = os.getenv(
+        "OLLAMA_MODEL",
+        str(llm_config.get("ollama_model", "qwen2.5:14b")),
+    ).strip()
+    llm_config["timeout_seconds"] = int(
+        os.getenv("LLM_TIMEOUT_SECONDS", str(llm_config.get("timeout_seconds", 120)))
+    )
+    llm_config["temperature"] = float(
+        os.getenv("LLM_TEMPERATURE", str(llm_config.get("temperature", 0.2)))
+    )
+    llm_config["script_analysis_provider"] = os.getenv(
+        "SCRIPT_ANALYSIS_PROVIDER",
+        str(llm_config.get("script_analysis_provider", llm_config["provider"])),
+    ).strip()
+    llm_config["storyboard_prompt_provider"] = os.getenv(
+        "STORYBOARD_PROMPT_PROVIDER",
+        str(llm_config.get("storyboard_prompt_provider", llm_config["provider"])),
+    ).strip()
+    llm_config["pipeline_builder_provider"] = os.getenv(
+        "PIPELINE_BUILDER_PROVIDER",
+        str(llm_config.get("pipeline_builder_provider", llm_config["provider"])),
+    ).strip()
+    llm_enable_fallback = _get_env_bool("LLM_ENABLE_FALLBACK")
+    if llm_enable_fallback is None:
+        llm_enable_fallback = bool(llm_config.get("enable_fallback", True))
+    llm_config["enable_fallback"] = llm_enable_fallback
 
     return data
 
@@ -243,6 +279,23 @@ def get_database_settings() -> Dict[str, Any]:
     database_config = dict(get_database_config())
     database_config["url"] = get_database_url()
     return database_config
+
+
+def get_llm_settings() -> Dict[str, Any]:
+    llm_config = get_config().get("llm", {})
+    if not isinstance(llm_config, dict):
+        raise ValueError("config.llm debe ser un objeto YAML")
+    return {
+        "provider": str(llm_config.get("provider", os.getenv("LLM_PROVIDER", "ollama"))).strip(),
+        "ollama_base_url": str(llm_config.get("ollama_base_url", os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"))).strip(),
+        "ollama_model": str(llm_config.get("ollama_model", os.getenv("OLLAMA_MODEL", "qwen2.5:14b"))).strip(),
+        "timeout_seconds": int(llm_config.get("timeout_seconds", os.getenv("LLM_TIMEOUT_SECONDS", 120))),
+        "temperature": float(llm_config.get("temperature", os.getenv("LLM_TEMPERATURE", 0.2))),
+        "script_analysis_provider": str(llm_config.get("script_analysis_provider", os.getenv("SCRIPT_ANALYSIS_PROVIDER", "ollama"))).strip(),
+        "storyboard_prompt_provider": str(llm_config.get("storyboard_prompt_provider", os.getenv("STORYBOARD_PROMPT_PROVIDER", "ollama"))).strip(),
+        "pipeline_builder_provider": str(llm_config.get("pipeline_builder_provider", os.getenv("PIPELINE_BUILDER_PROVIDER", "ollama"))).strip(),
+        "enable_fallback": bool(llm_config.get("enable_fallback", True)),
+    }
 
 
 config = load_config()

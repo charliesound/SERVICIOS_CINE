@@ -138,22 +138,22 @@ export const pipelineModeToPreset: Record<PipelineMode, string> = {
 
 export const pipelineApi = {
   listPresets: async (): Promise<PipelinePresetListResponse> => {
-    const { data } = await api.get<PipelinePresetListResponse>('/pipelines/presets')
+    const { data } = await api.get<PipelinePresetListResponse>('/workflows/presets')
     return data
   },
 
   generate: async (payload: PipelineGeneratePayload): Promise<PipelineGenerateResponse> => {
-    const { data } = await api.post<PipelineGenerateResponse>('/pipelines/generate', payload)
+    const { data } = await api.post<PipelineGenerateResponse>('/workflows/plan', payload)
     return data
   },
 
   validate: async (payload: PipelineValidatePayload): Promise<PipelineValidationResponse> => {
-    const { data } = await api.post<PipelineValidationResponse>('/pipelines/validate', payload)
+    const { data } = await api.post<PipelineValidationResponse>('/workflows/validate', payload)
     return data
   },
 
   execute: async (payload: PipelineExecutePayload): Promise<PipelineExecuteResponse> => {
-    const { data } = await api.post<PipelineExecuteResponse>('/pipelines/execute', payload)
+    const { data } = await api.post<PipelineExecuteResponse>('/workflows/build', payload)
     return data
   },
 

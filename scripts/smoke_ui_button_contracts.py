@@ -7,6 +7,7 @@ import sys
 import json
 import urllib.request
 import urllib.error
+from pathlib import Path
 
 API_BASE = "http://127.0.0.1:8010/api"
 ROOT_BASE = "http://127.0.0.1:8010"
@@ -34,6 +35,48 @@ def check(method, path, data=None, root=False):
 
 def main():
     errors = []
+
+    # 0. Frontend project detail wiring contract
+    project_detail_path = Path("/opt/SERVICIOS_CINE/src_frontend/src/pages/ProjectDetailPage.tsx")
+    storyboard_selector_path = Path("/opt/SERVICIOS_CINE/src_frontend/src/components/storyboard/StoryboardSequenceSelectorModal.tsx")
+    try:
+        project_detail_source = project_detail_path.read_text(encoding="utf-8")
+        storyboard_selector_source = storyboard_selector_path.read_text(encoding="utf-8") if storyboard_selector_path.exists() else ""
+        project_detail_checks = {
+            'handler handleAnalyzeScript': 'handleAnalyzeScript' in project_detail_source,
+            'handler handleGenerateStoryboard': 'handleGenerateStoryboard' in project_detail_source,
+            'handler upload script': 'handleScriptFileChange' in project_detail_source,
+            'texto "Analizar guion"': 'Analizar guion' in project_detail_source,
+            'texto "Generar storyboard"': 'Generar storyboard' in project_detail_source,
+            'texto "Subir archivo de guion"': 'Subir archivo de guion' in project_detail_source,
+            'selector "Seleccionar secuencias"': 'Seleccionar secuencias para storyboard' in storyboard_selector_source,
+            'accion "Generar seleccionadas"': 'Generar seleccionadas' in storyboard_selector_source,
+            'accion "Generar storyboard completo"': 'Generar storyboard completo' in storyboard_selector_source,
+            'accion "Seleccionar todo"': 'Seleccionar todo' in storyboard_selector_source,
+            'checkbox de selección': 'type="checkbox"' in storyboard_selector_source,
+            'input type file': 'type="file"' in project_detail_source,
+            'accept txt md': '.txt,.md' in project_detail_source,
+            'onClick analizar': 'onClick={handleAnalyzeScript}' in project_detail_source,
+            'onClick storyboard selector': 'onClick={handleGenerateStoryboard}' in project_detail_source,
+            'confirmación de selección': 'confirmGenerateStoryboardSelection' in project_detail_source,
+            'llamada storyboardApi.generate': 'storyboardApi.generate' in project_detail_source,
+            'llamada storyboardApi.getStoryboard': 'storyboardApi.getStoryboard' in project_detail_source,
+            'llamada API análisis': 'projectsApi.analyze' in project_detail_source,
+            'estado isStoryboarding': 'isStoryboarding' in project_detail_source,
+            'estado isAnalyzing': 'isAnalyzing' in project_detail_source,
+            'estado isUploadingScript': 'isUploadingScript' in project_detail_source,
+            'progreso analysisProgress': 'analysisProgress' in project_detail_source,
+            'progreso storyboardProgress': 'storyboardProgress' in project_detail_source,
+            'type button principal': 'type="button"' in project_detail_source,
+            'polling o JobProgress': 'JobProgress' in project_detail_source or 'setInterval' in project_detail_source,
+        }
+        missing_project_detail_checks = [label for label, ok in project_detail_checks.items() if not ok]
+        if missing_project_detail_checks:
+            errors.append(f"ProjectDetailPage wiring missing: {', '.join(missing_project_detail_checks)}")
+        else:
+            print("PASS: ProjectDetailPage UI contract")
+    except Exception as exc:
+        errors.append(f"ProjectDetailPage wiring unreadable: {exc}")
 
     # 1. Health check
     r = check("GET", "/health", root=True)

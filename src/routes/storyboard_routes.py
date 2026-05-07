@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -64,13 +64,16 @@ async def generate_storyboard(
         db,
         project_id=project_id,
         tenant=tenant,
-        mode=(payload.mode or StoryboardGenerationMode.FULL_SCRIPT).upper(),
+        mode=(payload.generation_mode or payload.mode or StoryboardGenerationMode.FULL_SCRIPT).upper(),
         sequence_id=payload.sequence_id,
+        sequence_ids=payload.sequence_ids,
         scene_start=payload.scene_start,
         scene_end=payload.scene_end,
         selected_scene_ids=payload.selected_scene_ids,
+        scene_numbers=payload.scene_numbers,
         style_preset=payload.style_preset,
         shots_per_scene=max(1, min(payload.shots_per_scene, 8)),
+        max_scenes=payload.max_scenes,
         overwrite=payload.overwrite,
     )
     return StoryboardJobResponse(**{k: result[k] for k in StoryboardJobResponse.model_fields.keys()})

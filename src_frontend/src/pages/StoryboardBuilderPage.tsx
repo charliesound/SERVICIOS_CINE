@@ -7,7 +7,7 @@ import { AssetPickerModal } from '@/components/storyboard/AssetPickerModal'
 import type {
   DirtyShot,
   StoryboardGeneratePayload,
-  StoryboardGenerationMode,
+  StoryboardSelectionMode,
   StoryboardSequence,
   StoryboardShot,
 } from '@/types/storyboard'
@@ -16,11 +16,12 @@ function toDirtyShot(shot: StoryboardShot): DirtyShot {
   return { ...shot, isDirty: false }
 }
 
-const MODE_OPTIONS: Array<{ value: StoryboardGenerationMode; label: string }> = [
+const MODE_OPTIONS: Array<{ value: StoryboardSelectionMode; label: string }> = [
   { value: 'FULL_SCRIPT', label: 'Guion completo' },
   { value: 'SEQUENCE', label: 'Por secuencia' },
   { value: 'SCENE_RANGE', label: 'Por rango de escenas' },
   { value: 'SINGLE_SCENE', label: 'Escena individual' },
+  { value: 'SELECTED_SCENES', label: 'Escenas seleccionadas' },
 ]
 
 export default function StoryboardBuilderPage() {
@@ -33,13 +34,14 @@ export default function StoryboardBuilderPage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null)
   const [sequences, setSequences] = useState<StoryboardSequence[]>([])
-  const [selectedMode, setSelectedMode] = useState<StoryboardGenerationMode>('FULL_SCRIPT')
+  const [selectedMode, setSelectedMode] = useState<StoryboardSelectionMode>('FULL_SCRIPT')
   const [selectedSequenceId, setSelectedSequenceId] = useState<string>('')
   const [sceneStart, setSceneStart] = useState('1')
   const [sceneEnd, setSceneEnd] = useState('1')
   const [singleScene, setSingleScene] = useState('1')
   const [stylePreset, setStylePreset] = useState('cinematic_realistic')
   const [shotsPerScene, setShotsPerScene] = useState(3)
+  const [selectedSceneNumbers, setSelectedSceneNumbers] = useState<string>('1')
 
   const fetchSequences = useCallback(async () => {
     if (!projectId) return
@@ -106,22 +108,30 @@ export default function StoryboardBuilderPage() {
           shots_per_scene: shotsPerScene,
         })
       } else {
+        const sceneNumbers = selectedMode === 'SELECTED_SCENES'
+          ? selectedSceneNumbers.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n))
+          : selectedMode === 'SINGLE_SCENE' ? [Number(singleScene)] : []
+        
         const payload: StoryboardGeneratePayload = {
           mode: selectedMode,
-          sequence_id: selectedMode === 'SEQUENCE' ? selectedSequenceId : null,
-          scene_start: selectedMode === 'SCENE_RANGE' ? Number(sceneStart) : selectedMode === 'SINGLE_SCENE' ? Number(singleScene) : null,
-          scene_end: selectedMode === 'SCENE_RANGE' ? Number(sceneEnd) : selectedMode === 'SINGLE_SCENE' ? Number(singleScene) : null,
-          selected_scene_ids: selectedMode === 'SINGLE_SCENE' ? [singleScene] : [],
+          generation_mode: selectedMode,
+          sequence_id: selectedMode === 'SEQUENCE' ? selectedSequenceId : undefined,
+          scene_start: selectedMode === 'SCENE_RANGE' ? Number(sceneStart) : undefined,
+          scene_end: selectedMode === 'SCENE_RANGE' ? Number(sceneEnd) : undefined,
+          selected_scene_ids: selectedMode === 'SINGLE_SCENE' ? [singleScene] : undefined,
+          scene_numbers: sceneNumbers.length > 0 ? sceneNumbers : undefined,
           style_preset: stylePreset,
+          visual_mode: stylePreset,
           shots_per_scene: shotsPerScene,
+          max_scenes: selectedMode === 'FULL_SCRIPT' ? 3 : sceneNumbers.length || undefined,
           overwrite: true,
         }
         await storyboardApi.generate(projectId, payload)
       }
       await Promise.all([fetchShots(), fetchSequences()])
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      setError('Failed to generate storyboard')
+      setError(err?.response?.data?.detail || 'Error al generar storyboard')
     } finally {
       setIsGenerating(false)
     }
@@ -273,7 +283,7 @@ export default function StoryboardBuilderPage() {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
               <label className="label">Modo</label>
-              <select className="input" value={selectedMode} onChange={(event) => setSelectedMode(event.target.value as StoryboardGenerationMode)}>
+              <select className="input" value={selectedMode} onChange={(event) => setSelectedMode(event.target.value as StoryboardSelectionMode)}>
                 {MODE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -315,6 +325,18 @@ export default function StoryboardBuilderPage() {
               <div>
                 <label className="label">Escena</label>
                 <input className="input" type="number" min={1} value={singleScene} onChange={(event) => setSingleScene(event.target.value)} />
+              </div>
+            )}
+            {selectedMode === 'SELECTED_SCENES' && (
+              <div className="md:col-span-2">
+                <label className="label">Números de escena (separados por coma)</label>
+                <input
+                  className="input"
+                  value={selectedSceneNumbers}
+                  onChange={(event) => setSelectedSceneNumbers(event.target.value)}
+                  placeholder="Ej: 1, 3, 5"
+                />
+                <p className="text-xs text-slate-400 mt-1">Ingresa los números de escena separados por comas</p>
               </div>
             )}
           </div>

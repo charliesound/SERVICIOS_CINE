@@ -1,6 +1,7 @@
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import json
+import os
 import random
 import uuid
 from sqlalchemy import select
@@ -42,8 +43,8 @@ class DemoService:
         },
         "demo_admin": {
             "username": "demo_admin",
-            "email": "admin@servicios-cine.com",
-            "password": "admin123",
+            "email": os.getenv("DEMO_ADMIN_EMAIL", "demo-admin@localhost"),
+            "password": os.getenv("DEMO_ADMIN_PASSWORD", "DemoAdmin123!"),
             "plan": "enterprise",
             "role": "admin",
         },

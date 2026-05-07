@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import json
 import logging
 import os
 from typing import Any
-from urllib import request as _urlreq
 
 from services.comfyui_api_client_service import (
     DEFAULT_CLIENT_ID,
@@ -271,6 +269,9 @@ class ComfyUIStoryboardRenderService:
             "checkpoint_used": prepared["pipeline"].get("checkpoint"),
             "prompt_id": prompt_id,
             "client_id": DEFAULT_CLIENT_ID,
+            "status_url": f"/api/ops/comfyui/prompt/{prompt_id}/status",
+            "poll_available": True,
+            "poll_hint": "Use status_url to poll ComfyUI prompt status.",
             "pipeline": prepared["pipeline"],
             "compiled_workflow_validation": compiled_preview.get("validation"),
             "comfyui_submit_response": submit_response,

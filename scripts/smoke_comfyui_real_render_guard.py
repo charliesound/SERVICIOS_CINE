@@ -69,7 +69,9 @@ def dump_body(value: Any) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--render", action="store_true")
+    parser.add_argument("--poll", action="store_true")
     parser.add_argument("--allow-skip-render", action="store_true")
+    parser.add_argument("--allow-timeout", action="store_true")
     parser.add_argument("--backend-url", default=DEFAULT_BACKEND_URL)
     parser.add_argument("--comfyui-url", default=DEFAULT_COMFYUI_URL)
     args = parser.parse_args()
@@ -129,6 +131,26 @@ def main() -> int:
             "queued render returned unexpected checkpoint",
         )
         ensure(queued_body.get("workflow_id") == "cinematic_storyboard_sdxl", "queued render returned unexpected workflow_id")
+
+        if args.poll:
+            status_url = queued_body.get("status_url")
+            ensure(bool(status_url), "queued render did not return status_url")
+            status_code, poll_body = request_json(
+                args.backend_url,
+                f"{status_url}?poll=true&timeout_seconds=30",
+            )
+            ensure(status_code == 200, f"poll status failed with HTTP {status_code}: {dump_body(poll_body)}")
+            ensure(bool(poll_body.get("prompt_id")), "poll response did not return prompt_id")
+            if poll_body.get("status") == "timeout":
+                if args.allow_timeout:
+                    print("SKIPPED prompt completion: poll timed out within 30s")
+                    print(json.dumps(poll_body, ensure_ascii=True, indent=2))
+                    return 0
+                raise RuntimeError("prompt polling timed out before completion")
+            ensure(poll_body.get("status") == "completed", "prompt polling did not complete successfully")
+            outputs = poll_body.get("outputs", {})
+            ensure(isinstance(outputs, dict), "poll outputs is not a dict")
+
         print("SMOKE PASS")
         print(json.dumps(queued_body, ensure_ascii=True, indent=2))
         return 0

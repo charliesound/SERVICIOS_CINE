@@ -15,6 +15,7 @@ from services.comfyui_search_service import (
     search_workflows as search_comfyui_workflows,
 )
 from services.comfyui_pipeline_builder_service import build_optimal_comfyui_pipeline
+from services.comfyui_api_client_service import get_prompt_status, poll_prompt_until_complete
 from services.comfyui_storyboard_render_service import comfyui_storyboard_render_service
 from services.comfyui_workflow_template_service import build_compiled_workflow_preview
 
@@ -326,6 +327,23 @@ async def storyboard_render(payload: dict):
                 "message": str(exc),
             },
         ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/comfyui/prompt/{prompt_id}/status")
+async def get_comfyui_prompt_status_endpoint(
+    prompt_id: str,
+    poll: bool = Query(default=False),
+    timeout_seconds: int = Query(default=30),
+):
+    try:
+        if poll:
+            return poll_prompt_until_complete(
+                prompt_id=prompt_id,
+                timeout_seconds=timeout_seconds,
+            )
+        return get_prompt_status(prompt_id)
     except RuntimeError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

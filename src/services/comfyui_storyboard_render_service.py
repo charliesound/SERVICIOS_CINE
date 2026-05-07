@@ -11,6 +11,7 @@ from services.comfyui_pipeline_builder_service import (
     build_storyboard_pipeline_plan,
     validate_selected_scenes,
 )
+from services.comfyui_workflow_template_service import build_compiled_workflow_preview
 
 
 logger = logging.getLogger(__name__)
@@ -189,12 +190,29 @@ class ComfyUIStoryboardRenderService:
             negative_prompt=payload.get("negative_prompt"),
         )
 
+        try:
+            compiled_workflow_preview = build_compiled_workflow_preview(
+                plan=plan,
+                prompt=payload.get("prompt"),
+                negative_prompt=payload.get("negative_prompt"),
+            )
+        except Exception as exc:
+            compiled_workflow_preview = {
+                "status": "error",
+                "workflow_id": self._extract_pipeline(plan).get("workflow_id"),
+                "ready_for_comfyui_prompt": False,
+                "requires_template_mapping": True,
+                "template_mapping_status": "failed",
+                "error": str(exc),
+            }
+
         return {
             "status": "planned",
             "dry_run": True,
             "project_id": project_id,
             "pipeline": self._extract_pipeline(plan),
             "comfyui_payload_preview": comfyui_payload_preview,
+            "compiled_workflow_preview": compiled_workflow_preview,
         }
 
     def render_storyboard_with_plan(

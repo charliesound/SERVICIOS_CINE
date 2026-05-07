@@ -18,6 +18,7 @@ from schemas.storyboard_schema import (
 )
 from services.comfyui_model_inventory_service import ComfyUIInventoryError
 from services.comfyui_pipeline_builder_service import build_storyboard_pipeline_plan
+from services.comfyui_storyboard_render_service import comfyui_storyboard_render_service
 from services.storyboard_service import storyboard_service, StoryboardGenerationMode
 
 
@@ -85,6 +86,30 @@ async def plan_storyboard_comfyui_pipeline(
     try:
         await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
         return build_storyboard_pipeline_plan(project_id=project_id, payload=payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/{project_id}/storyboard/comfyui/render-dry-run")
+async def storyboard_comfyui_render_dry_run(
+    project_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> dict:
+    try:
+        await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+        request_payload = dict(payload)
+        request_payload["dry_run"] = True
+        request_payload["render"] = False
+        return comfyui_storyboard_render_service.render_storyboard_with_plan(
+            project_id=project_id,
+            payload=request_payload,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ComfyUIInventoryError as exc:

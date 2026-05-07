@@ -15,6 +15,7 @@ from services.comfyui_search_service import (
     search_workflows as search_comfyui_workflows,
 )
 from services.comfyui_pipeline_builder_service import build_optimal_comfyui_pipeline
+from services.comfyui_storyboard_render_service import comfyui_storyboard_render_service
 
 router = APIRouter(prefix="/api/ops", tags=["ops"])
 
@@ -266,6 +267,31 @@ async def get_comfyui_recommendation(
 async def build_comfyui_pipeline(payload: dict):
     try:
         return build_optimal_comfyui_pipeline(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "inventory_found": False,
+                "message": str(exc),
+            },
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/comfyui/storyboard/render-dry-run")
+async def storyboard_render_dry_run(payload: dict):
+    try:
+        request_payload = dict(payload)
+        request_payload["dry_run"] = True
+        request_payload["render"] = False
+        return comfyui_storyboard_render_service.render_storyboard_with_plan(
+            project_id=None,
+            payload=request_payload,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ComfyUIInventoryError as exc:

@@ -90,6 +90,25 @@ def validate_compiled_preview(compiled_preview: dict[str, Any]) -> None:
     ensure(".env" not in dumped, ".env leaked into compiled workflow")
 
 
+def validate_render_contract(body: dict[str, Any], *, expected_status: str = "planned") -> dict[str, Any]:
+    ensure(body.get("status") == expected_status, f"render contract status is not {expected_status}")
+    if expected_status == "planned":
+        ensure(body.get("dry_run") is True, "render contract dry_run flag is not true")
+    pipeline = body.get("pipeline", {})
+    validate_pipeline(pipeline)
+    ensure(pipeline.get("workflow_id") == "cinematic_storyboard_sdxl", "unexpected workflow_id in render contract")
+    ensure(
+        pipeline.get("checkpoint") == "Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors",
+        "unexpected checkpoint in render contract",
+    )
+    ensure(isinstance(body.get("comfyui_payload_preview"), dict), "comfyui_payload_preview is missing")
+    compiled_preview = body.get("compiled_workflow_preview", {})
+    validate_compiled_preview(compiled_preview)
+    validation = compiled_preview.get("validation", {})
+    ensure(validation.get("node_count") == 7, "compiled_workflow_preview.validation.node_count is not 7")
+    return pipeline
+
+
 def run_ops_baseline(base_url: str) -> None:
     payload = {
         "task_type": "storyboard",
@@ -220,17 +239,20 @@ def main() -> int:
             token=token,
         )
         ensure(status == 200, f"project storyboard render dry-run failed with HTTP {status}: {dump_body(render_body)}")
-        ensure(render_body.get("status") == "planned", "project storyboard render dry-run status is not planned")
-        ensure(render_body.get("dry_run") is True, "project storyboard render dry-run flag is not true")
-        pipeline = render_body.get("pipeline", {})
-        validate_pipeline(pipeline)
-        ensure(pipeline.get("workflow_id") == "cinematic_storyboard_sdxl", "unexpected workflow_id in project render dry-run")
-        ensure(
-            pipeline.get("checkpoint") == "Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors",
-            "unexpected checkpoint in project render dry-run",
+        pipeline = validate_render_contract(render_body)
+
+        status, comfyui_render_body = make_request(
+            base_url,
+            f"/api/projects/{project_id}/storyboard/comfyui/render-dry-run",
+            method="POST",
+            payload=render_dry_payload,
+            token=token,
         )
-        ensure(isinstance(render_body.get("comfyui_payload_preview"), dict), "comfyui_payload_preview is missing")
-        validate_compiled_preview(render_body.get("compiled_workflow_preview", {}))
+        ensure(
+            status == 200,
+            f"project storyboard comfyui render-dry-run failed with HTTP {status}: {dump_body(comfyui_render_body)}",
+        )
+        validate_render_contract(comfyui_render_body)
 
         if not args.skip_real_block_check:
             real_payload = {
@@ -255,6 +277,7 @@ def main() -> int:
 
         print("PASS project storyboard plan")
         print("PASS project storyboard render dry-run compile")
+        print("PASS project storyboard comfyui render dry-run")
         if args.skip_real_block_check:
             print("SKIPPED real render blocked check: --skip-real-block-check requested")
         else:

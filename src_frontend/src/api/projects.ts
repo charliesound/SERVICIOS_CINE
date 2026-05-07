@@ -26,6 +26,9 @@ export interface ProjectJob {
   status: 'pending' | 'processing' | 'completed' | 'failed'
   result_data: Record<string, unknown> | null
   error_message: string | null
+  progress_percent?: number | null
+  progress_stage?: string | null
+  progress_code?: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -50,6 +53,32 @@ export const projectsApi = {
 
   updateScript: async (projectId: string, payload: UpdateScriptPayload): Promise<Project> => {
     const { data } = await api.put<Project>(`/projects/${projectId}/script`, payload)
+    return data
+  },
+
+  intakeScript: async (projectId: string, payload: UpdateScriptPayload): Promise<{ project_id: string; message: string }> => {
+    const { data } = await api.post<{ project_id: string; message: string }>(`/projects/${projectId}/intake/script`, payload)
+    return data
+  },
+
+  uploadScriptDocument: async (
+    projectId: string,
+    file: File,
+    documentType = 'script',
+    visibilityScope = 'project',
+  ): Promise<{
+    id: string
+    file_name: string
+    mime_type: string
+    extracted_text?: string | null
+    upload_status: string
+    error_message?: string | null
+  }> => {
+    const formData = new FormData()
+    formData.append('document_type', documentType)
+    formData.append('visibility_scope', visibilityScope)
+    formData.append('file', file)
+    const { data } = await api.post(`/projects/${projectId}/documents`, formData)
     return data
   },
 

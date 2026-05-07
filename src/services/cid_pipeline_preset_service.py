@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Optional
 
+from services.llm.llm_service import llm_service
+
 
 class CIDPipelinePresetService:
     def __init__(self) -> None:
@@ -251,6 +253,38 @@ class CIDPipelinePresetService:
 
         detected_key = self._detect_preset_from_intent(intent or "")
         return deepcopy(self.get_preset(detected_key) or self._presets[0])
+
+    async def recommend_preset_with_llm(
+        self,
+        *,
+        preset_key: Optional[str],
+        intent: Optional[str],
+        context: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        if preset_key:
+            return self.resolve_preset(preset_key, intent)
+
+        if llm_service.is_enabled_for("pipeline_builder_provider"):
+            try:
+                recommendation = await llm_service.recommend_pipeline_preset(
+                    intent=intent or "",
+                    context=context or {},
+                    presets=self.list_presets(),
+                )
+                preset = self.get_preset(recommendation.preset_key)
+                if preset is not None:
+                    enriched = deepcopy(preset)
+                    enriched["llm_recommendation"] = recommendation.model_dump()
+                    if recommendation.workflow_key:
+                        enriched["default_workflow_key"] = recommendation.workflow_key
+                    if recommendation.backend:
+                        enriched["default_backend"] = recommendation.backend
+                    return enriched
+            except Exception as exc:
+                if not llm_service.should_fallback(exc):
+                    raise
+
+        return self.resolve_preset(preset_key, intent)
 
     def _detect_preset_from_intent(self, intent: str) -> str:
         normalized_intent = intent.strip().lower()

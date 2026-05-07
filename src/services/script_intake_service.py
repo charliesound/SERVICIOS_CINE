@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.core import Project, ProjectJob
 from models.production import ProductionBreakdown
+from services.llm.llm_service import ScriptAnalysisLLMOutput, llm_service
 from services.job_tracking_service import job_tracking_service
 from services.script_document_classifier import SCENE_HEADING_RE
 
@@ -329,6 +330,16 @@ class AnalysisService:
     def __init__(self):
         self.script_intake = ScriptIntakeService()
 
+    async def _run_llm_analysis_or_none(self, script_text: str) -> ScriptAnalysisLLMOutput | None:
+        if not llm_service.is_enabled_for("script_analysis_provider"):
+            return None
+        try:
+            return await llm_service.analyze_script(script_text)
+        except Exception as exc:
+            if llm_service.should_fallback(exc):
+                return None
+            raise
+
     async def run_analysis(
         self,
         db: AsyncSession,
@@ -344,7 +355,8 @@ class AnalysisService:
                 db, job=job, percent=10, stage="Validando proyecto y documento", code="validating_project"
             )
 
-        scenes = self.script_intake.parse_script(script_text)
+        llm_output = await self._run_llm_analysis_or_none(script_text)
+        scenes = [scene.model_dump() for scene in llm_output.scenes] if llm_output and llm_output.scenes else self.script_intake.parse_script(script_text)
         if job:
             await job_tracking_service.update_progress(
                 db, job=job, percent=35, stage="Clasificando documento y escenas", code="classifying_document"
@@ -365,7 +377,7 @@ class AnalysisService:
         document_payload = document_context or {}
         persisted_structured_payload = structured_payload or {}
 
-        sequences = self.script_intake.build_sequence_blocks(scenes)
+        sequences = [sequence.model_dump() for sequence in llm_output.sequences] if llm_output and llm_output.sequences else self.script_intake.build_sequence_blocks(scenes)
         if job:
             await job_tracking_service.update_progress(
                 db, job=job, percent=80, stage="Construyendo payload estructurado", code="building_structured_payload"
@@ -378,6 +390,11 @@ class AnalysisService:
             "document": document_payload,
             "structured_payload": persisted_structured_payload,
             "summary": department_breakdown,
+            "tone": llm_output.tone if llm_output else "",
+            "llm_summary": llm_output.summary if llm_output else "",
+            "production_needs": llm_output.production_needs if llm_output else [],
+            "storyboard_suggestions": llm_output.storyboard_suggestions if llm_output else [],
+            "analysis_engine": "ollama" if llm_output else "heuristic",
             "scenes": scenes,
             "breakdowns": breakdowns,
             "department_breakdown": department_breakdown,
@@ -389,6 +406,7 @@ class AnalysisService:
                 "doc_type": document_payload.get("doc_type"),
                 "confidence_score": document_payload.get("confidence_score"),
                 "source_kind": document_payload.get("source_kind"),
+                "analysis_engine": "ollama" if llm_output else "heuristic",
             },
         }
 

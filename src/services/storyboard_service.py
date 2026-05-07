@@ -15,6 +15,7 @@ from models.production import ProductionBreakdown
 from models.storyboard import StoryboardShot
 from schemas.auth_schema import TenantContext
 from services.job_tracking_service import job_tracking_service
+from services.llm.llm_service import StoryboardPromptLLMOutput, llm_service
 from services.render_job_service import render_job_service
 from services.script_intake_service import script_intake_service
 
@@ -24,6 +25,7 @@ class StoryboardGenerationMode:
     SEQUENCE = "SEQUENCE"
     SCENE_RANGE = "SCENE_RANGE"
     SINGLE_SCENE = "SINGLE_SCENE"
+    SELECTED_SCENES = "SELECTED_SCENES"
 
 
 @dataclass
@@ -57,6 +59,29 @@ class StoryboardService:
     }
     RENDER_ENABLED_STYLES = {"cinematic_realistic", "storyboard_realistic"}
 
+    async def _run_llm_storyboard_prompts_or_none(
+        self,
+        *,
+        project: Project,
+        scene: dict[str, Any],
+        style_preset: str,
+        shots_per_scene: int,
+    ) -> StoryboardPromptLLMOutput | None:
+        if not llm_service.is_enabled_for("storyboard_prompt_provider"):
+            return None
+        try:
+            return await llm_service.generate_storyboard_prompts(
+                project_name=str(project.name),
+                project_description=str(project.description or ""),
+                scene=scene,
+                style_preset=style_preset,
+                shots_per_scene=shots_per_scene,
+            )
+        except Exception as exc:
+            if llm_service.should_fallback(exc):
+                return None
+            raise
+
     async def get_storyboard_options(
         self,
         db: AsyncSession,
@@ -74,6 +99,7 @@ class StoryboardService:
                 StoryboardGenerationMode.SEQUENCE,
                 StoryboardGenerationMode.SCENE_RANGE,
                 StoryboardGenerationMode.SINGLE_SCENE,
+                StoryboardGenerationMode.SELECTED_SCENES,
             ],
             "sequences": [self._sequence_block_dict(block, status) for block in sequences],
             "scenes_detected": analysis_data.get("scenes", []),
@@ -157,9 +183,12 @@ class StoryboardService:
         shots_per_scene: int,
         overwrite: bool,
         sequence_id: Optional[str] = None,
+        sequence_ids: Optional[list[str]] = None,
         scene_start: Optional[int] = None,
         scene_end: Optional[int] = None,
         selected_scene_ids: Optional[list[str]] = None,
+        scene_numbers: Optional[list[int]] = None,
+        max_scenes: Optional[int] = None,
     ) -> dict[str, Any]:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
         analysis_data = await self._get_analysis_payload(db, project)
@@ -170,9 +199,12 @@ class StoryboardService:
             sequences=sequences,
             mode=mode,
             sequence_id=sequence_id,
+            sequence_ids=sequence_ids or [],
             scene_start=scene_start,
             scene_end=scene_end,
             selected_scene_ids=selected_scene_ids or [],
+            scene_numbers=scene_numbers or [],
+            max_scenes=max_scenes,
         )
         if not selected_scenes:
             raise HTTPException(status_code=400, detail="No scenes available for storyboard generation")
@@ -215,7 +247,9 @@ class StoryboardService:
             message="Storyboard generation started",
             metadata_json={
                 "mode": mode,
+                "generation_mode": mode,
                 "sequence_id": sequence_id,
+                "sequence_ids": sequence_ids or [],
                 "scene_start": scene_start,
                 "scene_end": scene_end,
                 "style_preset": style_preset,
@@ -249,7 +283,17 @@ class StoryboardService:
             sequence_for_scene = self._sequence_for_scene(scene_number, sequences)
             sequence_scope_id = sequence_for_scene.sequence_id if sequence_for_scene else ""
             current_offset = sequence_offsets.get(sequence_scope_id, 0)
-            shot_payloads = self._build_scene_shots(scene, shots_per_scene=shots_per_scene, style_preset=style_preset)
+            llm_shot_bundle = await self._run_llm_storyboard_prompts_or_none(
+                project=project,
+                scene=scene,
+                style_preset=style_preset,
+                shots_per_scene=shots_per_scene,
+            )
+            shot_payloads = (
+                [shot.model_dump() for shot in llm_shot_bundle.shots]
+                if llm_shot_bundle and llm_shot_bundle.shots
+                else self._build_scene_shots(scene, shots_per_scene=shots_per_scene, style_preset=style_preset)
+            )
             generated_scenes_payload.append(
                 {
                     "scene_number": scene_number,
@@ -304,12 +348,17 @@ class StoryboardService:
         result_payload = {
             "project_id": project_id,
             "mode": mode,
+            "generation_mode": mode,
             "sequence_id": sequence_id,
+            "sequence_ids": sequence_ids or [],
             "scene_start": scene_start,
             "scene_end": scene_end,
             "selected_scene_ids": selected_scene_ids or [],
+            "selected_scene_numbers": [self._scene_number(scene) for scene in selected_scenes],
+            "total_selected": len(selected_scenes),
             "style_preset": style_preset,
             "shots_per_scene": shots_per_scene,
+            "max_scenes": max_scenes,
             "version": version,
             "total_scenes": len(generated_scenes_payload),
             "total_shots": created_shots,
@@ -424,10 +473,14 @@ class StoryboardService:
             "job_id": str(job.id),
             "status": "completed",
             "mode": mode,
+            "generation_mode": mode,
             "version": version,
             "sequence_id": sequence_id,
+            "sequence_ids": sequence_ids or [],
             "scene_start": scene_start,
             "scene_end": scene_end,
+            "selected_scene_numbers": [self._scene_number(scene) for scene in selected_scenes],
+            "total_selected": len(selected_scenes),
             "total_scenes": len(generated_scenes_payload),
             "total_shots": created_shots,
             "created_at": job.created_at,
@@ -582,14 +635,17 @@ class StoryboardService:
         sequences: list[StoryboardSequenceBlock],
         mode: str,
         sequence_id: Optional[str],
+        sequence_ids: list[str],
         scene_start: Optional[int],
         scene_end: Optional[int],
         selected_scene_ids: list[str],
+        scene_numbers: list[int],
+        max_scenes: Optional[int],
     ) -> list[dict[str, Any]]:
         scenes = list(analysis_data.get("scenes", []))
         normalized_mode = (mode or StoryboardGenerationMode.FULL_SCRIPT).strip().upper()
         if normalized_mode == StoryboardGenerationMode.FULL_SCRIPT:
-            return scenes
+            return scenes[:max_scenes] if max_scenes and max_scenes > 0 else scenes
         if normalized_mode == StoryboardGenerationMode.SEQUENCE:
             sequence = next((item for item in sequences if item.sequence_id == sequence_id), None)
             if sequence is None:
@@ -604,6 +660,15 @@ class StoryboardService:
             if not target_ids and scene_start is not None:
                 target_ids = {str(scene_start)}
             return [scene for scene in scenes if str(self._scene_number(scene)) in target_ids or str(scene.get("scene_id")) in target_ids]
+        if normalized_mode == StoryboardGenerationMode.SELECTED_SCENES:
+            target_numbers = {int(value) for value in scene_numbers if value is not None}
+            if not target_numbers:
+                target_numbers = {int(value) for value in selected_scene_ids if str(value).isdigit()}
+            if sequence_ids:
+                selected_sequences = [item for item in sequences if item.sequence_id in set(sequence_ids)]
+                for sequence in selected_sequences:
+                    target_numbers.update(sequence.included_scenes)
+            return [scene for scene in scenes if self._scene_number(scene) in target_numbers]
         raise HTTPException(status_code=400, detail="Unsupported storyboard generation mode")
 
     async def _next_generation_version(
@@ -626,7 +691,7 @@ class StoryboardService:
             query = query.where(StoryboardShot.sequence_id == sequence_id)
         elif mode == StoryboardGenerationMode.SCENE_RANGE and scene_start is not None and scene_end is not None:
             query = query.where(StoryboardShot.scene_number >= scene_start, StoryboardShot.scene_number <= scene_end)
-        elif mode == StoryboardGenerationMode.SINGLE_SCENE:
+        elif mode in {StoryboardGenerationMode.SINGLE_SCENE, StoryboardGenerationMode.SELECTED_SCENES}:
             numbers = [self._scene_number(scene) for scene in selected_scenes]
             query = query.where(StoryboardShot.scene_number.in_(numbers))
         result = await db.execute(query)
@@ -654,7 +719,7 @@ class StoryboardService:
             query = query.where(StoryboardShot.sequence_id == sequence_id)
         elif mode == StoryboardGenerationMode.SCENE_RANGE and scene_start is not None and scene_end is not None:
             query = query.where(StoryboardShot.scene_number >= scene_start, StoryboardShot.scene_number <= scene_end)
-        elif mode == StoryboardGenerationMode.SINGLE_SCENE:
+        elif mode in {StoryboardGenerationMode.SINGLE_SCENE, StoryboardGenerationMode.SELECTED_SCENES}:
             scene_numbers = [self._scene_number(scene) for scene in selected_scenes]
             query = query.where(StoryboardShot.scene_number.in_(scene_numbers))
         result = await db.execute(query)
@@ -689,7 +754,7 @@ class StoryboardService:
 
     def _should_enqueue_render(self, *, mode: str, style_preset: str, shots_per_scene: int) -> bool:
         return (
-            mode == StoryboardGenerationMode.SINGLE_SCENE
+            mode in {StoryboardGenerationMode.SINGLE_SCENE, StoryboardGenerationMode.SELECTED_SCENES}
             and shots_per_scene == 1
             and style_preset in self.RENDER_ENABLED_STYLES
         )
@@ -708,23 +773,31 @@ class StoryboardService:
         location = scene.get("location") or "unknown location"
         time_of_day = scene.get("time_of_day") or "unspecified time"
         shot_type = shot_payload.get("shot_type") or "MS"
-        tone = "cinematic realistic storyboard frame"
+        tone = shot_payload.get("visual_style") or "cinematic realistic storyboard frame"
         project_context = str(project.description or "").strip()
         prompt_parts = [
             tone,
             f"{shot_type} shot",
-            shot_payload.get("description") or shot_record.narrative_text or scene_heading,
+            shot_payload.get("prompt") or shot_payload.get("description") or scene_heading,
             f"Scene heading: {scene_heading}",
             f"Location: {location}",
             f"Time of day: {time_of_day}",
             f"Project: {project.name}",
         ]
+        if shot_payload.get("lens"):
+            prompt_parts.append(f"Lens: {shot_payload['lens']}")
+        if shot_payload.get("lighting"):
+            prompt_parts.append(f"Lighting: {shot_payload['lighting']}")
+        if shot_payload.get("composition"):
+            prompt_parts.append(f"Composition: {shot_payload['composition']}")
+        if shot_payload.get("continuity_notes"):
+            prompt_parts.append(f"Continuity: {shot_payload['continuity_notes']}")
         if project_context:
             prompt_parts.append(f"Project context: {project_context}")
         return {
             "preset_key": "storyboard_realistic",
             "prompt": ", ".join(part for part in prompt_parts if part),
-            "negative_prompt": "blurry, low quality, distorted, deformed hands, extra fingers, watermark, text, logo",
+            "negative_prompt": shot_payload.get("negative_prompt") or "blurry, low quality, distorted, deformed hands, extra fingers, watermark, text, logo",
             "checkpoint": "Realistic_Vision_V2.0.safetensors",
             "width": 1024,
             "height": 576,

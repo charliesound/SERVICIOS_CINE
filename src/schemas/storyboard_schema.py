@@ -17,15 +17,20 @@ def _normalize_optional_text(value: Optional[str]) -> Optional[str]:
 
 class StoryboardGenerateRequest(BaseModel):
     mode: str = "FULL_SCRIPT"
+    generation_mode: Optional[str] = None
     sequence_id: Optional[str] = None
+    sequence_ids: list[str] = Field(default_factory=list)
     scene_start: Optional[int] = None
     scene_end: Optional[int] = None
     selected_scene_ids: list[str] = Field(default_factory=list)
+    scene_numbers: list[int] = Field(default_factory=list)
     style_preset: str = "cinematic_realistic"
+    visual_mode: Optional[str] = None
     shots_per_scene: int = 3
+    max_scenes: Optional[int] = None
     overwrite: bool = False
 
-    @field_validator("mode", "sequence_id", "style_preset")
+    @field_validator("mode", "generation_mode", "sequence_id", "style_preset", "visual_mode")
     @classmethod
     def validate_optional_text(cls, value: Optional[str]) -> Optional[str]:
         return _normalize_optional_text(value)
@@ -58,10 +63,14 @@ class StoryboardJobResponse(BaseModel):
     job_id: str
     status: str
     mode: str
+    generation_mode: Optional[str] = None
     version: int
     sequence_id: Optional[str] = None
+    sequence_ids: list[str] = Field(default_factory=list)
     scene_start: Optional[int] = None
     scene_end: Optional[int] = None
+    selected_scene_numbers: list[int] = Field(default_factory=list)
+    total_selected: int = 0
     total_scenes: int = 0
     total_shots: int = 0
 

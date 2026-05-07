@@ -34,6 +34,11 @@ async def _serialize_shot(
         if shot.asset_id and asset is not None
         else None
     )
+    preview_url = (
+        f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/preview"
+        if shot.asset_id and asset is not None
+        else None
+    )
     return StoryboardShotResponse(
         id=str(shot.id),
         project_id=str(shot.project_id),
@@ -53,6 +58,7 @@ async def _serialize_shot(
         asset_file_name=getattr(asset, "file_name", None),
         asset_mime_type=getattr(asset, "mime_type", None),
         thumbnail_url=thumbnail_url,
+        preview_url=preview_url,
         created_at=shot.created_at,
         updated_at=shot.updated_at,
     )

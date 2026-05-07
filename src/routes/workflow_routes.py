@@ -14,6 +14,7 @@ from services.workflow_planner import planner
 from services.workflow_builder import builder
 from services.workflow_validator import validator
 from services.workflow_preset_service import preset_service
+from services.cid_pipeline_preset_service import cid_pipeline_preset_service
 
 router = APIRouter(prefix="/api/workflows", tags=["workflows"])
 
@@ -21,6 +22,11 @@ router = APIRouter(prefix="/api/workflows", tags=["workflows"])
 @router.post("/plan")
 async def plan_workflow(request: WorkflowPlanRequest):
     analysis = planner.analyze_intent(request.intent, request.context)
+    llm_preset = await cid_pipeline_preset_service.recommend_preset_with_llm(
+        preset_key=None,
+        intent=request.intent,
+        context=request.context,
+    )
 
     workflow = None
     if not analysis.missing_inputs:
@@ -34,6 +40,13 @@ async def plan_workflow(request: WorkflowPlanRequest):
         "reasoning": analysis.reasoning,
         "missing_inputs": analysis.missing_inputs,
         "suggested_params": analysis.suggested_params,
+        "llm_recommendation": llm_preset.get("llm_recommendation") if isinstance(llm_preset, dict) else None,
+        "recommended_preset": {
+            "key": llm_preset.get("key"),
+            "name": llm_preset.get("name"),
+            "default_workflow_key": llm_preset.get("default_workflow_key"),
+            "default_backend": llm_preset.get("default_backend"),
+        } if isinstance(llm_preset, dict) else None,
         "workflow": workflow,
     }
 

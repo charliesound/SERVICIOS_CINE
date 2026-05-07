@@ -222,7 +222,7 @@ async def quick_start_demo():
                 "email": "demo_enterprise@servicios-cine.com",
                 "password": "demo123",
             },
-            "admin": {"email": "admin@servicios-cine.com", "password": "admin123"},
+            "admin": {"email": "smoke@test.com", "password": "SmokeTest123!"},
         },
         "urls": {
             "frontend": "http://localhost:3000",

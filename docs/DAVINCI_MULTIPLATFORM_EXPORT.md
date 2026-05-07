@@ -122,7 +122,7 @@ Each platform export includes:
 Using the API:
 
 ```bash
-curl -X POST "http://localhost:8000/api/projects/{project_id}/editorial/export/davinci-package" \
+curl -X POST "http://127.0.0.1:8010/api/projects/{project_id}/editorial/export/davinci-package" \
   -H "Content-Type: application/json" \
   -d '{"platform": "windows", "root_path": "C:/My_Project"}'
 ```

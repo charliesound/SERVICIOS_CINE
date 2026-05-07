@@ -17,6 +17,7 @@ export interface StoryboardShot {
   asset_file_name?: string
   asset_mime_type?: string
   thumbnail_url?: string
+  preview_url?: string
   created_at: string
   updated_at: string
 }
@@ -76,7 +77,24 @@ export interface ProjectImageAssetsResponse {
   meta: ProjectImageAssetPaginationMeta
 }
 
-export type StoryboardGenerationMode = 'FULL_SCRIPT' | 'SEQUENCE' | 'SCENE_RANGE' | 'SINGLE_SCENE'
+export type StoryboardGenerationMode = 'FULL_SCRIPT' | 'SEQUENCE' | 'SCENE_RANGE' | 'SINGLE_SCENE' | 'SELECTED_SCENES'
+
+export type StoryboardSelectionMode = StoryboardGenerationMode | 'SELECTED_SCENES'
+
+export interface StoryboardSceneCandidate {
+  scene_number: number
+  scene_heading: string
+  narrative_text?: string
+  sequence_id?: string | null
+  sequence_title?: string | null
+  storyboard_status?: 'not_generated' | 'generated' | 'without_image' | 'pending'
+  asset_id?: string | null
+  thumbnail_url?: string | null
+  preview_url?: string | null
+  asset_file_name?: string | null
+  selected?: boolean
+  source?: 'analysis' | 'options' | 'parsed'
+}
 
 export interface StoryboardSequence {
   sequence_id: string
@@ -102,26 +120,36 @@ export interface StoryboardOptions {
 }
 
 export interface StoryboardGeneratePayload {
-  mode: StoryboardGenerationMode
+  mode: StoryboardSelectionMode
+  generation_mode?: StoryboardSelectionMode
   sequence_id?: string | null
+  sequence_ids?: string[]
   scene_start?: number | null
   scene_end?: number | null
   selected_scene_ids?: string[]
+  scene_numbers?: number[] | string[]
   style_preset?: string
+  visual_mode?: string
   shots_per_scene?: number
+  max_scenes?: number | null
   overwrite?: boolean
 }
 
 export interface StoryboardGenerationJob {
   job_id: string
   status: string
-  mode: StoryboardGenerationMode
+  mode: StoryboardSelectionMode
+  generation_mode?: StoryboardSelectionMode
   version: number
   sequence_id?: string | null
+  sequence_ids?: string[]
   scene_start?: number | null
   scene_end?: number | null
+  selected_scene_numbers?: number[]
+  total_selected?: number
   total_scenes: number
   total_shots: number
+  render_jobs?: Array<{ job_id: string; backend?: string; workflow_key?: string; storyboard_shot_id?: string }>
 }
 
 export interface StoryboardScopeResponse {

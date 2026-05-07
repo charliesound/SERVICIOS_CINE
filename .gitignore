@@ -64,6 +64,7 @@ docs/validation/**/*.wav
 docs/validation/**/*.mp3
 docs/validation/**/*.mp4
 docs/validation/**/*.zip
+docs/validation/comfyui_models_inventory.json
 
 # Sensitive DB snapshots
 OLD/sensitive_review/db_snapshots/

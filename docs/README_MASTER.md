@@ -136,7 +136,7 @@ npm run dev
 
 ### 3. Inicializar Demo
 ```bash
-curl -X POST http://localhost:8000/api/demo/quick-start
+curl -X POST http://127.0.0.1:8010/api/demo/quick-start
 ```
 
 Estas rutas manuales sirven para desarrollo local, no como arranque oficial de la demo release.

@@ -1,0 +1,13 @@
+{
+  "note": "Workflow template exists but requires node mapping before execution",
+  "placeholders": {
+    "CHECKPOINT_NAME": "{{CHECKPOINT_NAME}}",
+    "POSITIVE_PROMPT": "{{POSITIVE_PROMPT}}",
+    "NEGATIVE_PROMPT": "{{NEGATIVE_PROMPT}}",
+    "WIDTH": "{{WIDTH}}",
+    "HEIGHT": "{{HEIGHT}}",
+    "STEPS": "{{STEPS}}",
+    "CFG": "{{CFG}}",
+    "SEED": "{{SEED}}"
+  }
+}

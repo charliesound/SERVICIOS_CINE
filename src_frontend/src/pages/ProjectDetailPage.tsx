@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { projectsApi } from '@/api'
 import { storyboardApi } from '@/api/storyboard'
@@ -9,11 +9,15 @@ import {
   ArrowLeft, FileText, Layers, Eye, Save,
   MapPin, Clock, Film, ChevronRight, Sparkles,
   History, RefreshCw, AlertCircle, CheckCircle2, Loader2,
-  FileJson, FolderOpen, Download, Crown, Pencil
+  FileJson, FolderOpen, Download, Crown, Pencil, Upload
 } from 'lucide-react'
 import { JobProgress } from '@/components/JobProgress'
+import { ActionProgressPanel, type ActionProgressState } from '@/components/ActionProgressPanel'
+import { StoryboardSequenceSelectorModal, type StoryboardSelectionValue } from '@/components/storyboard/StoryboardSequenceSelectorModal'
+import type { StoryboardSceneCandidate, StoryboardSequence, StoryboardShot } from '@/types/storyboard'
+import ConceptArtDryRunPanel from '@/components/concept-art/ConceptArtDryRunPanel'
 
-type Tab = 'script' | 'analysis' | 'storyboard' | 'history'
+type Tab = 'script' | 'analysis' | 'storyboard' | 'concept-art' | 'history'
 
 interface AnalysisResult {
   source: 'breakdown' | 'document'
@@ -34,6 +38,10 @@ interface Shot {
   shot_number: number
   shot_type: string
   description: string
+  asset_id?: string | null
+  thumbnail_url?: string | null
+  preview_url?: string | null
+  asset_file_name?: string | null
 }
 
 interface Scene {
@@ -156,11 +164,14 @@ export default function ProjectDetailPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isStoryboarding, setIsStoryboarding] = useState(false)
+  const [isUploadingScript, setIsUploadingScript] = useState(false)
   const [error, setError] = useState('')
   const [saveMsg, setSaveMsg] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
   const [activeTab, setActiveTab] = useState<Tab>('script')
   const [analysisData, setAnalysisData] = useState<AnalysisResult | null>(null)
   const [storyboardData, setStoryboardData] = useState<StoryboardResult | null>(null)
+  const [storyboardShots, setStoryboardShots] = useState<StoryboardShot[]>([])
   const [jobs, setJobs] = useState<ProjectJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(false)
   const [retryingJobId, setRetryingJobId] = useState<string | null>(null)
@@ -168,6 +179,15 @@ export default function ProjectDetailPage() {
   const [assetsLoading, setAssetsLoading] = useState(false)
   const [exportingFormat, setExportingFormat] = useState<'json' | 'zip' | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'grid' | 'presentation'>('list')
+  const [analysisProgress, setAnalysisProgress] = useState<ActionProgressState | null>(null)
+  const [storyboardProgress, setStoryboardProgress] = useState<ActionProgressState | null>(null)
+  const [storyboardModalOpen, setStoryboardModalOpen] = useState(false)
+  const [storyboardCandidates, setStoryboardCandidates] = useState<StoryboardSceneCandidate[]>([])
+  const [storyboardSequences, setStoryboardSequences] = useState<StoryboardSequence[]>([])
+  const [isLoadingStoryboardCandidates, setIsLoadingStoryboardCandidates] = useState(false)
+  const [storyboardCandidateError, setStoryboardCandidateError] = useState<string | null>(null)
+  const [selectedScriptFileName, setSelectedScriptFileName] = useState('')
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // Group assets by sequence from metadata_json
   const assetsBySequence = assets.reduce((acc, asset) => {
@@ -192,6 +212,8 @@ export default function ProjectDetailPage() {
   })
 
   const parseApiError = (fallback: string) => (err: unknown): string => {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 401 || status === 403) return 'Sesion caducada. Vuelve a iniciar sesion.'
     const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
     if (typeof detail === 'string') return detail
     if (detail && typeof detail === 'object' && 'message' in detail) {
@@ -202,6 +224,168 @@ export default function ProjectDetailPage() {
       return String((detail as { message?: unknown }).message || fallback)
     }
     return fallback
+  }
+
+  const showSuccess = (message: string) => {
+    setSuccessMsg(message)
+    window.setTimeout(() => setSuccessMsg(''), 2500)
+  }
+
+  const resolveShotVisual = (assetId?: string | null) => {
+    if (!assetId || !projectId) return { thumbnail_url: null, preview_url: null, asset_file_name: null }
+    const asset = assets.find((item) => item.id === assetId)
+    const previewUrl = asset?.content_ref || `/api/projects/${projectId}/presentation/assets/${assetId}/preview`
+    const thumbnailUrl = `/api/projects/${projectId}/presentation/assets/${assetId}/thumbnail`
+    return {
+      thumbnail_url: thumbnailUrl,
+      preview_url: previewUrl,
+      asset_file_name: asset?.file_name || null,
+    }
+  }
+
+  const inferStoryboardStatus = (sceneNumber: number, sceneAssetIds: Array<string | null | undefined>) => {
+    const assetIds = sceneAssetIds.filter(Boolean)
+    if (assetIds.length > 0) return 'generated' as const
+    const hasSceneShots = storyboardShots.some((shot) => (shot.scene_number || 0) === sceneNumber)
+    if (hasSceneShots) return 'without_image' as const
+    return 'pending' as const
+  }
+
+  const parseSceneCandidatesFromScript = (text: string): StoryboardSceneCandidate[] => {
+    const lines = text.split(/\r?\n/)
+    const candidates: StoryboardSceneCandidate[] = []
+    const headingRegex = /^\s*(\d+)?\s*(INT\.|EXT\.|INT\/EXT\.|I\/E\.)/i
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index].trim()
+      if (!headingRegex.test(line)) continue
+      const explicitNumber = line.match(/^(\d+)/)?.[1]
+      const sceneNumber = explicitNumber ? Number(explicitNumber) : candidates.length + 1
+      const nextLines = lines.slice(index + 1, index + 3).map((item) => item.trim()).filter(Boolean)
+      candidates.push({
+        scene_number: sceneNumber,
+        scene_heading: line,
+        narrative_text: nextLines.join(' '),
+        source: 'parsed',
+      })
+    }
+    return candidates
+  }
+
+  const buildSceneCandidates = (
+    scenesDetected: Array<Record<string, unknown>>,
+    sequences: StoryboardSequence[],
+    source: 'options' | 'analysis' | 'parsed',
+  ): StoryboardSceneCandidate[] => {
+    const sequenceByScene = new Map<number, StoryboardSequence>()
+    sequences.forEach((sequence) => {
+      sequence.included_scenes.forEach((sceneNumber) => sequenceByScene.set(sceneNumber, sequence))
+    })
+
+    return scenesDetected.map((scene, index) => {
+      const sceneNumber = Number(scene.scene_number || scene.number || index + 1)
+      const sequence = sequenceByScene.get(sceneNumber)
+      const relatedShots = storyboardShots.filter((shot) => (shot.scene_number || 0) === sceneNumber)
+      const primaryAssetId = relatedShots.find((shot) => shot.asset_id)?.asset_id || null
+      const visuals = resolveShotVisual(primaryAssetId)
+      return {
+        scene_number: sceneNumber,
+        scene_heading: String(scene.heading || scene.scene_heading || `ESCENA ${sceneNumber}`),
+        narrative_text: Array.isArray(scene.action_blocks)
+          ? String(scene.action_blocks.slice(0, 2).join(' '))
+          : String(scene.summary || scene.description || ''),
+        sequence_id: sequence?.sequence_id || null,
+        sequence_title: sequence?.title || null,
+        storyboard_status: inferStoryboardStatus(sceneNumber, relatedShots.map((shot) => shot.asset_id)),
+        asset_id: primaryAssetId,
+        thumbnail_url: visuals.thumbnail_url,
+        preview_url: visuals.preview_url,
+        asset_file_name: visuals.asset_file_name,
+        source,
+      }
+    })
+  }
+
+  const buildProgressState = (
+    title: string,
+    job: ProjectJob | undefined,
+    fallbackLabel: string,
+    helperText?: string,
+    previousPercent = 0,
+  ): ActionProgressState => {
+    if (!job) {
+      return {
+        title,
+        status: 'queued',
+        percent: previousPercent || 0,
+        label: fallbackLabel,
+        helperText,
+        estimated: true,
+      }
+    }
+    const mappedStatus = job.status === 'pending'
+      ? 'queued'
+      : job.status === 'processing'
+        ? 'processing'
+        : job.status === 'completed'
+          ? 'completed'
+          : 'failed'
+    const estimatedPercent = job.status === 'pending'
+      ? 10
+      : job.status === 'processing'
+        ? Math.max(previousPercent || 25, 45)
+        : job.status === 'completed'
+          ? 100
+          : previousPercent || 45
+    return {
+      title,
+      status: mappedStatus,
+      percent: typeof job.progress_percent === 'number' ? job.progress_percent : estimatedPercent,
+      label: job.progress_stage || fallbackLabel,
+      helperText,
+      estimated: typeof job.progress_percent !== 'number',
+      jobId: job.id,
+      errorMessage: job.error_message,
+    }
+  }
+
+  const mapStoryboardScopeToResult = (projectIdValue: string, shots: Array<{
+    scene_number?: number
+    scene_heading?: string
+    sequence_id?: string
+    sequence_order: number
+    shot_type?: string
+    narrative_text?: string
+    asset_id?: string | null
+  }>): StoryboardResult => {
+    const groupedScenes = shots.reduce((acc, shot) => {
+      const key = shot.scene_number || 0
+      if (!acc[key]) {
+        acc[key] = {
+          scene_number: key,
+          heading: shot.scene_heading || `ESCENA ${key}`,
+          location: shot.sequence_id || '',
+          time_of_day: '',
+          shots: [],
+        }
+      }
+      const visuals = resolveShotVisual(shot.asset_id)
+      acc[key].shots.push({
+        shot_number: shot.sequence_order,
+        shot_type: shot.shot_type || 'MS',
+        description: shot.narrative_text || 'Shot generado',
+        asset_id: shot.asset_id,
+        thumbnail_url: visuals.thumbnail_url,
+        preview_url: visuals.preview_url,
+        asset_file_name: visuals.asset_file_name,
+      })
+      return acc
+    }, {} as Record<number, Scene>)
+
+    return {
+      project_id: projectIdValue,
+      total_scenes: Object.keys(groupedScenes).length,
+      scenes: Object.values(groupedScenes).sort((a, b) => a.scene_number - b.scene_number),
+    }
   }
 
   const loadAnalysisState = async () => {
@@ -244,14 +428,59 @@ export default function ProjectDetailPage() {
     }
   }
 
+  const loadStoryboardState = async () => {
+    if (!projectId) return
+    try {
+      const storyboardScope = await storyboardApi.getStoryboard(projectId, { mode: 'FULL_SCRIPT' })
+      setStoryboardShots(storyboardScope?.shots || [])
+      if (!storyboardScope?.shots?.length) {
+        setStoryboardData(null)
+        return
+      }
+      setStoryboardData(mapStoryboardScopeToResult(projectId, storyboardScope.shots))
+    } catch {
+      setStoryboardShots([])
+      setStoryboardData(null)
+    }
+  }
+
+  const loadStoryboardCandidates = async () => {
+    if (!projectId) return
+    setIsLoadingStoryboardCandidates(true)
+    setStoryboardCandidateError(null)
+    try {
+      const options = await storyboardApi.getOptions(projectId)
+      const sequences = options.sequences || []
+      setStoryboardSequences(sequences)
+      if (options.scenes_detected?.length) {
+        setStoryboardCandidates(buildSceneCandidates(options.scenes_detected as Array<Record<string, unknown>>, sequences, 'options'))
+      } else {
+        const parsed = parseSceneCandidatesFromScript(scriptText)
+        setStoryboardCandidates(parsed)
+      }
+    } catch (err) {
+      console.error('[ProjectDetail] storyboard candidates failed', err)
+      const parsed = parseSceneCandidatesFromScript(scriptText)
+      setStoryboardSequences([])
+      setStoryboardCandidates(parsed)
+      if (!parsed.length) {
+        setStoryboardCandidateError('No se pudieron detectar escenas para storyboard')
+      }
+    } finally {
+      setIsLoadingStoryboardCandidates(false)
+    }
+  }
+
   useEffect(() => {
     if (!projectId) return
     let active = true
-    Promise.all([projectsApi.get(projectId), loadAnalysisState()])
+    Promise.all([projectsApi.get(projectId), loadAnalysisState(), loadStoryboardState()])
       .then(([p]) => {
         if (!active) return
         setProject(p)
         setScriptText(p.script_text || '')
+        loadJobs()
+        loadAssets()
       })
       .catch(() => {})
       .finally(() => {
@@ -262,22 +491,32 @@ export default function ProjectDetailPage() {
     }
   }, [projectId])
 
-  const loadJobs = () => {
+  const loadJobs = async () => {
     if (!projectId) return
     setJobsLoading(true)
-    projectsApi.getJobs(projectId)
-      .then((items) => setJobs(items as unknown as ProjectJob[]))
-      .catch(() => {})
-      .finally(() => setJobsLoading(false))
+    try {
+      const items = await projectsApi.getJobs(projectId)
+      setJobs(items as unknown as ProjectJob[])
+      return items as unknown as ProjectJob[]
+    } catch {
+      return [] as ProjectJob[]
+    } finally {
+      setJobsLoading(false)
+    }
   }
 
-  const loadAssets = () => {
+  const loadAssets = async () => {
     if (!projectId) return
     setAssetsLoading(true)
-    projectsApi.getAssets(projectId)
-      .then(setAssets)
-      .catch(() => {})
-      .finally(() => setAssetsLoading(false))
+    try {
+      const result = await projectsApi.getAssets(projectId)
+      setAssets(result)
+      return result
+    } catch {
+      return [] as ProjectAsset[]
+    } finally {
+      setAssetsLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -286,6 +525,33 @@ export default function ProjectDetailPage() {
       loadAssets()
     }
   }, [activeTab])
+
+  useEffect(() => {
+    if (!projectId || !storyboardShots.length) return
+    setStoryboardData(mapStoryboardScopeToResult(projectId, storyboardShots))
+  }, [assets, storyboardShots, projectId])
+
+  const pollJobsUntilSettled = (
+    jobType: 'analyze' | 'storyboard',
+    onUpdate: (job?: ProjectJob) => void,
+  ) => {
+    const interval = window.setInterval(async () => {
+      const items = await loadJobs()
+      const latestJob = [...(items || [])]
+        .filter((job) => job.job_type === jobType)
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0]
+      onUpdate(latestJob)
+      if (latestJob && ['completed', 'failed'].includes(latestJob.status)) {
+        window.clearInterval(interval)
+        await loadAssets()
+        await loadStoryboardState()
+        if (jobType === 'analyze') {
+          await loadAnalysisState()
+        }
+      }
+    }, 2000)
+    return () => window.clearInterval(interval)
+  }
 
   const handleSaveScript = async () => {
     if (!projectId) return
@@ -304,78 +570,209 @@ export default function ProjectDetailPage() {
     }
   }
 
-  const handleAnalyze = async () => {
-    if (!projectId || !scriptText.trim()) return
+  const handleScriptFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!projectId || !file) return
+
+    setIsUploadingScript(true)
+    setError('')
+    setSuccessMsg('')
+    setSelectedScriptFileName(file.name)
+    try {
+      const extension = file.name.split('.').pop()?.toLowerCase() || ''
+      if (extension === 'txt' || extension === 'md') {
+        const text = await file.text()
+        await projectsApi.intakeScript(projectId, { script_text: text })
+        setScriptText(text)
+      } else if (extension === 'pdf' || extension === 'docx') {
+        const document = await projectsApi.uploadScriptDocument(projectId, file)
+        if (document.extracted_text) {
+          await projectsApi.intakeScript(projectId, { script_text: document.extracted_text })
+          setScriptText(document.extracted_text)
+        } else {
+          throw new Error(document.error_message || 'No se pudo extraer texto del documento')
+        }
+      } else {
+        throw new Error('Este formato requiere extracción backend. Usa .txt/.md por ahora.')
+      }
+      const updated = await projectsApi.get(projectId)
+      setProject(updated)
+      showSuccess('Guion cargado correctamente')
+    } catch (err) {
+      setError(parseApiError('No se pudo cargar el archivo de guion')(err))
+    } finally {
+      event.target.value = ''
+      setIsUploadingScript(false)
+    }
+  }
+
+  const handleAnalyzeScript = async () => {
+    if (!projectId) {
+      setError('No se encontro el proyecto para analizar')
+      return
+    }
+    if (!scriptText.trim()) {
+      setError('Carga un guion antes de analizar')
+      setActiveTab('script')
+      return
+    }
     if (!confirm('Iniciar analisis del guion? Esto procesara el texto y extraera escenas, personajes y estructura.')) return
 
     setIsAnalyzing(true)
     setError('')
+    setSuccessMsg('')
     setActiveTab('analysis')
+    setAnalysisProgress({
+      title: 'Analizar guion',
+      status: 'queued',
+      percent: 0,
+      label: 'Preparando análisis...',
+      helperText: 'Esperando creación del job de análisis.',
+      estimated: true,
+    })
     try {
-      console.debug('[QA] Analyze start', { projectId, scriptLength: scriptText.length })
+      console.debug('[ProjectDetail] analyze click', { projectId })
       await projectsApi.updateScript(projectId, { script_text: scriptText })
-      console.debug('[QA] Script updated, calling runAnalysis...')
-      const result = await projectsApi.runAnalysis(projectId)
-      console.debug('[QA] Analysis result', result)
+      const stopPolling = pollJobsUntilSettled('analyze', (job) => {
+        setAnalysisProgress((current) => buildProgressState(
+          'Analizar guion',
+          job,
+          'Analizando guion...',
+          job?.progress_stage ? undefined : 'Progreso estimado hasta que el backend devuelva porcentaje real.',
+          current?.percent || 0,
+        ))
+      })
+      const response = await projectsApi.analyze(projectId)
+      console.debug('[ProjectDetail] analyze response', response)
       await loadAnalysisState()
-      loadJobs()
-      loadAssets()
+      await loadJobs()
+      setAnalysisProgress((current) => ({
+        ...(current || { title: 'Analizar guion', estimated: false }),
+        status: 'completed',
+        percent: 100,
+        label: 'Análisis completado',
+        helperText: 'El resumen y las escenas ya están disponibles.',
+      }))
+      stopPolling()
+      showSuccess('Análisis completado')
     } catch (err) {
-      console.error('[QA] Analyze failed', err)
+      console.error('[ProjectDetail] analyze failed', err)
       setError(parseApiError('Error al analizar el guion. Asegurate de que el guion tenga contenido.')(err))
+      setAnalysisProgress((current) => ({
+        ...(current || { title: 'Analizar guion', percent: 0 }),
+        status: 'failed',
+        label: 'Error en análisis',
+        errorMessage: parseApiError('Error al analizar el guion. Asegurate de que el guion tenga contenido.')(err),
+      }))
       setActiveTab('script')
     } finally {
       setIsAnalyzing(false)
     }
   }
 
-  const handleStoryboard = async () => {
-    if (!projectId || !scriptText.trim()) return
-    if (!confirm('Generar storyboard completo del guion? Para modos por secuencia usa el editor avanzado.')) return
+  const openStoryboardSelector = async () => {
+    if (!projectId) {
+      setError('No se encontro el proyecto para generar storyboard')
+      return
+    }
+    if (!scriptText.trim()) {
+      setError('Carga un guion antes de generar storyboard')
+      setActiveTab('script')
+      return
+    }
 
-    setIsStoryboarding(true)
     setError('')
+    setSuccessMsg('')
+    await loadStoryboardCandidates()
+    setStoryboardModalOpen(true)
+  }
+
+  const handleGenerateStoryboard = () => {
+    void openStoryboardSelector()
+  }
+
+  const confirmGenerateStoryboardSelection = async (selection: StoryboardSelectionValue) => {
+    if (!projectId) return
+    const selectedSceneNumbers = selection.sceneNumbers || []
+    setIsStoryboarding(true)
+    setStoryboardModalOpen(false)
+    setError('')
+    setSuccessMsg('')
     setActiveTab('storyboard')
+    setStoryboardProgress({
+      title: 'Generar storyboard',
+      status: 'queued',
+      percent: 0,
+      label: 'Preparando storyboard...',
+      helperText: selectedSceneNumbers.length > 0
+        ? `Progreso estimado hasta que el backend devuelva progreso real por escena. ${selectedSceneNumbers.length} escenas seleccionadas.`
+        : 'Preparando generación de storyboard.',
+      estimated: true,
+    })
     try {
-      console.debug('[QA] Storyboard start', { projectId })
+      console.debug('[ProjectDetail] storyboard click', { projectId })
       await projectsApi.updateScript(projectId, { script_text: scriptText })
-      await projectsApi.runAnalysis(projectId)
-      console.debug('[QA] Calling storyboard generate...')
-      const job = await storyboardApi.generate(projectId, {
-        mode: 'FULL_SCRIPT',
-        shots_per_scene: 3,
+      if (!analysisData) {
+        await projectsApi.analyze(projectId)
+        await loadAnalysisState()
+      }
+      const generationMode = selection.mode
+      const payload = {
+        mode: generationMode,
+        generation_mode: generationMode,
+        sequence_id: generationMode === 'SEQUENCE' ? selection.sequenceId || null : null,
+        sequence_ids: selection.sequenceIds || [],
+        scene_start: generationMode === 'SCENE_RANGE' ? selection.sceneStart || null : generationMode === 'SINGLE_SCENE' ? selectedSceneNumbers[0] || null : null,
+        scene_end: generationMode === 'SCENE_RANGE' ? selection.sceneEnd || null : generationMode === 'SINGLE_SCENE' ? selectedSceneNumbers[0] || null : null,
+        selected_scene_ids: selectedSceneNumbers.map(String),
+        scene_numbers: selectedSceneNumbers,
         style_preset: 'cinematic_realistic',
-        overwrite: true,
+        visual_mode: 'cinematic_realistic',
+        shots_per_scene: 1,
+        max_scenes: generationMode === 'FULL_SCRIPT' ? 3 : selectedSceneNumbers.length || null,
+        overwrite: selection.overwrite,
+      }
+      const stopPolling = pollJobsUntilSettled('storyboard', (job) => {
+        setStoryboardProgress((current) => buildProgressState(
+          'Generar storyboard',
+          job,
+          selectedSceneNumbers.length > 0
+            ? `Procesando selección de ${selectedSceneNumbers.length} escena(s)`
+            : 'Generando storyboard...',
+          selectedSceneNumbers.length > 0
+            ? `Progreso estimado hasta que el backend devuelva progreso real por escena. ${selectedSceneNumbers.length} escenas seleccionadas.`
+            : 'Progreso estimado hasta que el backend devuelva progreso real.',
+          current?.percent || 0,
+        ))
       })
-      console.debug('[QA] Storyboard job created', job)
-      const storyboardScope = await storyboardApi.getStoryboard(projectId, { mode: 'FULL_SCRIPT' })
-      const groupedScenes = storyboardScope.shots.reduce((acc, shot) => {
-        const key = shot.scene_number || 0
-        if (!acc[key]) {
-          acc[key] = {
-            scene_number: key,
-            heading: shot.scene_heading || `ESCENA ${key}`,
-            location: shot.sequence_id || '',
-            time_of_day: '',
-            shots: [],
-          }
-        }
-        acc[key].shots.push({
-          shot_number: shot.sequence_order,
-          shot_type: shot.shot_type || 'MS',
-          description: shot.narrative_text || 'Shot generado',
-        })
-        return acc
-      }, {} as Record<number, Scene>)
-      setStoryboardData({
-        project_id: projectId,
-        total_scenes: job.total_scenes,
-        scenes: Object.values(groupedScenes).sort((a, b) => a.scene_number - b.scene_number),
+      const response = await storyboardApi.generate(projectId, {
+        ...payload,
       })
-      loadJobs()
-      loadAssets()
+      console.debug('[ProjectDetail] storyboard response', response)
+      await loadJobs()
+      await loadStoryboardState()
+      await loadAssets()
+      setStoryboardProgress((current) => ({
+        ...(current || { title: 'Generar storyboard', estimated: false }),
+        status: 'completed',
+        percent: 100,
+        label: 'Storyboard completado',
+        helperText: response.total_scenes
+          ? `${response.total_scenes} escenas y ${response.total_shots} planos generados.`
+          : 'Storyboard completado correctamente.',
+        jobId: response.job_id,
+      }))
+      stopPolling()
+      showSuccess('Storyboard generado correctamente')
     } catch (err) {
+      console.error('[ProjectDetail] storyboard failed', err)
       setError(parseApiError('Error al generar el storyboard. Asegurate de que el guion tenga contenido.')(err))
+      setStoryboardProgress((current) => ({
+        ...(current || { title: 'Generar storyboard', percent: 0 }),
+        status: 'failed',
+        label: 'Error generando storyboard',
+        errorMessage: parseApiError('Error al generar el storyboard. Asegurate de que el guion tenga contenido.')(err),
+      }))
       setActiveTab('script')
     } finally {
       setIsStoryboarding(false)
@@ -450,12 +847,8 @@ export default function ProjectDetailPage() {
     const interval = setInterval(async () => {
       console.debug('[QA] Polling active jobs...')
       loadJobs()
-      // También refrescar assets si hay jobs completados recientemente
-      const stillActive = jobs.some(j => j.status === 'pending' || j.status === 'processing')
-      if (!stillActive) {
-        loadAssets()
-        clearInterval(interval)
-      }
+      loadAssets()
+      loadStoryboardState()
     }, 2000)
     return () => clearInterval(interval)
   }, [projectId, jobs])
@@ -471,6 +864,10 @@ export default function ProjectDetailPage() {
       key: 'storyboard',
       label: 'Storyboard',
       count: storyboardData ? storyboardData.total_scenes : null,
+    },
+    {
+      key: 'concept-art',
+      label: 'Concept Art',
     },
     {
       key: 'history',
@@ -643,6 +1040,23 @@ export default function ProjectDetailPage() {
         ))}
       </div>
 
+      {(error || successMsg || analysisProgress || storyboardProgress) && (
+        <div className="space-y-3 mb-6">
+          {error && (
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+          {successMsg && (
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+              {successMsg}
+            </div>
+          )}
+          <ActionProgressPanel progress={analysisProgress} onRetry={handleAnalyzeScript} retryLabel="Reintentar análisis" />
+          <ActionProgressPanel progress={storyboardProgress} onRetry={handleGenerateStoryboard} retryLabel="Reintentar storyboard" />
+        </div>
+      )}
+
       {/* ── TAB: GUION ── */}
       {activeTab === 'script' && (
         <div className="space-y-4">
@@ -659,6 +1073,22 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt,.md,.pdf,.doc,.docx,.rtf"
+                  onChange={handleScriptFileChange}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingScript || isSaving}
+                  className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Upload className="w-4 h-4" />
+                  {isUploadingScript ? 'Subiendo...' : 'Subir archivo de guion'}
+                </button>
                 {saveMsg && (
                   <span className="text-green-400 text-sm flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -666,15 +1096,22 @@ export default function ProjectDetailPage() {
                   </span>
                 )}
                 <button
+                  type="button"
                   onClick={handleSaveScript}
                   disabled={isSaving}
-                  className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2"
+                  className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Save className="w-4 h-4" />
-                  {isSaving ? 'Guardando...' : 'Guardar'}
+                  {isSaving ? 'Guardando...' : 'Guardar guion'}
                 </button>
               </div>
             </div>
+
+            {selectedScriptFileName && (
+              <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-gray-400">
+                Archivo seleccionado: <span className="text-white">{selectedScriptFileName}</span>
+              </div>
+            )}
 
             <textarea
               value={scriptText}
@@ -697,8 +1134,9 @@ export default function ProjectDetailPage() {
           {/* Action cards */}
           <div className="grid grid-cols-2 gap-4">
             <button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing || !scriptText.trim()}
+              type="button"
+              onClick={handleAnalyzeScript}
+              disabled={isAnalyzing || isUploadingScript}
               className="card p-5 flex items-start gap-4 hover:border-amber-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed group"
             >
               <div className="w-11 h-11 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-500/20 transition-colors">
@@ -724,8 +1162,9 @@ export default function ProjectDetailPage() {
             </button>
 
             <button
-              onClick={handleStoryboard}
-              disabled={isStoryboarding || !scriptText.trim() || isAnalyzing}
+              type="button"
+              onClick={handleGenerateStoryboard}
+              disabled={isStoryboarding || isAnalyzing || isUploadingScript}
               className="card p-5 flex items-start gap-4 hover:border-white/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed group"
             >
               <div className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 group-hover:bg-white/10 transition-colors">
@@ -936,13 +1375,22 @@ export default function ProjectDetailPage() {
                           className="flex gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/5 hover:border-white/10 transition-colors"
                         >
                           {/* Shot visual placeholder */}
-                          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex flex-col items-center justify-center flex-shrink-0 overflow-hidden">
-                            <span className="text-[10px] font-bold text-gray-500 leading-none">
-                              {shot.shot_type}
-                            </span>
-                            <span className="text-[9px] text-gray-600 mt-0.5">
-                              #{shot.shot_number}
-                            </span>
+                          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex flex-col items-center justify-center flex-shrink-0 overflow-hidden relative">
+                            {shot.thumbnail_url || shot.preview_url ? (
+                              <img
+                                src={shot.thumbnail_url || shot.preview_url || undefined}
+                                alt={shot.asset_file_name || `Storyboard ${shot.shot_number}`}
+                                className="absolute inset-0 w-full h-full object-cover"
+                              />
+                            ) : null}
+                            <div className="relative z-10 bg-black/45 px-1.5 py-1 rounded-md text-center">
+                              <span className="text-[10px] font-bold text-gray-200 leading-none block">
+                                {shot.shot_type}
+                              </span>
+                              <span className="text-[9px] text-gray-300 mt-0.5 block">
+                                #{shot.shot_number}
+                              </span>
+                            </div>
                           </div>
                           {/* Shot details */}
                           <div className="flex-1 min-w-0">
@@ -953,6 +1401,16 @@ export default function ProjectDetailPage() {
                             <p className="text-gray-300 text-xs leading-relaxed line-clamp-2">
                               {shot.description}
                             </p>
+                            {(shot.preview_url || shot.thumbnail_url) && (
+                              <a
+                                href={shot.preview_url || shot.thumbnail_url || undefined}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-2 inline-flex text-[11px] text-amber-300 hover:text-amber-200"
+                              >
+                                Ver imagen
+                              </a>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -991,6 +1449,11 @@ export default function ProjectDetailPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── TAB: CONCEPT ART ── */}
+      {activeTab === 'concept-art' && (
+        <ConceptArtDryRunPanel projectId={projectId!} />
       )}
 
       {/* ── TAB: HISTORIAL ── */}
@@ -1513,6 +1976,16 @@ export default function ProjectDetailPage() {
           )}
         </div>
       )}
+
+      <StoryboardSequenceSelectorModal
+        open={storyboardModalOpen}
+        isLoading={isLoadingStoryboardCandidates}
+        error={storyboardCandidateError}
+        scenes={storyboardCandidates}
+        sequences={storyboardSequences}
+        onClose={() => setStoryboardModalOpen(false)}
+        onConfirm={confirmGenerateStoryboardSelection}
+      />
     </div>
   )
 }

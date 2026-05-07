@@ -12,8 +12,8 @@ python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 API local:
 
-- `http://localhost:8000`
-- `http://localhost:8000/docs`
+- `http://127.0.0.1:8010`
+- `http://127.0.0.1:8010/docs`
 
 Para el despliegue actual con Docker y Caddy, usa `README_WSL2.md` y `DOCKER.md`.
 
@@ -109,7 +109,7 @@ Los jobs se ordenan por:
 ## Ejemplo de envio de job
 
 ```bash
-curl -X POST "http://localhost:8000/api/render/jobs" \
+curl -X POST "http://127.0.0.1:8010/api/render/jobs" \
   -H "Content-Type: application/json" \
   -d '{
     "task_type": "still",

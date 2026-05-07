@@ -41,7 +41,7 @@
 
 **Criterio de Validacion:**
 ```bash
-curl http://localhost:8000/health  # {"status": "healthy"}
+curl http://127.0.0.1:8010/health  # {"status": "healthy"}
 curl http://localhost:3000        # Frontend carga
 ```
 
@@ -63,7 +63,7 @@ curl http://localhost:3000        # Frontend carga
 
 **Criterio de Validacion:**
 ```bash
-curl -X POST http://localhost:8000/api/render/jobs \
+curl -X POST http://127.0.0.1:8010/api/render/jobs \
   -d '{"task_type":"still",...}'  # Devuelve backend=still
 ```
 
@@ -85,7 +85,7 @@ curl -X POST http://localhost:8000/api/render/jobs \
 
 **Criterio de Validacion:**
 ```bash
-curl http://localhost:8000/api/queue/status
+curl http://127.0.0.1:8010/api/queue/status
 # Muestra jobs por backend con saturacion
 ```
 
@@ -107,8 +107,8 @@ curl http://localhost:8000/api/queue/status
 
 **Criterio de Validacion:**
 ```bash
-curl http://localhost:8000/api/plans/free/can-run/video  # false
-curl http://localhost:8000/api/plans/studio/can-run/video  # true
+curl http://127.0.0.1:8010/api/plans/free/can-run/video  # false
+curl http://127.0.0.1:8010/api/plans/studio/can-run/video  # true
 ```
 
 ---
@@ -130,7 +130,7 @@ curl http://localhost:8000/api/plans/studio/can-run/video  # true
 
 **Criterio de Validacion:**
 ```bash
-curl -X POST http://localhost:8000/api/workflows/plan \
+curl -X POST http://127.0.0.1:8010/api/workflows/plan \
   -d '{"intent":"robot en atardecer"}'
 # Devuelve task_type=still, workflow=still_text_to_image_pro
 ```
@@ -153,7 +153,7 @@ curl -X POST http://localhost:8000/api/workflows/plan \
 
 **Criterio de Validacion:**
 ```bash
-curl http://localhost:8000/api/ops/capabilities/still
+curl http://127.0.0.1:8010/api/ops/capabilities/still
 # Devuelve nodes_count, models_count, detected_capabilities
 ```
 
@@ -176,7 +176,7 @@ curl http://localhost:8000/api/ops/capabilities/still
 
 **Criterio de Validacion:**
 ```bash
-curl -X POST http://localhost:8000/api/demo/quick-start
+curl -X POST http://127.0.0.1:8010/api/demo/quick-start
 # Crea usuarios demo, devuelve credenciales
 ```
 

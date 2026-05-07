@@ -305,3 +305,25 @@ async def storyboard_render_dry_run(payload: dict):
         ) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/comfyui/storyboard/render")
+async def storyboard_render(payload: dict):
+    try:
+        return comfyui_storyboard_render_service.render_storyboard_with_plan(
+            project_id=None,
+            payload=payload,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "inventory_found": False,
+                "message": str(exc),
+            },
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

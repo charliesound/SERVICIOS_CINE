@@ -14,6 +14,9 @@ from services.comfyui_pipeline_builder_service import (
 
 
 logger = logging.getLogger(__name__)
+REAL_RENDER_BLOCKED_REASON = (
+    "Real ComfyUI render is disabled. Run dry_run=true or enable real render explicitly in a future release."
+)
 
 
 class ComfyUIStoryboardRenderService:
@@ -114,22 +117,40 @@ class ComfyUIStoryboardRenderService:
         prompt: str | None = None,
         negative_prompt: str | None = None,
     ) -> dict[str, Any]:
+        return self.build_comfyui_workflow_adapter_payload(
+            plan=plan,
+            prompt=prompt or "Storyboard prompt preview not provided in dry-run mode.",
+            negative_prompt=negative_prompt,
+        )
+
+    def build_comfyui_workflow_adapter_payload(
+        self,
+        plan: dict[str, Any],
+        prompt: str,
+        negative_prompt: str | None = None,
+    ) -> dict[str, Any]:
         self._ensure_config()
         pipeline = self._extract_pipeline(plan)
         params = dict(pipeline.get("params", {}))
 
         return {
             "workflow_id": pipeline.get("workflow_id"),
+            "workflow_status": pipeline.get("workflow_status"),
             "checkpoint_used": pipeline.get("checkpoint"),
+            "checkpoint": pipeline.get("checkpoint"),
             "vae_used": pipeline.get("vae"),
+            "vae": pipeline.get("vae"),
             "model_family": pipeline.get("model_family"),
+            "positive_prompt": prompt,
+            "negative_prompt": negative_prompt or "",
             "params": params,
             "selected_scenes": list(pipeline.get("selected_scenes", [])),
             "generation_mode": pipeline.get("generation_mode"),
             "safe_to_render": pipeline.get("safe_to_render"),
             "selection_reason": pipeline.get("reason"),
-            "prompt": prompt or "Storyboard prompt preview not provided in dry-run mode.",
-            "negative_prompt": negative_prompt or "",
+            "ready_for_comfyui_prompt": False,
+            "requires_template_mapping": True,
+            "template_mapping_status": "pending",
             "comfyui_request_preview": {
                 "base_url": self._base_url,
                 "workflow_name": pipeline.get("workflow_id"),
@@ -192,7 +213,7 @@ class ComfyUIStoryboardRenderService:
         return {
             "status": "blocked",
             "dry_run": False,
-            "reason": "Real ComfyUI render is intentionally disabled in this validation block.",
+            "reason": REAL_RENDER_BLOCKED_REASON,
             "project_id": project_id,
             "pipeline": prepared["pipeline"],
             "comfyui_payload_preview": prepared["comfyui_payload_preview"],
@@ -211,8 +232,56 @@ class ComfyUIStoryboardRenderService:
             "total_scenes": len(selected),
             "rendered_scenes": 0,
             "results": [],
-            "reason": "Real ComfyUI render is intentionally disabled in this validation block.",
+            "reason": REAL_RENDER_BLOCKED_REASON,
         }
 
 
 comfyui_storyboard_render_service = ComfyUIStoryboardRenderService()
+
+
+def validate_render_plan(plan: dict[str, Any]) -> None:
+    comfyui_storyboard_render_service.validate_render_plan(plan)
+
+
+def build_comfyui_prompt_payload(
+    plan: dict[str, Any],
+    prompt: str | None = None,
+    negative_prompt: str | None = None,
+) -> dict[str, Any]:
+    return comfyui_storyboard_render_service.build_comfyui_prompt_payload(
+        plan=plan,
+        prompt=prompt,
+        negative_prompt=negative_prompt,
+    )
+
+
+def build_comfyui_workflow_adapter_payload(
+    plan: dict[str, Any],
+    prompt: str,
+    negative_prompt: str | None = None,
+) -> dict[str, Any]:
+    return comfyui_storyboard_render_service.build_comfyui_workflow_adapter_payload(
+        plan=plan,
+        prompt=prompt,
+        negative_prompt=negative_prompt,
+    )
+
+
+def prepare_storyboard_render_request(
+    project_id: str | None,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    return comfyui_storyboard_render_service.prepare_storyboard_render_request(
+        project_id=project_id,
+        payload=payload,
+    )
+
+
+def render_storyboard_with_plan(
+    project_id: str | None,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    return comfyui_storyboard_render_service.render_storyboard_with_plan(
+        project_id=project_id,
+        payload=payload,
+    )

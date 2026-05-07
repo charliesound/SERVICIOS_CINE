@@ -118,6 +118,27 @@ async def storyboard_comfyui_render_dry_run(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+@router.post("/{project_id}/storyboard/render")
+async def render_storyboard_contract(
+    project_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> dict:
+    try:
+        await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+        return comfyui_storyboard_render_service.render_storyboard_with_plan(
+            project_id=project_id,
+            payload=payload,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @router.get("/{project_id}/storyboard", response_model=StoryboardListResponse)
 async def get_storyboard(
     project_id: str,

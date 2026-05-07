@@ -1,0 +1,99 @@
+{
+  "version": "v3_strict",
+  "brand": "AILinkCinema / CID",
+  "visual_identity": {
+    "image_negative_prompt_global": "readable text, letters, logo, watermark, cheap sci-fi look, generic futuristic interface, random cinematic people, oversaturated colors, low quality, blurry, distorted screens, malformed UI, cartoonish rendering"
+  },
+  "items": [
+    {
+      "image_key": "landing-hero-main-v3",
+      "block_label": "Hero principal",
+      "image_file_name": "landing-hero-main-v3.webp",
+      "landing_copy_focus": "CID como centro operativo inteligente para cine y produccion audiovisual",
+      "image_intent": "Plataforma central de produccion audiovisual con IA y pipeline completo.",
+      "image_prompt": "the image must clearly communicate: a central AI-powered audiovisual production platform for cinema, shown as a real control center that connects script, storyboard, planning, image generation, post-production and final delivery; single clear visual metaphor: one premium cinematic operations room as the brain of the entire pipeline; avoid generic futuristic interface; avoid random cinematic people unless the block requires team/studio; composition designed for website landing section background; dark cinematic premium technology style; no readable text; show multiple connected production surfaces with clear hierarchy so the viewer immediately understands this is the main platform and not a random tech room",
+      "image_negative_prompt": "abstract technology wallpaper, empty control room, spaceship bridge, random holograms"
+    },
+    {
+      "image_key": "landing-problem-fragmented-v3",
+      "block_label": "Problema / produccion fragmentada",
+      "image_file_name": "landing-problem-fragmented-v3.webp",
+      "landing_copy_focus": "Flujos desconectados entre guion, storyboard, produccion y post",
+      "image_intent": "Departamentos desconectados, materiales separados y caos organizado.",
+      "image_prompt": "the image must clearly communicate: fragmented audiovisual production with disconnected departments, isolated screens, separated script pages, storyboard materials and post-production references that do not connect to each other; single clear visual metaphor: one production workspace divided into disconnected islands; avoid generic futuristic interface; avoid random cinematic people unless the block requires team/studio; composition designed for website landing section background; dark cinematic premium technology style; no readable text; show organized chaos and visible separation between tools so it never looks like a beautiful centralized control interface",
+      "image_negative_prompt": "centralized dashboard, elegant orchestration hub, smooth connected lines, clean unified system"
+    },
+    {
+      "image_key": "landing-ai-reasoning-v3",
+      "block_label": "IA razona y estructura",
+      "image_file_name": "landing-ai-reasoning-v3.webp",
+      "landing_copy_focus": "La IA analiza guion, personajes y escenas antes de proponer imagen",
+      "image_intent": "Analisis de guion, personajes, localizaciones, escenas y planos recomendados.",
+      "image_prompt": "the image must clearly communicate: a screenplay being analyzed into characters, locations, scenes, technical breakdown and recommended shots before image generation; single clear visual metaphor: one structured analysis board built from script intelligence; avoid generic futuristic interface; avoid random cinematic people unless the block requires team/studio; composition designed for website landing section background; dark cinematic premium technology style; no readable text; the scene must feel like reasoning and structure, not image generation, not project management, and not abstract data art",
+      "image_negative_prompt": "image generation nodes, glowing render output, abstract charts, code rain, random analytics wallpaper"
+    },
+    {
+      "image_key": "landing-comfyui-generation-v3",
+      "block_label": "ComfyUI genera imagen",
+      "image_file_name": "landing-comfyui-generation-v3.webp",
+      "landing_copy_focus": "ComfyUI como motor visual controlado dentro del pipeline",
+      "image_intent": "Nodos visuales conectados generando un frame cinematografico.",
+      "image_prompt": "the image must clearly communicate: a node-based visual workflow generating a cinematic frame in a controlled way; single clear visual metaphor: connected nodes feeding one premium film frame as output; avoid generic futuristic interface; avoid random cinematic people unless the block requires team/studio; composition designed for website landing section background; dark cinematic premium technology style; no readable text; the image must look unmistakably like image creation through connected nodes, not script analysis, not operations management and not random abstract screens",
+      "image_negative_prompt": "script analysis board, delivery suite, generic control center, abstract neon geometry"
+    },
+    {
+      "image_key": "landing-cid-orchestration-v3",
+      "block_label": "CID orquesta el flujo",
+      "image_file_name": "landing-cid-orchestration-v3.webp",
+      "landing_copy_focus": "CID conecta todas las fases del pipeline audiovisual",
+      "image_intent": "Sistema central conectando guion, analisis, storyboard, concept art, produccion y delivery.",
+      "image_prompt": "the image must clearly communicate: one central system orchestrating script, analysis, storyboard, concept art, production and delivery modules; single clear visual metaphor: a central operational core with visible connected modules around it; avoid generic futuristic interface; avoid random cinematic people unless the block requires team/studio; composition designed for website landing section background; dark cinematic premium technology style; no readable text; it must feel like orchestration and flow management, with every module visibly linked to the center and easy to understand at a glance",
+      "image_negative_prompt": "fragmented desk, random node editor, empty server room, decorative abstract tunnel"
+    },
+    {
+      "image_key": "landing-storyboard-preview-v3",
+      "block_label": "Storyboard / previsualizacion",
+      "image_file_name": "landing-storyboard-preview-v3.webp",
+      "landing_copy_focus": "Continuidad visual y trabajo por escenas dentro del storyboard",
+      "image_intent": "Paneles de storyboard, secuencia de planos y continuidad visual.",
+      "image_prompt": "the image must clearly communicate: storyboard panels arranged as a sequence of shots with visual continuity between them; single clear visual metaphor: one premium storyboard board showing multiple connected cinematic panels; avoid generic futuristic interface; avoid random cinematic people unless the block requires team/studio; composition designed for website landing section background; dark cinematic premium technology style; no readable text; it must never look like a single hero image or isolated frame, and must clearly read as previsualization planning",
+      "image_negative_prompt": "single cinematic still, abstract poster, analysis dashboard, empty pinboard"
+    },
+    {
+      "image_key": "landing-concept-keyvisual-v3",
+      "block_label": "Concept Art / Key Visual",
+      "image_file_name": "landing-concept-keyvisual-v3.webp",
+      "landing_copy_focus": "Direccion artistica, concept art y exploracion de key visuals",
+      "image_intent": "Moodboard, key visual y material artistico vendible.",
+      "image_prompt": "the image must clearly communicate: a cinematic key visual and moodboard exploration for a film world, presented as premium concept art development; single clear visual metaphor: one art department board centered around a striking sellable key visual; avoid generic futuristic interface; avoid random cinematic people unless the block requires team/studio; composition designed for website landing section background; dark cinematic premium technology style; no readable text; this should be the most artistic and commercially attractive image, clearly more like concept art than analysis or management",
+      "image_negative_prompt": "office collaboration scene, random data UI, fragmented desk, generic wallpaper"
+    },
+    {
+      "image_key": "landing-producers-studios-v3",
+      "block_label": "Productoras y estudios",
+      "image_file_name": "landing-producers-studios-v3.webp",
+      "landing_copy_focus": "Equipos reales de productoras, estudios y coordinacion",
+      "image_intent": "Equipo profesional revisando materiales en un estudio moderno.",
+      "image_prompt": "the image must clearly communicate: a real professional production team inside a modern studio reviewing audiovisual materials together; single clear visual metaphor: one calm collaboration table facing premium review screens; avoid generic futuristic interface; composition designed for website landing section background; dark cinematic premium technology style; no readable text; because this block requires team/studio, include only a small believable group of professionals engaged in real review and decision-making, never random glamorous actors or startup coworking scenes",
+      "image_negative_prompt": "generic startup office, smiling stock team, party environment, empty room"
+    },
+    {
+      "image_key": "landing-professional-differential-v3",
+      "block_label": "Diferencial profesional",
+      "image_file_name": "landing-professional-differential-v3.webp",
+      "landing_copy_focus": "Trazabilidad, supervision y control profesional frente a herramientas aisladas",
+      "image_intent": "Sistema profesional con trazabilidad, capas, control y supervision.",
+      "image_prompt": "the image must clearly communicate: a professional production intelligence system with traceability, supervision, layered control and human oversight; single clear visual metaphor: visible layered oversight rails passing through one premium system; avoid generic futuristic interface; avoid random cinematic people unless the block requires team/studio; composition designed for website landing section background; dark cinematic premium technology style; no readable text; it can be a technology metaphor, but it must feel specific to control and traceability rather than a generic abstract background",
+      "image_negative_prompt": "random abstract wallpaper, decorative neon lines, blockchain art, sci-fi tunnel"
+    },
+    {
+      "image_key": "landing-delivery-final-v3",
+      "block_label": "Delivery / entrega final",
+      "image_file_name": "landing-delivery-final-v3.webp",
+      "landing_copy_focus": "Cierre operativo, validacion y entrega final del paquete audiovisual",
+      "image_intent": "Sala de finishing, QC y entrega final.",
+      "image_prompt": "the image must clearly communicate: a professional finishing, quality control and final delivery suite with approval-ready monitors and a sense of master handoff; single clear visual metaphor: one final delivery room at the end of the pipeline; avoid generic futuristic interface; avoid random cinematic people unless the block requires team/studio; composition designed for website landing section background; dark cinematic premium technology style; no readable text; it must feel like trustworthy professional closure and not like a control center, concept art board or abstract tech scene",
+      "image_negative_prompt": "early concept phase, storyboard board, node editor, chaotic review room"
+    }
+  ]
+}

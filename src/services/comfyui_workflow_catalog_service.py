@@ -58,6 +58,24 @@ WORKFLOW_CATALOG: list[dict[str, Any]] = [
         "workflow_path": str(WORKFLOWS_DIR / "cinematic_still_flux.json"),
     },
     {
+        "id": "cinematic_flux_cine_2",
+        "label": "Cinematic Flux Cine 2 (API Template)",
+        "task_types": ["concept_art", "key_visual", "flux_concept_art"],
+        "model_family": "flux",
+        "status": "functional_candidate",
+        "required_categories": ["diffusion_models", "clip", "text_encoders", "vae"],
+        "optional_categories": [],
+        "default_params": {
+            "width": 1344,
+            "height": 768,
+            "steps": 28,
+            "cfg": 3.5,
+            "sampler": "euler",
+            "scheduler": "simple",
+        },
+        "workflow_path": str(WORKFLOWS_DIR / "imported_templates" / "flux_cine_2.template.json"),
+    },
+    {
         "id": "video_wan",
         "label": "Video Wan",
         "task_types": ["video", "shot_animation"],
@@ -149,8 +167,10 @@ def _workflow_score(
             score += 80
         if quality in {"balanced", "high", "high_quality"} and workflow_id == "cinematic_storyboard_sdxl":
             score += 20
-    elif task_type in {"concept_art", "key_visual"} and workflow_id == "cinematic_still_flux":
+    elif task_type in {"concept_art", "key_visual", "flux_concept_art"} and workflow_id == "cinematic_flux_cine_2":
         score += 100
+    elif task_type in {"concept_art", "key_visual"} and workflow_id == "cinematic_still_flux":
+        score += 80
     elif task_type in {"video", "shot_animation"}:
         if workflow_id == "video_wan":
             score += 90

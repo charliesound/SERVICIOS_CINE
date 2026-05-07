@@ -43,7 +43,6 @@ def validate_template(filepath):
     # 3. Check for raw model files (MUST FAIL)
     model_extensions = r'\.(safetensors|ckpt|pt|pth|bin)[\s"\'`]'
     if re.search(model_extensions, text_lower):
-        # Find the actual matches for reporting
         matches = re.findall(r'[\w/\\]+\.(safetensors|ckpt|pt|pth|bin)', text)
         errors.append(f"Raw model files found: {matches[:5]}")
     
@@ -55,17 +54,38 @@ def validate_template(filepath):
         if ph not in text:
             errors.append(f"Missing required placeholder: {ph}")
     
-    # 5. Flux-specific placeholders
-    if 'flux' in text_lower:
+    # 5. Strict Flux detection
+    flux_detected = False
+    if '{{UNET_NAME}}' in text:
+        flux_detected = True
+    elif re.search(r'(?:class_type["\']?\s*:\s*["\']?|")\b(UNETLoader|DualCLIPLoader|FluxGuidance|ModelSamplingFlux)\b', text):
+        flux_detected = True
+    
+    if flux_detected:
         flux_placeholders = ['{{UNET_NAME}}', '{{CLIP_L_NAME}}', '{{T5XXL_NAME}}', '{{VAE_NAME}}']
         for ph in flux_placeholders:
             if ph not in text:
                 errors.append(f"Missing Flux placeholder: {ph}")
     
-    # 6. SDXL-specific placeholders
-    if 'sdxl' in text_lower or 'xl' in text_lower:
+    # 6. Strict SDXL detection — no confundir con T5XXL ni "xl" genérico
+    sdxl_detected = False
+    if 'CheckpointLoaderSimple' in text:
+        sdxl_detected = True
+    elif '{{CHECKPOINT_NAME}}' in text:
+        sdxl_detected = True
+    else:
+        # Solo detectar SDXL si hay nombres reales de modelos SDXL, NO "xl" genérico
+        sdxl_signals = re.findall(r'\b(sdxl|juggernaut|realvisxl|epicrealismxl|sd[\s._-]?xl)\b', text_lower)
+        if sdxl_signals:
+            sdxl_detected = True
+    
+    if sdxl_detected:
         if '{{CHECKPOINT_NAME}}' not in text:
-            warnings.append("Consider using {{CHECKPOINT_NAME}} for SDXL workflow")
+            errors.append("Missing {{CHECKPOINT_NAME}} for SDXL workflow")
+    
+    # 7. Warning for mixed signals
+    if flux_detected and sdxl_detected:
+        warnings.append("Both Flux and SDXL detected - verify correct placeholders")
     
     # Report
     if errors:

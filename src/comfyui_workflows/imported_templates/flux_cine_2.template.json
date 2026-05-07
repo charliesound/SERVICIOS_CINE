@@ -59,7 +59,7 @@
   },
   "6": {
     "inputs": {
-      "text": "{{POSITIVE_PROMPT}}",
+      "text": "{{NEGATIVE_PROMPT}}",
       "clip": [
         "2",
         0
@@ -93,14 +93,14 @@
         "4",
         0
       ],
-      "positive": [
-        "{{POSITIVE_PROMPT}}",
-        0
-      ],
-      "negative": [
-        "{{NEGATIVE_PROMPT}}",
-        0
-      ],
+        "positive": [
+          "5",
+          0
+        ],
+        "negative": [
+          "6",
+          0
+        ],
       "latent_image": [
         "7",
         0

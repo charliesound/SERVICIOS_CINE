@@ -51,6 +51,10 @@ from routes.distribution_pack_routes import router as distribution_pack_router
 from routes.sales_targets_routes import router as sales_targets_router
 from routes.crm_routes import router as crm_router
 from routes.cid_pipeline_routes import router as cid_pipeline_router
+from routes.ops_routes import pipeline_router
+from routes.ollama_storyboard_routes import router as ollama_storyboard_router
+from routes.comfyui_storyboard_routes import router as comfyui_storyboard_router
+from routes.concept_art_routes import router as concept_art_router
 
 # Services
 from services.logging_service import logger, request_logger
@@ -185,7 +189,11 @@ app.include_router(producer_pitch_router, tags=["producer-pitch"])
 app.include_router(distribution_pack_router, tags=["distribution"])
 app.include_router(sales_targets_router, tags=["sales-targets"])
 app.include_router(crm_router, tags=["commercial-crm"])
+app.include_router(pipeline_router, tags=["pipelines"])
 app.include_router(cid_pipeline_router, tags=["cid-pipelines"])
+app.include_router(ollama_storyboard_router, tags=["ollama-storyboard"])
+app.include_router(comfyui_storyboard_router, tags=["comfyui-storyboard"])
+app.include_router(concept_art_router, tags=["concept-art"])
 
 if os.getenv("CID_INTERNAL_TEST_MODE_ENABLED", "false").strip().lower() == "true":
     from routes.cid_test_routes import router as cid_test_router

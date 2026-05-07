@@ -54,7 +54,31 @@ export interface CompiledWorkflowPreview {
 export interface ConceptArtDryRunResponse {
   status: string
   project_id: string
+  job_id: string
   workflow_id: string
   pipeline: ConceptArtPipeline
   compiled_workflow_preview: CompiledWorkflowPreview
+  dry_run: boolean
+  render_executed: boolean
+  prompt_called: boolean
+}
+
+export interface ConceptArtJobSummary {
+  job_id: string
+  task_type: string
+  status: string
+  workflow_id: string | null
+  model_family: string | null
+  safe_to_render: boolean
+  dry_run: boolean
+  render_executed: boolean
+  prompt_called: boolean
+  created_at: string | null
+  created_by: string | null
+}
+
+export interface ConceptArtJobsResponse {
+  status: string
+  project_id: string
+  jobs: ConceptArtJobSummary[]
 }

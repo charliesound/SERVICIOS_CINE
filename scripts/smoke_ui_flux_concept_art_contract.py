@@ -38,6 +38,8 @@ def main() -> int:
 
     check("has compileProjectConceptArtWorkflowDryRun", "compileProjectConceptArtWorkflowDryRun" in api_text)
     check("has compileProjectKeyVisualWorkflowDryRun", "compileProjectKeyVisualWorkflowDryRun" in api_text)
+    check("has listProjectConceptArtJobs", "listProjectConceptArtJobs" in api_text)
+    check("uses /concept-art/jobs", "/concept-art/jobs" in api_text)
     check("uses /concept-art/compile-workflow-dry-run", "/concept-art/compile-workflow-dry-run" in api_text)
     check("uses /key-visual/compile-workflow-dry-run", "/key-visual/compile-workflow-dry-run" in api_text)
     check("imports client from ./client", "from './client'" in api_text or 'from "@/api/client"' in api_text)
@@ -49,6 +51,8 @@ def main() -> int:
     types_text = file_text(types_file)
     check("has ConceptArtDryRunPayload", "ConceptArtDryRunPayload" in types_text)
     check("has ConceptArtDryRunResponse", "ConceptArtDryRunResponse" in types_text)
+    check("has ConceptArtJobSummary", "ConceptArtJobSummary" in types_text)
+    check("has ConceptArtJobsResponse", "ConceptArtJobsResponse" in types_text)
     check("has ConceptArtPipeline", "ConceptArtPipeline" in types_text)
     check("has CompiledWorkflowPreview", "CompiledWorkflowPreview" in types_text)
 
@@ -63,9 +67,15 @@ def main() -> int:
     check("has Config button", "Preparar Concept Art" in comp_text or "Preparar Key Visual" in comp_text)
     check("has progress phases", "validating" in comp_text and "resolving" in comp_text and "compiling" in comp_text)
     check("has dry-run warning", "Dry-run" in comp_text and "ComfyUI" in comp_text)
-    prompt_refs = [line for line in comp_text.split("\n") if "/prompt" in line and "llamado a /prompt" not in line]
+    check("has job history heading", "Historial técnico" in comp_text)
+    check("has dry-run badge", "dry-run" in comp_text)
+    check("has render-no-ejecutado badge", "render no ejecutado" in comp_text)
+    check("has prompt-no-llamado badge", "/prompt no llamado" in comp_text)
+    check("uses fetchJobs", "fetchJobs" in comp_text)
+    check("uses listProjectConceptArtJobs", "listProjectConceptArtJobs" in comp_text)
+    prompt_refs = [line for line in comp_text.split("\n") if "/prompt" in line and "llamado a /prompt" not in line and "/prompt no llamado" not in line]
     check("no /prompt call (except warning)", len(prompt_refs) == 0, str(prompt_refs))
-    render_refs = [line for line in comp_text.split("\n") if "render" in line.lower() and "safe_to_render" not in line and "safe to render" not in line.lower() and "no se ejecuta render" not in line.lower() and "no se ha ejecutado render" not in line.lower()]
+    render_refs = [line for line in comp_text.split("\n") if "render" in line.lower() and "safe_to_render" not in line and "safe to render" not in line.lower() and "render_executed" not in line and "render no ejecutado" not in line and "no se ejecuta render" not in line.lower() and "no se ha ejecutado render" not in line.lower()]
     check("no render call (except safe_to_render / warning)", len(render_refs) == 0, str(render_refs))
 
     # 4. Page integration
@@ -80,7 +90,7 @@ def main() -> int:
     # 5. No prompt/render calls
     print("\n--- 5. Security check ---")
     all_src = "\n".join([api_text, types_text, comp_text, page_text])
-    prompt_lines = [line for line in all_src.split("\n") if "/prompt" in line and "llamado a /prompt" not in line]
+    prompt_lines = [line for line in all_src.split("\n") if "/prompt" in line and "llamado a /prompt" not in line and "/prompt no llamado" not in line]
     check("no /prompt in frontend code (except warning)", len(prompt_lines) == 0, str(prompt_lines))
     risk_patterns = ["api_key", "sk-", "password", "secret"]
     for pattern in risk_patterns:

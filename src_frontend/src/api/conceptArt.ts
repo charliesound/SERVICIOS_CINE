@@ -1,5 +1,5 @@
 import api from './client'
-import type { ConceptArtDryRunPayload, ConceptArtDryRunResponse } from '@/types/conceptArt'
+import type { ConceptArtDryRunPayload, ConceptArtDryRunResponse, ConceptArtJobsResponse } from '@/types/conceptArt'
 
 export const conceptArtApi = {
   compileProjectConceptArtWorkflowDryRun: async (
@@ -20,6 +20,15 @@ export const conceptArtApi = {
     const { data } = await api.post<ConceptArtDryRunResponse>(
       `/projects/${projectId}/key-visual/compile-workflow-dry-run`,
       payload
+    )
+    return data
+  },
+
+  listProjectConceptArtJobs: async (
+    projectId: string
+  ): Promise<ConceptArtJobsResponse> => {
+    const { data } = await api.get<ConceptArtJobsResponse>(
+      `/projects/${projectId}/concept-art/jobs`
     )
     return data
   },

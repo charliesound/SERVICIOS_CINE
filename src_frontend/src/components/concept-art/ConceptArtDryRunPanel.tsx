@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { conceptArtApi } from '@/api/conceptArt'
-import type { ConceptArtDryRunResponse } from '@/types/conceptArt'
+import type { ConceptArtDryRunResponse, ConceptArtJobSummary } from '@/types/conceptArt'
 import {
   Sparkles, Loader2, CheckCircle2, AlertCircle, Eye,
-  Monitor, Hash, Layers, Cpu,
+  Monitor, Hash, Layers, Cpu, Clock, FileText,
 } from 'lucide-react'
 
 type Mode = 'concept_art' | 'key_visual'
@@ -36,6 +36,24 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
   const [phasePercent, setPhasePercent] = useState(0)
   const [result, setResult] = useState<ConceptArtDryRunResponse | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const [jobs, setJobs] = useState<ConceptArtJobSummary[]>([])
+  const [jobsLoading, setJobsLoading] = useState(false)
+
+  const fetchJobs = useCallback(async () => {
+    setJobsLoading(true)
+    try {
+      const response = await conceptArtApi.listProjectConceptArtJobs(projectId)
+      setJobs(response.jobs)
+    } catch {
+      // silent
+    } finally {
+      setJobsLoading(false)
+    }
+  }, [projectId])
+
+  useEffect(() => {
+    void fetchJobs()
+  }, [fetchJobs])
 
   const reset = () => {
     setPhase('idle')
@@ -80,6 +98,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
       setResult(response)
       setPhase('done')
       setPhasePercent(100)
+      void fetchJobs()
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
       setErrorMsg(typeof detail === 'string' ? detail : 'Error al preparar el workflow')
@@ -351,13 +370,91 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
             )}
           </div>
 
-          {/* Warning */}
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-300 flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>Dry-run: no se ha ejecutado render real ni se ha llamado a /prompt de ComfyUI.</span>
-          </div>
-        </div>
+      {/* Warning */}
+      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-300 flex items-start gap-2">
+        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <span>Dry-run: no se ha ejecutado render real ni se ha llamado a /prompt de ComfyUI.</span>
+      </div>
+    </div>
       )}
+
+      {/* Historial técnico */}
+      <div className="card bg-dark-200/80 border border-white/5 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-gray-400" />
+            <h3 className="font-semibold text-sm">Historial técnico</h3>
+          </div>
+          <button
+            type="button"
+            onClick={fetchJobs}
+            disabled={jobsLoading}
+            className="text-xs text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-40"
+          >
+            {jobsLoading ? 'Cargando...' : 'Recargar'}
+          </button>
+        </div>
+        {jobsLoading && jobs.length === 0 ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+          </div>
+        ) : jobs.length === 0 ? (
+          <p className="text-gray-500 text-xs text-center py-6">
+            No hay dry-runs registrados. Ejecuta una preparación para ver el historial.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {jobs.map((job) => (
+              <div
+                key={job.job_id}
+                className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 text-sm"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <FileText className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-white">
+                        {job.task_type === 'concept_art' ? 'Concept Art' : 'Key Visual'}
+                      </span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${
+                        job.safe_to_render ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                      }`}>
+                        {job.safe_to_render ? 'safe' : 'unsafe'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                      <span className="font-mono truncate max-w-[120px]">{job.workflow_id}</span>
+                      <span>{job.created_at ? new Date(job.created_at).toLocaleString() : '—'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                        dry-run
+                      </span>
+                      {!job.render_executed && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                          render no ejecutado
+                        </span>
+                      )}
+                      {!job.prompt_called && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                          /prompt no llamado
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 ${
+                  job.status === 'dry_run_completed'
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : 'bg-gray-500/10 text-gray-400'
+                }`}>
+                  {job.status === 'dry_run_completed' ? 'completado' : job.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

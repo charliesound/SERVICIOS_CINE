@@ -16,6 +16,8 @@ from schemas.storyboard_schema import (
     StoryboardSequenceDetailResponse,
     StoryboardSequenceResponse,
 )
+from services.comfyui_model_inventory_service import ComfyUIInventoryError
+from services.comfyui_pipeline_builder_service import build_storyboard_pipeline_plan
 from services.storyboard_service import storyboard_service, StoryboardGenerationMode
 
 
@@ -71,6 +73,24 @@ async def generate_storyboard(
         overwrite=payload.overwrite,
     )
     return StoryboardJobResponse(**{k: result[k] for k in StoryboardJobResponse.model_fields.keys()})
+
+
+@router.post("/{project_id}/storyboard/comfyui/plan")
+async def plan_storyboard_comfyui_pipeline(
+    project_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> dict:
+    try:
+        await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+        return build_storyboard_pipeline_plan(project_id=project_id, payload=payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.get("/{project_id}/storyboard", response_model=StoryboardListResponse)

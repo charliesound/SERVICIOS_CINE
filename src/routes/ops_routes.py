@@ -14,6 +14,7 @@ from services.comfyui_search_service import (
     search_models,
     search_workflows as search_comfyui_workflows,
 )
+from services.comfyui_pipeline_builder_service import build_optimal_comfyui_pipeline
 
 router = APIRouter(prefix="/api/ops", tags=["ops"])
 
@@ -259,3 +260,22 @@ async def get_comfyui_recommendation(
                 "message": str(exc),
             },
         ) from exc
+
+
+@router.post("/comfyui/pipeline-builder")
+async def build_comfyui_pipeline(payload: dict):
+    try:
+        return build_optimal_comfyui_pipeline(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "inventory_found": False,
+                "message": str(exc),
+            },
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

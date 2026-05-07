@@ -6,28 +6,28 @@ const modules = [
     title: 'Análisis de guion',
     description:
       'Desglose automático de guion con identificación de personajes, localizaciones, planos y necesidades de producción.',
-    image: '/landing-media/studio-interface.webp',
+    image: '/landing-media/landing-problem-fragmented.webp',
   },
   {
     icon: ImageIcon,
     title: 'Moodboards visuales',
     description:
       'Construye referencias visuales por escena, personaje y atmósfera. Consolida la dirección artística antes del rodaje.',
-    image: '/landing-media/moodboard-frame.webp',
+    image: '/landing-media/landing-concept-keyvisual.webp',
   },
   {
     icon: Clapperboard,
     title: 'Storyboards cinematográficos',
     description:
       'Genera storyboards por plano con encuadre, ángulo e iluminación. Mantén continuidad visual entre escenas.',
-    image: '/landing-media/storyboard-panel.webp',
+    image: '/landing-media/landing-storyboard-preview.webp',
   },
   {
     icon: Waypoints,
     title: 'Pipeline Builder',
     description:
       'Orquesta el flujo completo: guion → análisis → prompt visual → ComfyUI → storyboard → revisión → entrega.',
-    image: '/landing-media/pipeline-frame.webp',
+    image: '/landing-media/landing-ai-reasoning.webp',
   },
 ]
 

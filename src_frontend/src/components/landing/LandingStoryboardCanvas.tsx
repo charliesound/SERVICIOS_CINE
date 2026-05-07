@@ -12,7 +12,7 @@ const scenes = [
     id: '02',
     title: 'Personaje principal',
     text: 'Primer plano del protagonista. Iluminación de claroscuro. Expresión de determinación.',
-    image: '/landing-media/character-scene.webp',
+    image: '/landing-media/landing-comfyui-generation.webp',
   },
   {
     id: '03',

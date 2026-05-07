@@ -50,7 +50,7 @@ export default function LandingPipelineBuilder() {
     <section className="relative border-t border-white/5 py-28 md:py-36">
       <div className="landing-section-bg-img">
         <img
-          src="/landing-media/pipeline-frame.webp"
+          src="/landing-media/landing-ai-reasoning.webp"
           alt=""
           className="h-full w-full object-cover opacity-[0.04]"
           loading="lazy"

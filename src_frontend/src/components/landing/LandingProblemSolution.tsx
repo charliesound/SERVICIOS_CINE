@@ -24,7 +24,7 @@ export default function LandingProblemSolution() {
       <div className="landing-section-glow-left" />
       <div className="landing-section-bg-img">
         <img
-          src="/landing-media/studio-interface.webp"
+          src="/landing-media/landing-problem-fragmented.webp"
           alt=""
           className="h-full w-full object-cover opacity-[0.04]"
           loading="lazy"

@@ -1,0 +1,10 @@
+landing-hero-main.webp	/mnt/g/COMFYUI_HUB/output/sketch_scene_1_cafe_00001_.png
+landing-problem-fragmented.webp	/mnt/g/COMFYUI_HUB/output/Qwen-Image-2512_00058_.png
+landing-ai-reasoning.webp	/mnt/g/COMFYUI_HUB/output/ComfyUI_00150_.png
+landing-comfyui-generation.webp	/mnt/g/COMFYUI_HUB/output/Qwen-Image-2512_00055_.png
+landing-cid-orchestration.webp	/mnt/g/COMFYUI_HUB/output/ComfyUI-45_right_00004_.png
+landing-storyboard-preview.webp	/mnt/g/COMFYUI_HUB/output/sB_shot2_storyboard_cinematic_premium_00002_.png
+landing-concept-keyvisual.webp	/mnt/g/COMFYUI_HUB/output/storyboard_fast_flux_00008_.png
+landing-producers-studios.webp	/mnt/g/COMFYUI_HUB/input/z-image-turbo_00008_.png
+landing-professional-differential.webp	/mnt/g/COMFYUI_HUB/input/Nueva carpeta/Qwen-Image-2512_00014_.png
+landing-delivery-final.webp	/mnt/g/COMFYUI_HUB/output/storyboard_fast_flux_00006_.png

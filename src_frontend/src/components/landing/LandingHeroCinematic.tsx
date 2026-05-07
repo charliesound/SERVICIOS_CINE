@@ -69,7 +69,7 @@ export default function LandingHeroCinematic({
         <div className="relative mt-10 w-full shrink-0 lg:mt-0 lg:w-[42rem]">
           <div className="landing-cinematic-hero-image">
             <img
-              src="/landing-media/hero-cinematic.webp"
+              src="/landing-media/landing-hero-main.webp"
               alt="Cineframe cinematográfico generado por IA"
               className="h-full w-full object-cover"
               loading="eager"

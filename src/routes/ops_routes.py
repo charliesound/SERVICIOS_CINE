@@ -8,6 +8,12 @@ from services.comfyui_model_inventory_service import (
     ComfyUIInventoryError,
     build_models_api_payload,
 )
+from services.comfyui_model_classifier_service import classify_comfyui_models
+from services.comfyui_search_service import (
+    recommend_for_task,
+    search_models,
+    search_workflows as search_comfyui_workflows,
+)
 
 router = APIRouter(prefix="/api/ops", tags=["ops"])
 
@@ -165,6 +171,85 @@ async def get_ops_status():
 async def get_comfyui_models():
     try:
         return build_models_api_payload()
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "inventory_found": False,
+                "message": str(exc),
+            },
+        ) from exc
+
+
+@router.get("/comfyui/classify")
+async def get_comfyui_classification():
+    try:
+        return classify_comfyui_models()
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "inventory_found": False,
+                "message": str(exc),
+            },
+        ) from exc
+
+
+@router.get("/comfyui/workflows")
+async def get_comfyui_workflows(
+    task_type: str | None = Query(default=None),
+    model_family: str | None = Query(default=None),
+):
+    try:
+        return search_comfyui_workflows(task_type=task_type, model_family=model_family)
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "inventory_found": False,
+                "message": str(exc),
+            },
+        ) from exc
+
+
+@router.get("/comfyui/search")
+async def get_comfyui_search(
+    q: str = Query(...),
+    category: str | None = Query(default=None),
+    family: str | None = Query(default=None),
+):
+    try:
+        return search_models(query=q, category=category, family=family)
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "inventory_found": False,
+                "message": str(exc),
+            },
+        ) from exc
+
+
+@router.get("/comfyui/recommend")
+async def get_comfyui_recommendation(
+    task_type: str = Query(...),
+    style: str = Query(default="cinematic_realistic"),
+    quality: str = Query(default="balanced"),
+    speed: str = Query(default="medium"),
+    preferred_model_family: str | None = Query(default=None),
+):
+    try:
+        return recommend_for_task(
+            task_type=task_type,
+            style=style,
+            quality=quality,
+            speed=speed,
+            preferred_model_family=preferred_model_family,
+        )
     except ComfyUIInventoryError as exc:
         raise HTTPException(
             status_code=404,

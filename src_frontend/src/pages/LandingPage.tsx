@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
-import BrandHeroSection from '@/components/landing/BrandHeroSection'
-import BrandPositioningSection from '@/components/landing/BrandPositioningSection'
-import CidProductSpotlight from '@/components/landing/CidProductSpotlight'
+import LandingHeroCinematic from '@/components/landing/LandingHeroCinematic'
+import LandingStudioModules from '@/components/landing/LandingStudioModules'
+import LandingStoryboardCanvas from '@/components/landing/LandingStoryboardCanvas'
+import LandingPipelineBuilder from '@/components/landing/LandingPipelineBuilder'
+import LandingCreativeControl from '@/components/landing/LandingCreativeControl'
+import LandingAudienceB2B from '@/components/landing/LandingAudienceB2B'
 import LandingReveal from '@/components/landing/LandingReveal'
 import SpecializedSolutionsGrid from '@/components/landing/SpecializedSolutionsGrid'
 import LandingSectionHeading from '@/components/landing/LandingSectionHeading'
@@ -102,12 +105,12 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div ref={shellRef} className="landing-shell landing-brand-shell min-h-screen text-white">
+    <div ref={shellRef} className="landing-shell landing-cinematic-shell min-h-screen text-white">
       <LandingAmbientScene />
       <div className="landing-noise" />
       <div className="landing-backdrop" />
 
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#07111d]/55 backdrop-blur-2xl">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-[#080808]/70 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-3">
             <img
@@ -117,8 +120,8 @@ export default function LandingPage() {
             />
             <div>
               <p className="text-lg font-semibold tracking-tight text-white">AILinkCinema</p>
-              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-400">
-                IA para cine y audiovisual
+              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-amber-400/70">
+                CID &mdash; Cine Inteligente Digital
               </p>
             </div>
           </Link>
@@ -182,16 +185,33 @@ export default function LandingPage() {
       </header>
 
       <main>
-        <BrandHeroSection
-          content={landingContent.hero}
+        <LandingHeroCinematic
+          content={{
+            eyebrow: landingContent.hero.eyebrow,
+            title: 'Cine Inteligente Digital',
+            subtitle: landingContent.hero.subtitle,
+            chips: landingContent.hero.chips,
+          }}
           exploreCidTarget={exploreCidTarget}
           solutionsTarget={solutionsTarget}
           requestDemoTarget={requestDemoTarget}
         />
-        <BrandPositioningSection content={landingContent.about} />
-        <CidProductSpotlight content={landingContent.cid} />
-        <SpecializedSolutionsGrid content={landingContent.solutions} />
-        <section id="mas-alla" className="relative border-y border-white/10 bg-[#09111c]/76 py-24">
+
+        <LandingStudioModules />
+
+        <LandingStoryboardCanvas />
+
+        <LandingPipelineBuilder />
+
+        <LandingCreativeControl />
+
+        <LandingAudienceB2B />
+
+        <section id="soluciones" className="relative border-t border-white/5 py-24">
+          <SpecializedSolutionsGrid content={landingContent.solutions} />
+        </section>
+
+        <section id="mas-alla" className="relative border-y border-white/5 bg-[#080808]/60 py-24">
            <div className="mx-auto grid max-w-7xl gap-10 px-5 md:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8">
              <LandingReveal>
                <LandingSectionHeading
@@ -200,7 +220,7 @@ export default function LandingPage() {
                  description={landingContent.serviceLayer.description}
                />
              </LandingReveal>
- 
+
              <div className="grid gap-6 sm:grid-cols-2">
                {landingContent.serviceLayer.bullets.map((bullet, index) => (
                  <LandingReveal key={bullet} delay={index * 90}>
@@ -215,8 +235,11 @@ export default function LandingPage() {
              </div>
            </div>
          </section>
+
         <LandingPricingSection content={landingContent.pricing} />
+
         <TrustLegalSection content={landingContent.trustLegal} />
+
         <section id="vision" className="relative py-24">
           <div className="mx-auto max-w-6xl px-5 md:px-6 lg:px-8">
             <LandingReveal>
@@ -232,6 +255,7 @@ export default function LandingPage() {
             </LandingReveal>
           </div>
         </section>
+
         <LandingFinalCta
           content={landingContent.finalCta}
           exploreCidTarget={exploreCidTarget}
@@ -240,7 +264,7 @@ export default function LandingPage() {
         />
       </main>
 
-      <footer className="border-t border-white/10 py-10">
+      <footer className="border-t border-white/5 py-10">
         <div className="mx-auto grid max-w-7xl gap-8 px-5 md:px-6 lg:grid-cols-[1fr_auto] lg:items-center lg:px-8">
           <div>
             <p className="font-display text-3xl text-white">{landingContent.footer.brandLine}</p>

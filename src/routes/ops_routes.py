@@ -4,6 +4,10 @@ from typing import Optional, List, Dict, Any
 
 from services.backend_capability_service import capability_service
 from services.instance_registry import registry
+from services.comfyui_model_inventory_service import (
+    ComfyUIInventoryError,
+    build_models_api_payload,
+)
 
 router = APIRouter(prefix="/api/ops", tags=["ops"])
 
@@ -155,3 +159,18 @@ async def get_ops_status():
         },
         "backends": backends_summary
     }
+
+
+@router.get("/comfyui/models")
+async def get_comfyui_models():
+    try:
+        return build_models_api_payload()
+    except ComfyUIInventoryError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "inventory_found": False,
+                "message": str(exc),
+            },
+        ) from exc

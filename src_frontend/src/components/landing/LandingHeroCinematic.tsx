@@ -5,7 +5,6 @@ interface HeroContent {
   eyebrow: string
   title: string
   subtitle: string
-  chips?: readonly string[]
 }
 
 interface LandingHeroCinematicProps {
@@ -65,15 +64,6 @@ export default function LandingHeroCinematic({
             </LandingActionButton>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-2.5">
-            {(content.chips ?? ['Análisis de guion', 'Storyboard', 'ComfyUI', 'Producción', 'Delivery']).map(
-              (chip) => (
-                <span key={chip} className="landing-pill">
-                  {chip}
-                </span>
-              ),
-            )}
-          </div>
         </div>
 
         <div className="relative mt-10 w-full shrink-0 lg:mt-0 lg:w-[42rem]">

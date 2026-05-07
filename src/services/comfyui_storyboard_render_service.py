@@ -6,6 +6,13 @@ import os
 from typing import Any
 from urllib import request as _urlreq
 
+from services.comfyui_api_client_service import (
+    DEFAULT_CLIENT_ID,
+    check_comfyui_health,
+    get_comfyui_base_url,
+    is_real_render_enabled,
+    submit_prompt_to_comfyui,
+)
 from services.comfyui_pipeline_builder_service import (
     build_optimal_comfyui_pipeline,
     build_storyboard_pipeline_plan,
@@ -36,10 +43,7 @@ class ComfyUIStoryboardRenderService:
 
     def _ensure_config(self) -> None:
         if self._base_url is None:
-            self._base_url = os.environ.get(
-                "COMFYUI_STORYBOARD_BASE_URL",
-                "http://127.0.0.1:8188",
-            )
+            self._base_url = get_comfyui_base_url()
             self._output_dir = os.environ.get(
                 "COMFYUI_STORYBOARD_OUTPUT_DIR",
                 "/opt/SERVICIOS_CINE/media/storyboards",
@@ -64,15 +68,12 @@ class ComfyUIStoryboardRenderService:
     async def healthcheck(self) -> dict[str, Any]:
         self._ensure_config()
         try:
-            request = _urlreq.Request(f"{self._base_url}/system_stats")
-            with _urlreq.urlopen(request, timeout=5) as response:
-                data = json.loads(response.read())
-            device = data.get("system", {}).get("devices", [{}])[0]
+            data = check_comfyui_health()
             return {
                 "available": True,
                 "base_url": self._base_url,
-                "device": device.get("name", "unknown"),
-                "vram": device.get("vram_usage", {}).get("total", 0),
+                "device": data.get("device", "unknown"),
+                "system": data.get("system", {}),
             }
         except Exception as exc:
             logger.warning("ComfyUI health check failed: %s", exc)
@@ -228,13 +229,53 @@ class ComfyUIStoryboardRenderService:
             prepared["status"] = "planned"
             return prepared
 
+        if not is_real_render_enabled():
+            return {
+                "status": "blocked",
+                "dry_run": False,
+                "reason": REAL_RENDER_BLOCKED_REASON,
+                "project_id": project_id,
+                "pipeline": prepared["pipeline"],
+                "comfyui_payload_preview": prepared["comfyui_payload_preview"],
+                "compiled_workflow_preview": prepared.get("compiled_workflow_preview"),
+            }
+
+        compiled_preview = prepared.get("compiled_workflow_preview") or {}
+        if compiled_preview.get("status") != "ok":
+            raise RuntimeError(
+                f"Compiled workflow is not ready for ComfyUI render: {compiled_preview.get('error', 'unknown error')}"
+            )
+
+        health = check_comfyui_health()
+        if not health.get("available"):
+            raise RuntimeError(f"ComfyUI health check failed: {health.get('error', 'service unavailable')}")
+
+        compiled_workflow = compiled_preview.get("compiled_workflow")
+        if not isinstance(compiled_workflow, dict) or not compiled_workflow:
+            raise RuntimeError("Compiled workflow is empty; cannot submit render to ComfyUI")
+
+        submit_response = submit_prompt_to_comfyui(
+            compiled_workflow,
+            client_id=DEFAULT_CLIENT_ID,
+        )
+        prompt_id = submit_response.get("prompt_id")
+        if not prompt_id:
+            raise RuntimeError("ComfyUI /prompt did not return prompt_id")
+
         return {
-            "status": "blocked",
+            "status": "queued",
             "dry_run": False,
-            "reason": REAL_RENDER_BLOCKED_REASON,
+            "real_render": True,
             "project_id": project_id,
+            "workflow_id": prepared["pipeline"].get("workflow_id"),
+            "checkpoint_used": prepared["pipeline"].get("checkpoint"),
+            "prompt_id": prompt_id,
+            "client_id": DEFAULT_CLIENT_ID,
             "pipeline": prepared["pipeline"],
+            "compiled_workflow_validation": compiled_preview.get("validation"),
+            "comfyui_submit_response": submit_response,
             "comfyui_payload_preview": prepared["comfyui_payload_preview"],
+            "compiled_workflow_preview": compiled_preview,
         }
 
     async def render_batch(

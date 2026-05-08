@@ -1,0 +1,196 @@
+{
+  "version": "v5",
+  "brand": "AILinkCinema / CID",
+  "description": "Mapeo manual de imagenes de referencia ChatGPT -> bloque visual V5. Copia este archivo a landing_reference_map_v5.json y completa reference_image_file con las rutas en .tmp/landing_comfyui_v5/reference_images/",
+  "instruction": "1. Ejecuta scripts/prepare_landing_v5_reference_images_from_downloads.py para copiar referencias desde Downloads. 2. Edita este mapa: para cada bloque, asigna reference_image_file al nombre del archivo copiado. 3. Ajusta reference_strength (0.0-1.0) segun cuanta influencia debe tener la referencia. 4. reference_role: composition|lighting|style|moodboard|layout",
+  "items": [
+    {
+      "image_key": "landing-hero-main-v5",
+      "reference_image_file": "",
+      "reference_role": "composition",
+      "reference_strength": 0.55,
+      "must_preserve": [
+        "estructura de dashboard panoramico",
+        "distribucion izquierda-a-derecha del pipeline",
+        "atmosfera oscura premium con acentos amber"
+      ],
+      "must_not_copy": [
+        "texto exacto",
+        "logos",
+        "marcas de agua",
+        "UI generica sin contexto"
+      ],
+      "semantic_goal": "Centro de control operativo cinematografico con pipeline completo visible"
+    },
+    {
+      "image_key": "landing-problem-fragmented-v5",
+      "reference_image_file": "",
+      "reference_role": "layout",
+      "reference_strength": 0.50,
+      "must_preserve": [
+        "separacion visual entre elementos",
+        "paleta fria teal en lugar de amber",
+        "vista cenital de mesa de produccion"
+      ],
+      "must_not_copy": [
+        "objetos especificos no relacionados con produccion",
+        "marcas comerciales",
+        "texto legible"
+      ],
+      "semantic_goal": "Fragmentacion organizada y premium de herramientas de produccion"
+    },
+    {
+      "image_key": "landing-ai-reasoning-v5",
+      "reference_image_file": "",
+      "reference_role": "style",
+      "reference_strength": 0.50,
+      "must_preserve": [
+        "estructura de pantalla dividida",
+        "resaltado semantico sobre texto",
+        "estetica de herramienta de analisis profesional"
+      ],
+      "must_not_copy": [
+        "texto exacto del guion",
+        "fotos de personas especificas",
+        "logotipos"
+      ],
+      "semantic_goal": "IA analizando guion con extraccion semantica visible"
+    },
+    {
+      "image_key": "landing-concept-keyvisual-v5",
+      "reference_image_file": "",
+      "reference_role": "moodboard",
+      "reference_strength": 0.55,
+      "must_preserve": [
+        "organizacion por escenas",
+        "paletas de color visibles como swatches",
+        "variedad de referencias por escena"
+      ],
+      "must_not_copy": [
+        "imagenes de stock especificas",
+        "fotos de actores reales",
+        "marcas de agua"
+      ],
+      "semantic_goal": "Moodboard profesional organizado por escenas del guion"
+    },
+    {
+      "image_key": "landing-storyboard-preview-v5",
+      "reference_image_file": "",
+      "reference_role": "layout",
+      "reference_strength": 0.55,
+      "must_preserve": [
+        "secuencia horizontal de 5-6 viñetas",
+        "mismo personaje en todas las viñetas",
+        "progresion de planos"
+      ],
+      "must_not_copy": [
+        "rostros exactos de personajes",
+        "fondos de localizacion especifica",
+        "marcas o logos"
+      ],
+      "semantic_goal": "Tira de storyboard con continuidad visual entre planos"
+    },
+    {
+      "image_key": "landing-comfyui-generation-v5",
+      "reference_image_file": "",
+      "reference_role": "style",
+      "reference_strength": 0.50,
+      "must_preserve": [
+        "interfaz node-based",
+        "workflow conectado con glowing",
+        "imagen generada como resultado principal"
+      ],
+      "must_not_copy": [
+        "texto exacto en nodos",
+        "UI de aplicacion especifica",
+        "artefactos de generacion"
+      ],
+      "semantic_goal": "Workflow ComfyUI generando imagen cinematografica controlada"
+    },
+    {
+      "image_key": "landing-cid-orchestration-v5",
+      "reference_image_file": "",
+      "reference_role": "composition",
+      "reference_strength": 0.55,
+      "must_preserve": [
+        "7 modulos en secuencia horizontal",
+        "flechas de conexion luminosas",
+        "miniaturas dentro de modulos"
+      ],
+      "must_not_copy": [
+        "iconos de marcas especificas",
+        "texto exacto en etiquetas",
+        "diagramas corporativos genericos"
+      ],
+      "semantic_goal": "Pipeline horizontal premium con 7 modulos interconectados"
+    },
+    {
+      "image_key": "landing-producers-studios-v5",
+      "reference_image_file": "",
+      "reference_role": "lighting",
+      "reference_strength": 0.50,
+      "must_preserve": [
+        "sala oscura con pantalla como fuente de luz",
+        "dos profesionales revisando material",
+        "atmosfera de sala de proyeccion"
+      ],
+      "must_not_copy": [
+        "rostros de actores o personas reales",
+        "marcas de equipos especificos",
+        "texto en pantalla"
+      ],
+      "semantic_goal": "Sesion de revision profesional en sala de proyeccion"
+    },
+    {
+      "image_key": "landing-professional-differential-v5",
+      "reference_image_file": "",
+      "reference_role": "layout",
+      "reference_strength": 0.50,
+      "must_preserve": [
+        "linea de tiempo horizontal con versiones",
+        "checkpoints de aprobacion",
+        "badges de estado"
+      ],
+      "must_not_copy": [
+        "UI de herramienta especifica",
+        "datos reales de proyectos",
+        "logotipos"
+      ],
+      "semantic_goal": "Panel de trazabilidad profesional con versionado y aprobaciones"
+    },
+    {
+      "image_key": "landing-delivery-final-v5",
+      "reference_image_file": "",
+      "reference_role": "style",
+      "reference_strength": 0.50,
+      "must_preserve": [
+        "lista de entregables con checkmarks",
+        "badge de LISTO PARA ENTREGA",
+        "estetica de suite de finishing"
+      ],
+      "must_not_copy": [
+        "nombres de entregables especificos de otro proyecto",
+        "marcas de software",
+        "datos reales"
+      ],
+      "semantic_goal": "Dashboard de delivery con QC pasado y badge de listo para entrega"
+    },
+    {
+      "image_key": "landing-visual-bible-v5",
+      "reference_image_file": "",
+      "reference_role": "layout",
+      "reference_strength": 0.50,
+      "must_preserve": [
+        "cuadricula organizada con secciones",
+        "guion + personajes + localizaciones + paleta",
+        "conexiones visuales entre elementos"
+      ],
+      "must_not_copy": [
+        "contenido textual especifico",
+        "fotos de actores reales",
+        "marcas de agua"
+      ],
+      "semantic_goal": "Biblia visual cinematografica completa con referencias cruzadas"
+    }
+  ]
+}

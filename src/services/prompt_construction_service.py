@@ -7,6 +7,7 @@ from typing import Any
 import yaml
 
 from schemas.cid_script_to_prompt_schema import CinematicIntent, PromptSpec
+from schemas.cid_visual_reference_schema import EnrichedVisualIntent, ScriptVisualAlignmentResult, StyleReferenceProfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,9 +26,11 @@ class PromptConstructionService:
         width: int = 1536,
         height: int = 864,
         allow_director_reference_names: bool = False,
+        visual_reference_profile: StyleReferenceProfile | None = None,
+        enriched_intent: EnrichedVisualIntent | None = None,
     ) -> PromptSpec:
-        positive_prompt = self._build_positive_prompt(intent, style_preset, allow_director_reference_names)
-        negative_prompt = self._build_negative_prompt(intent)
+        positive_prompt = self._build_positive_prompt(intent, style_preset, allow_director_reference_names, visual_reference_profile, enriched_intent)
+        negative_prompt = self._build_negative_prompt(intent, visual_reference_profile=visual_reference_profile, enriched_intent=enriched_intent)
         semantic_anchors = [
             f"subject:{intent.subject}",
             f"action:{intent.action}",
@@ -58,6 +61,8 @@ class PromptConstructionService:
         intent: CinematicIntent,
         style_preset: str,
         allow_director_reference_names: bool,
+        visual_reference_profile: StyleReferenceProfile | None = None,
+        enriched_intent: EnrichedVisualIntent | None = None,
     ) -> str:
         required_elements = ", ".join(intent.required_elements)
         continuity_text = ", ".join(intent.continuity_anchors) if intent.continuity_anchors else "maintain project visual coherence"
@@ -114,7 +119,36 @@ class PromptConstructionService:
                 f"visual continuity: {editorial_purpose.visual_continuity}",
                 f"emotional continuity: {editorial_purpose.emotional_continuity}",
             ]
-        del allow_director_reference_names
+        visual_reference_parts: list[str] = []
+        if visual_reference_profile is not None:
+            visual_reference_parts = [
+                f"visual reference guidance: {visual_reference_profile.visual_summary}",
+            ]
+            ref_traits_lower = [t.lower() for t in visual_reference_profile.transferable_traits]
+            if visual_reference_profile.palette_description and "palette" in " ".join(ref_traits_lower):
+                visual_reference_parts.append(f"palette guided by reference: {visual_reference_profile.palette_description}")
+            if visual_reference_profile.lighting_description and "lighting" in " ".join(ref_traits_lower):
+                visual_reference_parts.append(f"lighting guided by reference: {visual_reference_profile.lighting_description}")
+            if visual_reference_profile.atmosphere_description:
+                visual_reference_parts.append(f"atmosphere guided by reference: {visual_reference_profile.atmosphere_description}")
+            if visual_reference_profile.composition_description and "composition" in " ".join(ref_traits_lower):
+                visual_reference_parts.append(f"composition guided by reference: {visual_reference_profile.composition_description}")
+            if visual_reference_profile.texture_description and "texture" in " ".join(ref_traits_lower):
+                visual_reference_parts.append(f"texture guided by reference: {visual_reference_profile.texture_description}")
+
+        enriched_parts: list[str] = []
+        if enriched_intent is not None:
+            if enriched_intent.merged_intent_summary:
+                enriched_parts.append(f"script-reference alignment: {enriched_intent.merged_intent_summary}")
+            if enriched_intent.scene_requirements:
+                enriched_parts.append(f"scene requirements: {'; '.join(enriched_intent.scene_requirements)}")
+            if enriched_intent.visual_requirements:
+                enriched_parts.append(f"visual requirements: {'; '.join(enriched_intent.visual_requirements)}")
+            if enriched_intent.non_negotiable_story_elements:
+                enriched_parts.append(f"non-negotiable story: {'; '.join(enriched_intent.non_negotiable_story_elements[:3])}")
+            if enriched_intent.non_negotiable_visual_elements:
+                enriched_parts.append(f"non-negotiable visual: {'; '.join(enriched_intent.non_negotiable_visual_elements[:3])}")
+
         positive_prompt = (
             f"{style_preset}, "
             f"subject: {intent.subject}, "
@@ -125,12 +159,18 @@ class PromptConstructionService:
             f"lighting: {intent.lighting}, color palette: {intent.color_palette}, composition: {intent.composition}, "
             f"movement: {intent.movement or 'static or minimal cinematic motion'}, mood: {intent.mood}, "
             f"required visual elements: {required_elements}, continuity anchors: {continuity_text}, "
-            f"{', '.join(directorial_segments + montage_segments + editorial_segments)}, "
+            f"{', '.join(directorial_segments + montage_segments + editorial_segments + visual_reference_parts + enriched_parts)}, "
             "clean, semantically grounded, cinematic, production-aware, premium visual language, precise symmetrical framing when needed, suspense built through negative space when needed, warm humanist blocking when needed, expressive color-coded melodrama when needed, surreal disruption inside a realistic social space when needed"
         )
         return self._sanitize_positive_prompt(positive_prompt)
 
-    def _build_negative_prompt(self, intent: CinematicIntent) -> str:
+    def _build_negative_prompt(
+        self,
+        intent: CinematicIntent,
+        *,
+        visual_reference_profile: StyleReferenceProfile | None = None,
+        enriched_intent: EnrichedVisualIntent | None = None,
+    ) -> str:
         rules = self._load_rules()
         global_forbidden = list(rules.get("semantic_rules", {}).get("universal", {}).get("avoid", []))
         output_forbidden = list(
@@ -152,6 +192,16 @@ class PromptConstructionService:
                 "director imitation",
             ]
         )
+        if visual_reference_profile is not None:
+            for constraint in visual_reference_profile.negative_constraints:
+                normalized = constraint.strip()
+                if normalized and normalized not in forbidden:
+                    forbidden.append(normalized)
+        if enriched_intent is not None and enriched_intent.negative_guidance:
+            for item in enriched_intent.negative_guidance.split(";"):
+                normalized = item.strip()
+                if normalized and normalized not in forbidden:
+                    forbidden.append(normalized)
         unique = []
         seen: set[str] = set()
         for item in forbidden:

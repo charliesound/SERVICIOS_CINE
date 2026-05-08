@@ -8,11 +8,16 @@ from schemas.cid_script_to_prompt_schema import (
     ScriptSequence,
     ScriptToPromptRunResponse,
 )
+from schemas.cid_visual_reference_schema import (
+    ScriptVisualAlignmentRequest,
+    StyleReferenceProfile,
+)
 from services.cid_script_scene_parser_service import cid_script_scene_parser_service
 from services.cinematic_intent_service import cinematic_intent_service
 from services.continuity_memory_service import continuity_memory_service
 from services.prompt_construction_service import prompt_construction_service
 from services.semantic_prompt_validation_service import semantic_prompt_validation_service
+from services.script_visual_alignment_service import script_visual_alignment_service
 from services.visual_qc_service import visual_qc_service
 
 
@@ -29,6 +34,7 @@ async def run_script_to_prompt_pipeline(
     director_lens_id: str | None = "adaptive_auteur_fusion",
     montage_profile_id: str | None = "adaptive_montage",
     allow_director_reference_names: bool = False,
+    visual_reference_profile: StyleReferenceProfile | None = None,
 ) -> ScriptToPromptRunResponse:
     warnings: list[str] = []
     if not (script_text or "").strip():
@@ -79,6 +85,8 @@ async def run_script_to_prompt_pipeline(
     prompts = []
     validations = []
     qa_results = []
+    alignment_results: list[dict] = []
+    enriched_intents: list[dict] = []
 
     for scene in scenes:
         continuity_anchors = continuity_memory_service.build_continuity_anchors(scene, project_memory)
@@ -90,10 +98,31 @@ async def run_script_to_prompt_pipeline(
             montage_profile_id=montage_profile_id,
             allow_director_reference_names=allow_director_reference_names,
         )
+
+        enriched = None
+        if visual_reference_profile is not None:
+            try:
+                align_request = ScriptVisualAlignmentRequest(
+                    project_id=visual_reference_profile.project_id,
+                    scene_id=scene.scene_id,
+                    script_excerpt=scene.raw_text,
+                    reference_profile=visual_reference_profile,
+                )
+                align_result, enriched = script_visual_alignment_service.align(align_request)
+                alignment_results.append(align_result.model_dump())
+                enriched_intents.append(enriched.model_dump())
+                if align_result.warnings:
+                    warnings.extend(align_result.warnings)
+            except Exception as exc:
+                logger.warning("Visual reference alignment failed for scene %s: %s", scene.scene_id, exc)
+                alignment_results.append({"error": str(exc), "scene_id": scene.scene_id})
+
         prompt = prompt_construction_service.build_prompt_spec(
             intent,
             style_preset=style_preset,
             allow_director_reference_names=allow_director_reference_names,
+            visual_reference_profile=visual_reference_profile,
+            enriched_intent=enriched,
         )
         validation = semantic_prompt_validation_service.validate(prompt, intent)
         prompt.validation_status = "valid" if validation.is_valid else "invalid"
@@ -113,6 +142,8 @@ async def run_script_to_prompt_pipeline(
         prompts=prompts,
         validations=validations,
         qa=qa_results,
+        alignment_results=alignment_results,
+        enriched_intents=enriched_intents,
         status=status,
         warnings=list(dict.fromkeys(warnings)),
     )

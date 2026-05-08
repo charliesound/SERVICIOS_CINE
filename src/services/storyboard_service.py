@@ -205,6 +205,8 @@ class StoryboardService:
         use_cinematic_intelligence: bool = False,
         use_montage_intelligence: bool = False,
         validate_prompts: bool = False,
+        visual_reference_profile_id: str | None = None,
+        visual_reference_mode: str | None = None,
     ) -> dict[str, Any]:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
         analysis_data = await self._get_analysis_payload(db, project)
@@ -324,6 +326,8 @@ class StoryboardService:
                     montage_profile_id=montage_profile_id,
                     use_montage_intelligence=use_montage_intelligence,
                     validate_prompts=validate_prompts,
+                    visual_reference_profile_id=visual_reference_profile_id,
+                    visual_reference_mode=visual_reference_mode,
                 )
             else:
                 llm_shot_bundle = await self._run_llm_storyboard_prompts_or_none(
@@ -846,6 +850,8 @@ class StoryboardService:
         montage_profile_id: Optional[str] = None,
         use_montage_intelligence: bool = False,
         validate_prompts: bool = False,
+        visual_reference_profile_id: str | None = None,
+        visual_reference_mode: str | None = None,
     ) -> list[dict[str, Any]]:
         script_scene = self._scene_dict_to_script_scene(scene)
         continuity_anchors = continuity_memory_service.build_continuity_anchors(
@@ -859,9 +865,24 @@ class StoryboardService:
             director_lens_id=director_lens_id or "adaptive_auteur_fusion",
             montage_profile_id=montage_profile_id or "adaptive_montage",
         )
+        enriched = None
+        alignment_score_captured = None
+        if visual_reference_profile_id:
+            from schemas.cid_visual_reference_schema import ScriptVisualAlignmentRequest
+            from services.script_visual_alignment_service import script_visual_alignment_service
+            try:
+                align_request = ScriptVisualAlignmentRequest(
+                    scene_id=script_scene.scene_id,
+                    script_excerpt=script_scene.raw_text,
+                )
+                align_result, enriched = script_visual_alignment_service.align(align_request)
+                alignment_score_captured = align_result.alignment_score
+            except Exception:
+                pass
         prompt_spec = prompt_construction_service.build_prompt_spec(
             intent,
             style_preset=style_preset,
+            enriched_intent=enriched,
         )
         validation = None
         if validate_prompts:
@@ -902,7 +923,16 @@ class StoryboardService:
                 "prompt_spec": self._serialize_model(prompt_spec),
                 "cinematic_intent_id": intent.intent_id,
                 "director_lens_id": intent.director_lens_id,
+                "visual_reference_profile_id": visual_reference_profile_id,
+                "visual_reference_mode": visual_reference_mode or "palette_lighting",
             }
+            if enriched is not None:
+                metadata_payload["script_visual_alignment"] = {
+                    "enriched_intent_summary": enriched.merged_intent_summary,
+                    "alignment_score": alignment_score_captured,
+                    "non_negotiable_story": enriched.non_negotiable_story_elements,
+                    "non_negotiable_visual": enriched.non_negotiable_visual_elements,
+                }
             if validation:
                 metadata_payload["validation"] = self._serialize_model(validation)
 

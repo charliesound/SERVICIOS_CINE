@@ -1,0 +1,127 @@
+version: 1
+name: CID Visual Reference Alignment Rules
+
+goal: >
+  Regular cómo CID coteja una imagen de referencia visual con el texto del guion
+  para producir una intención visual enriquecida y alineada semánticamente.
+
+alignment_keywords:
+  mood:
+    - atmosfera
+    - ambiente
+    - mood
+    - tension
+    - intimo
+    - tenso
+    - relajado
+    - oscuro
+    - luminoso
+    - sombrio
+    - dramatico
+    - tranquilo
+    - inquietante
+    - soledad
+    - esperanza
+  lighting:
+    - luz
+    - iluminacion
+    - penumbra
+    - contraluz
+    - sombra
+    - claroscuro
+    - brillo
+    - tenue
+    - luz natural
+    - luz artificial
+    - neon
+    - velas
+    - atardecer
+    - noche
+  character:
+    - personaje
+    - protagonista
+    - actor
+    - figura
+    - rostro
+    - mirada
+    - expresion
+    - cuerpo
+    - silueta
+  action:
+    - accion
+    - movimiento
+    - blocking
+    - entra
+    - sale
+    - camina
+    - corre
+    - se sienta
+    - se levanta
+    - mira
+    - senala
+    - abre
+    - cierra
+  location:
+    - interior
+    - exterior
+    - sala
+    - habitacion
+    - calle
+    - edificio
+    - estudio
+    - despacho
+    - cocina
+    - salon
+    - teatro
+    - plato
+
+decision_rules:
+  script_overrides_visual_literal: true
+  description: >
+    El guion tiene prioridad absoluta sobre la literalidad visual de la imagen.
+    Si la imagen sugiere una composición, iluminación o acción que contradice
+    lo escrito en el guion, CID debe priorizar el guion.
+
+  reference_guides_atmosphere: true
+  description: >
+    La imagen de referencia es válida para guiar atmósfera, paleta de color,
+    tipo de iluminación, textura y sensación general. Nunca para reemplazar
+    el contenido narrativo del guion.
+
+  no_identity_copy: true
+  description: >
+    No transferir sujetos específicos, caras, marcas, logos, textos o
+    elementos únicos de la imagen de referencia al prompt generado.
+
+  epoch_location_override: true
+  description: >
+    Si la imagen contradice la época o localización del guion, reducir
+    drásticamente el peso de transferencia visual. Por ejemplo: referencia
+    futurista para una escena de época debe limitarse a atmósfera/luz.
+
+  ambiguous_script_support: true
+  description: >
+    Si el guion es ambiguo en atmósfera o descripción visual, la referencia
+    puede usarse como apoyo de dirección artística y para definir el tono.
+
+  precise_action_preservation: true
+  description: >
+    Si el guion describe con precisión una acción o blocking, no reemplazarlo
+    por la composición de la referencia salvo que el director lo autorice
+    explícitamente en sus notas.
+
+  director_notes_priority: true
+  description: >
+    Si el director aporta notas textuales, estas tienen prioridad sobre
+    cualquier inferencia automática del análisis de imagen.
+
+scoring:
+  base_alignment: 0.5
+  per_match_bonus: 0.08
+  per_tension_penalty: 0.1
+  max_score: 1.0
+  min_score: 0.0
+  score_interpretation:
+    ">= 0.7": "Buena alineación: imagen y guion son compatibles"
+    "0.4 - 0.7": "Alineación moderada: requiere revisión manual de tensiones"
+    "< 0.4": "Mala alineación: imagen y guion divergen significativamente"

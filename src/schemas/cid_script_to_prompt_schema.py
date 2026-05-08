@@ -477,6 +477,8 @@ class ScriptToPromptRunResponse(BaseModel):
     prompts: list[PromptSpec] = Field(default_factory=list)
     validations: list[SemanticPromptValidationResult] = Field(default_factory=list)
     qa: list[VisualQAEvaluation] = Field(default_factory=list)
+    alignment_results: list[dict[str, Any]] = Field(default_factory=list)
+    enriched_intents: list[dict[str, Any]] = Field(default_factory=list)
     status: str
     warnings: list[str] = Field(default_factory=list)
 

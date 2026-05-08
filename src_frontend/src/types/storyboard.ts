@@ -14,12 +14,24 @@ export interface StoryboardShot {
   generation_job_id?: string
   version: number
   is_active: boolean
+  metadata_json?: Record<string, unknown> | null
   asset_file_name?: string
   asset_mime_type?: string
   thumbnail_url?: string
   preview_url?: string
   created_at: string
   updated_at: string
+}
+
+export interface CinematicShotMetadata {
+  directorial_intent?: Record<string, unknown> | null
+  montage_intent?: Record<string, unknown> | null
+  editorial_beats?: Array<Record<string, unknown>>
+  shot_editorial_purpose?: Record<string, unknown> | null
+  prompt_spec?: Record<string, unknown> | null
+  cinematic_intent_id?: string
+  director_lens_id?: string
+  validation?: Record<string, unknown> | null
 }
 
 export interface StoryboardShotListResponse {
@@ -133,6 +145,11 @@ export interface StoryboardGeneratePayload {
   shots_per_scene?: number
   max_scenes?: number | null
   overwrite?: boolean
+  director_lens_id?: string | null
+  montage_profile_id?: string | null
+  use_cinematic_intelligence?: boolean
+  use_montage_intelligence?: boolean
+  validate_prompts?: boolean
 }
 
 export interface StoryboardGenerationJob {

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Save, Loader2, ArrowLeft, Film, RefreshCw } from 'lucide-react'
+import { Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Brain, Eye } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import { ShotCard } from '@/components/storyboard/ShotCard'
 import { AssetPickerModal } from '@/components/storyboard/AssetPickerModal'
 import type {
+  CinematicShotMetadata,
   DirtyShot,
   StoryboardGeneratePayload,
   StoryboardSelectionMode,
@@ -22,6 +23,32 @@ const MODE_OPTIONS: Array<{ value: StoryboardSelectionMode; label: string }> = [
   { value: 'SCENE_RANGE', label: 'Por rango de escenas' },
   { value: 'SINGLE_SCENE', label: 'Escena individual' },
   { value: 'SELECTED_SCENES', label: 'Escenas seleccionadas' },
+]
+
+const LENS_OPTIONS: Array<{ value: string; label: string; description: string }> = [
+  { value: '', label: 'Ninguno (predeterminado)', description: 'Sin lente directorial' },
+  { value: 'adaptive_auteur_fusion', label: 'Adaptive Auteur Fusion', description: 'Selección automática según conflicto, espacio y tono' },
+  { value: 'wonder_humanist_blocking', label: 'Wonder Humanist Blocking', description: 'Cercanía humana y bloqueo emocional' },
+  { value: 'suspense_geometric_control', label: 'Suspense Geométrico', description: 'Información dosificada, encuadre como presión dramática' },
+  { value: 'formal_symmetry_control', label: 'Control Formal', description: 'Orden aparente, perturbación bajo simetría' },
+  { value: 'melodrama_color_identity', label: 'Melodrama Color Identity', description: 'Color como código emocional' },
+  { value: 'surreal_social_disruption', label: 'Surreal Social Disruption', description: 'Ruptura dentro de lo realista' },
+  { value: 'epic_moral_landscape', label: 'Epic Moral Landscape', description: 'El paisaje como juicio moral' },
+  { value: 'spiritual_time_pressure', label: 'Spiritual Time Pressure', description: 'Presión temporal como angustia espiritual' },
+  { value: 'urban_moral_energy', label: 'Urban Moral Energy', description: 'Energía callejera y conflicto moral' },
+  { value: 'dream_identity_fragment', label: 'Dream Identity Fragment', description: 'Fragmentación onírica de la identidad' },
+]
+
+const MONTAGE_PROFILE_OPTIONS: Array<{ value: string; label: string; description: string }> = [
+  { value: '', label: 'Ninguno (predeterminado)', description: 'Sin perfil de montaje' },
+  { value: 'adaptive_montage', label: 'Adaptive Montage', description: 'Ajuste automático según escena' },
+  { value: 'invisible_continuity_editing', label: 'Invisible Continuity', description: 'Montaje clásico de continuidad' },
+  { value: 'suspense_information_control', label: 'Suspense Information Control', description: 'Control de información para suspenso' },
+  { value: 'psychological_fragmentation', label: 'Psychological Fragmentation', description: 'Fragmentación psicológica' },
+  { value: 'rhythmic_dialogue_pressure', label: 'Rhythmic Dialogue Pressure', description: 'Presión rítmica en diálogo' },
+  { value: 'poetic_associative_montage', label: 'Poetic Associative', description: 'Montaje poético asociativo' },
+  { value: 'action_spatial_clarity', label: 'Action Spatial Clarity', description: 'Claridad espacial en acción' },
+  { value: 'contemplative_long_take', label: 'Contemplative Long Take', description: 'Toma larga contemplativa' },
 ]
 
 export default function StoryboardBuilderPage() {
@@ -42,6 +69,12 @@ export default function StoryboardBuilderPage() {
   const [stylePreset, setStylePreset] = useState('cinematic_realistic')
   const [shotsPerScene, setShotsPerScene] = useState(3)
   const [selectedSceneNumbers, setSelectedSceneNumbers] = useState<string>('1')
+  const [directorLensId, setDirectorLensId] = useState<string>('')
+  const [montageProfileId, setMontageProfileId] = useState<string>('')
+  const [useCinematicIntelligence, setUseCinematicIntelligence] = useState(false)
+  const [useMontageIntelligence, setUseMontageIntelligence] = useState(false)
+  const [validatePrompts, setValidatePrompts] = useState(false)
+  const [expandedMetadata, setExpandedMetadata] = useState<string | null>(null)
 
   const fetchSequences = useCallback(async () => {
     if (!projectId) return
@@ -125,6 +158,11 @@ export default function StoryboardBuilderPage() {
           shots_per_scene: shotsPerScene,
           max_scenes: selectedMode === 'FULL_SCRIPT' ? 3 : sceneNumbers.length || undefined,
           overwrite: true,
+          director_lens_id: useCinematicIntelligence ? (directorLensId || undefined) : undefined,
+          montage_profile_id: useMontageIntelligence ? (montageProfileId || undefined) : undefined,
+          use_cinematic_intelligence: useCinematicIntelligence,
+          use_montage_intelligence: useMontageIntelligence,
+          validate_prompts: validatePrompts,
         }
         await storyboardApi.generate(projectId, payload)
       }
@@ -341,6 +379,81 @@ export default function StoryboardBuilderPage() {
             )}
           </div>
 
+          <div className="border-t border-white/5 pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Brain className="w-4 h-4 text-amber-400" />
+              <h3 className="text-sm font-semibold text-white">Inteligencia cinematográfica CID</h3>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="useCinematicIntelligence"
+                  checked={useCinematicIntelligence}
+                  onChange={(e) => setUseCinematicIntelligence(e.target.checked)}
+                  className="rounded border-white/20 bg-dark-300 text-amber-500 focus:ring-amber-500"
+                />
+                <label htmlFor="useCinematicIntelligence" className="text-sm text-slate-300">
+                  Director Lens
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="useMontageIntelligence"
+                  checked={useMontageIntelligence}
+                  onChange={(e) => setUseMontageIntelligence(e.target.checked)}
+                  className="rounded border-white/20 bg-dark-300 text-amber-500 focus:ring-amber-500"
+                />
+                <label htmlFor="useMontageIntelligence" className="text-sm text-slate-300">
+                  Montaje
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="validatePrompts"
+                  checked={validatePrompts}
+                  onChange={(e) => setValidatePrompts(e.target.checked)}
+                  className="rounded border-white/20 bg-dark-300 text-amber-500 focus:ring-amber-500"
+                />
+                <label htmlFor="validatePrompts" className="text-sm text-slate-300">
+                  Validar prompts
+                </label>
+              </div>
+              {useCinematicIntelligence && (
+                <div>
+                  <select
+                    className="input text-sm"
+                    value={directorLensId}
+                    onChange={(e) => setDirectorLensId(e.target.value)}
+                  >
+                    {LENS_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value} title={opt.description}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {useMontageIntelligence && (
+                <div>
+                  <select
+                    className="input text-sm"
+                    value={montageProfileId}
+                    onChange={(e) => setMontageProfileId(e.target.value)}
+                  >
+                    {MONTAGE_PROFILE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value} title={opt.description}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => handleGenerate(false)}
@@ -410,14 +523,68 @@ export default function StoryboardBuilderPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredShots.map((shot) => (
-              <ShotCard
-                key={shot.id}
-                shot={shot}
-                onUpdate={handleUpdateShot}
-                onDelete={handleDeleteShot}
-                onOpenPicker={handleOpenPicker}
-                isSaving={isSaving}
-              />
+              <div key={shot.id} className="space-y-1">
+                <ShotCard
+                  shot={shot}
+                  onUpdate={handleUpdateShot}
+                  onDelete={handleDeleteShot}
+                  onOpenPicker={handleOpenPicker}
+                  isSaving={isSaving}
+                />
+                {shot.metadata_json && (
+                  <div>
+                    <button
+                      onClick={() => setExpandedMetadata(expandedMetadata === shot.id ? null : shot.id)}
+                      className="flex items-center gap-1.5 w-full px-3 py-1.5 text-xs text-amber-400/70 hover:text-amber-300 bg-dark-300/40 border border-white/5 rounded-lg transition-colors"
+                    >
+                      <Eye className="w-3 h-3" />
+                      {expandedMetadata === shot.id ? 'Ocultar metadatos CID' : 'Ver metadatos cinematográficos'}
+                    </button>
+                    {expandedMetadata === shot.id && (
+                      <div className="mt-1 p-3 bg-dark-300/60 border border-amber-500/20 rounded-lg text-xs text-slate-300 space-y-1.5 max-h-64 overflow-y-auto">
+                        {(() => {
+                          const meta = shot.metadata_json as CinematicShotMetadata
+                          return (
+                            <>
+                              {meta.director_lens_id && (
+                                <p><span className="text-amber-400">Lente:</span> {meta.director_lens_id}</p>
+                              )}
+                              {meta.cinematic_intent_id && (
+                                <p><span className="text-amber-400">Intent ID:</span> {meta.cinematic_intent_id}</p>
+                              )}
+                              {meta.shot_editorial_purpose && (
+                                <>
+                                  <p><span className="text-amber-400">Propósito:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).purpose || '')}</p>
+                                  <p><span className="text-amber-400">Corte:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).cut_reason || '')}</p>
+                                  {Number((meta.shot_editorial_purpose as Record<string, unknown>).estimated_duration_seconds) > 0 && (
+                                    <p><span className="text-amber-400">Duración:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).estimated_duration_seconds)}s</p>
+                                  )}
+                                </>
+                              )}
+                              {meta.montage_intent && (
+                                <p><span className="text-amber-400">Montaje:</span> {String((meta.montage_intent as Record<string, unknown>).editorial_function || '')}</p>
+                              )}
+                              {meta.directorial_intent && (
+                                <p><span className="text-amber-400">Dirección:</span> {String((meta.directorial_intent as Record<string, unknown>).mise_en_scene || '').substring(0, 120)}</p>
+                              )}
+                              {meta.validation && (
+                                <p className={Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'text-green-400' : 'text-red-400'}>
+                                  Validación: {Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'Válido' : 'Inválido'} (score: {String((meta.validation as Record<string, unknown>).score)})
+                                </p>
+                              )}
+                              {meta.prompt_spec && (
+                                <p className="text-slate-400 truncate" title={String((meta.prompt_spec as Record<string, unknown>).positive_prompt || '')}>
+                                  Prompt: {String((meta.prompt_spec as Record<string, unknown>).positive_prompt || '').substring(0, 80)}...
+                                </p>
+                              )}
+                            </>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}

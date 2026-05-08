@@ -1,0 +1,343 @@
+profiles:
+  - lens_id: adaptive_auteur_fusion
+    name: Adaptive Auteur Fusion
+    description: Seleccion automatica basada en necesidades dramaticas y cinematograficas sin imitar literalmente a ningun director.
+    cinematic_principles:
+      - elegir claridad emocional antes que espectacularidad vacia
+      - adaptar encuadre y ritmo al conflicto real de la escena
+      - privilegiar coherencia narrativa y continuidad visual
+    framing_bias:
+      - framing selected from scene psychology
+      - readable focal hierarchy
+    camera_movement_bias:
+      - motivated movement only
+      - avoid ornamental motion
+    lighting_bias:
+      - readable contrast
+      - motivated practical light
+    color_bias:
+      - palette anchored to dramatic tone
+      - premium warm-cool balance
+    rhythm_bias:
+      - scene-dependent pacing
+      - contrast between tension and release
+    emotional_strategy:
+      - place camera where emotion becomes legible
+    narrative_strategy:
+      - translate dramatic function into visual function
+    forbidden_cliches:
+      - empty prestige darkness
+      - random abstract tech style
+      - director name imitation
+    best_for_scene_types:
+      - all
+
+  - lens_id: wonder_humanist_blocking
+    name: Wonder Humanist Blocking
+    description: Claridad emocional, puesta en escena humana y movimiento de camara motivado por descubrimiento o vulnerabilidad.
+    cinematic_principles:
+      - claridad emocional
+      - camara al nivel del personaje
+      - movimiento motivado por emocion
+      - reaccion humana antes que espectaculo
+    framing_bias:
+      - readable medium wides
+      - silhouettes clean against environment
+    camera_movement_bias:
+      - gentle push-ins
+      - motivated tracking
+    lighting_bias:
+      - warm hope-driven practicals
+      - luminous human readability
+    color_bias:
+      - warm amber with clean daylight or soft cyan support
+    rhythm_bias:
+      - build wonder through pauses and reaction beats
+    emotional_strategy:
+      - awe through human perspective
+      - empathy before scale
+    narrative_strategy:
+      - prioritize discovery and relational space
+    forbidden_cliches:
+      - empty spectacle
+      - overbusy camera tricks
+    best_for_scene_types:
+      - vulnerable_character
+      - exterior_journey
+      - discovery
+      - emotional_alignment
+
+  - lens_id: suspense_geometric_control
+    name: Suspense Geometric Control
+    description: Suspense por informacion dosificada, encuadre como trampa y amenaza latente fuera de campo.
+    cinematic_principles:
+      - suspense by unequal information
+      - frame as trap
+      - offscreen threat
+      - objects as triggers
+    framing_bias:
+      - constricted geometry
+      - negative space with directional tension
+    camera_movement_bias:
+      - withheld movement until dramatic release
+      - precise subjective shifts
+    lighting_bias:
+      - controlled shadows with readable danger zones
+      - practical motivated suspense light
+    color_bias:
+      - restrained palette with strategic warning accents
+    rhythm_bias:
+      - delay, anticipation, controlled escalation
+    emotional_strategy:
+      - make audience wait before revealing
+    narrative_strategy:
+      - convert uncertainty into visual pressure
+    forbidden_cliches:
+      - cheap jump-scare framing
+      - empty noir darkness
+    best_for_scene_types:
+      - psychological_tension
+      - political_suspense
+      - decision_pressure
+      - threat
+
+  - lens_id: formal_symmetry_control
+    name: Formal Symmetry Control
+    description: Arquitectura visual rigurosa, distancia emocional y precision casi obsesiva para revelar perturbacion bajo orden aparente.
+    cinematic_principles:
+      - axial composition
+      - rigid geometry
+      - controlled distance
+      - order revealing disturbance
+    framing_bias:
+      - symmetry
+      - centered subjects in oppressive space
+    camera_movement_bias:
+      - slow measured travelling
+      - deliberate stillness
+    lighting_bias:
+      - clean sculpted lighting
+      - cool precision with selective warmth
+    color_bias:
+      - controlled palettes with architectural emphasis
+    rhythm_bias:
+      - measured pacing
+      - accumulating unease
+    emotional_strategy:
+      - suppress emotion on surface to amplify tension underneath
+    narrative_strategy:
+      - use order to expose moral fracture
+    forbidden_cliches:
+      - empty symmetry for its own sake
+      - decorative coldness without meaning
+    best_for_scene_types:
+      - interior_night_tension
+      - hotel_room_breakdown
+      - institutional_pressure
+      - psychological_control
+
+  - lens_id: melodrama_color_identity
+    name: Melodrama Color Identity
+    description: Color emocional, objetos intimos y conflicto de identidad expresado desde el espacio y la composicion.
+    cinematic_principles:
+      - color as emotion
+      - intimate symbolic objects
+      - expressive frontal composition
+      - desire versus shame
+    framing_bias:
+      - expressive close-medium compositions
+      - emotional object framing
+    camera_movement_bias:
+      - contained glides
+      - emotional reframing
+    lighting_bias:
+      - lush interior light
+      - memory-infused practical glow
+    color_bias:
+      - saturated but controlled emotional palette
+    rhythm_bias:
+      - pauses charged with intimacy
+    emotional_strategy:
+      - let color carry inner conflict
+    narrative_strategy:
+      - show identity and desire through space and objects
+    forbidden_cliches:
+      - gaudy oversaturation
+      - anonymous luxury without emotional stake
+    best_for_scene_types:
+      - intimacy
+      - desire
+      - shame
+      - identity_conflict
+
+  - lens_id: surreal_social_disruption
+    name: Surreal Social Disruption
+    description: Ruptura de normalidad, absurdo significativo y critica social usando imagen simbolica y humor incomodo.
+    cinematic_principles:
+      - rupture of everyday order
+      - symbolic object displacement
+      - uncomfortable humor
+      - social power critique
+    framing_bias:
+      - normal framing interrupted by strange insertions
+      - image logic slightly off-center
+    camera_movement_bias:
+      - calm observation of absurdity
+      - restrained surreal drift
+    lighting_bias:
+      - realistic social spaces with strange tonal dissonance
+    color_bias:
+      - grounded reality with selective uncanny accents
+    rhythm_bias:
+      - delayed absurd reveal
+      - tonal disruption
+    emotional_strategy:
+      - destabilize through contradiction rather than chaos
+    narrative_strategy:
+      - privilege symbolic image over exposition
+    forbidden_cliches:
+      - random nonsense imagery
+      - clownish surrealism without social tension
+    best_for_scene_types:
+      - social_critique
+      - absurd_power
+      - contradiction
+      - uncanny_normality
+
+  - lens_id: epic_moral_landscape
+    name: Epic Moral Landscape
+    description: Escala moral, composicion grupal y paisaje como fuerza narrativa y etica.
+    cinematic_principles:
+      - landscape as moral field
+      - group blocking with internal movement
+      - honor and consequence through scale
+    framing_bias:
+      - wider frames with human placement in terrain
+      - tableau dynamics
+    camera_movement_bias:
+      - patient expansive movement
+      - purposeful reorientation through space
+    lighting_bias:
+      - weather-aware naturalism
+      - dramatic horizon light
+    color_bias:
+      - earth tones with noble contrast accents
+    rhythm_bias:
+      - stately escalation
+      - moral pause before action
+    emotional_strategy:
+      - connect personal choice with environment
+    narrative_strategy:
+      - show consequence through spatial scale
+    forbidden_cliches:
+      - empty drone grandeur
+      - fantasy wallpaper landscapes
+    best_for_scene_types:
+      - ensemble_scene
+      - landscape_morality
+      - journey
+      - public_decision
+
+  - lens_id: spiritual_time_pressure
+    name: Spiritual Time Pressure
+    description: Tiempo interno, textura, silencio y materia sensible para escenas contemplativas o de duelo.
+    cinematic_principles:
+      - duration as meaning
+      - tactile atmosphere
+      - silence with emotional density
+      - elemental imagery
+    framing_bias:
+      - still or slowly unfolding frames
+      - contemplative distance
+    camera_movement_bias:
+      - near-static drift
+      - slow patient observation
+    lighting_bias:
+      - soft natural or elemental light
+      - subtle glow through texture
+    color_bias:
+      - muted spiritual palette with warm traces
+    rhythm_bias:
+      - sustained temporal pressure
+      - contemplative duration
+    emotional_strategy:
+      - reveal emotion through stillness and space
+    narrative_strategy:
+      - allow memory and time to shape image meaning
+    forbidden_cliches:
+      - empty slow cinema imitation
+      - decorative fog without emotional weight
+    best_for_scene_types:
+      - grief
+      - contemplation
+      - memory
+      - spiritual_pause
+
+  - lens_id: urban_moral_energy
+    name: Urban Moral Energy
+    description: Energia urbana, culpa, poder y violencia latente en espacios densos y decisiones sucias.
+    cinematic_principles:
+      - moral velocity
+      - city pressure on character
+      - volatile stillness before rupture
+      - guilt embedded in environment
+    framing_bias:
+      - compressed city framing
+      - kinetic blocking inside constrained spaces
+    camera_movement_bias:
+      - nervous but motivated movement
+      - pressure-building lateral motion
+    lighting_bias:
+      - practical urban light with moral grime kept readable
+    color_bias:
+      - sodium amber, steel blue, bruised neutrals
+    rhythm_bias:
+      - forward pressure
+      - unstable control
+    emotional_strategy:
+      - show desire, guilt or power as spatial pressure
+    narrative_strategy:
+      - convert environment into moral accelerant
+    forbidden_cliches:
+      - generic crime poster look
+      - empty neon coolness
+    best_for_scene_types:
+      - politics
+      - violence_latent
+      - corruption
+      - urban_pressure
+
+  - lens_id: dream_identity_fragment
+    name: Dream Identity Fragment
+    description: Identidad quebrada, amenaza psicologica y espacio inquietante donde la realidad pierde estabilidad.
+    cinematic_principles:
+      - identity fragmentation
+      - uncanny atmosphere
+      - dream logic under realistic surface
+      - psychological displacement
+    framing_bias:
+      - slightly estranged compositions
+      - reflective or layered depth cues
+    camera_movement_bias:
+      - gliding uncertainty
+      - destabilizing stillness
+    lighting_bias:
+      - moody but readable psychological contrast
+      - liminal practical sources
+    color_bias:
+      - deep nocturnal tones with selective uncanny warmth
+    rhythm_bias:
+      - dreamlike drift
+      - threat through temporal slippage
+    emotional_strategy:
+      - build unease by making identity unstable
+    narrative_strategy:
+      - privilege hidden fracture over explicit explanation
+    forbidden_cliches:
+      - random horror noise
+      - incoherent nightmare collage
+    best_for_scene_types:
+      - identity_break
+      - dream_logic
+      - psychological_threat
+      - interior_night_disorientation

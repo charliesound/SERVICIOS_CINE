@@ -75,6 +75,11 @@ async def generate_storyboard(
         shots_per_scene=max(1, min(payload.shots_per_scene, 8)),
         max_scenes=payload.max_scenes,
         overwrite=payload.overwrite,
+        director_lens_id=payload.director_lens_id,
+        montage_profile_id=payload.montage_profile_id,
+        use_cinematic_intelligence=payload.use_cinematic_intelligence,
+        use_montage_intelligence=payload.use_montage_intelligence,
+        validate_prompts=payload.validate_prompts,
     )
     return StoryboardJobResponse(**{k: result[k] for k in StoryboardJobResponse.model_fields.keys()})
 

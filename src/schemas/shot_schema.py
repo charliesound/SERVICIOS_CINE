@@ -1,7 +1,8 @@
+import json
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class StoryboardShotCreate(BaseModel):
@@ -48,6 +49,21 @@ class StoryboardShotResponse(BaseModel):
     generation_job_id: Optional[str] = None
     version: int = 1
     is_active: bool = True
+    metadata_json: Optional[Any] = None
+
+    @field_validator("metadata_json", mode="before")
+    @classmethod
+    def deserialize_metadata_json(cls, value: Any) -> Any:
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return value
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except (json.JSONDecodeError, TypeError):
+                return value
+        return value
     asset_file_name: Optional[str] = None
     asset_mime_type: Optional[str] = None
     thumbnail_url: Optional[str] = None
@@ -58,3 +74,4 @@ class StoryboardShotResponse(BaseModel):
 
 class StoryboardShotListResponse(BaseModel):
     shots: list[StoryboardShotResponse] = Field(default_factory=list)
+

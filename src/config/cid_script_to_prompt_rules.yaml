@@ -1,0 +1,209 @@
+version: 1
+name: cid_script_to_prompt_rules
+goal: >-
+  Canonical taxonomy for translating screenplay text into cinematic prompts,
+  validating semantic fidelity, and preserving continuity across outputs.
+
+output_types:
+  analysis_view:
+    purpose: Represent screenplay parsing, entity extraction, and production breakdown.
+    required_elements:
+      - script_anchor
+      - scene_breakdown
+      - character_entities
+      - location_entities
+      - production_requirements
+    forbidden_elements:
+      - generic_futuristic_ui
+      - isolated_narrative_frame
+      - abstract_tech_wallpaper
+  moodboard:
+    purpose: Represent editorial visual direction from scene or sequence text.
+    required_elements:
+      - character_reference
+      - atmosphere_reference
+      - palette_reference
+      - location_reference
+      - art_direction_layout
+    forbidden_elements:
+      - lone_back_figure_without_context
+      - abstract_void
+      - single_frame_disguised_as_moodboard
+  concept_art:
+    purpose: Explore worldbuilding and high-value visual development anchored to narrative intent.
+    required_elements:
+      - world_anchor
+      - emotional_anchor
+      - project_style_anchor
+    forbidden_elements:
+      - random_beautiful_image
+      - moodless_abstraction
+  storyboard_frame:
+    purpose: Represent shot planning and sequential visual logic.
+    required_elements:
+      - shot_logic
+      - framing_language
+      - continuity_cues
+      - sequence_context
+    forbidden_elements:
+      - isolated_poster_frame
+      - moodboard_layout
+      - generic_cinematic_still
+  storyboard_board:
+    purpose: Represent multiple connected panels from the same sequence.
+    required_elements:
+      - multiple_panels
+      - continuity_links
+      - visual_shot_progression
+    forbidden_elements:
+      - single_panel_only
+      - abstract_collage
+  key_visual:
+    purpose: Produce a commercially strong visual anchored to story world and project bible.
+    required_elements:
+      - scene_or_sequence_anchor
+      - emotional_anchor
+      - worldbuilding_anchor
+    forbidden_elements:
+      - generic_wallpaper
+      - unrelated_character
+  controlled_frame_generation:
+    purpose: Show prompt preparation, generation logic, output frame, and validation checkpoint.
+    required_elements:
+      - prompt_anchor
+      - generation_pipeline
+      - output_frame
+      - validation_checkpoint
+    forbidden_elements:
+      - single_random_node
+      - unrelated_narrative_scene
+      - unreadable_technical_chaos
+  image_to_video_anchor:
+    purpose: Create a semantically stable first frame for later motion.
+    required_elements:
+      - scene_anchor
+      - continuity_anchor
+      - readable_depth_layers
+    forbidden_elements:
+      - unstable_composition
+      - overbusy_frame
+
+semantic_rules:
+  universal:
+    required:
+      - explicit_subject
+      - explicit_action
+      - explicit_environment
+      - explicit_visual_intent
+      - continuity_anchor_when_needed
+      - negative_anchor
+    avoid:
+      - pretty_but_empty_prompt
+      - vague_tech_art
+      - interchangeable_scene_language
+      - overreliance_on_style_without_story
+  scene_grounding:
+    checks:
+      - scene_id_match
+      - character_match
+      - location_match
+      - action_match
+      - emotional_tone_match
+  landing_product_rules:
+    analysis_of_script:
+      must_show:
+        - screenplay_origin
+        - breakdown_structure
+        - characters_locations_shots
+      must_not_show:
+        - pure_node_graph
+        - abstract_ui
+    visual_moodboards:
+      must_show:
+        - editorial_board
+        - character_reference
+        - wardrobe_palette_atmosphere
+      must_not_show:
+        - single_dark_scene
+        - isolated_figure_without_board_context
+    cinematic_storyboards:
+      must_show:
+        - multiple_panels
+        - shot_progression
+        - storyboard_grammar
+      must_not_show:
+        - single_beautiful_frame
+        - abstract_collage
+    controlled_generation:
+      must_show:
+        - prompt_preparation
+        - node_logic
+        - generated_frame
+        - validation_step
+      must_not_show:
+        - single_node
+        - unrelated_drama_scene
+
+validation_rules:
+  pre_render:
+    - prompt_must_not_be_reusable_for_unrelated_scenes
+    - prompt_must_match_output_type
+    - prompt_must_include_required_elements
+    - prompt_must_exclude_forbidden_elements
+    - prompt_must_not_drift_into_meaningless_abstraction
+  post_render:
+    scores:
+      semantic_match_score:
+        min_recommended: 0.8
+      cinematic_match_score:
+        min_recommended: 0.75
+      continuity_score:
+        min_recommended: 0.75
+    verdicts:
+      - semantically_correct
+      - visually_weak
+      - too_abstract
+      - wrong_subject
+      - wrong_cinematic_grammar
+      - continuity_risk
+      - needs_regen
+
+continuity_rules:
+  scene_memory:
+    preserve:
+      - subject_priority
+      - action_priority
+      - emotional_state
+      - blocking
+  character_visual_memory:
+    preserve:
+      - face_identity
+      - wardrobe
+      - silhouette
+      - emotional_consistency
+  location_visual_memory:
+    preserve:
+      - architectural_language
+      - layout
+      - practical_lighting_base
+      - fixed_props
+  sequence_style_memory:
+    preserve:
+      - palette
+      - visual_density
+      - coverage_logic
+      - tonal_progression
+  project_visual_bible:
+    preserve:
+      - global_style_rules
+      - approved_references
+      - forbidden_styles
+      - preferred_cinematic_language
+
+future_services:
+  - script_scene_parser_service.py
+  - cinematic_intent_service.py
+  - prompt_construction_service.py
+  - semantic_prompt_validation_service.py
+  - visual_qc_service.py
+  - continuity_memory_service.py

@@ -1,0 +1,232 @@
+profiles:
+  - profile_id: adaptive_montage
+    description: Seleccion automatica del perfil de montaje segun funcion dramatica, presion emocional y tipo de escena.
+    montage_principles:
+      - editing follows dramatic function
+      - continuity and emotion stay readable
+      - coverage exists to support the cut, not to decorate it
+    best_for_scene_types:
+      - all
+    rhythm_bias:
+      - adaptive pacing
+      - emotion-led rhythm
+    transition_bias:
+      - motivated transitions
+    coverage_bias:
+      - functional coverage
+    sound_bias:
+      - bridge only when it helps narrative clarity
+    forbidden_cliches:
+      - random music-video cutting
+      - empty prestige montage
+
+  - profile_id: invisible_continuity_editing
+    description: Narrativa clara, continuidad emocional y montaje clasico para drama y dialogo legible.
+    montage_principles:
+      - clear axis of action
+      - eyeline continuity
+      - movement continuity
+      - cuts motivated by emotion or information
+      - sufficient master and reaction coverage
+    best_for_scene_types:
+      - classical_narrative
+      - dialogue
+      - commercial_drama
+    rhythm_bias:
+      - stable continuity rhythm
+      - invisible pacing
+    transition_bias:
+      - motivated match cuts
+      - clean continuity transitions
+    coverage_bias:
+      - master shot
+      - two-shot
+      - over-shoulder
+      - close-up
+    sound_bias:
+      - continuous room tone
+      - subtle dialogue overlap
+    forbidden_cliches:
+      - ornamental cutting
+      - arbitrary angle changes
+
+  - profile_id: suspense_information_control
+    description: Montaje para amenaza, investigacion y secreto con informacion desigual y fuera de campo activo.
+    montage_principles:
+      - reveal less than the character needs
+      - control spectator information
+      - glance-object-reaction logic
+      - delay the cut until threat intensifies
+      - use offscreen space as pressure
+    best_for_scene_types:
+      - suspense
+      - investigation
+      - threat
+      - secrecy
+    rhythm_bias:
+      - delayed release
+      - slow tension build
+    transition_bias:
+      - reveal-driven cut
+      - pressure-preserving hold
+    coverage_bias:
+      - selective inserts
+      - reaction shots
+      - withholding wides
+    sound_bias:
+      - offscreen cues
+      - suspenseful silence pockets
+    forbidden_cliches:
+      - cheap jump scare editing
+      - explanatory overcutting
+
+  - profile_id: psychological_fragmentation
+    description: Montaje para crisis mental, culpa, memoria o identidad rota mediante discontinuidad controlada.
+    montage_principles:
+      - controlled discontinuity
+      - scale jumps tied to perception
+      - subjective ellipsis
+      - sound as psychological bridge
+      - visual repetition with variation
+    best_for_scene_types:
+      - guilt
+      - paranoia
+      - dream
+      - memory
+      - identity_crisis
+    rhythm_bias:
+      - unstable inner rhythm
+      - fracture through repetition
+    transition_bias:
+      - subjective ellipsis
+      - perceptual jump
+    coverage_bias:
+      - repeated angles with altered meaning
+      - fragment close-ups
+    sound_bias:
+      - internal bridges
+      - memory bleed
+    forbidden_cliches:
+      - random glitch montage
+      - incoherent dream cutting
+
+  - profile_id: rhythmic_dialogue_pressure
+    description: Montaje para dialogo tenso, poder, negociacion y silencios significativos.
+    montage_principles:
+      - cut by intention, not by line ending
+      - hold uncomfortable reactions
+      - vary distance within shot reverse shot
+      - use silence as cut point
+      - accelerate with pressure and decelerate after emotional blow
+    best_for_scene_types:
+      - negotiation
+      - argument
+      - power_dialogue
+      - bitter_comedy
+    rhythm_bias:
+      - pressure acceleration
+      - reaction holds
+    transition_bias:
+      - intention-based cut
+      - silence-driven cut
+    coverage_bias:
+      - two-shot baseline
+      - shot reverse shot variations
+      - reaction inserts
+    sound_bias:
+      - tension in pauses
+      - dialogue overlap when pressure rises
+    forbidden_cliches:
+      - metronomic line-by-line cutting
+      - flat talking heads
+
+  - profile_id: poetic_associative_montage
+    description: Montaje por asociacion emocional, color, textura o idea para memoria y transicion poetica.
+    montage_principles:
+      - association by idea
+      - association by texture
+      - association by color
+      - sound bridges
+      - emotional ellipsis
+      - symbolic suggestion over explanation
+    best_for_scene_types:
+      - memory
+      - prologue
+      - epilogue
+      - symbolic_transition
+    rhythm_bias:
+      - lyrical drift
+      - emotional pulse over literal continuity
+    transition_bias:
+      - associative cut
+      - sound-led dissolve logic
+    coverage_bias:
+      - motifs
+      - symbolic details
+      - evocative transitions
+    sound_bias:
+      - poetic bridge
+      - memory resonance
+    forbidden_cliches:
+      - empty perfume-ad montage
+      - symbolism without narrative anchor
+
+  - profile_id: action_spatial_clarity
+    description: Montaje para accion fisica con geografia clara y orientacion constante.
+    montage_principles:
+      - clear geography
+      - consistent movement direction
+      - establish before chaos
+      - cut on physical impact
+      - alternate scale for orientation
+      - protect spatial axis
+    best_for_scene_types:
+      - chase
+      - fight
+      - movement
+      - physical action
+    rhythm_bias:
+      - impact-driven acceleration
+      - orientation-reset rhythm
+    transition_bias:
+      - movement match
+      - impact cut
+    coverage_bias:
+      - establishers
+      - directional mediums
+      - impact inserts
+    sound_bias:
+      - impact emphasis
+      - motion continuity
+    forbidden_cliches:
+      - axis-breaking chaos
+      - unreadable action blur
+
+  - profile_id: contemplative_long_take
+    description: Montaje minimo, duracion significativa y movimiento interno para duelo, espera o observacion.
+    montage_principles:
+      - fewer cuts
+      - duration as pressure
+      - internal movement within the frame
+      - ambient sound as continuity
+      - hold until emotion changes
+    best_for_scene_types:
+      - solitude
+      - grief
+      - observation
+      - contained_tension
+    rhythm_bias:
+      - sustained duration
+      - emotional threshold cutting
+    transition_bias:
+      - late cut
+      - contemplative carry-over
+    coverage_bias:
+      - long hold wides
+      - selective emotional close-up
+    sound_bias:
+      - ambient continuity
+      - minimal sonic interruption
+    forbidden_cliches:
+      - empty slowness
+      - fake gravitas through duration alone

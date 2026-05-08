@@ -29,8 +29,13 @@ class StoryboardGenerateRequest(BaseModel):
     shots_per_scene: int = 3
     max_scenes: Optional[int] = None
     overwrite: bool = False
+    director_lens_id: Optional[str] = None
+    montage_profile_id: Optional[str] = None
+    use_cinematic_intelligence: bool = False
+    use_montage_intelligence: bool = False
+    validate_prompts: bool = False
 
-    @field_validator("mode", "generation_mode", "sequence_id", "style_preset", "visual_mode")
+    @field_validator("mode", "generation_mode", "sequence_id", "style_preset", "visual_mode", "director_lens_id", "montage_profile_id")
     @classmethod
     def validate_optional_text(cls, value: Optional[str]) -> Optional[str]:
         return _normalize_optional_text(value)

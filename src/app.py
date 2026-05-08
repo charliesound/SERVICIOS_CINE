@@ -55,6 +55,7 @@ from routes.ops_routes import pipeline_router
 from routes.ollama_storyboard_routes import router as ollama_storyboard_router
 from routes.comfyui_storyboard_routes import router as comfyui_storyboard_router
 from routes.concept_art_routes import router as concept_art_router
+from routes.cid_script_to_prompt_routes import router as cid_script_to_prompt_router
 
 # Services
 from services.logging_service import logger, request_logger
@@ -194,6 +195,7 @@ app.include_router(cid_pipeline_router, tags=["cid-pipelines"])
 app.include_router(ollama_storyboard_router, tags=["ollama-storyboard"])
 app.include_router(comfyui_storyboard_router, tags=["comfyui-storyboard"])
 app.include_router(concept_art_router, tags=["concept-art"])
+app.include_router(cid_script_to_prompt_router, tags=["cid-script-to-prompt"])
 
 if os.getenv("CID_INTERNAL_TEST_MODE_ENABLED", "false").strip().lower() == "true":
     from routes.cid_test_routes import router as cid_test_router

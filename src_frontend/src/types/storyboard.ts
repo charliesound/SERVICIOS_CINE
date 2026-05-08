@@ -271,3 +271,86 @@ export interface StoryboardSequenceDetail {
 export interface DirtyShot extends StoryboardShot {
   isDirty: boolean
 }
+
+// --- Director Feedback Types ---
+
+export type FeedbackCategory =
+  | 'composition'
+  | 'lighting'
+  | 'character'
+  | 'camera'
+  | 'continuity'
+  | 'tone'
+  | 'production'
+  | 'other'
+
+export type FeedbackSeverity = 'minor' | 'medium' | 'major'
+
+export interface DirectorFeedbackNote {
+  note_id: string
+  target_type: 'storyboard' | 'sequence' | 'shot' | 'prompt' | 'visual_reference'
+  target_id: string
+  note_text: string
+  category: FeedbackCategory
+  severity: FeedbackSeverity
+  created_by_role: 'director' | 'producer' | 'cinematographer' | 'operator'
+  preserve_original_logic: boolean
+}
+
+export interface DirectorFeedbackInterpretation {
+  requested_changes: string[]
+  protected_story_elements: string[]
+  protected_visual_elements: string[]
+  conflict_with_script: boolean
+  conflict_with_script_details: string
+  conflict_with_reference: boolean
+  conflict_with_reference_details: string
+  conflict_with_initial_prompt: boolean
+  conflict_with_initial_prompt_details: string
+  recommended_action: string
+  risk_level: string
+  explanation: string
+}
+
+export interface PromptRevisionPatch {
+  original_prompt: string
+  revised_prompt: string
+  original_negative_prompt: string
+  revised_negative_prompt: string
+  preserved_elements: string[]
+  changed_elements: string[]
+  rejected_changes: string[]
+  revision_reason: string
+  director_note_applied: string
+  version_number: number
+}
+
+export interface StoryboardRevisionPlan {
+  project_id: string
+  sequence_id: string
+  shot_id?: string | null
+  original_story_logic: string
+  director_feedback?: DirectorFeedbackNote | null
+  interpretation?: DirectorFeedbackInterpretation | null
+  prompt_revision?: PromptRevisionPatch | null
+  regeneration_strategy: 'single_shot' | 'selected_shots' | 'sequence' | 'full_storyboard_not_allowed'
+  requires_director_confirmation: boolean
+  qa_checklist: string[]
+}
+
+export interface StoryboardRevisionResult {
+  status: string
+  revision_id: string
+  revision_plan: StoryboardRevisionPlan
+  revised_prompt_spec: Record<string, unknown>
+  metadata_json: Record<string, unknown>
+  message: string
+}
+
+export interface ShotFeedbackRequest {
+  note_text: string
+  category: FeedbackCategory
+  severity: FeedbackSeverity
+  created_by_role: 'director' | 'producer' | 'cinematographer' | 'operator'
+  preserve_original_logic: boolean
+}

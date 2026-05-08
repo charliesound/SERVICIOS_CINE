@@ -2,6 +2,8 @@ import api from './client'
 import type {
   FullScriptAnalysisResult,
   SequenceStoryboardPlan,
+  ShotFeedbackRequest,
+  StoryboardRevisionResult,
   StoryboardShot,
   StoryboardShotListResponse,
   StoryboardShotCreate,
@@ -102,6 +104,40 @@ export const storyboardApi = {
 
   getSequenceStoryboard: async (projectId: string, sequenceId: string): Promise<StoryboardSequenceDetail> => {
     const { data } = await api.get<StoryboardSequenceDetail>(`/projects/${projectId}/storyboard/sequences/${sequenceId}`)
+    return data
+  },
+
+  submitShotDirectorFeedback: async (
+    projectId: string,
+    shotId: string,
+    payload: ShotFeedbackRequest
+  ): Promise<StoryboardRevisionResult> => {
+    const { data } = await api.post<StoryboardRevisionResult>(
+      `/projects/${projectId}/storyboard/shots/${shotId}/feedback`,
+      payload
+    )
+    return data
+  },
+
+  submitSequenceDirectorFeedback: async (
+    projectId: string,
+    sequenceId: string,
+    payload: { note_text: string; apply_to: string; shot_ids?: string[]; preserve_original_logic?: boolean }
+  ): Promise<StoryboardRevisionResult> => {
+    const { data } = await api.post<StoryboardRevisionResult>(
+      `/projects/${projectId}/storyboard/sequences/${sequenceId}/feedback`,
+      payload
+    )
+    return data
+  },
+
+  getShotRevisionHistory: async (
+    projectId: string,
+    shotId: string
+  ): Promise<Array<Record<string, unknown>>> => {
+    const { data } = await api.get<Array<Record<string, unknown>>>(
+      `/projects/${projectId}/storyboard/shots/${shotId}/revisions`
+    )
     return data
   },
 

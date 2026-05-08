@@ -1,4 +1,5 @@
-import { FileSearch, Image as ImageIcon, Clapperboard, Waypoints } from 'lucide-react'
+import { FileSearch, Image as ImageIcon, Clapperboard, Cpu } from 'lucide-react'
+import { getLandingVisual } from '@/utils/landingVisuals'
 
 const modules = [
   {
@@ -6,30 +7,35 @@ const modules = [
     title: 'Análisis de guion',
     description:
       'Desglose automático de guion con identificación de personajes, localizaciones, planos y necesidades de producción.',
-    image: '/landing-media/landing-problem-fragmented.webp',
+    visualId: 'script_analysis_breakdown',
   },
   {
     icon: ImageIcon,
     title: 'Moodboards visuales',
     description:
       'Construye referencias visuales por escena, personaje y atmósfera. Consolida la dirección artística antes del rodaje.',
-    image: '/landing-media/landing-concept-keyvisual.webp',
+    visualId: 'moodboard_bible',
   },
   {
     icon: Clapperboard,
     title: 'Storyboards cinematográficos',
     description:
       'Genera storyboards por plano con encuadre, ángulo e iluminación. Mantén continuidad visual entre escenas.',
-    image: '/landing-media/landing-storyboard-preview.webp',
+    visualId: 'storyboard_sequence',
   },
   {
-    icon: Waypoints,
-    title: 'Pipeline Builder',
+    icon: Cpu,
+    title: 'Generacion visual controlada',
     description:
-      'Orquesta el flujo completo: guion → análisis → prompt visual → ComfyUI → storyboard → revisión → entrega.',
-    image: '/landing-media/landing-ai-reasoning.webp',
+      'CID prepara el prompt, ComfyUI genera el frame y el sistema valida coherencia antes de pasar a storyboard o revision.',
+    visualId: 'comfyui_generation_engine',
   },
 ]
+
+const moduleCards = modules.map((module) => ({
+  ...module,
+  visual: getLandingVisual(module.visualId),
+}))
 
 export default function LandingStudioModules() {
   return (
@@ -49,12 +55,12 @@ export default function LandingStudioModules() {
         </div>
 
         <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {modules.map((mod) => (
+          {moduleCards.map((mod) => (
             <div key={mod.title} className="landing-studio-module-card group">
               <div className="landing-studio-module-image">
                 <img
-                  src={mod.image}
-                  alt={mod.title}
+                  src={mod.visual.imagePath}
+                  alt={mod.visual.visualConcept}
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   loading="lazy"
                 />
@@ -66,6 +72,7 @@ export default function LandingStudioModules() {
                 </div>
                 <h3 className="text-lg font-semibold text-white">{mod.title}</h3>
                 <p className="text-sm leading-7 text-slate-400">{mod.description}</p>
+                <p className="text-xs leading-6 text-slate-500">{mod.visual.narrativePurpose}</p>
               </div>
             </div>
           ))}

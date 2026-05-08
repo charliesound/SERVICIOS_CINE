@@ -1,4 +1,8 @@
 import { Brain, Cpu, Orbit, GitBranch } from 'lucide-react'
+import LandingMediaBackground from '@/components/landing/LandingMediaBackground'
+import { getLandingVisual } from '@/utils/landingVisuals'
+
+const pipelineVisual = getLandingVisual('pipeline_orchestration')
 
 const steps = [
   {
@@ -48,15 +52,14 @@ const connectorMap: Record<string, string> = {
 export default function LandingPipelineBuilder() {
   return (
     <section className="relative border-t border-white/5 py-28 md:py-36">
-      <div className="landing-section-bg-img">
-        <img
-          src="/landing-media/landing-ai-reasoning.webp"
-          alt=""
-          className="h-full w-full object-cover opacity-[0.04]"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-[#080808]" />
-      </div>
+      <LandingMediaBackground
+        className="landing-section-bg-img"
+        imageSrc={pipelineVisual.imagePath}
+        alt=""
+        mediaClassName="h-full w-full object-cover opacity-[0.13]"
+        overlayClassName="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-[#080808]"
+        imageLoading="lazy"
+      />
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-amber-400">
@@ -98,6 +101,51 @@ export default function LandingPipelineBuilder() {
             Guion &rarr; Análisis &rarr; Prompt visual &rarr; ComfyUI &rarr; Storyboard &rarr; Revisión &rarr; Entrega
           </span>
           <div className="h-px w-8 bg-amber-500/30" />
+        </div>
+
+        <div className="mt-12 rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm">
+          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-amber-300">
+                Qué debe verse en la imagen del pipeline
+              </p>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                {pipelineVisual.visualConcept}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                {pipelineVisual.continuityRules.map((rule) => (
+                  <span
+                    key={rule}
+                    className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-xs text-slate-400"
+                  >
+                    {rule}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
+              <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.24em] text-slate-400">
+                <span>Ollama / CID / ComfyUI</span>
+                <span className="text-amber-300">validacion narrativa</span>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                {[
+                  'Guion y briefing',
+                  'Interpretacion y desglose',
+                  'Prompt visual consistente',
+                  'Generacion controlada',
+                  'Revision y continuidad',
+                  'Entrega trazable',
+                ].map((item, index) => (
+                  <div key={item} className="rounded-2xl border border-white/8 bg-white/[0.02] px-4 py-3 text-sm text-slate-300">
+                    <span className="mr-2 text-amber-300">0{index + 1}</span>
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

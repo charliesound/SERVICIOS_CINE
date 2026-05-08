@@ -1,4 +1,8 @@
 import { Sparkles, ShieldCheck, Scale, BadgeCheck, Layers, Eye } from 'lucide-react'
+import LandingMediaBackground from '@/components/landing/LandingMediaBackground'
+import { getLandingVisual } from '@/utils/landingVisuals'
+
+const differentialVisual = getLandingVisual('professional_traceability')
 
 const items = [
   {
@@ -36,15 +40,14 @@ const items = [
 export default function LandingDiferencial() {
   return (
     <section className="relative border-t border-white/5 py-28 md:py-36">
-      <div className="landing-section-bg-img">
-        <img
-          src="/landing-media/landing-delivery-final.webp"
-          alt=""
-          className="h-full w-full object-cover opacity-[0.04]"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#080808] via-transparent to-[#080808]" />
-      </div>
+      <LandingMediaBackground
+        className="landing-section-bg-img"
+        imageSrc={differentialVisual.imagePath}
+        alt=""
+        mediaClassName="h-full w-full object-cover opacity-[0.13]"
+        overlayClassName="absolute inset-0 bg-gradient-to-r from-[#080808] via-transparent to-[#080808]"
+        imageLoading="lazy"
+      />
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-amber-400">

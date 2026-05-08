@@ -74,3 +74,5 @@ OLD/sensitive_review/tools/
 *.db
 *.sqlite
 *.sqlite3
+.tmp/
+src_frontend/public/landing-media/candidates/

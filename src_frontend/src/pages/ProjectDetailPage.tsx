@@ -154,6 +154,18 @@ function ConfidenceBar({ score }: { score: number | null }) {
   )
 }
 
+function dedupeList(items: unknown): string {
+  if (!Array.isArray(items)) return '—'
+  const seen = new Set<string>()
+  return items.filter((item): item is string => {
+    if (typeof item !== 'string') return false
+    const key = item.trim().toLowerCase()
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  }).join(', ') || '—'
+}
+
 export default function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const { user } = useAuthStore()
@@ -187,6 +199,7 @@ export default function ProjectDetailPage() {
   const [isLoadingStoryboardCandidates, setIsLoadingStoryboardCandidates] = useState(false)
   const [storyboardCandidateError, setStoryboardCandidateError] = useState<string | null>(null)
   const [selectedScriptFileName, setSelectedScriptFileName] = useState('')
+  const [showAllScenes, setShowAllScenes] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // Group assets by sequence from metadata_json
@@ -1252,20 +1265,36 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
                   <div className="card bg-dark-200/80 border border-white/5 p-6">
-                    <h4 className="text-sm font-semibold mb-4 text-gray-300">Escenas detectadas</h4>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-semibold text-gray-300">Escenas detectadas</h4>
+                      <span className="text-xs text-slate-500">{analysisData.scenes?.length ?? 0} escenas</span>
+                    </div>
                     <div className="space-y-3">
-                      {(analysisData.scenes || []).slice(0, 8).map((scene, index) => (
+                      {(analysisData.scenes || []).slice(0, showAllScenes ? undefined : 8).map((scene, index) => (
                         <div key={`${scene.scene_id || index}`} className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
                           <p className="font-medium text-white">{String(scene.heading || scene.scene_id || `Escena ${index + 1}`)}</p>
                           <p className="mt-1 text-xs text-slate-400">
                             {String(scene.location || 'sin localizacion')} · {String(scene.time_of_day || 'DAY')}
                           </p>
                           <p className="mt-2 text-sm text-slate-300">
-                            Personajes: {Array.isArray(scene.characters) ? scene.characters.join(', ') || '—' : '—'}
+                            Personajes: {dedupeList(scene.characters)}
                           </p>
                         </div>
                       ))}
                     </div>
+                    {(analysisData.scenes?.length ?? 0) > 8 && (
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-xs text-slate-500">
+                          Mostrando {showAllScenes ? analysisData.scenes!.length : 8} de {analysisData.scenes!.length} escenas
+                        </span>
+                        <button
+                          onClick={() => setShowAllScenes(!showAllScenes)}
+                          className="text-xs font-medium text-amber-400 hover:text-amber-300 transition-colors"
+                        >
+                          {showAllScenes ? 'Ver menos' : 'Ver todas'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (

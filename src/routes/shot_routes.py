@@ -53,6 +53,7 @@ async def _serialize_shot(
         visual_mode=shot.visual_mode,
         generation_mode=getattr(shot, "generation_mode", None),
         generation_job_id=getattr(shot, "generation_job_id", None),
+        metadata_json=getattr(shot, "metadata_json", None),
         version=int(getattr(shot, "version", 1) or 1),
         is_active=bool(getattr(shot, "is_active", True)),
         asset_file_name=getattr(asset, "file_name", None),

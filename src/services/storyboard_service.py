@@ -14,10 +14,21 @@ from models.core import Project, ProjectJob
 from models.production import ProductionBreakdown
 from models.storyboard import StoryboardShot
 from schemas.auth_schema import TenantContext
+from schemas.cid_script_to_prompt_schema import (
+    CinematicIntent,
+    PromptSpec,
+    ScriptScene,
+)
+from services.cinematic_intent_service import cinematic_intent_service
+from services.continuity_memory_service import continuity_memory_service
+from services.director_lens_service import director_lens_service
 from services.job_tracking_service import job_tracking_service
 from services.llm.llm_service import StoryboardPromptLLMOutput, llm_service
+from services.montage_intelligence_service import montage_intelligence_service
+from services.prompt_construction_service import prompt_construction_service
 from services.render_job_service import render_job_service
 from services.script_intake_service import script_intake_service
+from services.semantic_prompt_validation_service import semantic_prompt_validation_service
 
 
 class StoryboardGenerationMode:
@@ -189,10 +200,30 @@ class StoryboardService:
         selected_scene_ids: Optional[list[str]] = None,
         scene_numbers: Optional[list[int]] = None,
         max_scenes: Optional[int] = None,
+        director_lens_id: Optional[str] = None,
+        montage_profile_id: Optional[str] = None,
+        use_cinematic_intelligence: bool = False,
+        use_montage_intelligence: bool = False,
+        validate_prompts: bool = False,
     ) -> dict[str, Any]:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
         analysis_data = await self._get_analysis_payload(db, project)
         sequences = self._sequence_blocks_from_analysis(analysis_data)
+
+        if use_cinematic_intelligence and director_lens_id:
+            try:
+                director_lens_service.get_profile(director_lens_id)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc))
+
+        if use_montage_intelligence and montage_profile_id:
+            valid = montage_intelligence_service.list_profiles()
+            valid_ids = {p["profile_id"] for p in valid}
+            if montage_profile_id not in valid_ids:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unknown montage profile: {montage_profile_id}",
+                )
 
         selected_scenes = self._select_scenes(
             analysis_data=analysis_data,
@@ -283,17 +314,29 @@ class StoryboardService:
             sequence_for_scene = self._sequence_for_scene(scene_number, sequences)
             sequence_scope_id = sequence_for_scene.sequence_id if sequence_for_scene else ""
             current_offset = sequence_offsets.get(sequence_scope_id, 0)
-            llm_shot_bundle = await self._run_llm_storyboard_prompts_or_none(
-                project=project,
-                scene=scene,
-                style_preset=style_preset,
-                shots_per_scene=shots_per_scene,
-            )
-            shot_payloads = (
-                [shot.model_dump() for shot in llm_shot_bundle.shots]
-                if llm_shot_bundle and llm_shot_bundle.shots
-                else self._build_scene_shots(scene, shots_per_scene=shots_per_scene, style_preset=style_preset)
-            )
+
+            if use_cinematic_intelligence:
+                shot_payloads = self._build_cinematic_storyboard_shot(
+                    scene,
+                    shots_per_scene=shots_per_scene,
+                    style_preset=style_preset,
+                    director_lens_id=director_lens_id,
+                    montage_profile_id=montage_profile_id,
+                    use_montage_intelligence=use_montage_intelligence,
+                    validate_prompts=validate_prompts,
+                )
+            else:
+                llm_shot_bundle = await self._run_llm_storyboard_prompts_or_none(
+                    project=project,
+                    scene=scene,
+                    style_preset=style_preset,
+                    shots_per_scene=shots_per_scene,
+                )
+                shot_payloads = (
+                    [shot.model_dump() for shot in llm_shot_bundle.shots]
+                    if llm_shot_bundle and llm_shot_bundle.shots
+                    else self._build_scene_shots(scene, shots_per_scene=shots_per_scene, style_preset=style_preset)
+                )
             generated_scenes_payload.append(
                 {
                     "scene_number": scene_number,
@@ -304,6 +347,10 @@ class StoryboardService:
                 }
             )
             for offset, shot in enumerate(shot_payloads, start=1):
+                metadata_raw = shot.get("metadata_json")
+                metadata_str: str | None = None
+                if metadata_raw:
+                    metadata_str = json.dumps(metadata_raw, ensure_ascii=False, default=str)
                 shot_record = StoryboardShot(
                     project_id=project_id,
                     organization_id=tenant.organization_id,
@@ -311,12 +358,13 @@ class StoryboardService:
                     sequence_order=current_offset + offset,
                     scene_number=scene_number,
                     scene_heading=scene.get("heading") or f"ESCENA {scene_number}",
-                    narrative_text=shot["description"],
+                    narrative_text=shot.get("description") or shot.get("narrative_text"),
                     shot_type=shot["shot_type"],
                     visual_mode=style_preset,
                     generation_mode=mode,
                     generation_job_id=str(job.id),
                     version=version,
+                    metadata_json=metadata_str,
                     is_active=True,
                 )
                 db.add(shot_record)
@@ -752,6 +800,140 @@ class StoryboardService:
             return "CU"
         return "MS"
 
+    def _scene_dict_to_script_scene(self, scene: dict[str, Any]) -> ScriptScene:
+        scene_number = self._scene_number(scene)
+        heading = scene.get("heading") or f"ESCENA {scene_number}"
+        int_ext = None
+        location = scene.get("location")
+        time_of_day = scene.get("time_of_day")
+        heading_upper = heading.upper()
+        if heading_upper.startswith("INT") or heading_upper.startswith("INT."):
+            int_ext = "INT"
+        elif heading_upper.startswith("EXT") or heading_upper.startswith("EXT."):
+            int_ext = "EXT"
+        elif "/" in heading_upper:
+            int_ext = "INT/EXT"
+        action_blocks = scene.get("action_blocks") or []
+        raw_text = " ".join(action_blocks) if action_blocks else heading
+        characters_raw = scene.get("characters_detected") or scene.get("characters") or []
+        return ScriptScene(
+            scene_id=str(scene.get("scene_id") or f"scene_{scene_number:04d}"),
+            scene_number=scene_number,
+            heading=heading,
+            int_ext=int_ext,
+            location=location,
+            time_of_day=time_of_day,
+            raw_text=raw_text,
+            action_summary=raw_text[:500],
+            dialogue_summary=scene.get("dialogue_summary"),
+            characters=list(set(str(c) for c in characters_raw if c)),
+            props=scene.get("props") or [],
+            production_needs=scene.get("production_needs") or [],
+            dramatic_objective=scene.get("dramatic_objective"),
+            conflict=scene.get("conflict"),
+            emotional_tone=scene.get("emotional_tone"),
+            visual_anchors=scene.get("visual_anchors") or [],
+            forbidden_elements=scene.get("forbidden_elements") or [],
+        )
+
+    def _build_cinematic_storyboard_shot(
+        self,
+        scene: dict[str, Any],
+        *,
+        shots_per_scene: int,
+        style_preset: str,
+        director_lens_id: Optional[str] = None,
+        montage_profile_id: Optional[str] = None,
+        use_montage_intelligence: bool = False,
+        validate_prompts: bool = False,
+    ) -> list[dict[str, Any]]:
+        script_scene = self._scene_dict_to_script_scene(scene)
+        continuity_anchors = continuity_memory_service.build_continuity_anchors(
+            script_scene,
+            continuity_memory_service.build_project_visual_bible([script_scene]),
+        )
+        intent = cinematic_intent_service.build_intent(
+            script_scene,
+            "storyboard_frame",
+            continuity_anchors=continuity_anchors,
+            director_lens_id=director_lens_id or "adaptive_auteur_fusion",
+            montage_profile_id=montage_profile_id or "adaptive_montage",
+        )
+        prompt_spec = prompt_construction_service.build_prompt_spec(
+            intent,
+            style_preset=style_preset,
+        )
+        validation = None
+        if validate_prompts:
+            validation = semantic_prompt_validation_service.validate(prompt_spec, intent)
+            if validation and not validation.is_valid:
+                prompt_spec.validation_status = "invalid"
+                prompt_spec.validation_errors = validation.errors
+            elif validation:
+                prompt_spec.validation_status = "valid"
+
+        shot_payloads: list[dict[str, Any]] = []
+        shot_types_pool = [intent.shot_size, "CU", "MS", "WS", "OTS"]
+        for index in range(max(1, shots_per_scene)):
+            shot_order = index + 1
+            shot_type = shot_types_pool[index] if index < len(shot_types_pool) else "MS"
+            shot_editorial = None
+            if use_montage_intelligence and intent.montage_intent:
+                next_type = shot_types_pool[index + 1] if index + 1 < len(shot_types_pool) else "reaction_or_reveal"
+                prev_type = shot_types_pool[index - 1] if index > 0 else None
+                shot_editorial = montage_intelligence_service.build_shot_editorial_purpose(
+                    script_scene,
+                    shot_order=shot_order,
+                    shot_type=shot_type,
+                    montage_intent=intent.montage_intent,
+                    previous_shot_type=prev_type,
+                    next_shot_type=next_type,
+                )
+
+            description = intent.action or script_scene.action_summary
+            prompt_text = prompt_spec.positive_prompt or description
+            negative = prompt_spec.negative_prompt
+
+            metadata_payload: dict[str, Any] = {
+                "directorial_intent": self._serialize_model(intent.directorial_intent),
+                "montage_intent": self._serialize_model(intent.montage_intent),
+                "editorial_beats": [self._serialize_model(b) for b in intent.editorial_beats],
+                "shot_editorial_purpose": self._serialize_model(shot_editorial or intent.shot_editorial_purpose),
+                "prompt_spec": self._serialize_model(prompt_spec),
+                "cinematic_intent_id": intent.intent_id,
+                "director_lens_id": intent.director_lens_id,
+            }
+            if validation:
+                metadata_payload["validation"] = self._serialize_model(validation)
+
+            shot_payloads.append(
+                {
+                    "shot_number": shot_order,
+                    "shot_type": shot_type,
+                    "description": description[:180],
+                    "narrative_text": prompt_text[:500],
+                    "positive_prompt": prompt_text,
+                    "negative_prompt": negative,
+                    "lens": intent.lens,
+                    "lighting": intent.lighting,
+                    "composition": intent.composition,
+                    "visual_style": intent.mood,
+                    "metadata_json": metadata_payload,
+                }
+            )
+        return shot_payloads
+
+    def _serialize_model(self, model: Any) -> dict[str, Any] | None:
+        if model is None:
+            return None
+        if hasattr(model, "model_dump"):
+            return model.model_dump()
+        if hasattr(model, "_asdict"):
+            return model._asdict()
+        if isinstance(model, dict):
+            return model
+        return None
+
     def _should_enqueue_render(self, *, mode: str, style_preset: str, shots_per_scene: int) -> bool:
         return (
             mode in {StoryboardGenerationMode.SINGLE_SCENE, StoryboardGenerationMode.SELECTED_SCENES}
@@ -775,10 +957,16 @@ class StoryboardService:
         shot_type = shot_payload.get("shot_type") or "MS"
         tone = shot_payload.get("visual_style") or "cinematic realistic storyboard frame"
         project_context = str(project.description or "").strip()
+        primary_prompt = (
+            shot_payload.get("positive_prompt")
+            or shot_payload.get("prompt")
+            or shot_payload.get("description")
+            or scene_heading
+        )
         prompt_parts = [
             tone,
             f"{shot_type} shot",
-            shot_payload.get("prompt") or shot_payload.get("description") or scene_heading,
+            primary_prompt,
             f"Scene heading: {scene_heading}",
             f"Location: {location}",
             f"Time of day: {time_of_day}",
@@ -794,10 +982,11 @@ class StoryboardService:
             prompt_parts.append(f"Continuity: {shot_payload['continuity_notes']}")
         if project_context:
             prompt_parts.append(f"Project context: {project_context}")
+        negative = shot_payload.get("negative_prompt") or "blurry, low quality, distorted, deformed hands, extra fingers, watermark, text, logo"
         return {
             "preset_key": "storyboard_realistic",
             "prompt": ", ".join(part for part in prompt_parts if part),
-            "negative_prompt": shot_payload.get("negative_prompt") or "blurry, low quality, distorted, deformed hands, extra fingers, watermark, text, logo",
+            "negative_prompt": negative,
             "checkpoint": "Realistic_Vision_V2.0.safetensors",
             "width": 1024,
             "height": 576,

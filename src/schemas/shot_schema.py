@@ -50,6 +50,14 @@ class StoryboardShotResponse(BaseModel):
     version: int = 1
     is_active: bool = True
     metadata_json: Optional[Any] = None
+    asset_file_name: Optional[str] = None
+    asset_mime_type: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    preview_url: Optional[str] = None
+    render_job_id: Optional[str] = None
+    render_status: str = 'no_asset'
+    created_at: datetime
+    updated_at: datetime
 
     @field_validator("metadata_json", mode="before")
     @classmethod
@@ -64,12 +72,6 @@ class StoryboardShotResponse(BaseModel):
             except (json.JSONDecodeError, TypeError):
                 return value
         return value
-    asset_file_name: Optional[str] = None
-    asset_mime_type: Optional[str] = None
-    thumbnail_url: Optional[str] = None
-    preview_url: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
 
 
 class StoryboardShotListResponse(BaseModel):

@@ -175,6 +175,41 @@ class StoryboardService:
         )
         result = await db.execute(query)
         shots = list(result.scalars().all())
+
+        # Populate asset URLs and compute render_status from MediaAsset + metadata
+        asset_ids = [s.asset_id for s in shots if s.asset_id]
+        assets_map: dict[str, Any] = {}
+        if asset_ids:
+            from models.storage import MediaAsset
+            asset_result = await db.execute(
+                select(MediaAsset).where(MediaAsset.id.in_(asset_ids))
+            )
+            assets_map = {str(a.id): a for a in asset_result.scalars().all()}
+
+        for shot in shots:
+            meta: dict[str, Any] = {}
+            if shot.metadata_json:
+                try:
+                    meta = json.loads(shot.metadata_json) if isinstance(shot.metadata_json, str) else dict(shot.metadata_json)
+                except Exception:
+                    meta = {}
+
+            render_job_id = meta.get("render_job_id")
+            render_status_from_meta = meta.get("render_status", "")
+
+            if shot.asset_id and shot.asset_id in assets_map:
+                asset = assets_map[shot.asset_id]
+                shot.asset_file_name = asset.file_name  # type: ignore[attr-defined]
+                shot.asset_mime_type = asset.mime_type  # type: ignore[attr-defined]
+                shot.thumbnail_url = f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/thumbnail"  # type: ignore[attr-defined]
+                shot.preview_url = asset.content_ref or f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/preview"  # type: ignore[attr-defined]
+                shot.render_status = "completed"  # type: ignore[attr-defined]
+            elif render_job_id:
+                shot.render_job_id = render_job_id  # type: ignore[attr-defined]
+                shot.render_status = render_status_from_meta or "render_pending"  # type: ignore[attr-defined]
+            else:
+                shot.render_status = "no_asset"  # type: ignore[attr-defined]
+
         version = max((int(getattr(shot, "version", 1) or 1) for shot in shots), default=None)
         return shots, version
 
@@ -453,8 +488,14 @@ class StoryboardService:
             db, job=job, percent=75, stage="Render jobs creados", code="render_job_created"
         )
 
+        has_render_jobs = bool(render_requests) and self._should_enqueue_render(mode=mode, style_preset=style_preset, shots_per_scene=shots_per_scene)
+
         await job_tracking_service.update_progress(
-            db, job=job, percent=100, stage="Estructura de storyboard completada", code="storyboard_structure_completed"
+            db,
+            job=job,
+            percent=100,
+            stage="Estructura de storyboard completada. Render pendiente." if has_render_jobs else "Estructura de storyboard completada",
+            code="storyboard_structure_completed",
         )
 
         job.status = "completed"
@@ -490,7 +531,8 @@ class StoryboardService:
         await db.commit()
 
         if self._should_enqueue_render(mode=mode, style_preset=style_preset, shots_per_scene=shots_per_scene):
-            for request in render_requests[:1]:
+            max_render_shots = min(shots_per_scene, len(render_requests))
+            for request in render_requests[:max_render_shots]:
                 prompt_payload = self._build_render_prompt_payload(
                     project=project,
                     scene=request["scene"],
@@ -549,6 +591,25 @@ class StoryboardService:
                     metadata_json=result_payload,
                     created_by=tenant.user_id,
                 )
+
+                # Persist render_job_id on each shot's metadata_json
+                for rj in render_jobs:
+                    shot_id = rj["storyboard_shot_id"]
+                    shot_result = await db.execute(
+                        select(StoryboardShot).where(StoryboardShot.id == shot_id)
+                    )
+                    shot = shot_result.scalar_one_or_none()
+                    if shot is not None:
+                        meta: dict[str, Any] = {}
+                        if shot.metadata_json:
+                            try:
+                                meta = json.loads(shot.metadata_json) if isinstance(shot.metadata_json, str) else dict(shot.metadata_json)
+                            except Exception:
+                                meta = {}
+                        meta["render_job_id"] = rj["job_id"]
+                        meta["render_status"] = "render_pending"
+                        shot.metadata_json = json.dumps(meta, ensure_ascii=False, default=str)
+
                 await db.commit()
 
         return {
@@ -1031,8 +1092,12 @@ class StoryboardService:
 
     def _should_enqueue_render(self, *, mode: str, style_preset: str, shots_per_scene: int) -> bool:
         return (
-            mode in {StoryboardGenerationMode.SINGLE_SCENE, StoryboardGenerationMode.SELECTED_SCENES}
-            and shots_per_scene == 1
+            mode in {
+                StoryboardGenerationMode.SINGLE_SCENE,
+                StoryboardGenerationMode.SELECTED_SCENES,
+                StoryboardGenerationMode.SEQUENCE,
+            }
+            and shots_per_scene <= 3
             and style_preset in self.RENDER_ENABLED_STYLES
         )
 

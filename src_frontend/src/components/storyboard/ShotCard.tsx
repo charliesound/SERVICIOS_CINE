@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Trash2, Image } from 'lucide-react'
+import { Trash2, Image, Clock, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react'
 import type { DirtyShot } from '@/types/storyboard'
 
 interface ShotCardProps {
@@ -10,8 +10,17 @@ interface ShotCardProps {
   isSaving: boolean
 }
 
+const RENDER_STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
+  completed: { label: 'Render completado', color: 'text-green-400 bg-green-500/10', icon: CheckCircle2 },
+  render_pending: { label: 'Render pendiente', color: 'text-amber-400 bg-amber-500/10', icon: Clock },
+  no_asset: { label: 'Sin imagen', color: 'text-slate-500 bg-white/5', icon: AlertTriangle },
+}
+
 export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: ShotCardProps) {
   const [localText, setLocalText] = useState(shot.narrative_text || '')
+  const renderStatus = shot.render_status || 'no_asset'
+  const statusCfg = RENDER_STATUS_CONFIG[renderStatus] || RENDER_STATUS_CONFIG.no_asset
+  const StatusIcon = statusCfg.icon
 
   const handleTextBlur = () => {
     if (localText !== shot.narrative_text) {
@@ -40,19 +49,37 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
             </button>
           </>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
-            <Image className="w-12 h-12 mb-2" />
-            <span className="text-sm">No asset assigned</span>
-            <button
-              onClick={() => onOpenPicker(shot.id)}
-              className="mt-2 text-amber-400 hover:text-amber-300 text-sm"
-            >
-              Select asset
-            </button>
+          <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 px-4">
+            {renderStatus === 'render_pending' ? (
+              <>
+                <Loader2 className="w-10 h-10 mb-2 animate-spin text-amber-400/60" />
+                <span className="text-sm text-amber-300/70 text-center">Render pendiente</span>
+                <span className="text-[10px] text-slate-600 mt-1 text-center">Imagen pendiente de generar o asociar</span>
+              </>
+            ) : (
+              <>
+                <Image className="w-12 h-12 mb-2 opacity-40" />
+                <span className="text-sm text-slate-500">Imagen pendiente de generar o asociar</span>
+                <button
+                  onClick={() => onOpenPicker(shot.id)}
+                  className="mt-2 text-amber-400 hover:text-amber-300 text-sm"
+                >
+                  Select asset
+                </button>
+              </>
+            )}
           </div>
         )}
         {shot.isDirty && (
           <div className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" title="Unsaved changes" />
+        )}
+        {renderStatus !== 'completed' && (
+          <div className="absolute top-2 left-2">
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${statusCfg.color} border-current/20`}>
+              <StatusIcon className="w-3 h-3" />
+              {statusCfg.label}
+            </span>
+          </div>
         )}
       </div>
 
@@ -82,6 +109,23 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
           className="w-full bg-dark-300 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 resize-none disabled:opacity-50"
           rows={3}
         />
+
+        {(shot.render_job_id || shot.generation_job_id) && (
+          <div className="space-y-1 text-[10px] text-slate-600">
+            {shot.render_job_id && (
+              <p className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                Render job: <span className="text-slate-400 font-mono">{shot.render_job_id.substring(0, 12)}...</span>
+              </p>
+            )}
+            {shot.generation_job_id && (
+              <p className="flex items-center gap-1">
+                <span>Gen job:</span>
+                <span className="text-slate-400 font-mono">{shot.generation_job_id.substring(0, 12)}...</span>
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-2">
           <select

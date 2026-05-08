@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +21,12 @@ from schemas.storyboard_schema import (
 from services.comfyui_model_inventory_service import ComfyUIInventoryError
 from services.comfyui_pipeline_builder_service import build_storyboard_pipeline_plan
 from services.comfyui_storyboard_render_service import comfyui_storyboard_render_service
+from schemas.cid_director_feedback_schema import (
+    SequenceFeedbackRequest,
+    ShotFeedbackRequest,
+    StoryboardRevisionPlan,
+    StoryboardRevisionResult,
+)
 from schemas.cid_sequence_first_schema import (
     ScriptSequenceMapEntry,
     SequenceStoryboardPlan,
@@ -314,3 +322,126 @@ async def regenerate_storyboard_sequence(
         generated_assets=result.get("generated_assets", []),
         created_at=result["created_at"],
     )
+
+
+@router.post(
+    "/{project_id}/storyboard/shots/{shot_id}/feedback",
+    response_model=StoryboardRevisionResult,
+)
+async def submit_shot_director_feedback(
+    project_id: str,
+    shot_id: str,
+    payload: ShotFeedbackRequest,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> StoryboardRevisionResult:
+    return await storyboard_service.revise_storyboard_shot_with_feedback(
+        db,
+        project_id=project_id,
+        shot_id=shot_id,
+        feedback=payload,
+        tenant=tenant,
+    )
+
+
+@router.post(
+    "/{project_id}/storyboard/sequences/{sequence_id}/feedback",
+    response_model=StoryboardRevisionPlan,
+)
+async def submit_sequence_director_feedback(
+    project_id: str,
+    sequence_id: str,
+    payload: SequenceFeedbackRequest,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> StoryboardRevisionPlan:
+    if payload.apply_to not in ("selected_shots", "all_sequence_shots"):
+        raise HTTPException(status_code=400, detail="apply_to must be 'selected_shots' or 'all_sequence_shots'")
+
+    from sqlalchemy import select
+    from models.storyboard import StoryboardShot
+
+    query = select(StoryboardShot).where(
+        StoryboardShot.project_id == project_id,
+        StoryboardShot.sequence_id == sequence_id,
+        StoryboardShot.organization_id == tenant.organization_id,
+        StoryboardShot.is_active.is_(True),
+    )
+    if payload.apply_to == "selected_shots" and payload.shot_ids:
+        query = query.where(StoryboardShot.id.in_(payload.shot_ids))
+    result = await db.execute(query)
+    shots = list(result.scalars().all())
+
+    if not shots:
+        raise HTTPException(status_code=404, detail="No shots found for feedback")
+
+    results: list[StoryboardRevisionResult] = []
+    first_plan: StoryboardRevisionPlan | None = None
+
+    from schemas.cid_director_feedback_schema import (
+        FeedbackCategory,
+        FeedbackSeverity,
+        ShotFeedbackRequest as InnerShotFeedbackRequest,
+    )
+
+    for shot in shots:
+        shot_feedback = InnerShotFeedbackRequest(
+            note_text=payload.note_text,
+            category=FeedbackCategory(payload.note_text) if hasattr(FeedbackCategory, payload.note_text) else FeedbackCategory.other,
+            severity=FeedbackSeverity.minor,
+            preserve_original_logic=payload.preserve_original_logic,
+        )
+        try:
+            revision_result = await storyboard_service.revise_storyboard_shot_with_feedback(
+                db,
+                project_id=project_id,
+                shot_id=shot.id,
+                feedback=shot_feedback,
+                tenant=tenant,
+            )
+            results.append(revision_result)
+            if first_plan is None:
+                first_plan = revision_result.revision_plan
+        except Exception:
+            pass
+
+    if not first_plan:
+        raise HTTPException(status_code=422, detail="Could not process feedback for any shot")
+
+    combined_plan = first_plan
+    combined_plan.qa_checklist.append(f"VERIFICAR: Feedback aplicado a {len(results)}/{len(shots)} shots de la secuencia {sequence_id}")
+    return combined_plan
+
+
+@router.get(
+    "/{project_id}/storyboard/shots/{shot_id}/revisions",
+    response_model=list[dict[str, Any]],
+)
+async def get_shot_revision_history(
+    project_id: str,
+    shot_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> list[dict[str, Any]]:
+    from sqlalchemy import select
+    from models.storyboard import StoryboardShot
+
+    result = await db.execute(
+        select(StoryboardShot).where(
+            StoryboardShot.id == shot_id,
+            StoryboardShot.project_id == project_id,
+            StoryboardShot.organization_id == tenant.organization_id,
+        )
+    )
+    shot = result.scalar_one_or_none()
+    if shot is None:
+        raise HTTPException(status_code=404, detail="Shot not found")
+
+    import json
+    metadata_raw: dict[str, Any] = {}
+    if shot.metadata_json:
+        try:
+            metadata_raw = json.loads(shot.metadata_json) if isinstance(shot.metadata_json, str) else dict(shot.metadata_json)
+        except (json.JSONDecodeError, TypeError):
+            metadata_raw = {}
+    return metadata_raw.get("revision_history", [])

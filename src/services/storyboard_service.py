@@ -19,13 +19,27 @@ from schemas.cid_script_to_prompt_schema import (
     PromptSpec,
     ScriptScene,
 )
+from schemas.cid_director_feedback_schema import (
+    DirectorFeedbackInterpretation,
+    DirectorFeedbackNote,
+    FeedbackCategory,
+    FeedbackSeverity,
+    FeedbackTargetType,
+    PromptRevisionPatch,
+    RegenerationStrategy,
+    ShotFeedbackRequest,
+    StoryboardRevisionPlan,
+    StoryboardRevisionResult,
+)
 from services.cinematic_intent_service import cinematic_intent_service
 from services.continuity_memory_service import continuity_memory_service
+from services.director_feedback_interpretation_service import director_feedback_interpretation_service
 from services.director_lens_service import director_lens_service
 from services.job_tracking_service import job_tracking_service
 from services.llm.llm_service import StoryboardPromptLLMOutput, llm_service
 from services.montage_intelligence_service import montage_intelligence_service
 from services.prompt_construction_service import prompt_construction_service
+from services.prompt_revision_service import prompt_revision_service
 from services.render_job_service import render_job_service
 from services.script_intake_service import script_intake_service
 from services.semantic_prompt_validation_service import semantic_prompt_validation_service
@@ -1059,6 +1073,197 @@ class StoryboardService:
             if scene_number in set(sequence.included_scenes):
                 return sequence
         return None
+
+
+    async def revise_storyboard_shot_with_feedback(
+        self,
+        db: AsyncSession,
+        *,
+        project_id: str,
+        shot_id: str,
+        feedback: ShotFeedbackRequest,
+        tenant: TenantContext,
+    ) -> StoryboardRevisionResult:
+        import uuid
+
+        result = await db.execute(
+            select(StoryboardShot).where(
+                StoryboardShot.id == shot_id,
+                StoryboardShot.project_id == project_id,
+                StoryboardShot.organization_id == tenant.organization_id,
+                StoryboardShot.is_active.is_(True),
+            )
+        )
+        shot = result.scalar_one_or_none()
+        if shot is None:
+            raise HTTPException(status_code=404, detail="Shot not found")
+
+        metadata_raw: dict[str, Any] = {}
+        if shot.metadata_json:
+            try:
+                metadata_raw = json.loads(shot.metadata_json) if isinstance(shot.metadata_json, str) else dict(shot.metadata_json)
+            except (json.JSONDecodeError, TypeError):
+                metadata_raw = {}
+
+        prompt_spec = metadata_raw.get("prompt_spec", {})
+        if isinstance(prompt_spec, str):
+            try:
+                prompt_spec = json.loads(prompt_spec)
+            except (json.JSONDecodeError, TypeError):
+                prompt_spec = {}
+
+        script_context: dict[str, Any] = {
+            "location": shot.metadata_json.get("scene_heading", "") if isinstance(shot.metadata_json, dict) else "",
+            "time_of_day": "",
+            "characters": [],
+            "action_summary": shot.narrative_text or "",
+        }
+        if isinstance(shot.metadata_json, dict):
+            sv_align = shot.metadata_json.get("script_visual_alignment", {})
+            if isinstance(sv_align, dict):
+                for req in sv_align.get("scene_requirements", []):
+                    if ":" in str(req):
+                        parts = str(req).split(":", 1)
+                        key = parts[0].strip().lower()
+                        val = parts[1].strip()
+                        if "location" in key:
+                            script_context["location"] = val
+                        elif "time" in key:
+                            script_context["time_of_day"] = val
+
+        visual_ref_context: dict[str, Any] = {}
+        if isinstance(shot.metadata_json, dict):
+            ref_profile = shot.metadata_json.get("visual_reference_profile", {})
+            if isinstance(ref_profile, dict):
+                visual_ref_context = ref_profile
+
+        note = DirectorFeedbackNote(
+            note_id=f"fb_{uuid.uuid4().hex[:12]}",
+            target_type=FeedbackTargetType.shot,
+            target_id=shot_id,
+            note_text=feedback.note_text,
+            category=feedback.category,
+            severity=feedback.severity,
+            created_by_role=feedback.created_by_role,
+            preserve_original_logic=feedback.preserve_original_logic,
+        )
+
+        interpretation = director_feedback_interpretation_service.interpret_feedback(
+            note=note,
+            original_prompt=prompt_spec if isinstance(prompt_spec, dict) else None,
+            script_context=script_context,
+            visual_reference_context=visual_ref_context,
+            storyboard_metadata=metadata_raw,
+        )
+
+        original_intent = metadata_raw.get("directorial_intent", {})
+        if isinstance(original_intent, str):
+            try:
+                original_intent = json.loads(original_intent)
+            except (json.JSONDecodeError, TypeError):
+                original_intent = {}
+
+        revision = prompt_revision_service.revise_prompt_with_director_feedback(
+            prompt_spec=prompt_spec if isinstance(prompt_spec, dict) else None,
+            feedback_interpretation=interpretation,
+            original_intent=original_intent if isinstance(original_intent, dict) else None,
+        )
+
+        regeneration_strategy = RegenerationStrategy.single_shot
+        if interpretation.risk_level == "high":
+            regeneration_strategy = RegenerationStrategy.single_shot
+
+        requires_confirmation = interpretation.risk_level in ("high", "medium") and feedback.preserve_original_logic
+
+        qa_list = [
+            f"VERIFICAR: La nota del director '{feedback.note_text[:60]}' fue interpretada correctamente",
+            f"VERIFICAR: Elementos narrativos protegidos: {len(interpretation.protected_story_elements)}",
+            f"VERIFICAR: Elementos visuales protegidos: {len(interpretation.protected_visual_elements)}",
+        ]
+        if interpretation.conflict_with_script:
+            qa_list.append(f"VERIFICAR: Conflicto con guion resuelto: {interpretation.conflict_with_script_details[:100]}")
+        if interpretation.conflict_with_reference:
+            qa_list.append(f"VERIFICAR: Conflicto con referencia resuelto: {interpretation.conflict_with_reference_details[:100]}")
+
+        revised_prompt_spec = dict(prompt_spec) if isinstance(prompt_spec, dict) else {}
+        revised_prompt_spec["positive_prompt"] = revision.revised_prompt
+        revised_prompt_spec["negative_prompt"] = revision.revised_negative_prompt
+        revised_prompt_spec["_revision_version"] = revision.version_number
+        revised_prompt_spec["_revision_parent"] = prompt_spec.get("prompt_id", shot_id) if isinstance(prompt_spec, dict) else shot_id
+
+        revision_history = metadata_raw.get("revision_history", [])
+        if not isinstance(revision_history, list):
+            revision_history = []
+        revision_history.append({
+            "revision_version": revision.version_number,
+            "director_note": feedback.note_text,
+            "note_category": feedback.category.value,
+            "note_severity": feedback.severity.value,
+            "interpretation": interpretation.model_dump(),
+            "revision_patch": revision.model_dump(),
+            "original_prompt_id": prompt_spec.get("prompt_id", "") if isinstance(prompt_spec, dict) else "",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+
+        updated_metadata = dict(metadata_raw)
+        updated_metadata["revision_history"] = revision_history
+        updated_metadata["latest_revision"] = {
+            "version": revision.version_number,
+            "revised_prompt_spec": revised_prompt_spec,
+            "director_note": feedback.note_text,
+            "interpretation": interpretation.model_dump(),
+            "revision_patch": revision.model_dump(),
+        }
+        updated_metadata["prompt_spec"] = revised_prompt_spec
+        shot.metadata_json = json.dumps(updated_metadata, ensure_ascii=False, default=str)
+        await db.flush()
+
+        revision_plan = StoryboardRevisionPlan(
+            project_id=project_id,
+            sequence_id=shot.sequence_id or "",
+            shot_id=shot_id,
+            original_story_logic=shot.narrative_text or "",
+            director_feedback=note,
+            interpretation=interpretation,
+            prompt_revision=revision,
+            regeneration_strategy=regeneration_strategy,
+            requires_director_confirmation=requires_confirmation,
+            qa_checklist=qa_list,
+        )
+
+        return StoryboardRevisionResult(
+            status="prompt_revised" if not requires_confirmation else "requires_confirmation",
+            revision_id=f"rev_{uuid.uuid4().hex[:12]}",
+            revision_plan=revision_plan,
+            revised_prompt_spec=revised_prompt_spec,
+            metadata_json=updated_metadata,
+            message=self._build_revision_message(interpretation, revision, requires_confirmation),
+        )
+
+    def _build_revision_message(
+        self,
+        interpretation: DirectorFeedbackInterpretation,
+        revision: PromptRevisionPatch,
+        requires_confirmation: bool,
+    ) -> str:
+        parts: list[str] = ["CID ha interpretado la nota del director."]
+        if interpretation.protected_story_elements:
+            parts.append(f"Elementos narrativos protegidos: {len(interpretation.protected_story_elements)}.")
+        if interpretation.protected_visual_elements:
+            parts.append(f"Elementos visuales protegidos: {len(interpretation.protected_visual_elements)}.")
+        if revision.changed_elements:
+            parts.append(f"Cambios aplicados: {len(revision.changed_elements)}.")
+        if revision.rejected_changes:
+            parts.append(f"Cambios rechazados: {len(revision.rejected_changes)}.")
+        if interpretation.conflict_with_script:
+            parts.append("CONFLICTO CON GUION DETECTADO.")
+        if interpretation.conflict_with_reference:
+            parts.append("CONFLICTO CON REFERENCIA VISUAL DETECTADO.")
+        if requires_confirmation:
+            parts.append("Requiere confirmacion del director antes de aplicar.")
+        else:
+            parts.append("Revision de prompt preparada. Prompt original preservado en metadata.")
+        return " ".join(parts)
 
 
 storyboard_service = StoryboardService()

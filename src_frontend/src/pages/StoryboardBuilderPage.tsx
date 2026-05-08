@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle } from 'lucide-react'
+import { Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import { ShotCard } from '@/components/storyboard/ShotCard'
 import { AssetPickerModal } from '@/components/storyboard/AssetPickerModal'
+import DirectorFeedbackPanel from '@/components/storyboard/DirectorFeedbackPanel'
 import type {
   CinematicShotMetadata,
   DirtyShot,
@@ -41,6 +42,7 @@ export default function StoryboardBuilderPage() {
   const [useMontageIntelligence] = useState(false)
   const [validatePrompts] = useState(false)
   const [expandedMetadata, setExpandedMetadata] = useState<string | null>(null)
+  const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null)
 
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<FullScriptAnalysisResult | null>(null)
@@ -569,49 +571,57 @@ export default function StoryboardBuilderPage() {
                   <div key={shot.id} className="space-y-1">
                     <ShotCard shot={shot} onUpdate={handleUpdateShot} onDelete={handleDeleteShot}
                       onOpenPicker={handleOpenPicker} isSaving={isSaving} />
-                    {shot.metadata_json && (
-                      <div>
+                    <div className="flex gap-1">
+                      <button onClick={() => setExpandedFeedback(expandedFeedback === shot.id ? null : shot.id)}
+                        className="flex items-center gap-1.5 flex-1 px-3 py-1.5 text-xs text-cyan-400/70 hover:text-cyan-300 bg-dark-300/40 border border-white/5 rounded-lg transition-colors">
+                        <MessageSquare className="w-3 h-3" />
+                        {expandedFeedback === shot.id ? 'Cerrar notas' : 'Notas del director'}
+                      </button>
+                      {shot.metadata_json && (
                         <button onClick={() => setExpandedMetadata(expandedMetadata === shot.id ? null : shot.id)}
-                          className="flex items-center gap-1.5 w-full px-3 py-1.5 text-xs text-amber-400/70 hover:text-amber-300 bg-dark-300/40 border border-white/5 rounded-lg transition-colors">
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-400/70 hover:text-amber-300 bg-dark-300/40 border border-white/5 rounded-lg transition-colors">
                           <Eye className="w-3 h-3" />
-                          {expandedMetadata === shot.id ? 'Ocultar metadatos CID' : 'Ver metadatos cinematográficos'}
+                          {expandedMetadata === shot.id ? 'Ocultar' : 'Metadatos'}
                         </button>
-                        {expandedMetadata === shot.id && (
-                          <div className="mt-1 p-3 bg-dark-300/60 border border-amber-500/20 rounded-lg text-xs text-slate-300 space-y-1.5 max-h-64 overflow-y-auto">
-                            {(() => {
-                              const meta = shot.metadata_json as CinematicShotMetadata
-                              return (
+                      )}
+                    </div>
+                    {expandedFeedback === shot.id && projectId && (
+                      <DirectorFeedbackPanel shot={shot} projectId={projectId} />
+                    )}
+                    {expandedMetadata === shot.id && (
+                      <div className="p-3 bg-dark-300/60 border border-amber-500/20 rounded-lg text-xs text-slate-300 space-y-1.5 max-h-64 overflow-y-auto">
+                        {(() => {
+                          const meta = shot.metadata_json as CinematicShotMetadata
+                          return (
+                            <>
+                              {meta.source_scope && <p><span className="text-amber-400">Scope:</span> {meta.source_scope}</p>}
+                              {meta.sequence_title && <p><span className="text-amber-400">Secuencia:</span> {meta.sequence_title}</p>}
+                              {meta.shot_plan_reason && <p><span className="text-amber-400">Razón:</span> {meta.shot_plan_reason}</p>}
+                              {meta.director_lens_id && <p><span className="text-amber-400">Lente:</span> {meta.director_lens_id}</p>}
+                              {meta.cinematic_intent_id && <p><span className="text-amber-400">Intent ID:</span> {meta.cinematic_intent_id}</p>}
+                              {meta.shot_editorial_purpose && (
                                 <>
-                                  {meta.source_scope && <p><span className="text-amber-400">Scope:</span> {meta.source_scope}</p>}
-                                  {meta.sequence_title && <p><span className="text-amber-400">Secuencia:</span> {meta.sequence_title}</p>}
-                                  {meta.shot_plan_reason && <p><span className="text-amber-400">Razón:</span> {meta.shot_plan_reason}</p>}
-                                  {meta.director_lens_id && <p><span className="text-amber-400">Lente:</span> {meta.director_lens_id}</p>}
-                                  {meta.cinematic_intent_id && <p><span className="text-amber-400">Intent ID:</span> {meta.cinematic_intent_id}</p>}
-                                  {meta.shot_editorial_purpose && (
-                                    <>
-                                      <p><span className="text-amber-400">Propósito:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).purpose || '')}</p>
-                                      <p><span className="text-amber-400">Corte:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).cut_reason || '')}</p>
-                                    </>
-                                  )}
-                                  {meta.montage_intent && (
-                                    <p><span className="text-amber-400">Montaje:</span> {String((meta.montage_intent as Record<string, unknown>).editorial_function || '')}</p>
-                                  )}
-                                  {meta.directorial_intent && (
-                                    <p><span className="text-amber-400">Dirección:</span> {String((meta.directorial_intent as Record<string, unknown>).mise_en_scene || '').substring(0, 120)}</p>
-                                  )}
-                                  {meta.validation && (
-                                    <p className={Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'text-green-400' : 'text-red-400'}>
-                                      Validación: {Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'Válido' : 'Inválido'} (score: {String((meta.validation as Record<string, unknown>).score)})
-                                    </p>
-                                  )}
-                                  {meta.script_visual_alignment && (
-                                    <p><span className="text-cyan-400">Alignment:</span> {String((meta.script_visual_alignment as Record<string, unknown>).alignment_score || '')}</p>
-                                  )}
+                                  <p><span className="text-amber-400">Propósito:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).purpose || '')}</p>
+                                  <p><span className="text-amber-400">Corte:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).cut_reason || '')}</p>
                                 </>
-                              )
-                            })()}
-                          </div>
-                        )}
+                              )}
+                              {meta.montage_intent && (
+                                <p><span className="text-amber-400">Montaje:</span> {String((meta.montage_intent as Record<string, unknown>).editorial_function || '')}</p>
+                              )}
+                              {meta.directorial_intent && (
+                                <p><span className="text-amber-400">Dirección:</span> {String((meta.directorial_intent as Record<string, unknown>).mise_en_scene || '').substring(0, 120)}</p>
+                              )}
+                              {meta.validation && (
+                                <p className={Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'text-green-400' : 'text-red-400'}>
+                                  Validación: {Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'Válido' : 'Inválido'} (score: {String((meta.validation as Record<string, unknown>).score)})
+                                </p>
+                              )}
+                              {meta.script_visual_alignment && (
+                                <p><span className="text-cyan-400">Alignment:</span> {String((meta.script_visual_alignment as Record<string, unknown>).alignment_score || '')}</p>
+                              )}
+                            </>
+                          )
+                        })()}
                       </div>
                     )}
                   </div>

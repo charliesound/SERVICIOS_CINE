@@ -1,0 +1,253 @@
+{
+  "version": "v4",
+  "brand": "AILinkCinema / CID",
+  "visual_identity": {
+    "art_direction": "premium B2B cinematic tech aesthetic",
+    "palette": [
+      "charcoal black",
+      "graphite",
+      "warm amber",
+      "controlled teal",
+      "subtle metallic reflections"
+    ],
+    "image_prompt_prefix": "premium B2B cinematic film production aesthetic, coherent art direction, charcoal and graphite environment, warm amber highlights, controlled teal accents, elegant studio realism, refined interfaces, stable geometry, premium production atmosphere, no text, no logo, no watermark, 16:9 widescreen composition",
+    "image_negative_prompt_global": "text, letters, watermark, logo, low quality, blurry, overexposed, oversaturated, distorted interface, broken hands, duplicate people, malformed screens, cartoonish, cheap sci-fi look, person standing alone in dark room facing away from camera, generic stock photo, empty dark room without context, person of espaldas"
+  },
+  "items": [
+    {
+      "image_key": "landing-visual-bible-v4",
+      "target_file_name": "landing-visual-bible-v4.webp",
+      "block_label": "Biblia visual cinematografica / Referencias CID",
+      "landing_copy_focus": "CID construye una biblia visual cinematografica: guion, personajes, localizaciones, paleta, continuidad, planos y atmosfera cotejados antes de generar prompts.",
+      "semantic_intent": "BIBLIA VISUAL COMPLETA DEL PROYECTO. Panel luminoso y profesional que muestra como CID organiza y cruza toda la informacion visual: guion analizado, fichas de personajes, mapa de localizaciones, paleta cromatica, lineas de continuidad, planos y referencias de atmosfera. Conexiones visibles entre cada elemento para demostrar que CID entiende el proyecto holisticamente antes de generar.",
+      "required_elements": "seccion de guion analizado con lineas extraidas, fichas de personajes con retratos conceptuales, mapa de localizaciones con referencias, paleta cromatica del proyecto (swatches), lineas de continuidad entre escenas, referencias de atmosfera e iluminacion, conexiones visuales entre todos los elementos, composicion clara y luminosa",
+      "composition_notes": "Panel organizado en cuadricula profesional. El guion analizado ocupa la zona superior izquierda. Fichas de personajes en columna derecha. Localizaciones y paleta en zona inferior. Lineas de conexion sutiles entre elementos relacionados. La composicion debe ser clara y legible de un vistazo.",
+      "lighting_notes": "ILUMINACION LUMINOSA Y PROFESIONAL. Luz ambiente neutral y pareja que permite ver todos los detalles. No debe ser oscura ni sombria. Toques de luz amber suave para destacar elementos clave. Sensacion de sala de documentacion cinematografica bien iluminada.",
+      "color_notes": "Fondo gris claro profesional o carbon suave (#1a2332). Paleta del proyecto visible como swatches de color. Amber (#f1b24a) para conexiones y acentos. Teal (#2a9d8f) para localizaciones. Blanco hueso para fondos de fichas. La paleta debe sentirse cinematografica pero clara y legible.",
+      "cinematic_language": "Plano general del panel de biblia visual. Composicion en cuadricula tipo 'visual development wall' premium. Cada seccion es una ventana a un aspecto del proyecto. Conexiones visuales entre secciones muestran la relacion entre guion, personajes y localizaciones. Sensacion de documentacion cinematografica completa y profesional.",
+      "continuity_notes": "Los personajes y localizaciones en las fichas deben ser coherentes entre si (misma produccion, mismo estilo). Las conexiones deben reflejar relaciones reales del guion. La paleta cromatica del proyecto debe ser visible como referencia.",
+      "positive_prompt": "premium cinematic visual bible reference dashboard, well-lit professional layout showing complete film project documentation, top-left section: analyzed screenplay with extracted character and location annotations, right column: character concept sheets with portrait studies and wardrobe notes, bottom section: location reference map with photographs and color palette swatches, continuity timeline connecting scenes across the project, atmospheric lighting references, elegant glass panels on light charcoal background, warm amber accent lines connecting related elements, professional clear composition, sophisticated film development documentation, comprehensive creative reference system, bright enough to read all details, no dark atmosphere, no generic UI, realistic film pre-production reference wall",
+      "negative_prompt": "text, letters readable, watermark, logo, low quality, blurry, dark empty room, abstract dark interface, generic dashboard, person standing alone facing away, cheap sci-fi, cartoonish, chaotic collage without structure, empty mood board, random images without connections",
+      "qa_rules": [
+        "VERIFICAR: La biblia visual muestra guion + personajes + localizaciones + paleta + continuidad",
+        "VERIFICAR: La composicion es clara y legible, no oscura ni abstracta",
+        "VERIFICAR: Hay conexiones visuales entre los elementos que sugieren cotejo cruzado",
+        "VERIFICAR: No parece una UI generica ni una pantalla de dashboard vacia",
+        "VERIFICAR: La atmosfera es profesional y luminosa, adecuada para documentacion cinematografica"
+      ]
+    },
+
+    {
+      "image_key": "landing-hero-main-v4",
+      "target_file_name": "landing-hero-main-v4.webp",
+      "block_label": "Hero principal / Pipeline completo",
+      "landing_copy_focus": "CID conecta guion, storyboard, planificacion, doblaje, sonido, VFX, montaje y distribucion en un mismo flujo de trabajo",
+      "semantic_intent": "Centro de control operativo premium que muestra el pipeline completo: guion entrando por la izquierda, analisis en curso, storyboard generandose, salida visual a la derecha. Todo conectado visualmente en un dashboard unificado.",
+      "required_elements": "panel de guion con texto analizado, panel de storyboard con viñetas, panel de generacion visual con resultado cinematografico, panel de delivery con estado, conexiones visuales entre todos los paneles, atmosfera oscura premium con acentos amber, paneles de vidrio con glowing sutil",
+      "composition_notes": "Plano general amplio del dashboard completo. Pipeline fluye de izquierda a derecha. Cada panel debe ser distinguible. Los paneles deben sentirse parte del mismo sistema.",
+      "lighting_notes": "Iluminacion volumetrica desde arriba con destellos amber sutiles. Los paneles emiten un glow suave. Contraste controlado: paneles iluminados sobre fondo carbon oscuro.",
+      "color_notes": "Carbon (#0a0e13) como fondo dominante. Amber (#f1b24a) para acentos y conexiones. Teal (#2a9d8f) controlado para acentos secundarios. Blanco roto para texto de paneles.",
+      "cinematic_language": "Plano general amplio tipo 'control center'. Camara estable, simetrica. Profundidad de campo para dar sensacion de espacio real. Sin personas en primer plano - el producto es el protagonista.",
+      "continuity_notes": "Coherencia cromatica con el resto de la landing. Los paneles deben sentirse parte del mismo sistema. Sin elementos UI genericos sin funcion.",
+      "positive_prompt": "premium cinematic SaaS dashboard, dark charcoal background, warm amber highlights, complete production pipeline visible from left to right: screenplay panel with analyzed text feeding into storyboard frames connected to generation output with cinematic still and delivery status panel, elegant glass UI modules with subtle glow, interconnected production system, realistic film production control center, 16:9 widescreen, volumetric lighting from above, sophisticated amber accents, professional film technology atmosphere, no people, product-focused dashboard",
+      "negative_prompt": "text, letters, watermark, logo, low quality, blurry, overexposed, oversaturated, distorted interface, cartoonish, cheap sci-fi look, generic dashboard, person facing away from camera, empty dark room",
+      "qa_rules": [
+        "VERIFICAR: El pipeline guion->generacion->entrega es visible de izquierda a derecha",
+        "VERIFICAR: Los paneles estan visualmente conectados entre si",
+        "VERIFICAR: La atmosfera es premium B2B, no decorativa ni generica",
+        "VERIFICAR: No hay personas de espaldas mirando pantallas",
+        "VERIFICAR: La composicion es 16:9 panoramica"
+      ]
+    },
+    {
+      "image_key": "landing-problem-fragmented-v4",
+      "target_file_name": "landing-problem-fragmented-v4.webp",
+      "block_label": "Problema / produccion fragmentada",
+      "landing_copy_focus": "Guion, storyboard, produccion y post operan en entornos separados. Cada fase pierde contexto de la anterior.",
+      "semantic_intent": "Comunicar desconexion entre herramientas de produccion mediante objetos fisicos y digitales separados. Fragmentacion organizada y premium, no caotica.",
+      "required_elements": "guion impreso con anotaciones, paneles de storyboard en papel, monitor con linea de tiempo de edicion, interfaz de IA en tablet, ningun elemento conectado a otro, atmosfera profesional",
+      "composition_notes": "Vista cenital o picado suave sobre la mesa de produccion. Cada elemento ocupa su propia zona sin superposicion. Separacion visual clara entre cada herramienta.",
+      "lighting_notes": "Luz puntual sobre cada zona creando islas de iluminacion. Sin fuente de luz unificadora. Sombras marcadas entre elementos para reforzar separacion.",
+      "color_notes": "Carbon y grises para el fondo. Teal frio (#1a6b6b) para los acentos en lugar de amber. Los elementos tienen su propio color pero la paleta global es fria.",
+      "cinematic_language": "Plano cenital tipo 'production desk'. Cada elemento es una isla visual. La falta de conexion entre ellos es el mensaje principal. Composicion ordenada pero fragmentada.",
+      "continuity_notes": "Paleta mas fria que hero (teal en lugar de amber). Los objetos deben ser reconocibles como herramientas de produccion real. No debe parecer un escritorio de oficina generico.",
+      "positive_prompt": "premium production desk top-down view, separated creative tools: printed screenplay with handwritten margin notes, storyboard panels on paper, editing timeline visible on monitor, AI interface on tablet device, each tool isolated in its own zone, no visual connection between elements, organized fragmentation, cold teal accents instead of warm amber, professional film production atmosphere, dark charcoal background, soft directional lighting creating pools of light, sophisticated creative workspace",
+      "negative_prompt": "text, letters, watermark, logo, low quality, blurry, messy trash office, chaotic clutter, cartoonish, cyberpunk overload, generic office desk, person sitting, coworking space",
+      "qa_rules": [
+        "VERIFICAR: La fragmentacion es visible sin ser caotica",
+        "VERIFICAR: Cada elemento es reconocible como herramienta de produccion",
+        "VERIFICAR: No hay conexion visual entre los elementos",
+        "VERIFICAR: La paleta es mas fria que hero (teal sobre amber)"
+      ]
+    },
+    {
+      "image_key": "landing-ai-reasoning-v4",
+      "target_file_name": "landing-ai-reasoning-v4.webp",
+      "block_label": "IA razona y estructura",
+      "landing_copy_focus": "Analiza el guion, identifica personajes, localizaciones y desglose tecnico. Recomienda planos y encuadres.",
+      "semantic_intent": "Mostrar un GUION REAL siendo procesado semanticamente. El texto del guion debe ser visible con overlays que revelan personajes, localizaciones y planos recomendados.",
+      "required_elements": "texto de guion con estructura de scene heading (INT./EXT.), resaltado semantico sobre el texto (personajes en amber, localizaciones en teal), panel lateral con fichas de personajes, panel inferior con desglose de localizaciones y planos",
+      "composition_notes": "Pantalla dividida 60/40: izquierda = guion con resaltados, derecha = fichas semanticas. Panel inferior para desglose. Conexiones visuales entre texto resaltado y fichas.",
+      "lighting_notes": "Iluminacion tipo sala de edicion: luz ambiental suave con los paneles de interfaz como fuentes de luz propias. Glow sutil en las areas resaltadas.",
+      "color_notes": "Carbon para fondo de interfaz. Amber para personajes y elementos narrativos. Teal para localizaciones y elementos tecnicos. Blanco hueso para texto de guion.",
+      "cinematic_language": "Plano medio de la interfaz de analisis. El guion ocupa el centro visual. Las extracciones semanticas fluyen desde el texto hacia las fichas laterales. Movimiento visual de izquierda a derecha.",
+      "continuity_notes": "El guion visible debe tener estructura de escena real. Las fichas extraidas deben coincidir con el contenido del guion visible. Misma familia visual que hero.",
+      "positive_prompt": "premium cinematic SaaS split-screen interface, left 60 percent shows actual screenplay text with INT. or EXT. scene headings, character names highlighted in amber, locations in teal, right panel shows semantic extraction cards with character portraits, location tags, recommended shot types, bottom panel shows technical breakdown, elegant glass UI, dark charcoal background, warm amber accents, sophisticated AI analysis visualization, realistic film production software, professional analytical atmosphere, no generic dashboard",
+      "negative_prompt": "text, letters readable, watermark, logo, low quality, blurry, math equations everywhere, generic code rain, chaotic graphs, infographic poster, cartoonish, generic AI interface",
+      "qa_rules": [
+        "VERIFICAR: Hay texto de guion visible con estructura INT./EXT.",
+        "VERIFICAR: Personajes resaltados en amber, localizaciones en teal",
+        "VERIFICAR: Panel lateral con fichas de personajes visible",
+        "VERIFICAR: No es un panel de AI generico - es analisis de guion especifico"
+      ]
+    },
+    {
+      "image_key": "landing-concept-keyvisual-v4",
+      "target_file_name": "landing-concept-keyvisual-v4.webp",
+      "block_label": "Moodboard / biblia visual",
+      "landing_copy_focus": "Construye referencias visuales por escena, personaje y atmosfera. Consolida la direccion artistica antes del rodaje.",
+      "semantic_intent": "MOODBOARD ORGANIZADO POR ESCENAS DEL GUION. Cada grupo de referencias corresponde a una escena. No es una coleccion aleatoria de imagenes bonitas.",
+      "required_elements": "3-4 grupos visuales etiquetados por nombre de escena, cada grupo contiene paleta de color (swatches), referencia de localizacion, referencia de vestuario, referencia de atmosfera/iluminacion, conexion sutil entre grupos",
+      "composition_notes": "Tablero dividido en zonas verticales o en cuadricula organica. Cada escena ocupa su zona con un header de escena. Las zonas son distintas pero armonizan visualmente.",
+      "lighting_notes": "Iluminacion de sala de departamento de arte: luz neutra y pareja sobre el tablero. Cada zona tiene su propia atmosfera luminica reflejando la escena.",
+      "color_notes": "Cada zona de escena tiene su propia paleta dominante. Noche fria/teal, dia calido/amber. Armonia global a traves del marco carbon del tablero.",
+      "cinematic_language": "Plano general del tablero de moodboard. Cada zona es una ventana a la atmosfera de esa escena. Composicion tipo 'art department wall' premium.",
+      "continuity_notes": "Las paletas de cada escena deben ser distintas pero armonizar. Si escena 1 es nocturna (fria), escena 2 puede ser diurna (calida). Coherencia de produccion entre escenas.",
+      "positive_prompt": "premium cinematic art department moodboard board, large display divided into 3-4 labeled scene zones, each zone contains: color palette swatches, location reference photography, wardrobe fabric samples, lighting reference stills, atmospheric references, scene name labels visible like ESCENA 1 - NOCHE and ESCENA 2 - DIA, elegant organized layout, dark charcoal frame, warm amber accents, sophisticated creative development atmosphere, professional film pre-production environment, realistic art department tools, premium organized chaos",
+      "negative_prompt": "text, letters readable, watermark, logo, low quality, blurry, fashion collage, scrapbook clutter, anime board, neon chaos, pinterest board generic, random images without organization",
+      "qa_rules": [
+        "VERIFICAR: El moodboard esta organizado por escenas con etiquetas",
+        "VERIFICAR: Cada escena tiene al menos paleta + localizacion + vestuario",
+        "VERIFICAR: Hay 3-4 zonas distintas visualmente",
+        "VERIFICAR: No parece un tablero de inspiracion generico"
+      ]
+    },
+    {
+      "image_key": "landing-storyboard-preview-v4",
+      "target_file_name": "landing-storyboard-preview-v4.webp",
+      "block_label": "Storyboard / previsualizacion",
+      "landing_copy_focus": "Cada plano mantiene coherencia narrativa, direccion de arte y continuidad visual. Genera storyboards por plano con encuadre, angulo e iluminacion.",
+      "semantic_intent": "SECUENCIA REAL DE STORYBOARD CINEMATOGRAFICO. 5-6 viñetas del mismo personaje en la misma localizacion con progresion de planos. Continuidad visual evidente.",
+      "required_elements": "5-6 viñetas en formato horizontal, mismo personaje protagonista en todas, misma localizacion de fondo, progresion de planos (general, medio, over shoulder, contraplano, primer plano, two-shot), etiquetas de tipo de plano, consistencia de vestuario e iluminacion",
+      "composition_notes": "Tira horizontal de viñetas que fluyen de izquierda a derecha. Cada viñeta es un fotograma. El personaje mantiene posicion relativa segun el eje.",
+      "lighting_notes": "Iluminacion consistente en todas las viñetas: misma direccion de luz, misma intensidad, mismas sombras. La fuente de luz (ventana/lampara) debe estar en la misma posicion.",
+      "color_notes": "Paleta de storyboard profesional: tonos medios, contraste controlado. Carbon para sombras, tonos piel naturales, fondo consistente. Misma temperatura de color en todas las viñetas.",
+      "cinematic_language": "Storyboard secuencial horizontal. Quinta viñeta debe respetar eje de camara. Progresion logica: establecimiento -> accion -> reaccion -> detalle -> cierre.",
+      "continuity_notes": "EL MISMO PERSONAJE con la MISMA ROPA en TODAS las viñetas. MISMA LOCALIZACION. MISMA DIRECCION DE LUZ. Esto es el requisito mas importante para validar continuidad.",
+      "positive_prompt": "premium cinematic storyboard strip, 6 consecutive horizontal panels showing the same scene and same protagonist character, panel 1: wide establishing shot of interior location, panel 2: medium shot of character, panel 3: over-the-shoulder shot, panel 4: reverse close-up on face, panel 5: close-up detail hands or object, panel 6: two-shot, all panels maintain identical wardrobe, same indoor location background, consistent lighting direction from left, shot type labels below each panel, professional film pre-visualization, dark premium atmosphere, amber and charcoal aesthetic, sophisticated storyboard layout",
+      "negative_prompt": "text, letters readable, watermark, logo, low quality, blurry, comic strip style, childish sketchbook, chaotic corkboard, classroom mood, different characters in each panel, different locations, mismatched lighting",
+      "qa_rules": [
+        "VERIFICAR: 6 viñetas del mismo personaje con la misma ropa",
+        "VERIFICAR: Misma localizacion de fondo en todas las viñetas",
+        "VERIFICAR: Progresion de planos: general -> medio -> over shoulder -> contraplano -> primer plano -> two-shot",
+        "VERIFICAR: La direccion de luz es consistente en todas las viñetas",
+        "VERIFICAR: Hay etiquetas de tipo de plano"
+      ]
+    },
+    {
+      "image_key": "landing-comfyui-generation-v4",
+      "target_file_name": "landing-comfyui-generation-v4.webp",
+      "block_label": "ComfyUI genera imagen controlada",
+      "landing_copy_focus": "Workflows de Flux/SDXL para storyboard, concept art y previz. Control de estilo, iluminacion y atmosfera. El sistema valida antes de regenerar.",
+      "semantic_intent": "Mostrar el PROCESO COMPLETO: prompt estructurado por CID entra a nodos de ComfyUI, genera una imagen, y el resultado aparece con estado de validacion.",
+      "required_elements": "panel de prompt/input con texto visible, nodos de workflow conectados con glowing sutiles, imagen generada visible como resultado principal, badge de validacion (VERDE = VALIDADO o AMARILLO = REVISAR), estetica node-based profesional",
+      "composition_notes": "Workflow node-based en la parte inferior/izquierda. La imagen generada domina la parte derecha/superior. La validacion es un badge prominente sobre la imagen.",
+      "lighting_notes": "Nodos con glow amber sutil. La imagen generada es el punto mas brillante de la composicion. Iluminacion tipo laboratorio digital premium - oscuro con puntos de luz focalizados.",
+      "color_notes": "Carbon (#0a0e13) para fondo de interfaz. Amber (#f1b24a) para conexiones entre nodos. Verde (#4ade80) para badge de validacion. La imagen generada tiene su propia paleta cinematografica.",
+      "cinematic_language": "Plano centrado en el workflow con la imagen generada como punto focal. Tecnologia visible pero la creacion es protagonista. Estetica premium de herramienta profesional.",
+      "continuity_notes": "La imagen generada dentro del panel debe tener estilo cinematografico coherente con los storyboards V4. Interfaz node-based realista, no decorativa.",
+      "positive_prompt": "premium cinematic node-based AI generation interface, connected workflow nodes with subtle amber glow, prompt module on left feeding into Flux model node chain, a stunning cinematic frame emerging on right output panel as the hero result, green validation badge visible with text checkmark, dark charcoal background, elegant glass UI panels, professional creative AI tooling, realistic ComfyUI-style node interface, sophisticated film technology atmosphere, the generated image output is a premium cinematic still of a dramatic scene",
+      "negative_prompt": "text, letters readable, watermark, logo, low quality, blurry, broken UI, gaming overlay, fluorescent chaos, meme screen, empty node editor without output, cartoonish",
+      "qa_rules": [
+        "VERIFICAR: El workflow de nodos es visible y conectado",
+        "VERIFICAR: HAY UNA IMAGEN GENERADA visible como resultado",
+        "VERIFICAR: El badge de validacion esta presente",
+        "VERIFICAR: La interfaz se ve realista, no decorativa"
+      ]
+    },
+    {
+      "image_key": "landing-cid-orchestration-v4",
+      "target_file_name": "landing-cid-orchestration-v4.webp",
+      "block_label": "CID orquesta el flujo completo",
+      "landing_copy_focus": "Orquesta el flujo completo: guion -> analisis -> prompt visual -> ComfyUI -> storyboard -> revision -> entrega. Trazabilidad total.",
+      "semantic_intent": "DIAGRAMA DE FLUJO PREMIUM con 7 modulos reales conectados. Cada modulo tiene icono, etiqueta y una miniatura visual representativa. No abstracto.",
+      "required_elements": "7 modulos en secuencia horizontal, cada modulo con icono y etiqueta, flechas de conexion luminosas entre modulos, miniaturas representativas dentro de cada modulo, estilo premium no corporativo",
+      "composition_notes": "Composicion horizontal panoramica. Los 7 modulos flotan en secuencia. Flechas de flujo los conectan. Cada modulo es un panel de vidrio con glow sutil.",
+      "lighting_notes": "Lineas de conexion luminosas en amber. Cada modulo tiene un glow suave propio. Fondo oscuro con las conexiones como unicas fuentes de luz direccional.",
+      "color_notes": "Carbon profundo para fondo. Amber para conexiones y acentos. Los modulos tienen vidrio oscuro semitransparente (#1a2332). Las miniaturas dentro de modulos tienen su propio color.",
+      "cinematic_language": "Plano panoramico del pipeline completo. La mirada viaja de izquierda a derecha siguiendo las lineas de conexion. Cada modulo es una parada en el viaje de produccion.",
+      "continuity_notes": "Coherencia visual con hero y generacion. Las miniaturas en cada modulo reflejan los activos reales. Misma paleta carbon + amber + teal.",
+      "positive_prompt": "premium cinematic pipeline orchestration diagram, 7 horizontal modules connected by flowing amber light lines, module 1: Guion with script icon and screenplay text thumbnail, module 2: Analisis with magnifying glass icon, module 3: Prompt with edit icon, module 4: ComfyUI with node icon and generation thumbnail, module 5: Storyboard with film strip icon, module 6: Revision with checkmark icon, module 7: Entrega with package icon, each module has a small thumbnail preview, dark charcoal background, elegant glass modules, subtle teal accents, professional film production orchestration, sophisticated system architecture visualization",
+      "negative_prompt": "text, letters readable, watermark, logo, low quality, blurry, messy network diagram, corporate clip art, empty abstract lines, cartoon schematic, generic flow chart",
+      "qa_rules": [
+        "VERIFICAR: 7 modulos claramente identificables de izquierda a derecha",
+        "VERIFICAR: Cada modulo tiene icono + etiqueta + miniatura",
+        "VERIFICAR: Las conexiones entre modulos son visibles",
+        "VERIFICAR: El diseno es premium, no corporativo generico"
+      ]
+    },
+    {
+      "image_key": "landing-producers-studios-v4",
+      "target_file_name": "landing-producers-studios-v4.webp",
+      "block_label": "Colaboracion en produccion",
+      "landing_copy_focus": "Director, productor y equipo pueden revisar, comentar y aprobar versiones. Colaboracion real de produccion audiovisual.",
+      "semantic_intent": "REVISION REAL DE PRODUCCION. Dos profesionales (director + productor) revisando storyboard en pantalla grande. Se ve la toma de decisiones sobre material concreto.",
+      "required_elements": "dos personas en sala oscura, pantalla grande mostrando storyboard o moodboard, una persona senalando/gesticulando hacia la pantalla, anotaciones visibles en pantalla, atmosfera de sala de proyeccion",
+      "composition_notes": "Plano desde detras o costado del sofa mostrando la pantalla y los profesionales de tres cuartos. La pantalla es el punto focal que ilumina la escena.",
+      "lighting_notes": "LA PANTALLA ES LA FUENTE DE LUZ PRINCIPAL. Luz suave de pantalla iluminando los rostros. Ambiente oscuro alrededor. Contraste entre pantalla brillante y sala oscura.",
+      "color_notes": "Sala en tonos carbon y grafito. Luz de pantalla en tonos amber y azul suave. Reflejos de pantalla en las personas. Atmosfera intima y profesional.",
+      "cinematic_language": "Plano medio desde atras de la sala. La pantalla ocupa el fondo del encuadre. Las personas estan en primer/segundo plano de costado. Composicion tipo 'screening room'.",
+      "continuity_notes": "El material en pantalla debe ser coherente con storyboards V4. La sala debe sentirse de produccion/post, no de coworking. No debe parecer foto de stock.",
+      "positive_prompt": "premium cinematic production review room, dark intimate screening atmosphere, two film professionals director and producer reviewing storyboard frames on a large premium display, one person pointing at the screen with pen, subtle annotations and notes visible on the display, warm screen glow illuminating their faces, professional creative decision-making mood, high-end post-production facility interior, elegant dark interior with amber accent lighting, realistic film production environment, sophisticated collaborative atmosphere",
+      "negative_prompt": "text, letters readable, watermark, logo, low quality, blurry, stock photo smile, call center mood, startup coworking cliche, party office, generic meeting room, people facing away from screen",
+      "qa_rules": [
+        "VERIFICAR: La pantalla muestra material de storyboard",
+        "VERIFICAR: Al menos una persona interactua activamente con el material en pantalla",
+        "VERIFICAR: La atmosfera es de produccion cinematografica, no de oficina",
+        "VERIFICAR: No parece foto de stock generica"
+      ]
+    },
+    {
+      "image_key": "landing-professional-differential-v4",
+      "target_file_name": "landing-professional-differential-v4.webp",
+      "block_label": "Diferencial profesional / trazabilidad",
+      "landing_copy_focus": "Cada decision creativa, cada version y cada aprobacion quedan registradas. La IA acelera, pero las decisiones permanecen controladas.",
+      "semantic_intent": "PANEL DE CONTROL DE VERSIONES Y APROBACIONES. Linea de tiempo que muestra versiones, checkpoints de aprobacion y estados. Herramienta de produccion real.",
+      "required_elements": "linea de tiempo horizontal con versiones V1-V4+, checkpoints de aprobacion con iniciales (D: director, P: productor), badges de estado (pendiente, aprobado, rechazado), cambios registrados entre versiones, estetica profesional",
+      "composition_notes": "Plano centrado en la linea de tiempo. Versiones como nodos conectados horizontalmente. Los checkpoints de aprobacion brillan en amber. Panel de vidrio elegante.",
+      "lighting_notes": "Fondo oscuro con las versiones y checkpoints como puntos de luz. Cada version tiene su propio glow. Los checkpoints aprobados brillan mas intensamente.",
+      "color_notes": "Carbon para fondo. Amber para nodos de version y checkpoints. Verde (#4ade80) para estado 'aprobado'. Rojo suave para 'rechazado'. Gris para 'pendiente'.",
+      "cinematic_language": "Plano centrado en la linea de tiempo de trazabilidad. Las versiones crean un ritmo visual horizontal. Los checkpoints marcan el pulso de la produccion.",
+      "continuity_notes": "Las versiones deben corresponder a activos visuales (frames de storyboard). La trazabilidad debe ser legible de un vistazo. Misma paleta carbon + amber.",
+      "positive_prompt": "premium cinematic production traceability dashboard, horizontal timeline showing versions V1 through V4 as connected glowing nodes, approval checkpoints with avatar initials in amber circles marked D for Director and P for Producer, status badges: pending in gray, approved in green, rejected in soft red, brief version diff notes between nodes, elegant glass UI panels, dark charcoal background, warm amber highlights, sophisticated production tracking system, professional film project management, realistic industry tool aesthetic, no abstract decoration",
+      "negative_prompt": "text, letters readable, watermark, logo, low quality, blurry, random abstract wallpaper, cheap blockchain art, generic neon tunnel, fantasy glyphs, empty meaningless visualization",
+      "qa_rules": [
+        "VERIFICAR: Linea de tiempo con al menos 4 versiones visibles",
+        "VERIFICAR: Checkpoints de aprobacion con iniciales D y P",
+        "VERIFICAR: Estados claros (pendiente/aprobado/rechazado)",
+        "VERIFICAR: Se entiende el concepto de trazabilidad visualmente"
+      ]
+    },
+    {
+      "image_key": "landing-delivery-final-v4",
+      "target_file_name": "landing-delivery-final-v4.webp",
+      "block_label": "Delivery / QC final",
+      "landing_copy_focus": "Entrar en fases avanzadas con mas control sobre QC, stems, trazabilidad y compliance. Validamos, revisamos y entregamos. Handoff limpio.",
+      "semantic_intent": "PANEL DE CIERRE DE PRODUCCION con lista de entregables, estados QC y badge de LISTO PARA ENTREGA. Muestra que el flujo completo se cierra profesionalmente.",
+      "required_elements": "lista de entregables con checkboxes (Master Video 4K, Audio Stems, Subtitles, Metadata XML, LUTs), estado QC visible por entregable, badge LISTO PARA ENTREGA, panel de validacion final",
+      "composition_notes": "Dashboard de delivery centrado. Lista de entregables en columna izquierda. Badge de estado en columna derecha. Panel de validacion final en la parte inferior.",
+      "lighting_notes": "Luz ambiental de sala de postproduccion: oscura con monitores como fuente de luz. Los checkmarks y badges tienen glow propio. Atmosfera de finalizacion calmada.",
+      "color_notes": "Carbon para fondo de interfaz. Amber para elementos activos. Verde para QC pasado. Rojo suave para QC pendiente. Blanco hueso para texto de entregables.",
+      "cinematic_language": "Plano del dashboard de delivery con sensacion de cierre. Composicion ordenada tipo 'finishing suite'. Los elementos completados brillan suavemente. Tranquilidad operacional.",
+      "continuity_notes": "Entregables reales de produccion (no genericos). El estado refleja flujo completo iniciado en hero. Misma paleta carbon + amber + verde QC.",
+      "positive_prompt": "premium cinematic delivery and QC suite dashboard, clean list of deliverables: Master Video 4K ProRes with green QC passed badge, Audio Stems WAV with green check, Subtitles SRT with green check, Metadata XML with green check, Color Grade LUTs with green check, prominent amber badge saying READY FOR DELIVERY, elegant glass UI panels, dark charcoal background, warm amber and subtle green highlights, professional post-production atmosphere, realistic film finishing software, sophisticated quality control interface, calm completion mood",
+      "negative_prompt": "text, letters readable, watermark, logo, low quality, blurry, broadcast news set, messy render farm, sci-fi cockpit, cluttered office, chaotic interface",
+      "qa_rules": [
+        "VERIFICAR: Lista de entregables con al menos 5 items",
+        "VERIFICAR: Estado QC visible para cada entregable",
+        "VERIFICAR: Badge de LISTO PARA ENTREGA o similar presente",
+        "VERIFICAR: Sensacion de cierre profesional y orden"
+      ]
+    }
+  ]
+}

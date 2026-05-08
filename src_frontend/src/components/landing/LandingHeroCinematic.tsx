@@ -1,5 +1,9 @@
 import { ArrowRight, Sparkles, ChevronRight } from 'lucide-react'
 import LandingActionButton from '@/components/landing/LandingActionButton'
+import LandingMediaBackground from '@/components/landing/LandingMediaBackground'
+import { getLandingVisual } from '@/utils/landingVisuals'
+
+const heroVisual = getLandingVisual('hero_control_center')
 
 interface HeroContent {
   eyebrow: string
@@ -67,23 +71,22 @@ export default function LandingHeroCinematic({
         </div>
 
         <div className="relative mt-10 w-full shrink-0 lg:mt-0 lg:w-[42rem]">
-          <div className="landing-cinematic-hero-image">
-            <img
-              src="/landing-media/landing-hero-main.webp"
-              alt="Cineframe cinematográfico generado por IA"
-              className="h-full w-full object-cover"
-              loading="eager"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#080808] via-transparent to-transparent" />
-          </div>
+          <LandingMediaBackground
+            className="landing-cinematic-hero-image"
+            imageSrc={heroVisual.imagePath}
+            alt={heroVisual.visualConcept}
+            mediaClassName="h-full w-full object-cover"
+            overlayClassName="absolute inset-0 bg-gradient-to-r from-[#080808] via-transparent to-transparent"
+            imageLoading="eager"
+          />
 
           <div className="landing-cinematic-floating-card">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-amber-400">
               <Sparkles className="h-3 w-3" />
-              Prompt de ejemplo
+              Lo que el sistema interpreta
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-200">
-              "Analiza este guion y genera las secuencias visuales para un storyboard cinematográfico."
+              "Guion analizado, escenas conectadas, prompts coherentes, frames por seccion y revision antes de delivery."
             </p>
           </div>
         </div>

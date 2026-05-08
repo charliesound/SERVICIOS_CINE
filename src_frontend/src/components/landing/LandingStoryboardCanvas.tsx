@@ -1,31 +1,14 @@
 import { Plus, Film, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { getLandingVisual } from '@/utils/landingVisuals'
 
-const scenes = [
-  {
-    id: '01',
-    title: 'Establishing shot',
-    text: 'Amanecer en la ciudad. Cámara lenta sobre los tejados. Luz dorada y niebla matutina.',
-    image: '/landing-media/cinematic-frame-01.webp',
-  },
-  {
-    id: '02',
-    title: 'Personaje principal',
-    text: 'Primer plano del protagonista. Iluminación de claroscuro. Expresión de determinación.',
-    image: '/landing-media/landing-comfyui-generation.webp',
-  },
-  {
-    id: '03',
-    title: 'Conflicto',
-    text: 'Plano medio. Tensión entre personajes. Composición asimétrica con profundidad de campo.',
-    image: '/landing-media/cinematic-frame-02.webp',
-  },
-  {
-    id: '04',
-    title: 'Resolución',
-    text: 'Plano general. El personaje camina hacia el horizonte. Luz de atardecer. Cierre narrativo.',
-    image: '/landing-media/cinematic-frame-03.webp',
-  },
+const storyboardVisual = getLandingVisual('storyboard_sequence')
+const continuityVisual = getLandingVisual('continuity_guardrail')
+
+const continuityChecks = [
+  'Mismo personaje y misma direccion de arte entre planos.',
+  'Raccord de luz y atmosfera estable entre escenas cercanas.',
+  'Prompt y biblia visual reutilizados sin romper el universo.',
 ]
 
 export default function LandingStoryboardCanvas() {
@@ -66,42 +49,63 @@ export default function LandingStoryboardCanvas() {
             </div>
           </div>
 
-          <div className="landing-scene-carousel">
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {scenes.map((scene) => (
-                <div key={scene.id} className="landing-scene-card shrink-0">
-                  <div className="landing-scene-image">
-                    <img
-                      src={scene.image}
-                      alt={scene.title}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent" />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/10 text-[10px] font-semibold text-amber-300">
-                        {scene.id}
-                      </span>
-                      <span className="text-xs font-medium text-white">{scene.title}</span>
-                    </div>
-                    <p className="mt-2 text-xs leading-5 text-slate-400">{scene.text}</p>
+          <div className="space-y-5">
+            <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03]">
+              <div className="relative h-[340px] md:h-[420px]">
+                <img
+                  src={storyboardVisual.imagePath}
+                  alt={storyboardVisual.visualConcept}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-5">
+                  <div className="rounded-[1.4rem] border border-white/10 bg-[#080808]/75 p-4 backdrop-blur-xl">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-amber-300">
+                      Qué debe demostrar este bloque
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-slate-200">
+                      {storyboardVisual.narrativePurpose}
+                    </p>
                   </div>
                 </div>
-              ))}
-
-              <div className="landing-scene-card-add shrink-0">
-                <Plus className="h-8 w-8 text-slate-500" />
-                <p className="mt-2 text-xs text-slate-500">Drop asset / reference</p>
               </div>
             </div>
 
-            <div className="mt-4 flex items-center gap-2">
-              <div className="h-px flex-1 bg-gradient-to-r from-amber-500/30 via-amber-400/20 to-transparent" />
-              <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
-                Línea temporal narrativa
-              </span>
+            <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
+              <div className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-white/[0.03]">
+                <div className="relative h-full min-h-[240px]">
+                  <img
+                    src={continuityVisual.imagePath}
+                    alt={continuityVisual.visualConcept}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-xs text-slate-200">
+                    Mismo universo visual, mismas reglas de continuidad.
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.03] p-5">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-amber-300">
+                    Chequeos de continuidad
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-3">
+                  {continuityChecks.map((item, index) => (
+                    <div key={item} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4 text-sm leading-7 text-slate-300">
+                      <span className="mr-2 font-mono text-[10px] uppercase tracking-[0.18em] text-amber-300">
+                        0{index + 1}
+                      </span>
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>

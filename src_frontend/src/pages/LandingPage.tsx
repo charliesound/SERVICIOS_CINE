@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom'
 import { LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
 import LandingHeroCinematic from '@/components/landing/LandingHeroCinematic'
 import LandingProblemSolution from '@/components/landing/LandingProblemSolution'
+import LandingStudioModules from '@/components/landing/LandingStudioModules'
+import LandingScriptToPromptProof from '@/components/landing/LandingScriptToPromptProof'
 import LandingPipelineBuilder from '@/components/landing/LandingPipelineBuilder'
 import LandingStoryboardCanvas from '@/components/landing/LandingStoryboardCanvas'
+import LandingCreativeControl from '@/components/landing/LandingCreativeControl'
 import LandingDiferencial from '@/components/landing/LandingDiferencial'
 import LandingAudienceB2B from '@/components/landing/LandingAudienceB2B'
 import SpecializedSolutionsGrid from '@/components/landing/SpecializedSolutionsGrid'
@@ -196,9 +199,15 @@ export default function LandingPage() {
 
         <LandingProblemSolution />
 
+        <LandingStudioModules />
+
+        <LandingScriptToPromptProof />
+
         <LandingPipelineBuilder />
 
         <LandingStoryboardCanvas />
+
+        <LandingCreativeControl />
 
         <LandingDiferencial />
 

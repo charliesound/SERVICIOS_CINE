@@ -78,6 +78,21 @@ def main() -> int:
     step("sequence_map has recommended_priority_order",
          len(sequence_map.recommended_priority_order) > 0)
 
+    from schemas.cid_sequence_first_schema import resolve_sequence_entry
+    resolved = resolve_sequence_entry(sequence_map, seq_entry.sequence_id)
+    step("resolve_sequence_entry exact match",
+         resolved is not None and resolved.sequence_id == seq_entry.sequence_id)
+
+    public_id = f"seq_{seq_entry.sequence_number:02d}"
+    resolved_02 = resolve_sequence_entry(sequence_map, public_id)
+    step(f"resolve_sequence_entry '{public_id}' → '{seq_entry.sequence_id}'",
+         resolved_02 is not None and resolved_02.sequence_number == seq_entry.sequence_number)
+
+    plain_number = str(seq_entry.sequence_number)
+    resolved_num = resolve_sequence_entry(sequence_map, plain_number)
+    step(f"resolve_sequence_entry '{plain_number}' → seq_number={seq_entry.sequence_number}",
+         resolved_num is not None and resolved_num.sequence_number == seq_entry.sequence_number)
+
     print("\n[LEVEL 2] Sequence storyboard planning")
     entry = ScriptSequenceMapEntry(
         sequence_id="seq_001",

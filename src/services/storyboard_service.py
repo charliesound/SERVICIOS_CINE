@@ -14,6 +14,7 @@ from models.core import Project, ProjectJob
 from models.production import ProductionBreakdown
 from models.storyboard import StoryboardShot
 from schemas.auth_schema import TenantContext
+from schemas.cid_sequence_first_schema import resolve_sequence_entry
 from schemas.cid_script_to_prompt_schema import (
     CinematicIntent,
     PromptSpec,
@@ -188,7 +189,13 @@ class StoryboardService:
         sequences = await self.list_storyboard_sequences(db, project_id=project_id, tenant=tenant)
         sequence = next((item for item in sequences if item["sequence_id"] == sequence_id), None)
         if sequence is None:
-            raise HTTPException(status_code=404, detail="Sequence not found")
+            blocks = self._sequence_blocks_from_analysis(
+                await self._get_analysis_payload(db, await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant))
+            )
+            resolved = self._resolve_sequence_block(blocks, sequence_id)
+            if resolved is None:
+                raise HTTPException(status_code=404, detail="Sequence not found")
+            sequence = self._sequence_block_dict(resolved, await self._build_storyboard_status(db, project_id=project_id))
         shots, _version = await self.list_storyboard_shots(
             db,
             project_id=project_id,
@@ -685,6 +692,30 @@ class StoryboardService:
             "sequences": per_sequence,
         }
 
+    def _resolve_sequence_block(self, blocks: list[StoryboardSequenceBlock], sequence_id: str) -> StoryboardSequenceBlock | None:
+        """Resolve a sequence block from any seq_01/seq_001/1 format."""
+        # 1. Exact match
+        for b in blocks:
+            if b.sequence_id == sequence_id:
+                return b
+        # 2. Try number-based patterns
+        number: int | None = None
+        stripped = sequence_id.strip()
+        if stripped.isdigit():
+            number = int(stripped)
+        else:
+            m = re.search(r'(?:seq|sequence|s)_?0*(\d+)$', sequence_id, re.IGNORECASE)
+            if m:
+                number = int(m.group(1))
+        if number is not None:
+            for b in blocks:
+                if b.sequence_number == number:
+                    return b
+                for fmt in (f"seq_{number:02d}", f"seq_{number:03d}", f"sequence_{number:02d}", f"sequence_{number:03d}"):
+                    if b.sequence_id == fmt:
+                        return b
+        return None
+
     def _sequence_block_dict(self, block: StoryboardSequenceBlock, status: dict[str, Any]) -> dict[str, Any]:
         seq_status = status.get("sequences", {}).get(block.sequence_id, {})
         current_version = int(seq_status.get("version") or 0)
@@ -724,6 +755,8 @@ class StoryboardService:
         if normalized_mode == StoryboardGenerationMode.SEQUENCE:
             sequence = next((item for item in sequences if item.sequence_id == sequence_id), None)
             if sequence is None:
+                sequence = self._resolve_sequence_block(sequences, sequence_id)
+            if sequence is None:
                 raise HTTPException(status_code=404, detail="Sequence not found")
             return [scene for scene in scenes if self._scene_number(scene) in set(sequence.included_scenes)]
         if normalized_mode == StoryboardGenerationMode.SCENE_RANGE:
@@ -740,7 +773,13 @@ class StoryboardService:
             if not target_numbers:
                 target_numbers = {int(value) for value in selected_scene_ids if str(value).isdigit()}
             if sequence_ids:
-                selected_sequences = [item for item in sequences if item.sequence_id in set(sequence_ids)]
+                selected_sequences: list[StoryboardSequenceBlock] = []
+                for sid in sequence_ids:
+                    match = next((item for item in sequences if item.sequence_id == sid), None)
+                    if match is None:
+                        match = self._resolve_sequence_block(sequences, sid)
+                    if match is not None:
+                        selected_sequences.append(match)
                 for sequence in selected_sequences:
                     target_numbers.update(sequence.included_scenes)
             return [scene for scene in scenes if self._scene_number(scene) in target_numbers]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -87,3 +88,44 @@ class FullScriptAnalysisResult(BaseModel):
     synopsis: ScriptSynopsisResult = Field(default_factory=ScriptSynopsisResult)
     sequence_map: ScriptSequenceMap = Field(default_factory=ScriptSequenceMap)
     warnings: list[str] = Field(default_factory=list)
+
+
+def resolve_sequence_entry(
+    seq_map: ScriptSequenceMap,
+    sequence_id: str,
+) -> ScriptSequenceMapEntry | None:
+    """Resolve a sequence_id (possibly in seq_01, seq_001, sequence_01, '1', '01' format)
+    to a ScriptSequenceMapEntry, tolerating the 02d vs 03d padding mismatch.
+    """
+    # 1. Exact match
+    for entry in seq_map.sequences:
+        if entry.sequence_id == sequence_id:
+            return entry
+
+    # 2. Try parsing as int (plain number or zero-padded)
+    number: int | None = None
+    stripped = sequence_id.strip()
+    if stripped.isdigit():
+        number = int(stripped)
+    else:
+        # Try extracting digits from patterns like seq_01, seq_001, sequence_01, s01
+        m = re.search(r'(?:seq|sequence|s)_?0*(\d+)$', sequence_id, re.IGNORECASE)
+        if m:
+            number = int(m.group(1))
+
+    if number is not None:
+        formats = (
+            f"seq_{number:02d}",
+            f"seq_{number:03d}",
+            f"sequence_{number:02d}",
+            f"sequence_{number:03d}",
+            f"s_{number:02d}",
+            f"s_{number:03d}",
+        )
+        for entry in seq_map.sequences:
+            if entry.sequence_number == number:
+                return entry
+            if entry.sequence_id in formats:
+                return entry
+
+    return None

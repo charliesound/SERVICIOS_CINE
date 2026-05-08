@@ -132,10 +132,17 @@ async def plan_sequence_storyboard(
     if not scenes:
         raise HTTPException(status_code=400, detail="No scenes parsed from script")
     seq_map = script_sequence_mapping_service.build_sequence_map(scenes, script_text)
-    entry = next((s for s in seq_map.sequences if s.sequence_id == sequence_id), None)
+    from schemas.cid_sequence_first_schema import resolve_sequence_entry
+    entry = resolve_sequence_entry(seq_map, sequence_id)
     if entry is None:
         raise HTTPException(status_code=404, detail=f"Sequence {sequence_id} not found in script analysis")
     plan = prepare_sequence_storyboard(entry, project_id=project_id)
+    if entry.suggested_shot_count != plan.estimated_shot_count:
+        plan.warnings.append(
+            f"Estimated shots ({entry.suggested_shot_count}) differs from planned shots ({plan.estimated_shot_count}). "
+            f"The planner generated {plan.estimated_shot_count} shots based on content analysis; "
+            f"the estimate ({entry.suggested_shot_count}) is a heuristic from scene grouping and is not a hard limit."
+        )
     return plan
 
 

@@ -351,10 +351,19 @@ class StoryboardService:
                 }
             )
             for offset, shot in enumerate(shot_payloads, start=1):
-                metadata_raw = shot.get("metadata_json")
-                metadata_str: str | None = None
-                if metadata_raw:
-                    metadata_str = json.dumps(metadata_raw, ensure_ascii=False, default=str)
+                metadata_raw = shot.get("metadata_json") or {}
+                if isinstance(metadata_raw, str):
+                    try:
+                        metadata_raw = json.loads(metadata_raw)
+                    except Exception:
+                        metadata_raw = {}
+                metadata_raw["source_scope"] = "sequence" if sequence_for_scene else "scene"
+                metadata_raw["sequence_id"] = sequence_for_scene.sequence_id if sequence_for_scene else None
+                metadata_raw["sequence_title"] = sequence_for_scene.title if sequence_for_scene else None
+                metadata_raw["sequence_summary"] = sequence_for_scene.summary if sequence_for_scene else None
+                metadata_raw["shot_plan_reason"] = shot.get("shot_plan_reason", "automatic from scene analysis")
+                metadata_raw["script_excerpt_used"] = shot.get("script_excerpt_used", "")
+                metadata_str = json.dumps(metadata_raw, ensure_ascii=False, default=str)
                 shot_record = StoryboardShot(
                     project_id=project_id,
                     organization_id=tenant.organization_id,
@@ -949,6 +958,9 @@ class StoryboardService:
                     "composition": intent.composition,
                     "visual_style": intent.mood,
                     "metadata_json": metadata_payload,
+                    "source_scope": "scene",
+                    "shot_plan_reason": "automatic from scene analysis",
+                    "script_excerpt_used": script_scene.raw_text[:200] if hasattr(script_scene, 'raw_text') else "",
                 }
             )
         return shot_payloads

@@ -3,10 +3,17 @@ from __future__ import annotations
 import logging
 
 from schemas.cid_script_to_prompt_schema import (
+    CinematicIntent,
     PromptSpec,
     ScriptScene,
     ScriptSequence,
     ScriptToPromptRunResponse,
+)
+from schemas.cid_sequence_first_schema import (
+    FullScriptAnalysisResult,
+    PlannedStoryboardShot,
+    ScriptSequenceMapEntry,
+    SequenceStoryboardPlan,
 )
 from schemas.cid_visual_reference_schema import (
     ScriptVisualAlignmentRequest,
@@ -16,6 +23,8 @@ from services.cid_script_scene_parser_service import cid_script_scene_parser_ser
 from services.cinematic_intent_service import cinematic_intent_service
 from services.continuity_memory_service import continuity_memory_service
 from services.prompt_construction_service import prompt_construction_service
+from services.script_synopsis_service import script_synopsis_service
+from services.sequence_storyboard_planning_service import sequence_storyboard_planning_service
 from services.semantic_prompt_validation_service import semantic_prompt_validation_service
 from services.script_visual_alignment_service import script_visual_alignment_service
 from services.visual_qc_service import visual_qc_service
@@ -146,6 +155,61 @@ async def run_script_to_prompt_pipeline(
         enriched_intents=enriched_intents,
         status=status,
         warnings=list(dict.fromkeys(warnings)),
+    )
+
+
+def analyze_full_script(
+    script_text: str,
+    project_id: str = "",
+) -> FullScriptAnalysisResult:
+    """LEVEL 1: analyze a full script — returns synopsis + sequence map.
+    Does NOT generate any storyboard shots or prompts.
+    """
+    return script_synopsis_service.analyze_script(script_text)
+
+
+def prepare_sequence_storyboard(
+    entry: ScriptSequenceMapEntry,
+    project_id: str = "",
+) -> SequenceStoryboardPlan:
+    """LEVEL 2: prepare a shot-by-shot plan for a single sequence.
+    Returns planned shots with prompt_brief but no final PromptSpec objects.
+    """
+    plan = sequence_storyboard_planning_service.plan_sequence(entry)
+    plan.project_id = project_id
+    return plan
+
+
+def generate_prompt_for_planned_shot(
+    shot: PlannedStoryboardShot,
+    entry: ScriptSequenceMapEntry,
+    style_preset: str = "premium_cinematic_saas",
+) -> PromptSpec:
+    """Convert a PlannedStoryboardShot into a full PromptSpec ready for rendering."""
+    intent = CinematicIntent(
+        intent_id=f"{entry.sequence_id}_shot_{shot.shot_number:02d}",
+        scene_id=entry.sequence_id,
+        output_type="storyboard_frame",
+        subject=shot.action[:120] or entry.summary[:120],
+        action=shot.action[:200] or "",
+        environment=shot.location or entry.location or "",
+        dramatic_intent=shot.emotional_intent or "",
+        framing=shot.framing or "medium",
+        shot_size=shot.shot_type or "MS",
+        camera_angle=shot.camera_angle or "eye-level",
+        lens=shot.lens_suggestion or "50mm",
+        lighting=shot.lighting or "naturalistic",
+        color_palette="cinematic balanced",
+        composition="rule of thirds",
+        movement=shot.camera_movement or "static",
+        mood=shot.emotional_intent or "neutral",
+        required_elements=[shot.location] if shot.location else [],
+        forbidden_elements=[],
+        continuity_anchors=shot.continuity_notes[:3],
+    )
+    return prompt_construction_service.build_prompt_spec(
+        intent,
+        style_preset=style_preset,
     )
 
 

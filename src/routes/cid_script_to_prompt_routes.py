@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from database import get_db
+from models.core import Project
+from routes.auth_routes import get_tenant_context
+from schemas.auth_schema import TenantContext
 
 from schemas.cid_script_to_prompt_schema import (
     CinematicIntent,
@@ -25,8 +30,9 @@ from schemas.cid_script_to_prompt_schema import (
     ShotEditorialPurpose,
     ShotEditorialPurposeRequest,
 )
+from schemas.cid_sequence_first_schema import FullScriptAnalysisRequest, FullScriptAnalysisResult
 from services.cid_script_scene_parser_service import cid_script_scene_parser_service
-from services.cid_script_to_prompt_pipeline_service import run_script_to_prompt_pipeline
+from services.cid_script_to_prompt_pipeline_service import analyze_full_script, run_script_to_prompt_pipeline
 from services.cinematic_intent_service import cinematic_intent_service
 from services.continuity_memory_service import continuity_memory_service
 from services.director_lens_service import director_lens_service
@@ -52,6 +58,23 @@ async def run_script_to_prompt(payload: ScriptToPromptRunRequest) -> ScriptToPro
         montage_profile_id=payload.montage_profile_id,
         allow_director_reference_names=payload.allow_director_reference_names,
     )
+
+
+@router.post("/analyze-full", response_model=FullScriptAnalysisResult)
+async def analyze_full_script_endpoint(
+    payload: FullScriptAnalysisRequest,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> FullScriptAnalysisResult:
+    script_text = payload.script_text or ""
+    if not script_text and payload.project_id:
+        result = await db.execute(
+            select(Project).where(Project.id == payload.project_id)
+        )
+        project = result.scalar_one_or_none()
+        if project and project.script_text:
+            script_text = project.script_text
+    return analyze_full_script(script_text)
 
 
 @router.post("/parse", response_model=ScriptParseResponse)

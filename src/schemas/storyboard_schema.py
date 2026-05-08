@@ -16,7 +16,7 @@ def _normalize_optional_text(value: Optional[str]) -> Optional[str]:
 
 
 class StoryboardGenerateRequest(BaseModel):
-    mode: str = "FULL_SCRIPT"
+    mode: str = "SEQUENCE"
     generation_mode: Optional[str] = None
     sequence_id: Optional[str] = None
     sequence_ids: list[str] = Field(default_factory=list)
@@ -35,7 +35,19 @@ class StoryboardGenerateRequest(BaseModel):
     use_montage_intelligence: bool = False
     validate_prompts: bool = False
 
-    @field_validator("mode", "generation_mode", "sequence_id", "style_preset", "visual_mode", "director_lens_id", "montage_profile_id")
+
+class StoryboardSequencePlanRequest(BaseModel):
+    style_preset: str = "cinematic_realistic"
+    shots_per_scene: int = 5
+
+
+class StoryboardSequencePlanResponse(BaseModel):
+    sequence_id: str
+    sequence_title: str = ""
+    estimated_shot_count: int = 0
+    shots: list[dict[str, Any]] = Field(default_factory=list)
+
+    @field_validator("sequence_id", "sequence_title")
     @classmethod
     def validate_optional_text(cls, value: Optional[str]) -> Optional[str]:
         return _normalize_optional_text(value)

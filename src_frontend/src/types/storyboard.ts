@@ -32,6 +32,91 @@ export interface CinematicShotMetadata {
   cinematic_intent_id?: string
   director_lens_id?: string
   validation?: Record<string, unknown> | null
+  source_scope?: string
+  sequence_id?: string | null
+  sequence_title?: string | null
+  sequence_summary?: string | null
+  shot_plan_reason?: string
+  script_excerpt_used?: string
+  script_visual_alignment?: Record<string, unknown> | null
+}
+
+export interface ScriptSynopsisResult {
+  logline: string
+  synopsis_short: string
+  synopsis_extended: string
+  premise: string
+  theme: string
+  genre: string
+  tone: string
+  main_characters: string[]
+  main_locations: string[]
+  dramatic_structure: string
+  production_notes: string[]
+  recommended_storyboard_sequences: string[]
+}
+
+export interface ScriptSequenceMapEntry {
+  sequence_id: string
+  sequence_number: number
+  title: string
+  script_excerpt: string
+  summary: string
+  location: string
+  time_of_day: string
+  characters: string[]
+  dramatic_function: string
+  emotional_goal: string
+  visual_opportunity: string
+  production_complexity: string
+  recommended_for_storyboard: boolean
+  suggested_shot_count: number
+  technical_notes: string[]
+}
+
+export interface ScriptSequenceMap {
+  project_id: string
+  script_id?: string | null
+  sequences: ScriptSequenceMapEntry[]
+  total_sequences: number
+  recommended_priority_order: string[]
+}
+
+export interface FullScriptAnalysisResult {
+  synopsis: ScriptSynopsisResult
+  sequence_map: ScriptSequenceMap
+  warnings: string[]
+}
+
+export interface PlannedStoryboardShot {
+  shot_number: number
+  shot_type: string
+  framing: string
+  camera_angle: string
+  camera_movement: string
+  lens_suggestion: string
+  action: string
+  characters: string[]
+  location: string
+  lighting: string
+  emotional_intent: string
+  continuity_notes: string[]
+  prompt_brief: string
+  negative_prompt_guidance: string
+  shot_plan_reason: string
+  script_excerpt_used: string
+}
+
+export interface SequenceStoryboardPlan {
+  project_id: string
+  sequence_id: string
+  sequence_title: string
+  sequence_summary: string
+  shot_plan: PlannedStoryboardShot[]
+  continuity_plan: string[]
+  visual_style_guidance: string
+  estimated_shot_count: number
+  warnings: string[]
 }
 
 export interface StoryboardShotListResponse {

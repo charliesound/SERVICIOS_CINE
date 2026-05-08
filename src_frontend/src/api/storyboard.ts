@@ -1,5 +1,7 @@
 import api from './client'
 import type {
+  FullScriptAnalysisResult,
+  SequenceStoryboardPlan,
   StoryboardShot,
   StoryboardShotListResponse,
   StoryboardShotCreate,
@@ -18,6 +20,34 @@ export const storyboardApi = {
   listShots: async (projectId: string): Promise<StoryboardShot[]> => {
     const { data } = await api.get<StoryboardShotListResponse>(`/projects/${projectId}/shots`)
     return data.shots
+  },
+
+  analyzeFullScript: async (projectId: string): Promise<FullScriptAnalysisResult> => {
+    const { data } = await api.post<FullScriptAnalysisResult>('/api/cid/script/analyze-full', {
+      project_id: projectId,
+      script_text: '',
+    })
+    return data
+  },
+
+  planSequence: async (projectId: string, sequenceId: string): Promise<SequenceStoryboardPlan> => {
+    const { data } = await api.post<SequenceStoryboardPlan>(
+      `/projects/${projectId}/storyboard/sequences/${sequenceId}/plan`,
+      {}
+    )
+    return data
+  },
+
+  generateBySequence: async (
+    projectId: string,
+    sequenceId: string,
+    payload: { style_preset?: string; shots_per_scene?: number; overwrite?: boolean }
+  ): Promise<StoryboardGenerationJob> => {
+    const { data } = await api.post<StoryboardGenerationJob>(
+      `/projects/${projectId}/storyboard/sequences/${sequenceId}/generate`,
+      payload
+    )
+    return data
   },
 
   createShot: async (projectId: string, payload: StoryboardShotCreate): Promise<StoryboardShot> => {

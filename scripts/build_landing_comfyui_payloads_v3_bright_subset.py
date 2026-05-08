@@ -26,16 +26,10 @@ VAE_NAME = "FLUX/ae.safetensors"
 
 DEFAULT_SUBSET = {
     "regenerate": [
-        "landing-hero-main-v3",
-        "landing-problem-fragmented-v3",
         "landing-ai-reasoning-v3",
         "landing-comfyui-generation-v3",
-        "landing-cid-orchestration-v3",
         "landing-storyboard-preview-v3",
-        "landing-concept-keyvisual-v3",
-        "landing-producers-studios-v3",
-        "landing-professional-differential-v3",
-        "landing-delivery-final-v3"
+        "landing-concept-keyvisual-v3"
     ]
 }
 

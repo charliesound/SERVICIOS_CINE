@@ -116,11 +116,11 @@ LANDING_TEXT_MAP: dict[str, dict[str, Any]] = {
 QUALITY_FLAGS = {
     "landing-hero-main-v3": "TOO ABSTRACT",
     "landing-problem-fragmented-v3": "GOOD CANDIDATE",
-    "landing-ai-reasoning-v3": "GOOD CANDIDATE",
+    "landing-ai-reasoning-v3": "NEEDS REGEN",
     "landing-comfyui-generation-v3": "NEEDS REGEN",
     "landing-cid-orchestration-v3": "TOO ABSTRACT",
     "landing-storyboard-preview-v3": "TOO ABSTRACT",
-    "landing-concept-keyvisual-v3": "TOO ABSTRACT",
+    "landing-concept-keyvisual-v3": "NEEDS REGEN",
     "landing-producers-studios-v3": "GOOD CANDIDATE",
     "landing-professional-differential-v3": "NEEDS REGEN",
     "landing-delivery-final-v3": "TOO DARK",

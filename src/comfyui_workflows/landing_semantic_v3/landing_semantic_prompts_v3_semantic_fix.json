@@ -1,0 +1,12 @@
+{
+  "version": "v3_semantic_fix",
+  "brand": "AILinkCinema / CID",
+  "focus": "priority semantic correction subset for landing cards with mismatched imagery",
+  "priority_blocks": [
+    "landing-ai-reasoning-v3",
+    "landing-concept-keyvisual-v3",
+    "landing-storyboard-preview-v3",
+    "landing-comfyui-generation-v3"
+  ],
+  "note": "This file documents the four landing cards that require semantic regeneration first. Use the bright prompt pack plus the regeneration subset for actual payload generation."
+}

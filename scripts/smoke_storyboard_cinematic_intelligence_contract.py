@@ -8,6 +8,7 @@ Run:  python3 scripts/smoke_storyboard_cinematic_intelligence_contract.py
 import json
 import os
 import sys
+import time
 import urllib.request
 import urllib.parse
 
@@ -54,16 +55,18 @@ def main() -> int:
     print("===== SMOKE: Storyboard Cinematic Intelligence (HTTP) =====")
 
     # 1. Register or login
+    stamp = int(time.time())
     register_body = {
-        "email": "smoke_cid_e2e@test.com",
+        "email": f"smoke.cid.e2e.{stamp}@gmail.com",
         "password": "Smoke1234!",
-        "username": "smoke_cid_e2e",
+        "username": f"smoke_cid_e2e_{stamp}",
         "name": "Smoke CID E2E",
+        "full_name": "Smoke CID E2E",
     }
-    status, data = api("POST", "/api/auth/register", body=register_body)
+    status, data = api("POST", "/api/auth/register/cid", body=register_body)
     user_id = data.get("user_id", "") if isinstance(data, dict) else ""
     if status != 200 and status != 201:
-        check("Register user", False, f"status={status}")
+        check("Register user", False, f"status={status} data={data}")
         # try login
         status, data = api("POST", "/api/auth/login", body={"email": register_body["email"], "password": register_body["password"], "username": register_body["username"]})
         if status != 200:
@@ -83,9 +86,20 @@ def main() -> int:
         return 1
 
     # 2. Create project
-    status, data = api("POST", "/api/projects", token=token, body={"name": "Smoke CID E2E", "project_type": "feature_film"})
+    project_body = {
+        "title": "Smoke CID E2E",
+        "name": "Smoke CID E2E",
+        "description": "Smoke test project for CID storyboard cinematic intelligence",
+        "project_type": "feature_film",
+    }
+    status, data = api("POST", "/api/projects", token=token, body=project_body)
     project_id = data.get("id", "") if isinstance(data, dict) else ""
-    check("Create project", status in (200, 201) and bool(project_id), f"status={status}")
+    if not project_id and isinstance(data, dict):
+        project_id = data.get("project_id", "")
+    check("Create project", status in (200, 201) and bool(project_id), f"status={status} data={data}")
+    if status not in (200, 201) or not project_id:
+        print("  FATAL: cannot continue without project_id")
+        return 1
 
     # 3. Ingest script
     script_text = """INT. SMOKE TEST ROOM - DAY

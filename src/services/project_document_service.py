@@ -373,10 +373,14 @@ class ProjectDocumentService:
         # Get all funding calls for the organization (relevant for matching)
         from models.production import FundingCall
         
+        from models.production import FundingSource
+
         calls_result = await db.execute(
             select(FundingCall.id, FundingCall.ingested_at)
-            .where(FundingCall.organization_id == organization_id)
-            .order_by(FundingCall.id)  # Order for consistent hash
+            .select_from(FundingCall)
+            .join(FundingSource, FundingCall.source_id == FundingSource.id)
+            .where(FundingSource.organization_id == organization_id)
+            .order_by(FundingCall.id)
         )
         call_entries = [(str(row.id), row.ingested_at.isoformat() if row.ingested_at else "") 
                        for row in calls_result.fetchall()]
@@ -440,13 +444,15 @@ class ProjectDocumentService:
         await db.flush()  # Get the ID
         
         # Enqueue job for processing
-        await queue_service.enqueue(
-            queue_name="matcher",
-            job_data={
-                "job_id": str(new_job.id),
-                "project_id": project_id,
-                "organization_id": organization_id
-            }
+        queue_service.enqueue(
+            job_id=str(new_job.id),
+            task_type="matcher",
+            backend="matcher",
+            priority=0,
+            user_plan="free",
+            user_id=None,
+            project_id=project_id,
+            organization_id=organization_id,
         )
 
 project_document_service = ProjectDocumentService()

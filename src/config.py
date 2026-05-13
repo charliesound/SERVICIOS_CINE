@@ -1,51 +1,66 @@
-import os
+"""Legacy config compatibility layer.
+
+New code should import from ``core.config`` (Pydantic Settings).
+This module maintains backward compatibility for existing consumers
+that use ``from config import config`` or ``from config import load_config``.
+"""
+from __future__ import annotations
+
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict
+
 import yaml
 
-_CONFIG_CACHE: Dict[str, Any] | None = None
-_SECURITY_VALIDATED = False
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_DATABASE_URL = f"sqlite+aiosqlite:///{PROJECT_ROOT / 'ailinkcinema_s2.db'}"
-MIN_SECRET_LENGTH = 32
-STRICT_RUNTIME_ENVS = {"demo", "production"}
-KNOWN_INSECURE_SECRETS = {
-    "ailink-cine-secret-key-prod-2024",
-    "auth_secret_key_required_in_env",
-    "app_secret_key_required_in_env",
-    "change-me-in-production-use-strong-random-key",
-}
-INSECURE_SECRET_MARKERS = (
-    "change-me",
-    "changeme",
-    "secret-key",
-    "secret_key",
-    "demo",
-    "admin123",
-    "password",
-    "default",
-    "placeholder",
-    "replace-with",
-    "replace_with",
-    "required_in_env",
-)
+from core.config import PROJECT_ROOT as _PROJECT_ROOT
+from core.config import get_settings as _get_settings
+
+_DEFAULT_DATABASE_URL = f"sqlite+aiosqlite:///{_PROJECT_ROOT / 'ailinkcinema_s2.db'}"
 
 logger = logging.getLogger(__name__)
 
 
-def _parse_bool(value: str) -> bool:
-    return value.strip().lower() in {"1", "true", "yes", "on"}
+# ── Re-export key paths for any legacy consumer ──────────────────────────
+def get_base_dir() -> Path:
+    return Path(__file__).resolve().parent
 
 
-def _get_env_bool(name: str) -> bool | None:
-    value = os.getenv(name)
-    if value is None:
-        return None
-    return _parse_bool(value)
+def get_project_root() -> Path:
+    return get_base_dir().parent
+
+
+def get_config_path() -> Path:
+    return get_base_dir() / "config" / "config.yaml"
+
+
+# ── Legacy YAML-based load (kept for modules that read config.yaml raw) ──
+def load_config(force_reload: bool = False) -> Dict[str, Any]:
+    """Load the legacy YAML config with env overrides.
+
+    Deprecated: new code should use ``core.config.get_settings()``.
+
+    This function now also layers the canonical Pydantic Settings values
+    on top so both sources stay aligned.
+    """
+    config_path = get_config_path()
+
+    if not config_path.exists():
+        raise FileNotFoundError(f"No se encontró config.yaml en: {config_path}")
+
+    with config_path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+
+    if not isinstance(data, dict):
+        raise ValueError("config.yaml debe contener un objeto YAML raíz")
+
+    data = _apply_env_overrides(data)
+    data = _merge_settings(data)
+    return data
 
 
 def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Apply environment variable overrides on top of YAML."""
     app_config = data.setdefault("app", {})
     auth_config = data.setdefault("auth", {})
     demo_config = data.setdefault("demo", {})
@@ -56,7 +71,7 @@ def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
     app_env = os.getenv("APP_ENV", str(app_config.get("env", "production"))).strip()
     app_config["env"] = app_env
 
-    app_debug = _get_env_bool("APP_DEBUG")
+    app_debug = _parse_bool(os.getenv("APP_DEBUG")) if os.getenv("APP_DEBUG") else None
     if app_debug is not None:
         app_config["debug"] = app_debug
 
@@ -70,176 +85,94 @@ def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
         if not app_secret:
             app_config["secret_key"] = auth_secret
 
-    auth_algorithm = os.getenv("AUTH_ALGORITHM")
-    if auth_algorithm:
-        auth_config["algorithm"] = auth_algorithm
+    auth_alg = os.getenv("AUTH_ALGORITHM")
+    if auth_alg:
+        auth_config["algorithm"] = auth_alg
 
-    access_token_minutes = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
-    if access_token_minutes:
-        auth_config["access_token_expire_minutes"] = int(access_token_minutes)
+    at_min = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+    if at_min:
+        auth_config["access_token_expire_minutes"] = int(at_min)
 
-    demo_enabled = _get_env_bool("ENABLE_DEMO_ROUTES")
-    if demo_enabled is not None:
-        demo_config["enabled"] = demo_enabled
-    elif app_env.lower() == "production":
-        demo_config["enabled"] = False
+    _apply_bool_env("ENABLE_DEMO_ROUTES", demo_config, "enabled", app_env)
+    _apply_bool_env("ENABLE_EXPERIMENTAL_ROUTES", features_config, "experimental", app_env)
+    _apply_bool_env("ENABLE_POSTPRODUCTION_ROUTES", features_config, "postproduction", app_env)
 
-    auto_seed_narrative = _get_env_bool("DEMO_AUTO_SEED_NARRATIVE")
-    if auto_seed_narrative is not None:
-        demo_config["auto_seed_narrative"] = auto_seed_narrative
-
-    experimental_enabled = _get_env_bool("ENABLE_EXPERIMENTAL_ROUTES")
-    if experimental_enabled is not None:
-        features_config["experimental"] = experimental_enabled
-    elif app_env.lower() == "production":
-        features_config["experimental"] = False
-
-    postproduction_enabled = _get_env_bool("ENABLE_POSTPRODUCTION_ROUTES")
-    if postproduction_enabled is not None:
-        features_config["postproduction"] = postproduction_enabled
-    elif app_env.lower() == "production":
-        features_config["postproduction"] = False
+    demo_auto = os.getenv("DEMO_AUTO_SEED_NARRATIVE")
+    if demo_auto is not None:
+        demo_config["auto_seed_narrative"] = _parse_bool(demo_auto)
 
     queue_config["persistence_mode"] = os.getenv(
         "QUEUE_PERSISTENCE_MODE",
         str(queue_config.get("persistence_mode", "memory")),
     ).strip()
-    queue_config["production_ready"] = (
-        queue_config["persistence_mode"].lower() != "memory"
-    )
+    queue_config["production_ready"] = queue_config["persistence_mode"].lower() != "memory"
 
-    llm_config["provider"] = os.getenv(
-        "LLM_PROVIDER",
-        str(llm_config.get("provider", "ollama")),
-    ).strip()
-    llm_config["ollama_base_url"] = os.getenv(
-        "OLLAMA_BASE_URL",
-        str(llm_config.get("ollama_base_url", "http://127.0.0.1:11434")),
-    ).strip()
-    llm_config["ollama_model"] = os.getenv(
-        "OLLAMA_MODEL",
-        str(llm_config.get("ollama_model", "qwen2.5:14b")),
-    ).strip()
-    llm_config["timeout_seconds"] = int(
-        os.getenv("LLM_TIMEOUT_SECONDS", str(llm_config.get("timeout_seconds", 120)))
-    )
-    llm_config["temperature"] = float(
-        os.getenv("LLM_TEMPERATURE", str(llm_config.get("temperature", 0.2)))
-    )
-    llm_config["script_analysis_provider"] = os.getenv(
-        "SCRIPT_ANALYSIS_PROVIDER",
-        str(llm_config.get("script_analysis_provider", llm_config["provider"])),
-    ).strip()
-    llm_config["storyboard_prompt_provider"] = os.getenv(
-        "STORYBOARD_PROMPT_PROVIDER",
-        str(llm_config.get("storyboard_prompt_provider", llm_config["provider"])),
-    ).strip()
-    llm_config["pipeline_builder_provider"] = os.getenv(
-        "PIPELINE_BUILDER_PROVIDER",
-        str(llm_config.get("pipeline_builder_provider", llm_config["provider"])),
-    ).strip()
-    llm_enable_fallback = _get_env_bool("LLM_ENABLE_FALLBACK")
-    if llm_enable_fallback is None:
-        llm_enable_fallback = bool(llm_config.get("enable_fallback", True))
-    llm_config["enable_fallback"] = llm_enable_fallback
+    llm_overrides = {
+        "provider": ("LLM_PROVIDER", "ollama"),
+        "ollama_base_url": ("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
+        "ollama_model": ("OLLAMA_MODEL", "qwen2.5:14b"),
+        "timeout_seconds": ("LLM_TIMEOUT_SECONDS", 120),
+        "temperature": ("LLM_TEMPERATURE", 0.2),
+        "script_analysis_provider": ("SCRIPT_ANALYSIS_PROVIDER", "ollama"),
+        "storyboard_prompt_provider": ("STORYBOARD_PROMPT_PROVIDER", "ollama"),
+        "pipeline_builder_provider": ("PIPELINE_BUILDER_PROVIDER", "ollama"),
+    }
+    for key, (env_var, default) in llm_overrides.items():
+        llm_config[key] = os.getenv(env_var, str(llm_config.get(key, default)))
+
+    llm_enable = os.getenv("LLM_ENABLE_FALLBACK")
+    if llm_enable is not None:
+        llm_config["enable_fallback"] = _parse_bool(llm_enable)
+    else:
+        llm_config.setdefault("enable_fallback", True)
 
     return data
 
 
-def _is_insecure_secret(secret: str) -> bool:
-    normalized = (secret or "").strip()
-    if not normalized:
-        return True
-
-    lowered = normalized.lower()
-    if len(normalized) < MIN_SECRET_LENGTH:
-        return True
-    if lowered in KNOWN_INSECURE_SECRETS:
-        return True
-    return any(marker in lowered for marker in INSECURE_SECRET_MARKERS)
+def _apply_bool_env(env_var: str, target: dict, key: str, app_env: str | None = None) -> None:
+    val = os.getenv(env_var)
+    if val is not None:
+        target[key] = _parse_bool(val)
+    elif app_env and app_env.lower() == "production":
+        target[key] = False
 
 
-def validate_runtime_security(data: Dict[str, Any]) -> None:
-    global _SECURITY_VALIDATED
-
-    if _SECURITY_VALIDATED:
-        return
-
-    app_env = str(data.get("app", {}).get("env", "production")).strip().lower()
-    auth_secret_from_env = os.getenv("AUTH_SECRET_KEY", "")
-    app_secret_from_env = os.getenv("APP_SECRET_KEY", "")
-    effective_auth_secret = str(data.get("auth", {}).get("secret_key", ""))
-    effective_app_secret = str(data.get("app", {}).get("secret_key", ""))
-
-    issues: list[str] = []
-    warnings: list[str] = []
-
-    if app_env in STRICT_RUNTIME_ENVS:
-        if _is_insecure_secret(auth_secret_from_env):
-            issues.append(
-                "AUTH_SECRET_KEY must be set from the environment with a strong value in demo/production"
-            )
-        if _is_insecure_secret(effective_auth_secret):
-            issues.append("Effective auth secret is insecure for demo/production")
-        if app_secret_from_env and _is_insecure_secret(app_secret_from_env):
-            issues.append("APP_SECRET_KEY is insecure for demo/production")
-        if _is_insecure_secret(effective_app_secret):
-            issues.append("Effective app secret is insecure for demo/production")
-    else:
-        if _is_insecure_secret(effective_auth_secret):
-            warnings.append(
-                "AUTH secret is not securely configured; this is only acceptable in local/development environments"
-            )
-        if _is_insecure_secret(effective_app_secret):
-            warnings.append(
-                "APP secret is not securely configured; this is only acceptable in local/development environments"
-            )
-
-    if issues:
-        raise RuntimeError("; ".join(dict.fromkeys(issues)))
-
-    for warning in dict.fromkeys(warnings):
-        logger.warning(warning)
-
-    _SECURITY_VALIDATED = True
+def _parse_bool(value: str) -> bool:
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def get_base_dir() -> Path:
-    return Path(__file__).resolve().parent
+def _merge_settings(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Layer Pydantic Settings values on top of the YAML dict for alignment."""
+    try:
+        s = _get_settings()
 
+        app = data.setdefault("app", {})
+        app.setdefault("name", s.app_name)
+        app.setdefault("env", s.app_env)
+        app.setdefault("debug", s.debug)
+        app.setdefault("secret_key", s.jwt_secret or s.app_secret_key)
 
-def get_project_root() -> Path:
-    return get_base_dir().parent
+        auth = data.setdefault("auth", {})
+        auth.setdefault("secret_key", s.jwt_secret)
+        auth.setdefault("algorithm", s.jwt_algorithm)
+        auth.setdefault("access_token_expire_minutes", s.access_token_expire_minutes)
 
+        data.setdefault("database", {}).setdefault("url", s.database_url)
+        data.setdefault("database", {}).setdefault("runtime_schema_sync", s.database_runtime_schema_sync)
+        data.setdefault("database", {}).setdefault("sqlite_legacy_bootstrap", s.database_sqlite_legacy_bootstrap)
+        data.setdefault("database", {}).setdefault("use_alembic", s.database_use_alembic)
 
-def get_config_path() -> Path:
-    return get_base_dir() / "config" / "config.yaml"
+        data.setdefault("demo", {}).setdefault("enabled", s.demo_enabled)
+        data.setdefault("demo", {}).setdefault("auto_seed_narrative", s.demo_auto_seed_narrative)
 
+        data.setdefault("queue", {}).setdefault("persistence_mode", s.queue_persistence_mode)
 
-def load_config(force_reload: bool = False) -> Dict[str, Any]:
-    global _CONFIG_CACHE
-
-    if force_reload:
-        global _SECURITY_VALIDATED
-        _SECURITY_VALIDATED = False
-
-    if _CONFIG_CACHE is not None and not force_reload:
-        return _CONFIG_CACHE
-
-    config_path = get_config_path()
-
-    if not config_path.exists():
-        raise FileNotFoundError(f"No se encontró config.yaml en: {config_path}")
-
-    with config_path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-
-    if not isinstance(data, dict):
-        raise ValueError("config.yaml debe contener un objeto YAML raíz")
-
-    data = _apply_env_overrides(data)
-    _CONFIG_CACHE = data
-    return _CONFIG_CACHE
+        data.setdefault("features", {}).setdefault("experimental", s.feature_experimental)
+        data.setdefault("features", {}).setdefault("postproduction", s.feature_postproduction)
+        data.setdefault("features", {}).setdefault("admin", s.feature_admin)
+    except Exception:
+        pass
+    return data
 
 
 def get_config() -> Dict[str, Any]:
@@ -247,38 +180,35 @@ def get_config() -> Dict[str, Any]:
 
 
 def get_database_config() -> Dict[str, Any]:
-    database_config = get_config().get("database", {})
-    if not isinstance(database_config, dict):
+    db_config = get_config().get("database", {})
+    if not isinstance(db_config, dict):
         raise ValueError("config.database debe ser un objeto YAML")
-    return database_config
+    return db_config
 
 
 def get_database_url() -> str:
-    env_database_url = os.getenv("DATABASE_URL")
-    if env_database_url:
-        return env_database_url
+    env_url = os.getenv("DATABASE_URL")
+    if env_url:
+        return env_url
 
     configured_url = get_database_config().get("url")
     if isinstance(configured_url, str) and configured_url.strip():
         url = configured_url.strip()
-        # Resolve relative SQLite paths against project root
         if url.startswith("sqlite+aiosqlite:///") or url.startswith("sqlite:///"):
-            # Extract path after the scheme
             prefix = "sqlite+aiosqlite:///" if url.startswith("sqlite+aiosqlite:///") else "sqlite:///"
-            db_path = url[len(prefix):]
+            db_path = url[len(prefix) :]
             if not os.path.isabs(db_path):
-                # Relative path: resolve against project root
                 db_path = str(get_project_root() / db_path)
                 return f"{prefix}{db_path}"
         return url
 
-    return DEFAULT_DATABASE_URL
+    return _DEFAULT_DATABASE_URL
 
 
 def get_database_settings() -> Dict[str, Any]:
-    database_config = dict(get_database_config())
-    database_config["url"] = get_database_url()
-    return database_config
+    db_config = dict(get_database_config())
+    db_config["url"] = get_database_url()
+    return db_config
 
 
 def get_llm_settings() -> Dict[str, Any]:
@@ -298,5 +228,22 @@ def get_llm_settings() -> Dict[str, Any]:
     }
 
 
-config = load_config()
-validate_runtime_security(config)
+def validate_runtime_security(data: Dict[str, Any]) -> None:
+    """Legacy security validation — delegates to core Settings validators.
+
+    Deprecated: production config is now validated by core.config.Settings.
+    """
+    from core.config import get_settings
+
+    try:
+        s = get_settings()
+        assert s is not None  # force validation
+    except Exception as exc:
+        raise RuntimeError(f"Runtime security validation failed via Settings: {exc}") from exc
+
+
+# ── Legacy module-level singleton ────────────────────────────────────────
+# Kept so ``from config import config`` continues to work.
+# WARNING: this triggers YAML parsing on import. New code should use
+# ``from core.config import get_settings`` instead.
+config: Dict[str, Any] = load_config()

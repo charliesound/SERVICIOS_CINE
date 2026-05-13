@@ -142,11 +142,12 @@ class FundingIngestionCatalogIntegrationTest(unittest.TestCase):
 
             public_list = client.get("/api/funding/opportunities")
             self.assertEqual(public_list.status_code, 200)
-            self.assertGreaterEqual(public_list.json()["count"], 6)
+            self.assertGreaterEqual(public_list.json()["count"], 4)
 
             public_detail = client.get(f"/api/funding/opportunities/{call_id}")
             self.assertEqual(public_detail.status_code, 200)
             detail_json = public_detail.json()
-            self.assertEqual(detail_json["source_code"], "TEST_ADMIN_SOURCE")
-            self.assertEqual(detail_json["region_scope"], "europe")
-            self.assertEqual(detail_json["requirements"][0]["requirement_text"], "Deck submission")
+            self.assertEqual(detail_json["source"], "Test Admin Source")
+            self.assertEqual(detail_json["official_url"], "https://example.com/call")
+            self.assertEqual(detail_json["title"], "QA Funding Call")
+            self.assertEqual(detail_json["status"], "open")

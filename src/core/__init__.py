@@ -1,0 +1,1 @@
+# core — Enterprise platform foundation

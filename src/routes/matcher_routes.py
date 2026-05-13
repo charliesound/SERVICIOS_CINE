@@ -121,35 +121,32 @@ async def trigger_matcher_job(
     if pending_job:
         # Return existing pending job
         return MatcherJobResponse.from_orm(pending_job)
-    
-        # Create new matcher job
-        new_job = MatcherJob(
-            project_id=project_id,
-            organization_id=organization_id,
-            trigger_type="manual",
-            trigger_ref_id=None,
-            input_hash=input_hash,
-            status=MatcherJobStatus.QUEUED
-        )
-    
-        db.add(new_job)
-        await db.flush()
-    
-        # Enqueue job for processing
-        queue_service.enqueue(
-            job_id=str(new_job.id),
-            task_type="matcher",
-            backend="matcher",  # Using matcher as backend type
-            priority=0,
-            user_plan="free",  # Default plan
-            user_id=None
-        )
-    
-        await db.commit()
-        await db.refresh(new_job)
-        print(f"[DEBUG] Created matcher job with ID: {new_job.id}")
-    
-        return MatcherJobResponse.from_orm(new_job)
+
+    new_job = MatcherJob(
+        project_id=project_id,
+        organization_id=organization_id,
+        trigger_type="manual",
+        trigger_ref_id=None,
+        input_hash=input_hash,
+        status=MatcherJobStatus.QUEUED,
+    )
+
+    db.add(new_job)
+    await db.flush()
+
+    queue_service.enqueue(
+        job_id=str(new_job.id),
+        task_type="matcher",
+        backend="matcher",
+        priority=0,
+        user_plan="free",
+        user_id=None,
+    )
+
+    await db.commit()
+    await db.refresh(new_job)
+
+    return MatcherJobResponse.from_orm(new_job)
 
 
 @router.get("/status", response_model=MatcherStatusResponse)
@@ -363,4 +360,3 @@ async def process_matcher_job(job_id: str, project_id: str, organization_id: str
         # Log the error (in real implementation, use proper logging)
         print(f"Matcher job {job_id} failed: {e}")
         print(traceback.format_exc())
-

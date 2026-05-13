@@ -13,7 +13,7 @@ from sqlalchemy import select
 
 from models.budget_estimator import BudgetEstimate, BudgetLineItem
 from models.script_versioning import ScriptVersion
-from models.production import ProductionBreakdown
+from models.production import BudgetLine, ProductionBreakdown, ProjectBudget
 from services.budget_rules import (
     RULES,
     LEVEL_MULTIPLIERS,
@@ -845,14 +845,40 @@ async def get_budget_lines(
 async def get_budget_summary(db: AsyncSession, project_id: str) -> dict:
     """Get budget summary for a project (backwards compatibility)."""
     budget = await get_active_budget(db, project_id)
-    if not budget:
+    if budget:
+        return {
+            "scenario_type": budget.budget_level,
+            "grand_total": budget.total_estimated,
+            "total_min": budget.total_min,
+            "total_max": budget.total_max,
+        }
+
+    legacy_budget_result = await db.execute(
+        select(ProjectBudget)
+        .where(ProjectBudget.project_id == project_id)
+        .order_by(ProjectBudget.created_at.desc())
+    )
+    legacy_budget = legacy_budget_result.scalars().first()
+    if not legacy_budget:
         return {"error": "No budget found", "grand_total": 0.0}
-    
+
+    budget_lines_result = await db.execute(
+        select(BudgetLine).where(BudgetLine.budget_id == legacy_budget.id)
+    )
+    budget_lines = list(budget_lines_result.scalars().all())
+    section_totals: Dict[str, float] = {}
+    for line in budget_lines:
+        if line.is_enabled is False:
+            continue
+        section = line.section or "unassigned"
+        section_totals[section] = float(section_totals.get(section, 0.0) + (line.total_cost or 0.0))
+
     return {
-        "scenario_type": budget.budget_level,
-        "grand_total": budget.total_estimated,
-        "total_min": budget.total_min,
-        "total_max": budget.total_max,
+        "scenario_type": legacy_budget.scenario_type,
+        "grand_total": float(legacy_budget.grand_total or 0.0),
+        "total_min": float(legacy_budget.grand_total or 0.0),
+        "total_max": float(legacy_budget.grand_total or 0.0),
+        "section_totals": section_totals,
     }
 
 

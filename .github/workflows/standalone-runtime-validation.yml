@@ -49,10 +49,11 @@ jobs:
           docker --version
           docker compose version
 
-      - name: Install cid-budget backend dependencies
+      - name: Install standalone backend dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r cid-budget/backend/requirements.txt
+          python -m pip install -r ai-dubbing-legal-studio/backend/requirements.txt
 
       - name: Verify Python runtime imports
         run: |

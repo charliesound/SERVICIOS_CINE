@@ -1,0 +1,58 @@
+{
+  "app_id": "ai-dubbing-legal-studio",
+  "name": "AI Dubbing Legal Studio",
+  "version": "1.0.0",
+  "description": "Doblaje IA con trazabilidad legal. Gestión de contratos de voz, clonación autorizada, traducción, lipsync y control de auditoría.",
+  "category": "postproduccion",
+  "icon": "mic",
+  "pricing": {
+    "standalone_monthly_eur": 49,
+    "included_in_cid": true,
+    "trial_days": 14
+  },
+  "entrypoints": {
+    "api": {
+      "url": "http://localhost:8000",
+      "health_endpoint": "/health"
+    },
+    "frontend": {
+      "url": "http://localhost:5173",
+      "type": "link",
+      "route": "/login"
+    },
+    "cid_integration": {
+      "backend_module": null,
+      "api_prefix": "/api/dubbing",
+      "frontend_route": "/apps/dubbing",
+      "sidebar_group": "postproduccion"
+    }
+  },
+  "capabilities": [
+    "tts",
+    "voice_clone",
+    "lipsync",
+    "dubbing",
+    "translation",
+    "legal_audit",
+    "contract_management"
+  ],
+  "requirements": {
+    "docker": true,
+    "postgresql": true,
+    "redis": true,
+    "minio": true,
+    "comfyui_dubbing": true,
+    "memory_gb": 4
+  },
+  "auth": {
+    "type": "jwt_shared",
+    "sync_users": true
+  },
+  "endpoints": [
+    {"method": "POST", "path": "/api/auth/login", "description": "Autenticación"},
+    {"method": "POST", "path": "/api/projects", "description": "Crear proyecto"},
+    {"method": "POST", "path": "/api/contracts/{id}/validate", "description": "Validar contrato"},
+    {"method": "POST", "path": "/api/dubbing-jobs/project/{id}", "description": "Crear job de doblaje"},
+    {"method": "GET", "path": "/api/audit/job/{id}", "description": "Auditoría del job"}
+  ]
+}

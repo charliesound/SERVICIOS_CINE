@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import hashlib
 import secrets
-from typing import Optional
+from typing import Any, Optional
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import config
+from core.config import get_settings
 from database import get_db
 from models.core import User as DBUser
 from schemas.auth_schema import (
@@ -54,26 +55,66 @@ def _is_cid_access_allowed(user: DBUser) -> bool:
     return account_status == "active" and cid_enabled
 
 
+def _get_secret_key() -> str:
+    return config["auth"]["secret_key"] or get_settings().jwt_secret
+
+
+def _get_algorithm() -> str:
+    return config["auth"].get("algorithm") or get_settings().jwt_algorithm
+
+
+def _now() -> datetime:
+    return datetime.utcnow()
+
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (
+    settings = get_settings()
+    expire = _now() + (
         expires_delta
         if expires_delta
         else timedelta(minutes=config["auth"]["access_token_expire_minutes"])
     )
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "iat": _now(),
+        "nbf": _now(),
+        "iss": settings.jwt_issuer,
+        "aud": settings.jwt_audience,
+    })
     return jwt.encode(
-        to_encode, config["auth"]["secret_key"], algorithm=config["auth"]["algorithm"]
+        to_encode, _get_secret_key(), algorithm=_get_algorithm()
     )
 
 
-def verify_token(token: str):
+def verify_token(token: str) -> Optional[dict[str, Any]]:
     try:
+        settings = get_settings()
         payload = jwt.decode(
             token,
-            config["auth"]["secret_key"],
-            algorithms=[config["auth"]["algorithm"]],
+            _get_secret_key(),
+            algorithms=[_get_algorithm()],
+            audience=settings.jwt_audience,
+            options={"verify_exp": True, "verify_nbf": True, "verify_iat": True},
         )
+        if "exp" not in payload:
+            logger.warning("Token rejected: missing exp claim")
+            return None
+        if "iat" not in payload:
+            logger.warning("Token rejected: missing iat claim")
+            return None
+        import time
+
+        _now_ts = time.time()
+        _leeway = 30
+        iat_val = payload.get("iat", 0)
+        if iat_val > _now_ts + _leeway:
+            logger.warning("Token rejected: iat is in the future")
+            return None
+        iss = payload.get("iss")
+        if iss and iss != settings.jwt_issuer:
+            logger.warning("Token rejected: invalid issuer %s", iss)
+            return None
         return payload
     except JWTError:
         return None

@@ -52,6 +52,11 @@ def create_app() -> FastAPI:
         allow_headers=settings.cors_allowed_headers,
     )
 
+    # ── Security Headers middleware ───────────────────────────────────────
+    from middleware.security_headers import SecurityHeadersMiddleware
+
+    app.add_middleware(SecurityHeadersMiddleware)
+
     # ── Request ID middleware ────────────────────────────────────────────
     from middleware.request_id import request_id_middleware
 

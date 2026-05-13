@@ -62,6 +62,7 @@ class TestSettingsProdValidation:
             jwt_secret="a" * 32,
             database_url="sqlite+aiosqlite:///test.db",
             cors_allowed_origins=["https://example.com"],
+            auth_disabled=False,
         )
         assert s.app_env == "production"
         assert s.jwt_secret == "a" * 32

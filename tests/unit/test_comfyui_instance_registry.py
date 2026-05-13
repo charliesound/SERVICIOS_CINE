@@ -13,6 +13,7 @@ if str(SRC_DIR) not in sys.path:
 
 os.environ.setdefault("AUTH_SECRET_KEY", "a" * 32)
 os.environ.setdefault("APP_SECRET_KEY", "a" * 32)
+os.environ.setdefault("AUTH_DISABLED", "true")
 
 
 @pytest.fixture(autouse=True)

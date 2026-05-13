@@ -33,10 +33,14 @@ class Settings(BaseSettings):
     cors_allowed_methods: list[str] = ["*"]
     cors_allowed_headers: list[str] = ["*"]
 
-    # ── Auth ─────────────────────────────────────────────────────────────
+    # ── Auth / JWT ──────────────────────────────────────────────────────
     jwt_secret: str = ""
     jwt_algorithm: str = "HS256"
+    jwt_issuer: str = "ailinkcinema"
+    jwt_audience: str = "cid-api"
     access_token_expire_minutes: int = 60
+    refresh_token_expire_days: int = 7
+    auth_disabled: bool = False
 
     # ── Database ─────────────────────────────────────────────────────────
     database_url: str = ""
@@ -46,6 +50,14 @@ class Settings(BaseSettings):
 
     # ── Redis (optional) ────────────────────────────────────────────────
     redis_url: str = ""
+
+    # ── Internal API Key ────────────────────────────────────────────────
+    internal_api_key_enabled: bool = False
+    internal_api_keys: str = ""
+
+    # ── Rate Limit ──────────────────────────────────────────────────────
+    rate_limit_backend: Literal["memory", "redis"] = "memory"
+    login_rate_limit_per_minute: int = 10
 
     # ── Observability ────────────────────────────────────────────────────
     log_level: str = "INFO"
@@ -146,11 +158,26 @@ class Settings(BaseSettings):
             raise ValueError(f"LOG_LEVEL must be one of {allowed}")
         return upper
 
+    @field_validator("auth_disabled")
+    @classmethod
+    def _auth_disabled_production(cls, v: bool, info) -> bool:
+        env = info.data.get("app_env")
+        if env == "production" and v:
+            raise ValueError(
+                "AUTH_DISABLED=true is not allowed in production. "
+                "Set AUTH_DISABLED=false or use development/staging."
+            )
+        return v
+
     @model_validator(mode="after")
     def _validate_model(self) -> "Settings":
         if self.app_env == "development" and "*" in self.cors_allowed_origins:
             warnings.warn(
                 "CORS allows '*' in development — insecure if exposed to the internet"
+            )
+        if self.app_env == "production" and self.rate_limit_backend == "redis" and not self.redis_url:
+            raise ValueError(
+                "RATE_LIMIT_BACKEND=redis requires REDIS_URL to be set in production"
             )
         return self
 

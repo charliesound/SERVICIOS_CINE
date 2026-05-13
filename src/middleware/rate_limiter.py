@@ -1,14 +1,20 @@
+from __future__ import annotations
+
 import hashlib
+import logging
+from typing import Callable
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from typing import Dict, Callable
-from datetime import datetime, timedelta
+
+from core.config import get_settings
+
+logger = logging.getLogger("servicios_cine.rate_limiter")
 
 
 class RateLimiter:
-    def __init__(self):
-        self._requests: Dict[str, list] = {}
+    def __init__(self) -> None:
+        self._requests: dict[str, list] = {}
         self._limits = {
             "default": {"requests": 100, "window": 60},
             "auth": {"requests": 10, "window": 60},
@@ -17,6 +23,8 @@ class RateLimiter:
         }
 
     def _get_key(self, request: Request, endpoint_type: str = "default") -> str:
+        from datetime import datetime, timedelta
+
         client_ip = request.client.host if request.client else "unknown"
         if endpoint_type == "auth":
             return f"{endpoint_type}:{client_ip}"
@@ -28,17 +36,19 @@ class RateLimiter:
         )
         return f"{endpoint_type}:{client_ip}:{auth_fingerprint}"
 
-    def get_limit_config(self, endpoint_type: str = "default") -> Dict[str, int]:
+    def get_limit_config(self, endpoint_type: str = "default") -> dict:
         return self._limits.get(endpoint_type, self._limits["default"])
 
-    def _cleanup_old_requests(self, key: str, window: int):
+    def _cleanup_old_requests(self, key: str, window: int) -> None:
+        from datetime import datetime, timedelta
+
         if key in self._requests:
             cutoff = datetime.utcnow() - timedelta(seconds=window)
             self._requests[key] = [t for t in self._requests[key] if t > cutoff]
 
-    def check_rate_limit(
-        self, request: Request, endpoint_type: str = "default"
-    ) -> bool:
+    def check_rate_limit(self, request: Request, endpoint_type: str = "default") -> bool:
+        from datetime import datetime
+
         key = self._get_key(request, endpoint_type)
         limit_config = self.get_limit_config(endpoint_type)
 
@@ -56,9 +66,7 @@ class RateLimiter:
     def get_remaining(self, request: Request, endpoint_type: str = "default") -> int:
         key = self._get_key(request, endpoint_type)
         limit_config = self.get_limit_config(endpoint_type)
-
         self._cleanup_old_requests(key, limit_config["window"])
-
         return max(0, limit_config["requests"] - len(self._requests.get(key, [])))
 
 
@@ -66,9 +74,21 @@ rate_limiter = RateLimiter()
 
 
 async def rate_limit_middleware(request: Request, call_next: Callable):
+    settings = get_settings()
+    backend = settings.rate_limit_backend
+
+    if backend == "redis":
+        if settings.redis_url:
+            pass
+        else:
+            logger.warning("rate_limit_backend=redis but REDIS_URL not set, falling back to memory")
+            backend = "memory"
+
     endpoint_type = "default"
     if request.url.path.startswith("/api/auth"):
         endpoint_type = "auth"
+        limit_config = rate_limiter.get_limit_config(endpoint_type)
+        limit_config["requests"] = settings.login_rate_limit_per_minute
     elif request.url.path.startswith("/api/render"):
         endpoint_type = "render"
     elif request.url.path.startswith("/api/admin"):

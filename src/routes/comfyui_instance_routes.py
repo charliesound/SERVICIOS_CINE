@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Path as FPath, Request
+from fastapi import APIRouter, Depends, HTTPException, Path as FPath, Request
 from fastapi.responses import JSONResponse
 
+from dependencies.security import TokenData, require_auth, require_scope
 from schemas.comfyui_instance_schema import (
     ComfyUIInstance,
     InstanceHealth,
@@ -23,7 +24,10 @@ def _request_id(request: Request) -> str:
 
 
 @router.get("/instances")
-async def list_instances(request: Request) -> list[dict]:
+async def list_instances(
+    request: Request,
+    _token: TokenData = Depends(require_scope("comfyui:read")),
+) -> list[dict]:
     registry.load_instances()
     instances = registry.get_all_instances()
     return [
@@ -44,6 +48,7 @@ async def list_instances(request: Request) -> list[dict]:
 async def get_instance(
     request: Request,
     instance_key: str = FPath(..., description="Instance key identifier"),
+    _token: TokenData = Depends(require_scope("comfyui:read")),
 ) -> dict:
     registry.load_instances()
     rec = registry.get_instance(instance_key)
@@ -70,6 +75,7 @@ async def get_instance(
 async def get_instance_health(
     request: Request,
     instance_key: str = FPath(..., description="Instance key identifier"),
+    _token: TokenData = Depends(require_scope("comfyui:health")),
 ) -> dict:
     registry.load_instances()
     rec = registry.get_instance(instance_key)
@@ -88,7 +94,10 @@ async def get_instance_health(
 
 
 @router.get("/health")
-async def comfyui_health_summary(request: Request) -> dict:
+async def comfyui_health_summary(
+    request: Request,
+    _token: TokenData = Depends(require_scope("comfyui:health")),
+) -> dict:
     registry.load_instances()
     settings = request.app.state.settings
     timeout = getattr(settings, "comfyui_health_timeout_seconds", 5.0)
@@ -108,6 +117,7 @@ async def comfyui_health_summary(request: Request) -> dict:
 async def resolve_task_type(
     request: Request,
     task_type: str = FPath(..., description="Task type to resolve"),
+    _token: TokenData = Depends(require_scope("comfyui:read")),
 ) -> dict:
     registry.load_instances()
     rec = registry.get_instance_for_task(task_type)

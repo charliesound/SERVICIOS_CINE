@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Clapperboard, LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
 import LandingHeroCinematic from '@/components/landing/LandingHeroCinematic'
 import LandingProblemSolution from '@/components/landing/LandingProblemSolution'
 import LandingStudioModules from '@/components/landing/LandingStudioModules'
@@ -14,6 +14,7 @@ import SpecializedSolutionsGrid from '@/components/landing/SpecializedSolutionsG
 import TrustLegalSection from '@/components/landing/TrustLegalSection'
 import LandingPricingSection from '@/components/landing/LandingPricingSection'
 import LandingFinalCta from '@/components/landing/LandingFinalCta'
+import LandingReveal from '@/components/landing/LandingReveal'
 import LandingAmbientScene from '@/components/landing/LandingAmbientScene'
 import { landingContent } from '@/data/landingContent'
 import { useSeo } from '@/hooks/useSeo'
@@ -218,6 +219,59 @@ export default function LandingPage() {
         <LandingDiferencial />
 
         <LandingAudienceB2B />
+
+        <section className="relative border-t border-white/5 py-24">
+          <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
+            <LandingReveal>
+              <div className="max-w-2xl">
+                <p className="editorial-kicker text-amber-300/90">Soluciones por rol</p>
+                <h2 className="mt-4 font-display text-4xl font-semibold leading-[0.92] text-white md:text-6xl">
+                  Un flujo diseñado para cada perfil del equipo audiovisual.
+                </h2>
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 md:text-lg md:leading-8">
+                  Cada profesional encuentra en AILinkCinema las herramientas que necesita segun su
+                  responsabilidad en el pipeline de produccion.
+                </p>
+              </div>
+            </LandingReveal>
+
+            <LandingReveal delay={60}>
+              <div className="mt-14">
+                <div className="landing-brand-solution-card relative overflow-hidden rounded-[1.85rem] p-8 md:p-10">
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
+                        <Clapperboard className="h-7 w-7" />
+                      </div>
+                      <div>
+                        <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-amber-200">
+                          Director / Realizador
+                        </span>
+                      </div>
+                    </div>
+                    <h3 className="mt-6 text-3xl font-semibold text-white md:text-4xl">
+                      Director AI Studio
+                    </h3>
+                    <p className="mt-2 text-lg text-amber-200/80">Del guion a la vision del director.</p>
+                    <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
+                      Convierte un guion en una vision cinematografica clara: analisis dramatico, tono visual,
+                      secuencias clave, storyboard y dossier creativo para preproduccion o pitching.
+                    </p>
+                    <div className="mt-8 flex flex-wrap gap-3">
+                      <Link
+                        to="/soluciones/director"
+                        className="landing-cta-primary"
+                      >
+                        Ver solucion para directores
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </LandingReveal>
+          </div>
+        </section>
 
         <section id="soluciones" className="relative border-t border-white/5 py-24">
           <SpecializedSolutionsGrid content={landingContent.solutions} />

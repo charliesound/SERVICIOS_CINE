@@ -57,6 +57,7 @@ import CIDProductPage from './pages/CIDProductPage'
 import SolutionDetailPage from './pages/SolutionDetailPage'
 import PricingPage from './pages/PricingPage'
 import DemoCIDPage from './pages/DemoCIDPage'
+import DirectorSolutionPage from './pages/DirectorSolutionPage'
 import AppRegistryPage from './pages/AppRegistryPage'
 import { applySeo, SEO_DEFAULT_DESCRIPTION, SEO_DEFAULT_TITLE } from '@/utils/seo'
 
@@ -83,6 +84,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/solutions" element={<SolutionsPage />} />
         <Route path="/solutions/cid" element={<CIDProductPage />} />
+        <Route path="/soluciones/director" element={<DirectorSolutionPage />} />
         <Route path="/solutions/script-breakdown" element={<SolutionDetailPage />} />
         <Route path="/solutions/storyboard" element={<SolutionDetailPage />} />
         <Route path="/solutions/production-planner" element={<SolutionDetailPage />} />

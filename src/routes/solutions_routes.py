@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from src.services.solutions_service import (
     register_solution, get_solution, list_solutions,
@@ -15,7 +15,7 @@ class SolutionCreate(BaseModel):
     backend: str = "still"
     workflow_path: str = ""
     description: str = ""
-    tags: list[str] = []
+    tags: list[str] = Field(default_factory=list)
     n8n_workflow_url: str = ""
     created_by: str = "user"
 
@@ -23,17 +23,17 @@ class SolutionCreate(BaseModel):
 class SolutionOut(BaseModel):
     id: str
     name: str
-    workflow_id: str
-    backend: str
-    workflow_path: str
-    description: str
-    tags: list[str]
-    n8n_workflow_url: str
-    is_active: bool
-    created_by: str
+    workflow_id: str = ""
+    backend: str = "still"
+    workflow_path: str = ""
+    description: str = ""
+    tags: list[str] = Field(default_factory=list)
+    n8n_workflow_url: str = ""
+    is_active: bool = True
+    created_by: str = "system"
     created_at: str
     updated_at: str
-    execution_count: int
+    execution_count: int = 0
     last_executed_at: Optional[str] = None
 
 

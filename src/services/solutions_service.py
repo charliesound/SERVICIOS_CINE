@@ -22,12 +22,47 @@ logger = logging.getLogger(__name__)
 _solutions: dict[str, dict] = {}
 _solutions_file = "data/solutions_registry.json"
 
+def _solution_id_from_name(name: str) -> str:
+    return name.lower().replace(" ", "_").replace("/", "_")
+
+
+def _normalize_solution(solution: dict) -> dict:
+    """Backfill fields required by API responses for old registry entries."""
+    normalized = dict(solution)
+    now = datetime.now(timezone.utc).isoformat()
+
+    name = normalized.get("name", "")
+    normalized.setdefault("id", _solution_id_from_name(name) if name else "")
+    normalized.setdefault("workflow_id", "")
+    normalized.setdefault("backend", "still")
+    normalized.setdefault("workflow_path", "")
+    normalized.setdefault("description", "")
+    normalized.setdefault("tags", [])
+    normalized.setdefault("n8n_workflow_url", "")
+    normalized.setdefault("is_active", True)
+    normalized.setdefault("created_by", "system")
+    normalized.setdefault("created_at", now)
+    normalized.setdefault("updated_at", normalized.get("created_at", now))
+    normalized.setdefault("execution_count", 0)
+    normalized.setdefault("last_executed_at", None)
+
+    return normalized
+
+
 
 def _load():
     global _solutions
     try:
         with open(_solutions_file, "r") as f:
-            _solutions = json.load(f)
+            raw = json.load(f)
+        if isinstance(raw, dict):
+            _solutions = {
+                sid: _normalize_solution(sol)
+                for sid, sol in raw.items()
+                if isinstance(sol, dict)
+            }
+        else:
+            _solutions = {}
     except (FileNotFoundError, json.JSONDecodeError):
         _solutions = {}
 
@@ -50,7 +85,7 @@ def register_solution(
     created_by: str = "system",
 ) -> dict:
     _load()
-    solution_id = name.lower().replace(" ", "_").replace("/", "_")
+    solution_id = _solution_id_from_name(name)
 
     solution = {
         "id": solution_id,
@@ -166,7 +201,7 @@ DEFAULT_SOLUTIONS = [
 def seed_defaults():
     _load()
     for sol in DEFAULT_SOLUTIONS:
-        sid = sol["name"].lower().replace(" ", "_").replace("/", "_")
+        sid = _solution_id_from_name(sol["name"])
         if sid not in _solutions:
             sol["id"] = sid
             sol["is_active"] = True
@@ -175,5 +210,8 @@ def seed_defaults():
             sol["execution_count"] = 0
             sol["created_by"] = "system"
             _solutions[sid] = sol
+    for sid, existing in list(_solutions.items()):
+        _solutions[sid] = _normalize_solution(existing)
+
     _save()
     logger.info("Sembradas %d soluciones activas por defecto", len(DEFAULT_SOLUTIONS))

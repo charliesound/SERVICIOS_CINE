@@ -1,0 +1,14 @@
+{
+  "nombre": "Juan Pérez",
+  "email": "juan@example.com",
+  "empresa": "Productora Demo",
+  "rol": "productor",
+  "tipoProyecto": "largometraje",
+  "faseProyecto": "guion",
+  "objetivoPrincipal": "pitching",
+  "enlaceGuion": "https://example.com/guion.pdf",
+  "mensaje": "Quiero validar un largometraje en fase de desarrollo.",
+  "aceptaContacto": true,
+  "_timestamp": "2026-05-13T10:00:00.000Z",
+  "_source": "demo-cid-page"
+}

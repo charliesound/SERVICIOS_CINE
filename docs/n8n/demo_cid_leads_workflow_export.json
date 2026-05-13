@@ -1,0 +1,319 @@
+{
+  "name": "Demo CID - Captura de Leads",
+  "nodes": [
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [0, 300],
+      "parameters": {
+        "path": "cid-demo",
+        "method": "POST",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "credentials": {}
+    },
+    {
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Validate Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 300],
+      "parameters": {
+        "language": "javaScript",
+        "code": "// Validar y normalizar lead del formulario /demo-cid\n// Entrada: $input.first().json con los campos del formulario\n\nconst lead = $input.first().json;\nconst errors = [];\n\n// Validar campos obligatorios\nif (!lead.nombre || String(lead.nombre).trim() === '') {\n  errors.push('nombre es obligatorio');\n}\n\nif (!lead.email || String(lead.email).trim() === '') {\n  errors.push('email es obligatorio');\n} else {\n  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n  if (!emailRegex.test(String(lead.email).trim())) {\n    errors.push('email no tiene un formato válido');\n  }\n}\n\nif (!lead.rol || String(lead.rol).trim() === '') {\n  errors.push('rol es obligatorio');\n}\n\nif (!lead.tipoProyecto || String(lead.tipoProyecto).trim() === '') {\n  errors.push('tipoProyecto es obligatorio');\n}\n\nif (lead.aceptaContacto !== true) {\n  errors.push('Debe aceptar la política de contacto');\n}\n\nif (errors.length > 0) {\n  // Devolver error estructurado para la rama de error\n  return [\n    {\n      json: {\n        ok: false,\n        status: 400,\n        errors: errors\n      }\n    }\n  ];\n}\n\n// Normalizar lead\nconst now = new Date();\nconst fecha = now.toISOString().split('T')[0] + ' ' + now.toTimeString().split(' ')[0];\n\nreturn [\n  {\n    json: {\n      ok: true,\n      lead: {\n        fecha: fecha,\n        nombre: String(lead.nombre).trim(),\n        email: String(lead.email).trim().toLowerCase(),\n        empresa: lead.empresa ? String(lead.empresa).trim() : '',\n        rol: String(lead.rol).trim(),\n        tipoProyecto: String(lead.tipoProyecto).trim(),\n        faseProyecto: lead.faseProyecto ? String(lead.faseProyecto).trim() : '',\n        objetivoPrincipal: lead.objetivoPrincipal ? String(lead.objetivoPrincipal).trim() : '',\n        enlaceGuion: lead.enlaceGuion ? String(lead.enlaceGuion).trim() : '',\n        mensaje: lead.mensaje ? String(lead.mensaje).trim() : '',\n        source: lead._source || 'demo-cid-page'\n      }\n    }\n  }\n];\n"
+      },
+      "credentials": {}
+    },
+    {
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.ok }}",
+              "operation": "equal",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "credentials": {}
+    },
+    {
+      "id": "d4e5f6a7-b8c9-0123-defa-123456789012",
+      "name": "Respond Error 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 500],
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 400,
+        "responseBody": "=\n{\n  \"ok\": false,\n  \"message\": \"Faltan campos obligatorios o el formulario no es válido\",\n  \"errors\": {{ $json.errors }}\n}\n"
+      },
+      "credentials": {}
+    },
+    {
+      "id": "e5f6a7b8-c9d0-1234-efab-234567890123",
+      "name": "Save Lead to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [900, 200],
+      "parameters": {
+        "sheetId": {
+          "__rl": true,
+          "value": "PEGA_AQUI_EL_ID_DEL_SPREADSHEET",
+          "mode": "id"
+        },
+        "sheetName": "Leads",
+        "options": {
+          "cellFormat": "USER_ENTERED",
+          "handlingExtraData": "insertInNewColumn",
+          "notSet": "notSet"
+        },
+        "columnsMapping": "manualInput",
+        "dataMode": "upsertFile",
+        "mappingMode": "defineBelow",
+        "operation": "append",
+        "values": {
+          "mapping": [
+            {
+              "column": {
+                "__rl": true,
+                "value": "fecha",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.fecha }}"
+            },
+            {
+              "column": {
+                "__rl": true,
+                "value": "nombre",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.nombre }}"
+            },
+            {
+              "column": {
+                "__rl": true,
+                "value": "email",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.email }}"
+            },
+            {
+              "column": {
+                "__rl": true,
+                "value": "empresa",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.empresa }}"
+            },
+            {
+              "column": {
+                "__rl": true,
+                "value": "rol",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.rol }}"
+            },
+            {
+              "column": {
+                "__rl": true,
+                "value": "tipoProyecto",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.tipoProyecto }}"
+            },
+            {
+              "column": {
+                "__rl": true,
+                "value": "faseProyecto",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.faseProyecto }}"
+            },
+            {
+              "column": {
+                "__rl": true,
+                "value": "objetivoPrincipal",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.objetivoPrincipal }}"
+            },
+            {
+              "column": {
+                "__rl": true,
+                "value": "enlaceGuion",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.enlaceGuion }}"
+            },
+            {
+              "column": {
+                "__rl": true,
+                "value": "mensaje",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.mensaje }}"
+            },
+            {
+              "column": {
+                "__rl": true,
+                "value": "source",
+                "mode": "column"
+              },
+              "value": "={{ $json.lead.source }}"
+            }
+          ]
+        }
+      },
+      "credentials": {}
+    },
+    {
+      "id": "f6a7b8c9-d0e1-2345-fabc-345678901234",
+      "name": "Send Confirmation Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1200, 100],
+      "parameters": {
+        "fromEmail": "noreply@ailinkcinema.com",
+        "toEmail": "={{ $json.lead.email }}",
+        "subject": "Hemos recibido tu solicitud para probar CID",
+        "text": "Hemos recibido tu solicitud para probar CID\n\nGracias por contactar con AILinkCinema.\n\nHemos recibido tu solicitud para probar CID con tu proyecto.\nNuestro equipo revisar\u00e1 la informaci\u00f3n y te responderemos\nlo antes posible para coordinar los siguientes pasos.\n\nMientras tanto, si tienes alguna duda puedes escribirnos a\ncontacto@ailinkcinema.com.\n\n\u2014\nEquipo AILinkCinema\nhttps://ailinkcinema.com",
+        "options": {}
+      },
+      "credentials": {}
+    },
+    {
+      "id": "a7b8c9d0-e1f2-3456-abcd-456789012345",
+      "name": "Notify AILinkCinema",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1200, 300],
+      "parameters": {
+        "fromEmail": "noreply@ailinkcinema.com",
+        "toEmail": "cid.jcc@gmail.com",
+        "subject": "=Nuevo lead /demo-cid \u2014 {{ $json.lead.nombre }}",
+        "text": "Nuevo lead recibido desde /demo-cid\n\nNombre: {{ $json.lead.nombre }}\nEmail: {{ $json.lead.email }}\nEmpresa: {{ $json.lead.empresa }}\nRol: {{ $json.lead.rol }}\nTipo de proyecto: {{ $json.lead.tipoProyecto }}\nFase: {{ $json.lead.faseProyecto }}\nObjetivo: {{ $json.lead.objetivoPrincipal }}\nEnlace: {{ $json.lead.enlaceGuion }}\nMensaje: {{ $json.lead.mensaje }}\n\nFecha: {{ $json.lead.fecha }}",
+        "options": {}
+      },
+      "credentials": {}
+    },
+    {
+      "id": "b8c9d0e1-f2a3-4567-bcde-567890123456",
+      "name": "Respond Success 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1500, 200],
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 200,
+        "responseBody": "{\n  \"ok\": true,\n  \"message\": \"Solicitud recibida correctamente\"\n}"
+      },
+      "credentials": {}
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Lead": {
+      "main": [
+        [
+          {
+            "node": "Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Save Lead to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify AILinkCinema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Confirmation Email": {
+      "main": [
+        [
+          {
+            "node": "Respond Success 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify AILinkCinema": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "lead-capture",
+      "id": "tag-lead-capture"
+    },
+    {
+      "name": "demo-cid",
+      "id": "tag-demo-cid"
+    },
+    {
+      "name": "cid",
+      "id": "tag-cid"
+    }
+  ],
+  "id": "wf-demo-cid-leads",
+  "pinData": {}
+}

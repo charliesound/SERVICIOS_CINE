@@ -1,0 +1,190 @@
+name: Standalone Runtime Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "cid-budget/**"
+      - "ai-dubbing-legal-studio/**"
+      - "comfysearch/**"
+      - ".github/workflows/standalone-runtime-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "cid-budget/**"
+      - "ai-dubbing-legal-studio/**"
+      - "comfysearch/**"
+      - ".github/workflows/standalone-runtime-validation.yml"
+  workflow_dispatch:
+
+jobs:
+  standalone-runtime-validation:
+    name: Validate standalone runtime
+    runs-on: ubuntu-latest
+
+    env:
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Show tool versions
+        run: |
+          python --version
+          node --version
+          npm --version
+          docker --version
+          docker compose version
+
+      - name: Install standalone backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r cid-budget/backend/requirements.txt
+          python -m pip install -r ai-dubbing-legal-studio/backend/requirements.txt
+
+      - name: Verify Python runtime imports
+        run: |
+          python - <<'PY'
+          import jwt
+          import requests
+          print("PyJWT OK:", jwt.__version__)
+          print("requests OK:", requests.__version__)
+          PY
+
+      - name: Compile cid-budget backend
+        run: |
+          python -m py_compile \
+            cid-budget/backend/app/main.py \
+            cid-budget/backend/app/core.py \
+            cid-budget/backend/app/routes.py
+
+      - name: Run cid-budget backend tests
+        working-directory: cid-budget/tests
+        env:
+          PYTHONPATH: ../backend
+        run: |
+          pytest -q -o cache_dir=/tmp/pytest-cache-cid-budget
+
+      - name: Build cid-budget frontend
+        working-directory: cid-budget/frontend
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+          npm run build
+
+      - name: Build ai-dubbing-legal-studio frontend
+        working-directory: ai-dubbing-legal-studio/frontend
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+          npm run build
+
+      - name: Validate docker compose configs
+        run: |
+          cat > /tmp/ai_dubbing_prod_ci.env <<'ENV'
+          DB_PASSWORD=ci-db-password-please-change-32chars
+          MINIO_ACCESS_KEY=dubbing
+          MINIO_SECRET_KEY=ci-minio-secret-please-change-32chars
+          JWT_SECRET=ci-jwt-secret-please-change-32chars
+          SECRET_KEY=ci-secret-key-please-change-32chars
+          CORS_ORIGINS=https://ailinkcinema.example
+          OPENAI_API_KEY=
+          ENV
+
+          # ai-dubbing development compose uses env_file: .env.
+          # GitHub Actions does not have local .env files, so create a temporary one.
+          cp ai-dubbing-legal-studio/.env.example ai-dubbing-legal-studio/.env
+
+          docker compose -f comfysearch/docker-compose.yml config >/tmp/comfysearch.compose.yml
+          docker compose -f cid-budget/docker-compose.yml config >/tmp/cid-budget.compose.yml
+          docker compose -f ai-dubbing-legal-studio/docker-compose.yml config >/tmp/ai-dubbing-dev.compose.yml
+          docker compose \
+            --env-file /tmp/ai_dubbing_prod_ci.env \
+            -f ai-dubbing-legal-studio/docker-compose.prod.yml \
+            config >/tmp/ai-dubbing-prod.compose.yml
+
+          docker compose \
+            --env-file /tmp/ai_dubbing_prod_ci.env \
+            -f ai-dubbing-legal-studio/docker-compose.prod.yml \
+            config --services | tee /tmp/ai-dubbing-prod.services
+
+      - name: Check ai-dubbing production hardening
+        run: |
+          cat > /tmp/ai_dubbing_prod_ci.env <<'ENV'
+          DB_PASSWORD=ci-db-password-please-change-32chars
+          MINIO_ACCESS_KEY=dubbing
+          MINIO_SECRET_KEY=ci-minio-secret-please-change-32chars
+          JWT_SECRET=ci-jwt-secret-please-change-32chars
+          SECRET_KEY=ci-secret-key-please-change-32chars
+          CORS_ORIGINS=https://ailinkcinema.example
+          OPENAI_API_KEY=
+          ENV
+
+          docker compose \
+            --env-file /tmp/ai_dubbing_prod_ci.env \
+            -f ai-dubbing-legal-studio/docker-compose.prod.yml \
+            config >/tmp/ai-dubbing-prod.compose.yml
+
+          echo "===== Required services ====="
+          grep -qx "postgres" /tmp/ai-dubbing-prod.services
+          grep -qx "redis" /tmp/ai-dubbing-prod.services
+          grep -qx "qdrant" /tmp/ai-dubbing-prod.services
+          grep -qx "minio" /tmp/ai-dubbing-prod.services
+          grep -qx "backend" /tmp/ai-dubbing-prod.services
+          grep -qx "worker" /tmp/ai-dubbing-prod.services
+          grep -qx "frontend" /tmp/ai-dubbing-prod.services
+          grep -qx "nginx" /tmp/ai-dubbing-prod.services
+
+          echo "===== Positive hardening checks ====="
+          grep -q 'DEBUG: "false"' /tmp/ai-dubbing-prod.compose.yml
+          grep -q 'ENVIRONMENT: production' /tmp/ai-dubbing-prod.compose.yml
+          grep -q 'QDRANT_HOST: qdrant' /tmp/ai-dubbing-prod.compose.yml
+          grep -q 'REDIS_URL: redis://redis:6379/0' /tmp/ai-dubbing-prod.compose.yml
+          grep -q 'MINIO_ENDPOINT: minio:9000' /tmp/ai-dubbing-prod.compose.yml
+
+          echo "===== Forbidden values check ====="
+          if grep -E 'change-me|dubbing-secret|ENVIRONMENT: development|DEBUG: "true"|^version:|env_file' /tmp/ai-dubbing-prod.compose.yml; then
+            echo "ERROR: insecure production values found"
+            exit 1
+          fi
+
+      - name: Verify production required variables fail closed
+        run: |
+          : > /tmp/empty_ai_dubbing_prod.env
+
+          set +e
+          docker compose \
+            --env-file /tmp/empty_ai_dubbing_prod.env \
+            -f ai-dubbing-legal-studio/docker-compose.prod.yml \
+            config >/tmp/prod_negative.out 2>/tmp/prod_negative.err
+          code=$?
+          set -e
+
+          echo "exit_code=$code"
+          cat /tmp/prod_negative.err
+
+          if [ "$code" -eq 0 ]; then
+            echo "ERROR: production compose should fail without required variables"
+            exit 1
+          fi
+
+          grep -q "DB_PASSWORD is required" /tmp/prod_negative.err

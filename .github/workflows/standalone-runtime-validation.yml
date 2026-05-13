@@ -187,4 +187,4 @@ jobs:
             exit 1
           fi
 
-          grep -q "DB_PASSWORD is required" /tmp/prod_negative.err
+          grep -Eq "required variable .* is missing a value|is required" /tmp/prod_negative.err

@@ -57,6 +57,7 @@ import CIDProductPage from './pages/CIDProductPage'
 import SolutionDetailPage from './pages/SolutionDetailPage'
 import PricingPage from './pages/PricingPage'
 import DemoCIDPage from './pages/DemoCIDPage'
+import AppRegistryPage from './pages/AppRegistryPage'
 import { applySeo, SEO_DEFAULT_DESCRIPTION, SEO_DEFAULT_TITLE } from '@/utils/seo'
 
 function RouteSeoDefaults() {
@@ -91,6 +92,7 @@ export default function App() {
         <Route path="/solutions/vfx" element={<SolutionDetailPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/demo-cid" element={<DemoCIDPage />} />
+        <Route path="/apps" element={<AppRegistryPage />} />
         <Route path="/legal/privacidad" element={<LegalPrivacyPage />} />
         <Route path="/legal/aviso-legal" element={<LegalNoticePage />} />
         <Route path="/legal/terminos" element={<LegalTermsPage />} />

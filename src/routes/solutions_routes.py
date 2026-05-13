@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
-from src.services.solutions_service import (
+from services.solutions_service import (
     register_solution, get_solution, list_solutions,
     deactivate_solution, record_execution, seed_defaults,
 )

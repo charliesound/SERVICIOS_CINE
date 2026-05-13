@@ -74,3 +74,5 @@ class TenantContext(BaseModel):
     plan: str = "free"
     role: str
     is_admin: bool = False
+    is_global_admin: bool = False
+    auth_method: str = "jwt"

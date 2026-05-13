@@ -31,8 +31,15 @@ PROJECT_A = "project-a-matcher-v3-001"
 ADMIN_A = "admin-a-matcher-v3-000000001"
 
 
-def _auth_headers(user_id: str, email: str) -> dict[str, str]:
-    token = create_access_token({"sub": user_id, "email": email})
+def _auth_headers(user_id: str, email: str, organization_id: str = "") -> dict[str, str]:
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "organization_id": organization_id,
+        "roles": ["admin"],
+        "scopes": ["projects:read", "projects:write", "comfyui:read", "comfyui:health"],
+    }
+    token = create_access_token(payload)
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -145,7 +152,7 @@ class MatcherV3IntegrationTest(unittest.TestCase):
         asyncio.run(_force_initialize_schema())
         cls.client_cm = TestClient(app)
         cls.client = cls.client_cm.__enter__()
-        cls.admin_headers = _auth_headers(ADMIN_A, "matcher_admin_a@example.com")
+        cls.admin_headers = _auth_headers(ADMIN_A, "matcher_admin_a@example.com", ORG_A)
         _seed_test_data()
 
     @classmethod

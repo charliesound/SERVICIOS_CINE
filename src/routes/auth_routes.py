@@ -44,6 +44,15 @@ def raise_auth_database_unavailable(error: SQLAlchemyError) -> None:
     ) from error
 
 
+def _default_scopes_for_role(role: str) -> list[str]:
+    common = ["projects:read", "comfyui:read", "comfyui:health"]
+    if role in ("admin", "owner"):
+        return common + ["projects:write", "admin:read", "admin:write"]
+    if role in ("producer", "operator"):
+        return common + ["projects:write"]
+    return common
+
+
 def _audit_identity(value: str) -> str:
     normalized = (value or "").strip().lower().encode("utf-8")
     return hashlib.sha256(normalized).hexdigest()[:10]
@@ -291,7 +300,14 @@ async def login(
                 detail="Account is not approved for CID access",
             )
 
-        token = create_access_token({"sub": str(user.id), "email": user.email})
+        role = user.access_level or "viewer"
+        token = create_access_token({
+            "sub": str(user.id),
+            "email": user.email,
+            "organization_id": str(user.organization_id) if user.organization_id else "",
+            "roles": [role],
+            "scopes": _default_scopes_for_role(role),
+        })
 
         return TokenResponse(
             access_token=token,

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from src.services.comfy_search_service import scan_workflows, index_all, get_embedder, get_store
+from services.comfy_search_service import scan_workflows, index_all, get_embedder, get_store
 
 router = APIRouter(prefix="/api/comfysearch", tags=["comfysearch"])
 

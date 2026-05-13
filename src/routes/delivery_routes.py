@@ -18,10 +18,9 @@ from schemas.delivery_schema import (
     DeliverableUpdate,
 )
 from services.delivery_service import delivery_service
-from routes.auth_routes import (
-    get_current_user_optional,
-    check_project_ownership,
+from dependencies.tenant_context import (
     get_tenant_context,
+    require_write_permission,
 )
 from schemas.auth_schema import UserResponse, TenantContext
 from services.logging_service import logger
@@ -37,7 +36,7 @@ async def _get_project_for_tenant_or_admin(
     db: AsyncSession, project_id: str, tenant: TenantContext
 ) -> Project | None:
     query = select(Project).where(Project.id == project_id)
-    if not tenant.is_admin:
+    if not tenant.is_global_admin:
         query = query.where(Project.organization_id == tenant.organization_id)
     result = await db.execute(query)
     return result.scalar_one_or_none()
@@ -47,7 +46,7 @@ async def _get_deliverable_for_tenant_or_admin(
     db: AsyncSession, deliverable_id: str, tenant: TenantContext
 ) -> Deliverable | None:
     query = select(Deliverable).where(Deliverable.id == deliverable_id)
-    if not tenant.is_admin:
+    if not tenant.is_global_admin:
         query = query.where(Deliverable.organization_id == tenant.organization_id)
     result = await db.execute(query)
     return result.scalar_one_or_none()
@@ -141,20 +140,16 @@ async def create_deliverable(
     deliverable: DeliverableCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _: None = Depends(require_write_permission),
 ) -> DeliverableResponse:
-    project_result = await db.execute(
-        select(Project).where(
-            Project.id == project_id, Project.organization_id == tenant.organization_id
-        )
-    )
-    project = project_result.scalar_one_or_none()
+    project = await _get_project_for_tenant_or_admin(db, project_id, tenant)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
     db_deliverable = await delivery_service.create_deliverable(
         db,
         project_id=project_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
         source_review_id=deliverable.source_review_id,
         name=deliverable.name,
         format_type=deliverable.format_type,
@@ -170,6 +165,7 @@ async def update_deliverable(
     update: DeliverableUpdate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _: None = Depends(require_write_permission),
 ) -> DeliverableResponse:
     deliverable = await delivery_service.get_deliverable(
         db, deliverable_id, tenant.organization_id
@@ -218,6 +214,7 @@ async def trigger_project_export(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _: None = Depends(require_write_permission),
 ): 
     project = await _get_project_for_tenant_or_admin(db, project_id, tenant)
     if not project:

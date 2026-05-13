@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Any
 import uuid
 
 from sqlalchemy import select
@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models.core import Project
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import get_tenant_context, require_write_permission
 from schemas.auth_schema import TenantContext
 from services.script_intake_service import script_intake_service, analysis_service
 
@@ -33,6 +33,7 @@ async def create_project_from_idea(
     payload: IdeaIntakePayload,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     project = Project(
         id=str(uuid.uuid4()),
@@ -58,6 +59,7 @@ async def intake_script(
     payload: ScriptIntakePayload,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -65,7 +67,7 @@ async def intake_script(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     project.script_text = payload.script_text[:16000000]
@@ -82,6 +84,7 @@ async def run_analysis(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -89,7 +92,7 @@ async def run_analysis(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     if not project.script_text:
@@ -116,7 +119,7 @@ async def get_analysis_summary(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     summary = await analysis_service.get_summary(db, project_id)
@@ -135,7 +138,7 @@ async def get_breakdown_scenes(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     scenes = await analysis_service.get_scenes(db, project_id)
@@ -157,7 +160,7 @@ async def get_breakdown_departments(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     departments = await analysis_service.get_departments(db, project_id)

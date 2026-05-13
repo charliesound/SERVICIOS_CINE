@@ -212,7 +212,7 @@ class PresentationService:
 
         if str(asset.organization_id) != str(project.organization_id):
             raise PresentationForbiddenError("Asset does not belong to the requested project tenant")
-        if not tenant.is_admin and str(asset.organization_id) != str(tenant.organization_id):
+        if not tenant.is_global_admin and str(asset.organization_id) != str(tenant.organization_id):
             raise PresentationForbiddenError("Asset not accessible for tenant")
 
         metadata = self._decode_metadata(asset.metadata_json)
@@ -316,7 +316,7 @@ class PresentationService:
         project = result.scalar_one_or_none()
         if project is None:
             raise PresentationNotFoundError("Project not found")
-        if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+        if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
             raise PresentationForbiddenError("Project not accessible for tenant")
         return project
 
@@ -346,7 +346,7 @@ class PresentationService:
         tenant: TenantContext,
     ) -> list[MediaAsset]:
         query = select(MediaAsset).where(MediaAsset.project_id == project_id)
-        if not tenant.is_admin:
+        if not tenant.is_global_admin:
             query = query.where(MediaAsset.organization_id == tenant.organization_id)
         query = query.order_by(MediaAsset.created_at.asc(), MediaAsset.id.asc())
         result = await db.execute(query)
@@ -365,7 +365,7 @@ class PresentationService:
             .where(Review.project_id == project_id)
             .order_by(ReviewComment.created_at.asc(), ReviewComment.id.asc())
         )
-        if not tenant.is_admin:
+        if not tenant.is_global_admin:
             query = query.where(ReviewComment.organization_id == tenant.organization_id)
         result = await db.execute(query)
         return list(result.scalars().all())
@@ -378,7 +378,7 @@ class PresentationService:
         tenant: TenantContext,
     ) -> list[StoryboardShot]:
         query = select(StoryboardShot).where(StoryboardShot.project_id == project_id)
-        if not tenant.is_admin:
+        if not tenant.is_global_admin:
             query = query.where(StoryboardShot.organization_id == tenant.organization_id)
         query = query.order_by(
             StoryboardShot.sequence_id.asc(),

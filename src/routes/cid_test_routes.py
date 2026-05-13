@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import get_tenant_context
 from schemas.auth_schema import TenantContext
 from services.account_service import get_user_by_id, resolve_effective_plan
 from services.cid_test_mode import (
@@ -98,7 +98,7 @@ async def _get_request_context(tenant: TenantContext, db: AsyncSession) -> dict:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    access = resolve_test_access(user.email, tenant.is_admin)
+    access = resolve_test_access(user.email, tenant.is_global_admin)
     if not access["can_access_as_test_user"]:
         raise HTTPException(status_code=403, detail="Internal tester access required")
 
@@ -124,7 +124,7 @@ async def cid_test_status(
     return {
         "enabled": access["enabled"],
         "user_email": user.email,
-        "is_admin": tenant.is_admin,
+        "is_admin": tenant.is_global_admin,
         "is_internal_tester": access["is_internal_tester"],
         "test_plan": access["test_plan"],
         "warning": "CID internal test mode is isolated to /api/dev/cid-test/*",
@@ -147,7 +147,7 @@ async def simulate_access(
         "original_plan": original_plan,
         "simulated_plan": access["test_plan"],
         "can_access_as_test_user": access["can_access_as_test_user"],
-        "is_real_admin": tenant.is_admin,
+        "is_real_admin": tenant.is_global_admin,
         "is_email_whitelisted": access["is_email_whitelisted"],
         "note": "Simulation only. This endpoint does not change the real plan, role, or tenant context.",
     }

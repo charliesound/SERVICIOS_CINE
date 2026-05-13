@@ -25,11 +25,18 @@ from scripts.seed_presentation_visual_smoke import ensure_visual_smoke_assets
 
 PROJECT_ID = "32fb858f66ef4569a7bc12db3b5ef2fd"
 ORGANIZATION_ID = "db4d7a5dadc9457ebaa2993a30d48201"
+ORG_B = "54c10f417b714c558dc6da6015a96cc3"
 STORAGE_SOURCE_ID = "d7fac025-fa34-487d-a83a-d81ce2aadcac"
 
 
-def _auth_headers(user_id: str, email: str) -> dict[str, str]:
-    token = create_access_token({"sub": user_id, "email": email})
+def _auth_headers(user_id: str, email: str, org_id: str | None = None) -> dict[str, str]:
+    token = create_access_token({
+        "sub": user_id,
+        "email": email,
+        "organization_id": org_id or ORGANIZATION_ID,
+        "roles": ["admin"],
+        "scopes": ["projects:read", "projects:write", "comfyui:read", "comfyui:health"],
+    })
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -74,7 +81,7 @@ class ManualShotEditorIntegrationTest(unittest.TestCase):
             "4b153c715f76428b9e299698e5ab5561", "smoke_tenant_a@example.com"
         )
         cls.tenant_b_headers = _auth_headers(
-            "54c10f417b714c558dc6da6015a96cc2", "smoke_tenant_b@example.com"
+            "54c10f417b714c558dc6da6015a96cc2", "smoke_tenant_b@example.com", ORG_B
         )
         cls.asset_ids = [
             "157c1828-990c-44e8-91c9-610fa3f12bf5",

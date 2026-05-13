@@ -19,8 +19,22 @@ from fastapi.testclient import TestClient
 from app import app
 from routes.auth_routes import create_access_token
 
-def _auth_headers(user_id: str, email: str) -> dict[str, str]:
-    token = create_access_token({"sub": user_id, "email": email})
+def _auth_headers(user_id: str, email: str, org_id: str | None = None, roles: list[str] | None = None) -> dict[str, str]:
+    effective_roles = roles or ["admin"]
+    scopes_map = {
+        "global_admin": ["admin:read", "admin:write", "projects:read", "projects:write", "comfyui:read", "comfyui:health"],
+        "admin": ["projects:read", "projects:write", "comfyui:read", "comfyui:health"],
+        "viewer": ["projects:read", "comfyui:read"],
+    }
+    role_key = effective_roles[0] if effective_roles else "admin"
+    scopes = scopes_map.get(role_key, scopes_map["admin"])
+    token = create_access_token({
+        "sub": user_id,
+        "email": email,
+        "organization_id": org_id or "db4d7a5dadc9457ebaa2993a30d48201",
+        "roles": effective_roles,
+        "scopes": scopes,
+    })
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -35,10 +49,10 @@ class FundingIngestionCatalogIntegrationTest(unittest.TestCase):
             env={**os.environ, "DATABASE_URL": f"sqlite+aiosqlite:///{DB_PATH}"},
         )
         cls.admin_headers = _auth_headers(
-            "dd66db71cbe643eb9494abd8616d3f64", "smoke_admin@example.com"
+            "dd66db71cbe643eb9494abd8616d3f64", "smoke_admin@example.com", roles=["global_admin"]
         )
         cls.tenant_headers = _auth_headers(
-            "4b153c715f76428b9e299698e5ab5561", "smoke_tenant_a@example.com"
+            "4b153c715f76428b9e299698e5ab5561", "smoke_tenant_a@example.com", roles=["viewer"]
         )
 
     def test_admin_seed_crud_and_public_read(self) -> None:

@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.funding_catalog_schema import (
     FundingCallCreate,
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/admin/funding", tags=["admin-funding"])
 
 
 def _require_admin(tenant: TenantContext) -> None:
-    if not tenant.is_admin:
+    if not tenant.is_global_admin:
         raise HTTPException(status_code=403, detail="Admin privileges required")
 
 

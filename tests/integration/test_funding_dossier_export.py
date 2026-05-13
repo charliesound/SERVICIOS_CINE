@@ -33,8 +33,21 @@ USER_B = "user-b-funding-dossier-00000001"
 PROJECT_ID = "project-funding-dossier-0000001"
 
 
-def _auth_headers(user_id: str, email: str) -> dict[str, str]:
-    token = create_access_token({"sub": user_id, "email": email})
+def _auth_headers(user_id: str, email: str, org_id: str | None = None, roles: list[str] | None = None) -> dict[str, str]:
+    effective_roles = roles or ["admin"]
+    scopes_map = {
+        "global_admin": ["projects:read", "projects:write", "admin:read", "admin:write", "comfyui:read", "comfyui:health"],
+        "admin": ["projects:read", "projects:write", "comfyui:read", "comfyui:health"],
+    }
+    role_key = effective_roles[0] if effective_roles else "admin"
+    scopes = scopes_map.get(role_key, scopes_map["admin"])
+    token = create_access_token({
+        "sub": user_id,
+        "email": email,
+        "organization_id": org_id or ORG_A,
+        "roles": effective_roles,
+        "scopes": scopes,
+    })
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -220,8 +233,8 @@ class FundingDossierExportIntegrationTest(unittest.TestCase):
         _seed_test_data()
         cls.client_cm = TestClient(app)
         cls.client = cls.client_cm.__enter__()
-        cls.admin_headers = _auth_headers(ADMIN_A, "dossier_admin_a@example.com")
-        cls.tenant_b_headers = _auth_headers(USER_B, "dossier_user_b@example.com")
+        cls.admin_headers = _auth_headers(ADMIN_A, "dossier_admin_a@example.com", roles=["global_admin"])
+        cls.tenant_b_headers = _auth_headers(USER_B, "dossier_user_b@example.com", ORG_B)
         seed_response = cls.client.post(
             "/api/admin/funding/sync/seed",
             headers=cls.admin_headers,

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models.core import Project
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import get_tenant_context, require_write_permission
 from schemas.auth_schema import TenantContext
 from services.project_funding_service import project_funding_service
 from services.budget_estimator_service import budget_estimator_service
@@ -57,11 +57,11 @@ async def list_private_funding_sources(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     sources = await project_funding_service.list_sources(
-        db, project_id, tenant.organization_id
+        db, project_id, str(project.organization_id)
     )
 
     return JSONResponse(content={
@@ -77,6 +77,7 @@ async def create_private_funding_source(
     payload: ProjectFundingSourceCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -84,13 +85,13 @@ async def create_private_funding_source(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     source = await project_funding_service.create_source(
         db,
         project_id=project_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
         source_name=payload.source_name,
         source_type=payload.source_type,
         amount=payload.amount,
@@ -112,6 +113,7 @@ async def update_private_funding_source(
     payload: ProjectFundingSourceUpdate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -119,13 +121,13 @@ async def update_private_funding_source(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     source = await project_funding_service.update_source(
         db,
         project_id=project_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
         source_id=source_id,
         source_name=payload.source_name,
         source_type=payload.source_type,
@@ -150,6 +152,7 @@ async def delete_private_funding_source(
     source_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -157,13 +160,13 @@ async def delete_private_funding_source(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     deleted = await project_funding_service.delete_source(
         db,
         project_id=project_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
         source_id=source_id,
     )
 
@@ -188,13 +191,13 @@ async def get_private_funding_summary(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     summary = await project_funding_service.get_summary(
         db,
         project_id=project_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
     )
 
     return JSONResponse(content={
@@ -215,6 +218,7 @@ async def create_opportunity_tracking(
     notes: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -222,13 +226,13 @@ async def create_opportunity_tracking(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     tracking = await project_funding_service.create_tracking(
         db=db,
         project_id=project_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
         funding_call_id=funding_call_id,
         project_funding_match_id=project_funding_match_id,
         status=status,
@@ -255,13 +259,13 @@ async def list_opportunity_trackings(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     trackings = await project_funding_service.get_trackings_for_project(
         db=db,
         project_id=project_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
     )
 
     return JSONResponse(content={
@@ -283,13 +287,13 @@ async def get_opportunity_tracking(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     tracking = await project_funding_service.get_tracking(
         db=db,
         tracking_id=tracking_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
     )
     if not tracking:
         raise HTTPException(status_code=404, detail="Tracking not found")
@@ -310,6 +314,7 @@ async def update_opportunity_tracking(
     notes: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -317,13 +322,13 @@ async def update_opportunity_tracking(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     tracking = await project_funding_service.update_tracking(
         db=db,
         tracking_id=tracking_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
         status=status,
         priority=priority,
         owner_user_id=owner_user_id,
@@ -344,6 +349,7 @@ async def delete_opportunity_tracking(
     tracking_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -351,13 +357,13 @@ async def delete_opportunity_tracking(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     deleted = await project_funding_service.delete_tracking(
         db=db,
         tracking_id=tracking_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
     )
     if not deleted:
         raise HTTPException(status_code=404, detail="Tracking not found")
@@ -382,13 +388,13 @@ async def get_tracking_checklist(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     checklist_items = await project_funding_service.get_checklist_for_tracking(
         db=db,
         tracking_id=tracking_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
     )
 
     return JSONResponse(content={
@@ -413,6 +419,7 @@ async def update_tracking_checklist_item(
     notes: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -420,13 +427,13 @@ async def update_tracking_checklist_item(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     item = await project_funding_service.update_checklist_item(
         db=db,
         item_id=item_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
         label=label,
         requirement_type=requirement_type,
         is_fulfilled=is_fulfilled,
@@ -459,13 +466,13 @@ async def get_project_notifications(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     notifications = await project_funding_service.get_notifications_for_project(
         db=db,
         project_id=project_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
     )
 
     return JSONResponse(content={
@@ -480,6 +487,7 @@ async def mark_notification_as_read(
     notification_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -487,13 +495,13 @@ async def mark_notification_as_read(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     notification = await project_funding_service.mark_notification_as_read(
         db=db,
         notification_id=notification_id,
-        organization_id=tenant.organization_id,
+        organization_id=str(project.organization_id),
     )
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")

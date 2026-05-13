@@ -9,7 +9,6 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
 from core.config import get_settings
-from routes.auth_routes import verify_token
 from services.security_audit_service import (
     auth_disabled_dev_bypass,
     auth_success,
@@ -84,6 +83,7 @@ async def get_token_data(
     if not credentials:
         raise HTTPException(status_code=401, detail="Missing authorization header")
 
+    from routes.auth_routes import verify_token
     payload = verify_token(credentials.credentials)
     if not payload:
         token_invalid("decode_failed")

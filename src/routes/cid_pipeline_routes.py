@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models.core import Project
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import get_tenant_context, require_write_permission
 from schemas.auth_schema import TenantContext
 from schemas.cid_pipeline_schema import (
     CIDPipelineExecuteRequest,
@@ -49,7 +49,7 @@ async def _get_project_or_403(
     project = result.scalar_one_or_none()
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
     return project
 
@@ -84,7 +84,10 @@ async def list_pipeline_presets(
 @router.post(
     "/generate",
     response_model=CIDPipelineGenerateResponse,
-    dependencies=[Depends(require_cid_pipeline_builder_enabled)],
+    dependencies=[
+        Depends(require_cid_pipeline_builder_enabled),
+        Depends(require_write_permission),
+    ],
 )
 async def generate_pipeline(
     payload: CIDPipelineGenerateRequest,
@@ -101,7 +104,10 @@ async def generate_pipeline(
 @router.post(
     "/validate",
     response_model=CIDPipelineValidationResponse,
-    dependencies=[Depends(require_cid_pipeline_builder_enabled)],
+    dependencies=[
+        Depends(require_cid_pipeline_builder_enabled),
+        Depends(require_write_permission),
+    ],
 )
 async def validate_pipeline(
     payload: CIDPipelineValidateRequest,
@@ -117,7 +123,10 @@ async def validate_pipeline(
 @router.post(
     "/execute",
     response_model=CIDPipelineExecuteResponse,
-    dependencies=[Depends(require_cid_pipeline_builder_enabled)],
+    dependencies=[
+        Depends(require_cid_pipeline_builder_enabled),
+        Depends(require_write_permission),
+    ],
 )
 async def execute_pipeline(
     payload: CIDPipelineExecuteRequest,
@@ -138,8 +147,13 @@ async def execute_pipeline(
             },
         )
 
+    resolved_org_id = str(tenant.organization_id)
+    if project_id:
+        project = await _get_project_or_403(project_id, db, tenant)
+        resolved_org_id = str(project.organization_id)
+
     job = cid_pipeline_simulated_job_service.create_job(
-        organization_id=tenant.organization_id,
+        organization_id=resolved_org_id,
         user_id=tenant.user_id,
         project_id=project_id,
         pipeline=payload.pipeline,
@@ -158,12 +172,15 @@ async def list_pipeline_jobs(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> CIDPipelineJobListResponse:
+    resolved_org_id = str(tenant.organization_id)
     if project_id:
-        await _get_project_or_403(project_id, db, tenant)
+        project = await _get_project_or_403(project_id, db, tenant)
+        resolved_org_id = str(project.organization_id)
     jobs = cid_pipeline_simulated_job_service.list_jobs(
-        organization_id=tenant.organization_id,
+        organization_id=resolved_org_id,
         user_id=tenant.user_id,
         project_id=project_id,
+        is_global_admin=tenant.is_global_admin,
     )
     return CIDPipelineJobListResponse(count=len(jobs), jobs=jobs)
 
@@ -181,6 +198,7 @@ async def get_pipeline_job(
         job_id=job_id,
         organization_id=tenant.organization_id,
         user_id=tenant.user_id,
+        is_global_admin=tenant.is_global_admin,
     )
     if job is None:
         raise HTTPException(status_code=404, detail="CID pipeline job not found")

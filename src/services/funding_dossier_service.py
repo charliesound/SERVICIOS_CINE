@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.core import Project
 from models.production import ProductionBreakdown
+from schemas.auth_schema import TenantContext
 from services.budget_estimator_service import budget_estimator_service
 from services.funding_matcher_service import funding_matcher_service
 from services.project_funding_service import project_funding_service
@@ -97,13 +98,22 @@ class FundingDossierService:
         db: AsyncSession,
         project_id: str,
         organization_id: str,
+        tenant: TenantContext | None = None,
     ) -> dict[str, Any]:
         project_result = await db.execute(select(Project).where(Project.id == project_id))
         project = project_result.scalar_one_or_none()
         if project is None or str(project.organization_id) != str(organization_id):
             return {"error": "Project not found"}
 
-        profile = await funding_matcher_service.build_project_profile(db, project_id, organization_id)
+        profile_tenant = tenant or TenantContext(
+            user_id="system",
+            organization_id=organization_id,
+            role="admin",
+            is_admin=False,
+            is_global_admin=False,
+            auth_method="internal",
+        )
+        profile = await funding_matcher_service.build_project_profile(db, project_id, profile_tenant)
         if profile is None:
             return {"error": "Funding profile not available"}
 

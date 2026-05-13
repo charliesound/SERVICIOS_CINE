@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models.core import Organization, Project, ProjectJob, User as DBUser
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.internal_admin_schema import (
     InternalDashboardSummary,
@@ -40,8 +40,8 @@ class AdminOrganizationStats(BaseModel):
 
 
 def require_admin(tenant: TenantContext) -> None:
-    if not tenant.is_admin:
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+    if not tenant.is_global_admin:
+        raise HTTPException(status_code=403, detail="Global admin privileges required")
 
 
 async def _scalar_count(db: AsyncSession, statement) -> int:

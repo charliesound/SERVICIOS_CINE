@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
 from database import get_db
+from dependencies.tenant_context import TenantContext, require_organization, require_write_permission
 from models.matcher import MatcherJob, MatcherJobStatus
 from schemas.matcher_schema import (
     MatcherJobResponse,
@@ -22,13 +23,18 @@ async def trigger_matcher_job(
     project_id: str = Path(..., description="Project ID"),
     organization_id: str = Query(..., description="Organization ID for tenant safety"),
     request: MatcherTriggerRequest = MatcherTriggerRequest(),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(require_organization),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     """Manually trigger a matcher job for a project."""
     from services.queue_service import queue_service
     from models.matcher import MatcherJob
     import hashlib
     import json
+    
+    if not tenant.is_global_admin and organization_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Organization ID mismatch")
     
     # Verify project belongs to organization (tenant safety)
     from models.core import Project
@@ -153,11 +159,15 @@ async def trigger_matcher_job(
 async def get_matcher_status(
     project_id: str = Path(..., description="Project ID"),
     organization_id: str = Query(..., description="Organization ID for tenant safety"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(require_organization),
 ):
     """Get the latest matcher job status for a project."""
     from sqlalchemy import select
     from models.matcher import MatcherJob
+    
+    if not tenant.is_global_admin and organization_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Organization ID mismatch")
     
     # Verify project belongs to organization (tenant safety)
     from models.core import Project
@@ -227,11 +237,15 @@ async def get_matcher_jobs(
     organization_id: str = Query(..., description="Organization ID for tenant safety"),
     limit: int = Query(50, ge=1, le=100, description="Maximum number of jobs to return"),
     offset: int = Query(0, ge=0, description="Number of jobs to skip"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(require_organization),
 ):
     """Get matcher job history for a project."""
     from sqlalchemy import select
     from models.matcher import MatcherJob
+    
+    if not tenant.is_global_admin and organization_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Organization ID mismatch")
     
     # Verify project belongs to organization (tenant safety)
     from models.core import Project

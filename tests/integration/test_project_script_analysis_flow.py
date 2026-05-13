@@ -38,7 +38,13 @@ PROJECT_ID = "project-script-analysis-flow-001"
 
 
 def _auth_headers(user_id: str, email: str) -> dict[str, str]:
-    token = create_access_token({"sub": user_id, "email": email})
+    token = create_access_token({
+        "sub": user_id,
+        "email": email,
+        "organization_id": ORG_ID,
+        "roles": ["admin"],
+        "scopes": ["projects:read", "projects:write", "comfyui:read", "comfyui:health"],
+    })
     return {"Authorization": f"Bearer {token}"}
 
 

@@ -638,7 +638,7 @@ class StoryboardService:
         project = result.scalar_one_or_none()
         if project is None:
             raise HTTPException(status_code=404, detail="Project not found")
-        if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+        if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
             raise HTTPException(status_code=403, detail="Project not accessible for tenant")
         return project
 

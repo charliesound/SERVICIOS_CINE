@@ -20,6 +20,7 @@ from models.production import (
     ProjectFundingMatch,
     ProjectFundingSource,
 )
+from schemas.auth_schema import TenantContext
 from services.project_document_rag_service import project_document_rag_service
 
 
@@ -224,11 +225,16 @@ class FundingMatcherService:
         self,
         db: AsyncSession,
         project_id: str,
-        organization_id: str,
+        tenant: TenantContext,
     ) -> dict[str, Any] | None:
         project_result = await db.execute(select(Project).where(Project.id == project_id))
         project = project_result.scalar_one_or_none()
-        if project is None or str(project.organization_id) != str(organization_id):
+        
+        if project is None:
+            return None
+            
+        # Hardened multi-tenant check
+        if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
             return None
 
         breakdown_result = await db.execute(
@@ -248,7 +254,7 @@ class FundingMatcherService:
         private_sources_result = await db.execute(
             select(ProjectFundingSource).where(
                 ProjectFundingSource.project_id == project_id,
-                ProjectFundingSource.organization_id == organization_id,
+                ProjectFundingSource.organization_id == project.organization_id,
             )
         )
         private_sources = list(private_sources_result.scalars().all())
@@ -1052,7 +1058,18 @@ class FundingMatcherService:
         project_id: str,
         organization_id: str,
     ) -> dict[str, Any]:
-        profile = await self.build_project_profile(db, project_id, organization_id)
+        from schemas.auth_schema import TenantContext
+        profile = await self.build_project_profile(
+            db, project_id,
+            TenantContext(
+                user_id="compute_matches",
+                organization_id=organization_id,
+                role="admin",
+                is_admin=False,
+                is_global_admin=False,
+                auth_method="internal",
+            ),
+        )
         if profile is None:
             return {
                 "project_id": project_id,
@@ -1097,7 +1114,18 @@ class FundingMatcherService:
         project_id: str,
         organization_id: str,
     ) -> dict[str, Any]:
-        profile = await self.build_project_profile(db, project_id, organization_id)
+        from schemas.auth_schema import TenantContext
+        profile = await self.build_project_profile(
+            db, project_id,
+            TenantContext(
+                user_id="compute_rag_matches",
+                organization_id=organization_id,
+                role="admin",
+                is_admin=False,
+                is_global_admin=False,
+                auth_method="internal",
+            ),
+        )
         if profile is None:
             return {
                 "project_id": project_id,

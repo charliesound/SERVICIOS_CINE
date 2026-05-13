@@ -15,7 +15,7 @@ from models.core import Project
 from models.delivery import Deliverable
 from models.postproduction import Take
 from models.storage import MediaAsset, StorageSource
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import get_tenant_context, require_write_permission
 from schemas.auth_schema import TenantContext
 from schemas.editorial_schema import (
     AssemblyCutCreateResponse,
@@ -55,7 +55,7 @@ async def _get_project_for_tenant(db: AsyncSession, project_id: str, tenant: Ten
     project = result.scalar_one_or_none()
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
     return project
 
@@ -397,7 +397,7 @@ async def list_editorial_takes(
     return EditorialTakeListResponse(takes=[_take_response(take) for take in takes])
 
 
-@router.post("/{project_id}/editorial/reconcile", response_model=EditorialReconcileResponse)
+@router.post("/{project_id}/editorial/reconcile", response_model=EditorialReconcileResponse, dependencies=[Depends(require_write_permission)])
 async def reconcile_editorial_material(
     project_id: str,
     db: AsyncSession = Depends(get_db),
@@ -408,7 +408,7 @@ async def reconcile_editorial_material(
     return EditorialReconcileResponse(**payload)
 
 
-@router.post("/{project_id}/editorial/score", response_model=EditorialScoreResponse)
+@router.post("/{project_id}/editorial/score", response_model=EditorialScoreResponse, dependencies=[Depends(require_write_permission)])
 async def score_editorial_takes(
     project_id: str,
     db: AsyncSession = Depends(get_db),
@@ -433,7 +433,7 @@ async def get_editorial_audio_metadata(
     )
 
 
-@router.post("/{project_id}/editorial/audio-metadata/scan", response_model=EditorialAudioMetadataScanResponse)
+@router.post("/{project_id}/editorial/audio-metadata/scan", response_model=EditorialAudioMetadataScanResponse, dependencies=[Depends(require_write_permission)])
 async def scan_editorial_audio_metadata(
     project_id: str,
     db: AsyncSession = Depends(get_db),
@@ -480,7 +480,7 @@ async def list_recommended_takes(
     )
 
 
-@router.post("/{project_id}/editorial/assembly", response_model=AssemblyCutCreateResponse)
+@router.post("/{project_id}/editorial/assembly", response_model=AssemblyCutCreateResponse, dependencies=[Depends(require_write_permission)])
 async def create_editorial_assembly(
     project_id: str,
     db: AsyncSession = Depends(get_db),
@@ -593,7 +593,7 @@ async def get_editorial_media_relink_report(
     return EditorialMediaRelinkReportResponse(**export_bundle["media_relink_report"])
 
 
-@router.post("/{project_id}/editorial/export/package")
+@router.post("/{project_id}/editorial/export/package", dependencies=[Depends(require_write_permission)])
 async def export_editorial_package(
     project_id: str,
     db: AsyncSession = Depends(get_db),
@@ -648,7 +648,7 @@ async def export_editorial_package(
     )
 
 
-@router.post("/{project_id}/editorial/export/davinci-package")
+@router.post("/{project_id}/editorial/export/davinci-package", dependencies=[Depends(require_write_permission)])
 async def export_davinci_platform_package(
     project_id: str,
     request: DavinciPlatformExportRequest,

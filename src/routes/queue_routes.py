@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime
 
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import get_tenant_context, require_write_permission
 from schemas.auth_schema import TenantContext
 from schemas.queue_schema import QueueItemResponse, FullQueueStatus
 from services.queue_service import queue_service, QueueStatus
@@ -14,7 +14,7 @@ def _resolve_owned_queue_item(job_id: str, tenant: TenantContext):
     item = queue_service.get_status(job_id)
     if not item:
         raise HTTPException(status_code=404, detail="Job not found")
-    if not tenant.is_admin and item.user_id != tenant.user_id:
+    if not tenant.is_global_admin and item.user_id != tenant.user_id:
         raise HTTPException(status_code=404, detail="Job not found")
     return item
 
@@ -22,7 +22,7 @@ def _resolve_owned_queue_item(job_id: str, tenant: TenantContext):
 @router.get("/status", response_model=FullQueueStatus)
 async def get_queue_status(tenant: TenantContext = Depends(get_tenant_context)):
     raw_status = queue_service.get_all_status(
-        None if tenant.is_admin else tenant.user_id
+        None if tenant.is_global_admin else tenant.user_id
     )
     status = {
         backend: {"backend": backend, **details}
@@ -58,6 +58,7 @@ async def get_job_queue_status(
 async def cancel_job(
     job_id: str,
     tenant: TenantContext = Depends(get_tenant_context),
+    _: None = Depends(require_write_permission),
 ):
     item = _resolve_owned_queue_item(job_id, tenant)
 
@@ -79,6 +80,7 @@ async def cancel_job(
 async def retry_job(
     job_id: str,
     tenant: TenantContext = Depends(get_tenant_context),
+    _: None = Depends(require_write_permission),
 ):
     item = _resolve_owned_queue_item(job_id, tenant)
 

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import AsyncSessionLocal, get_db
 from models.core import Project, ProjectJob
 from models.production import ProductionBreakdown
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import get_tenant_context, require_write_permission
 from schemas.auth_schema import TenantContext
 from services.funding_dossier_service import funding_dossier_service
 from services.funding_matcher_service import funding_matcher_service
@@ -210,7 +210,7 @@ async def _get_project_or_403(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
     return project
 
@@ -322,7 +322,7 @@ async def get_funding_dossier(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     organization_id = str(project.organization_id)
@@ -345,7 +345,7 @@ async def export_funding_dossier_pdf(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     organization_id = str(project.organization_id)
@@ -373,6 +373,7 @@ async def persist_funding_dossier_pdf(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -380,7 +381,7 @@ async def persist_funding_dossier_pdf(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     organization_id = str(project.organization_id)
@@ -438,6 +439,7 @@ async def recompute_funding_matches(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -445,7 +447,7 @@ async def recompute_funding_matches(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     organization_id = str(project.organization_id)
@@ -480,7 +482,7 @@ async def get_funding_matches(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     organization_id = str(project.organization_id)
@@ -519,6 +521,7 @@ async def recompute_funding_matches_rag(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     project = await _get_project_or_403(project_id, db, tenant)
     organization_id = str(project.organization_id)
@@ -687,7 +690,7 @@ async def get_funding_checklist(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     organization_id = str(project.organization_id)
@@ -708,11 +711,10 @@ async def get_funding_profile(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
-    organization_id = str(project.organization_id)
-    profile = await funding_matcher_service.build_project_profile(db, project_id, organization_id)
+    profile = await funding_matcher_service.build_project_profile(db, project_id, tenant)
     if profile is None:
         raise HTTPException(status_code=404, detail="Funding profile not available")
 
@@ -725,6 +727,7 @@ async def estimate_budget(
     scenario_type: str = "standard",
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write_check: TenantContext = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -732,7 +735,7 @@ async def estimate_budget(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_admin and str(project.organization_id) != str(tenant.organization_id):
+    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=403, detail="Project not accessible for tenant")
 
     breakdown_result = await db.execute(

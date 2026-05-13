@@ -74,16 +74,26 @@ class CIDPipelineSimulatedJobService:
         organization_id: str,
         user_id: str,
         project_id: Optional[str] = None,
+        is_global_admin: bool = False,
     ) -> list[CIDPipelineJobResponse]:
         with self._lock:
             jobs = list(self._jobs.values())
-        filtered = [
-            deepcopy(job)
-            for job in jobs
-            if job.organization_id == organization_id
-            and job.user_id == user_id
-            and (project_id is None or job.project_id == project_id)
-        ]
+        
+        filtered = []
+        for job in jobs:
+            # Global Admin bypasses user/org filters
+            # If a project_id is provided, we still filter by it for precision
+            if is_global_admin:
+                if project_id is None or job.project_id == project_id:
+                    filtered.append(deepcopy(job))
+                continue
+            
+            # Normal user filter
+            if (job.organization_id == organization_id and 
+                job.user_id == user_id and 
+                (project_id is None or job.project_id == project_id)):
+                filtered.append(deepcopy(job))
+                
         filtered.sort(key=lambda item: (item.created_at, item.job_id), reverse=True)
         return filtered
 
@@ -93,11 +103,16 @@ class CIDPipelineSimulatedJobService:
         job_id: str,
         organization_id: str,
         user_id: str,
+        is_global_admin: bool = False,
     ) -> Optional[CIDPipelineJobResponse]:
         with self._lock:
             job = self._jobs.get(job_id)
         if job is None:
             return None
+        
+        if is_global_admin:
+            return deepcopy(job)
+            
         if job.organization_id != organization_id or job.user_id != user_id:
             return None
         return deepcopy(job)

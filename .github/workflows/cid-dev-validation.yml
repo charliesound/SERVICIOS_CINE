@@ -1,0 +1,66 @@
+name: CID Dev Validation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  backend-and-frontend-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt || true
+          pip install -r requirements.txt || true
+
+      - name: Python compile critical CID modules
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          python -m py_compile \
+            src/routes/comfyui_instance_routes.py \
+            src/services/comfyui_instance_registry_service.py \
+            src/routes/storyboard_routes.py \
+            src/schemas/storyboard_schema.py \
+            src/routes/app_registry_routes.py \
+            src/services/app_registry.py \
+            src/routes/solutions_routes.py \
+            src/services/solutions_service.py \
+            src/routes/comfysearch_routes.py \
+            src/services/comfy_search_service.py \
+            src/routes/dubbing_bridge_routes.py
+
+      - name: Run ComfyUI registry unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          python -m pytest tests/unit/test_comfyui_instance_registry.py \
+                           tests/unit/test_comfyui_instance_routes.py \
+                           -q
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies
+        working-directory: src_frontend
+        run: npm ci || npm install
+
+      - name: Build frontend
+        working-directory: src_frontend
+        run: npm run build

@@ -110,8 +110,8 @@ jobs:
           OPENAI_API_KEY=
           ENV
 
-          # The ai-dubbing development compose references env_file: .env.
-          # CI must create a temporary local .env from the committed example.
+          # ai-dubbing development compose uses env_file: .env.
+          # GitHub Actions does not have local .env files, so create a temporary one.
           cp ai-dubbing-legal-studio/.env.example ai-dubbing-legal-studio/.env
 
           docker compose -f comfysearch/docker-compose.yml config >/tmp/comfysearch.compose.yml

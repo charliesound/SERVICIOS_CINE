@@ -88,3 +88,6 @@ backup_patches/
 *.log
 data/solutions_registry.json
 data/smoke_tenant_A/
+
+# Local Docker runtime data
+/deploy/docker/data/

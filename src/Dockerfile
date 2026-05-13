@@ -4,6 +4,8 @@ WORKDIR /app
 
 ENV PYTHONPATH=/app
 
+RUN ln -s /app /app/src
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     libgdk-pixbuf-2.0-0 \

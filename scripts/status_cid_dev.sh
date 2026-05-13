@@ -24,38 +24,36 @@ fi
 
 echo
 echo "Backend modules:"
-curl -s http://127.0.0.1:8010/api/apps | python - <<'PY' || true
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    print("apps:", data.get("total"))
-except Exception:
-    print("apps: unavailable")
-PY
 
-curl -s http://127.0.0.1:8010/api/solutions | python - <<'PY' || true
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    print("solutions:", len(data))
-except Exception:
-    print("solutions: unavailable")
-PY
+if curl -fsS http://127.0.0.1:8010/api/apps >/tmp/cid_apps.json 2>/dev/null; then
+  echo -n "apps: "
+  jq -r '.total // "unavailable"' /tmp/cid_apps.json
+else
+  echo "apps: unavailable"
+fi
 
-curl -s http://127.0.0.1:8010/api/v1/comfyui/instances | python - <<'PY' || true
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    print("comfyui_instances:", len(data))
-except Exception:
-    print("comfyui_instances: unavailable")
-PY
+if curl -fsS http://127.0.0.1:8010/api/solutions >/tmp/cid_solutions.json 2>/dev/null; then
+  echo -n "solutions: "
+  jq -r 'length' /tmp/cid_solutions.json
+else
+  echo "solutions: unavailable"
+fi
 
-curl -s http://127.0.0.1:8010/api/comfysearch/scan | python - <<'PY' || true
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    print("comfysearch_workflows:", data.get("total"))
-except Exception:
-    print("comfysearch_workflows: unavailable")
-PY
+if curl -fsS http://127.0.0.1:8010/api/v1/comfyui/instances >/tmp/cid_comfyui_instances.json 2>/dev/null; then
+  echo -n "comfyui_instances: "
+  jq -r 'length' /tmp/cid_comfyui_instances.json
+else
+  echo "comfyui_instances: unavailable"
+fi
+
+if curl -fsS http://127.0.0.1:8010/api/comfysearch/scan >/tmp/cid_comfysearch_scan.json 2>/dev/null; then
+  echo -n "comfysearch_workflows: "
+  jq -r '.total // "unavailable"' /tmp/cid_comfysearch_scan.json
+else
+  echo "comfysearch_workflows: unavailable"
+fi
+
+rm -f /tmp/cid_apps.json \
+      /tmp/cid_solutions.json \
+      /tmp/cid_comfyui_instances.json \
+      /tmp/cid_comfysearch_scan.json

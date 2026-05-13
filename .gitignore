@@ -82,3 +82,9 @@ src_frontend/public/landing-media/candidates/
 *.sqlite-shm
 *.sqlite3-wal
 *.sqlite3-shm
+exports/
+infra/backups/
+backup_patches/
+*.log
+data/solutions_registry.json
+data/smoke_tenant_A/

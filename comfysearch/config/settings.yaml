@@ -1,0 +1,17 @@
+qdrant:
+  host: localhost
+  port: 6333
+  collection: comfy_workflows
+
+embedding:
+  provider: sentence_transformers
+  model: all-MiniLM-L6-v2
+
+comfyui:
+  still: http://127.0.0.1:8188
+  video: http://127.0.0.1:8189
+  dubbing: http://127.0.0.1:8190
+  lab: http://127.0.0.1:8191
+
+search:
+  top_k: 8

@@ -86,6 +86,17 @@ class Settings(BaseSettings):
     # ── Instance config ──────────────────────────────────────────────────
     instance_config_path: str = ""
 
+    # ── ComfyUI Instance Registry ────────────────────────────────────────
+    comfyui_instances_config: str = ""
+    comfyui_image_url: str = "http://127.0.0.1:8188"
+    comfyui_video_cine_url: str = "http://127.0.0.1:8189"
+    comfyui_dubbing_audio_url: str = "http://127.0.0.1:8190"
+    comfyui_restoration_url: str = "http://127.0.0.1:8191"
+    comfyui_3d_url: str = "http://127.0.0.1:8192"
+    comfyui_timeout_seconds: int = 120
+    comfyui_health_timeout_seconds: int = 5
+    comfyui_poll_interval_seconds: int = 2
+
     # ── Fallback / legacy key (read from APP_SECRET_KEY) ─────────────────
     app_secret_key: str = ""
 

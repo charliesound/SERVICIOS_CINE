@@ -1,0 +1,52 @@
+{
+  "app_id": "cid-budget",
+  "name": "CID Budget Estimator",
+  "version": "1.0.0",
+  "description": "Presupuestación inteligente para producción audiovisual. Desglose por partidas, escenas y departamentos con estimaciones IA.",
+  "category": "produccion",
+  "icon": "calculator",
+  "pricing": {
+    "standalone_monthly_eur": 19,
+    "included_in_cid": true,
+    "trial_days": 30
+  },
+  "entrypoints": {
+    "api": {
+      "url": "http://localhost:8500",
+      "health_endpoint": "/health"
+    },
+    "frontend": {
+      "url": "http://localhost:8501",
+      "type": "embed",
+      "route": "/"
+    },
+    "cid_integration": {
+      "backend_module": "src.services.budget_estimator_service",
+      "api_prefix": "/api/budget",
+      "frontend_route": "/projects/:projectId/budget",
+      "sidebar_group": "produccion",
+      "scope": "project"
+    }
+  },
+  "capabilities": [
+    "budget_estimation",
+    "line_item_breakdown",
+    "department_costs",
+    "scenario_comparison",
+    "pdf_export"
+  ],
+  "requirements": {
+    "docker": true,
+    "memory_gb": 1,
+    "python": "3.12"
+  },
+  "auth": {
+    "type": "jwt_shared",
+    "sync_users": true
+  },
+  "endpoints": [
+    {"method": "GET", "path": "/api/budget/projects/{id}", "description": "Presupuesto del proyecto"},
+    {"method": "POST", "path": "/api/budget/projects/{id}/estimate", "description": "Estimar presupuesto"},
+    {"method": "GET", "path": "/api/budget/templates", "description": "Plantillas de presupuesto"}
+  ]
+}

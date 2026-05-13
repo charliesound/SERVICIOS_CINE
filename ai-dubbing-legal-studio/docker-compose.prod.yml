@@ -1,0 +1,129 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dubbing
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: dubbing_legal
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - dubbing-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dubbing"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redisdata:/data
+    networks:
+      - dubbing-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-dubbing}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY is required}
+    command: server /data --console-address ":9001"
+    volumes:
+      - miniodata:/data
+    networks:
+      - dubbing-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://dubbing:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/dubbing_legal
+      - REDIS_URL=redis://redis:6379/0
+      - STORAGE_PROVIDER=minio
+      - MINIO_ENDPOINT=minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data/storage:/data/storage
+    networks:
+      - dubbing-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://dubbing:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/dubbing_legal
+      - REDIS_URL=redis://redis:6379/0
+      - STORAGE_PROVIDER=minio
+      - MINIO_ENDPOINT=minio:9000
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./data/storage:/data/storage
+    networks:
+      - dubbing-net
+    restart: unless-stopped
+    command: python -m app.workers.main_worker
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    networks:
+      - dubbing-net
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - dubbing-net
+    restart: unless-stopped
+
+networks:
+  dubbing-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:

@@ -1,0 +1,10 @@
+# Edit these paths for each local/production environment.
+roots:
+  - /opt/SERVICIOS_CINE/src/comfyui_workflows
+  - /mnt/g/COMFYUI_HUB/workflows
+  - /home/harliesound/ai/workflow_factory_repo/workflows/templates
+extensions:
+  - .json
+ignore:
+  - /archive/
+  - /deprecated/

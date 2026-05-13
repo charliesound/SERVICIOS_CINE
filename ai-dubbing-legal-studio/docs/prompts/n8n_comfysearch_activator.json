@@ -1,0 +1,51 @@
+{
+  "name": "ComfySearch + n8n → CID Solution Activator",
+  "nodes": [
+    {
+      "id": "webhook-trigger",
+      "name": "Webhook: Petición de solución",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {"path": "activate-solution", "method": "POST"},
+      "position": [0, 300]
+    },
+    {
+      "id": "comfysearch-lookup",
+      "name": "ComfySearch: Buscar workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/comfysearch/search",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "query", "value": "{{$json.need}}"},
+            {"name": "top_k", "value": 1}
+          ]
+        }
+      },
+      "position": [200, 300]
+    },
+    {
+      "id": "register-solution",
+      "name": "Registrar en CID como solución activa",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/solutions",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "name", "value": "{{$json.name}}"},
+            {"name": "workflow_id", "value": "{{$json.workflow_id}}"},
+            {"name": "backend", "value": "{{$json.backend}}"}
+          ]
+        }
+      },
+      "position": [400, 300]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {"output": [{"node": "comfysearch-lookup", "index": 0}]},
+    "comfysearch-lookup": {"output": [{"node": "register-solution", "index": 0}]}
+  }
+}

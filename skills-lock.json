@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "skills": {
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "9e1c8b3103f92fa8092568a44fe64858de7c5c9dc65ce4bea8f168080e889cfd"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
+    },
+    "n8n-code-javascript": {
+      "source": "czlonkowski/n8n-skills",
+      "sourceType": "github",
+      "skillPath": "skills/n8n-code-javascript/SKILL.md",
+      "computedHash": "8138c4ce965a2010bf53daa751976aa37a4d7d9df75b0848a6db328ba2c9f87a"
+    },
+    "n8n-mcp-tools-expert": {
+      "source": "czlonkowski/n8n-skills",
+      "sourceType": "github",
+      "skillPath": "skills/n8n-mcp-tools-expert/SKILL.md",
+      "computedHash": "c6126a19a8f03cce4d2fb46edf29a87448b3b90993b53334a295e2bb6adf6e84"
+    },
+    "n8n-workflow-patterns": {
+      "source": "czlonkowski/n8n-skills",
+      "sourceType": "github",
+      "skillPath": "skills/n8n-workflow-patterns/SKILL.md",
+      "computedHash": "cf28d3c39ca33cc380e065e5c31dbd7dd83cc8d154b1bf1797353cee6b84db47"
+    },
+    "n8n:content-design": {
+      "source": "n8n-io/n8n",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/content-design/SKILL.md",
+      "computedHash": "e29cb30825a462dcdfc31820bf30992863ff6035c37272b81175961ab5ac85de"
+    },
+    "n8n:conventions": {
+      "source": "n8n-io/n8n",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/conventions/SKILL.md",
+      "computedHash": "9be7383c21d8fe19824fcff9fe91c58f61122d5f08589670741c3b4375e9167a"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-best-practices/SKILL.md",
+      "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "f3bc47f890f42a44db1007ab390709ec368e4b8c089baee6b0007182236ac474"
+    }
+  }
+}

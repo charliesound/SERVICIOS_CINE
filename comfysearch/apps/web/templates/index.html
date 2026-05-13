@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>ComfySearch — Buscador semántico de workflows</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #111827;
+      --border: #1e293b;
+      --text: #e2e8f0;
+      --text-dim: #64748b;
+      --accent: #f59e0b;
+      --accent-hover: #d97706;
+      --red: #dc2626;
+      --green: #16a34a;
+      --blue: #3b82f6;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .header span { color: var(--accent); }
+    .header .badge {
+      font-size: 12px;
+      color: var(--text-dim);
+      background: rgba(255,255,255,0.05);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .search-section {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+    .search-box {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .search-box input {
+      flex: 1;
+      padding: 14px 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-box input:focus { border-color: var(--accent); }
+    .search-box input::placeholder { color: var(--text-dim); }
+    .search-box button {
+      padding: 14px 32px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .search-box button:hover { background: var(--accent-hover); }
+    .filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filters button {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filters button:hover, .filters button.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .results { margin-top: 24px; }
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .result-card:hover { border-color: rgba(245,158,11,0.3); }
+    .result-card .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+    .result-card .name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .result-card .score {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--accent);
+      background: rgba(245,158,11,0.1);
+      padding: 2px 10px;
+      border-radius: 6px;
+    }
+    .result-card .summary {
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .result-card .meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .tag {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .tag.backend-still { border-color: var(--blue); color: var(--blue); }
+    .tag.backend-video { border-color: #a855f7; color: #a855f7; }
+    .tag.backend-dubbing { border-color: var(--green); color: var(--green); }
+    .tag.backend-lab { border-color: var(--accent); color: var(--accent); }
+    .tag.phase { border-color: var(--accent); color: var(--accent); }
+    .result-card .actions {
+      display: flex;
+      gap: 8px;
+    }
+    .result-card .actions button, .result-card .actions a {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-execute {
+      background: var(--accent);
+      color: #000;
+      border: none;
+    }
+    .btn-execute:hover { background: var(--accent-hover); }
+    .btn-json {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-json:hover { border-color: var(--accent); color: var(--accent); }
+    .result-card .path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      word-break: break-all;
+    }
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-dim);
+    }
+    .empty h3 { font-size: 20px; margin-bottom: 8px; color: var(--text); }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #status { display: none; }
+    #status.show { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--text-dim); }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #fff;
+      z-index: 100;
+      display: none;
+    }
+    .toast.show { display: block; }
+    .toast.success { background: var(--green); }
+    .toast.error { background: var(--red); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Comfy<span>Search</span></h1>
+    <span class="badge" id="header-count">Workflows indexados: --</span>
+  </div>
+
+  <div class="search-section">
+    <div class="search-box">
+      <input id="query" placeholder='Ej: "contraplano dramático LTXV", "storyboard SDXL", "restauración cartoon 4K", "doblaje con clonación de voz"...' />
+      <button onclick="runSearch()">Buscar</button>
+    </div>
+    <div class="filters" id="filters">
+      <button onclick="setFilter('')" class="active">Todos</button>
+      <button onclick="setFilter('still')">Still</button>
+      <button onclick="setFilter('video')">Video</button>
+      <button onclick="setFilter('dubbing')">Dubbing</button>
+      <button onclick="setFilter('lab')">Lab</button>
+    </div>
+    <div id="status"></div>
+    <div class="results" id="results">
+      <div class="empty">
+        <h3>🔍 Busca workflows cinematográficos</h3>
+        <p>Escribe en lenguaje natural lo que necesitas producir</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let currentFilter = '';
+
+    async function fetchStats() {
+      try {
+        const r = await fetch('/stats');
+        const data = await r.json();
+        document.getElementById('header-count').textContent = 'Indexados: ' + data.indexed + ' workflows';
+      } catch {}
+    }
+    fetchStats();
+
+    function setFilter(f) {
+      currentFilter = f;
+      document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      const q = document.getElementById('query').value;
+      if (q) runSearch();
+    }
+
+    async function runSearch() {
+      const query = document.getElementById('query').value;
+      const status = document.getElementById('status');
+      const results = document.getElementById('results');
+
+      if (!query.trim()) return;
+
+      status.className = 'show';
+      status.innerHTML = '<div class="spinner"></div> Buscando...';
+
+      const body = { query, top_k: 12 };
+      if (currentFilter) body.filters = { backend: currentFilter };
+
+      try {
+        const res = await fetch('/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        status.className = '';
+
+        if (data.results.length === 0) {
+          results.innerHTML = '<div class="empty"><h3>Sin resultados</h3><p>Prueba con otros términos</p></div>';
+          return;
+        }
+
+        results.innerHTML = data.results.map(r => `
+          <div class="result-card">
+            <div class="top">
+              <div class="name">${r.name}</div>
+              <div class="score">${r.score.toFixed(3)}</div>
+            </div>
+            <div class="summary">${r.summary || ''}</div>
+            ${r.cinema_use_case ? `<div class="summary" style="color: #94a3b8; font-style: italic;">🎬 ${r.cinema_use_case}</div>` : ''}
+            <div class="meta">
+              <span class="tag backend-${r.backend}">${r.backend}</span>
+              <span class="tag phase">${r.phase || 'general'}</span>
+              ${(r.tags || []).slice(0, 8).map(t => `<span class="tag">${t}</span>`).join('')}
+              ${(r.models || []).map(m => `<span class="tag" style="border-color:#3b82f6;color:#3b82f6">${m}</span>`).join('')}
+            </div>
+            <div style="font-size:13px;color:var(--text-dim);margin-bottom:12px">
+              <strong>Nodos (${(r.nodes||[]).length}):</strong> ${(r.nodes||[]).slice(0, 8).join(', ')}${(r.nodes||[]).length > 8 ? '...' : ''}
+            </div>
+            <div class="actions">
+              <button class="btn-execute" onclick="runWorkflow('${r.id}', '${r.backend}')">▶ Ejecutar en ComfyUI</button>
+              <button class="btn-json" onclick="viewJSON('${r.id}')">📄 Ver JSON</button>
+            </div>
+            <div class="path">${r.path || ''}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        status.className = '';
+        results.innerHTML = '<div class="empty"><h3>Error de conexión</h3><p>¿Está la API corriendo?</p></div>';
+      }
+    }
+
+    async function runWorkflow(id, backend) {
+      showToast('Enviando a ComfyUI (' + backend + ')...', '');
+      try {
+        const res = await fetch('/run/' + id, { method: 'POST' });
+        const data = await res.json();
+        if (data.error) { showToast('Error: ' + data.error, 'error'); return; }
+        showToast('✅ Prompt enviado. ID: ' + (data.prompt_id || 'ok'), 'success');
+      } catch (err) {
+        showToast('Error de conexión con ComfyUI', 'error');
+      }
+    }
+
+    async function viewJSON(id) {
+      try {
+        const res = await fetch('/workflow/' + id);
+        const data = await res.json();
+        const win = window.open('', '_blank');
+        win.document.write('<pre style="background:#0a0e17;color:#e2e8f0;padding:20px;overflow:auto;height:100vh">' + JSON.stringify(data, null, 2) + '</pre>');
+      } catch {}
+    }
+
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show ' + (type || '');
+      setTimeout(() => t.className = 'toast', 3000);
+    }
+
+    document.getElementById('query').addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+  </script>
+</body>
+</html>

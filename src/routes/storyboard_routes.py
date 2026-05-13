@@ -327,6 +327,10 @@ async def regenerate_storyboard_sequence(
         overwrite=True,
         version=result["version"],
         generated_assets=result.get("generated_assets", []),
+        total_shots=result.get("total_shots", 0),
+        total_scenes=result.get("total_scenes", 0),
+        render_jobs=result.get("render_jobs", []),
+        render_errors=result.get("render_errors", []),
         created_at=result["created_at"],
     )
 

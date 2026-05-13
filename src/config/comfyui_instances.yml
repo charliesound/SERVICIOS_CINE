@@ -1,0 +1,40 @@
+instances:
+  image:
+    name: "Image"
+    base_url: "http://127.0.0.1:8188"
+    port: 8188
+    enabled: true
+    task_types: ["image", "storyboard", "still"]
+    health_endpoint: "/system_stats"
+
+  video_cine:
+    name: "Video/Cine"
+    base_url: "http://127.0.0.1:8189"
+    port: 8189
+    enabled: true
+    task_types: ["video", "cine", "previz", "i2v", "t2v"]
+    health_endpoint: "/system_stats"
+
+  dubbing_audio:
+    name: "DubbingAudio"
+    base_url: "http://127.0.0.1:8190"
+    port: 8190
+    enabled: true
+    task_types: ["dubbing", "audio", "lipsync", "voice"]
+    health_endpoint: "/system_stats"
+
+  restoration:
+    name: "Restoration"
+    base_url: "http://127.0.0.1:8191"
+    port: 8191
+    enabled: true
+    task_types: ["restoration", "upscale", "cleanup", "repair"]
+    health_endpoint: "/system_stats"
+
+  three_d:
+    name: "3D"
+    base_url: "http://127.0.0.1:8192"
+    port: 8192
+    enabled: true
+    task_types: ["3d", "depth", "mesh", "scene"]
+    health_endpoint: "/system_stats"

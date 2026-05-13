@@ -1,0 +1,52 @@
+{
+  "app_id": "comfysearch",
+  "name": "ComfySearch",
+  "version": "1.0.0",
+  "description": "Buscador semántico de workflows ComfyUI. Encuentra el workflow exacto para cada necesidad escribiendo en lenguaje natural.",
+  "category": "produccion",
+  "icon": "search",
+  "pricing": {
+    "standalone_monthly_eur": 29,
+    "included_in_cid": true,
+    "trial_days": 14
+  },
+  "entrypoints": {
+    "api": {
+      "url": "http://localhost:5055",
+      "health_endpoint": "/health"
+    },
+    "frontend": {
+      "url": "http://localhost:5055",
+      "type": "embed",
+      "route": "/"
+    },
+    "cid_integration": {
+      "backend_module": "src.services.comfy_search_service",
+      "api_prefix": "/api/comfysearch",
+      "frontend_route": "/apps/comfysearch",
+      "sidebar_group": "produccion"
+    }
+  },
+  "capabilities": [
+    "workflow_search",
+    "semantic_search",
+    "comfyui_execution",
+    "workflow_indexing"
+  ],
+  "requirements": {
+    "docker": true,
+    "qdrant": true,
+    "memory_gb": 2,
+    "python": "3.12"
+  },
+  "auth": {
+    "type": "jwt_shared",
+    "sync_users": true
+  },
+  "endpoints": [
+    {"method": "POST", "path": "/search", "description": "Búsqueda semántica"},
+    {"method": "GET", "path": "/workflow/{id}", "description": "Detalle del workflow"},
+    {"method": "POST", "path": "/run/{id}", "description": "Ejecutar en ComfyUI"},
+    {"method": "POST", "path": "/reindex", "description": "Reindexar workflows"}
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "name": "AI Dubbing Pipeline — Orchestrador completo",
+  "nodes": [
+    {
+      "id": "webhook-trigger",
+      "name": "Webhook: Nuevo Job de Doblaje",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "dubbing-job",
+        "method": "POST",
+        "options": {}
+      },
+      "position": [0, 300]
+    },
+    {
+      "id": "http-validate-contract",
+      "name": "Validar Contrato Legal",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/contracts/{{$json.contract_id}}/validate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "mode", "value": "{{$json.mode}}"},
+            {"name": "language", "value": "{{$json.target_language}}"},
+            {"name": "territory", "value": "{{$json.territory}}"},
+            {"name": "usage_type", "value": "{{$json.usage_type}}"}
+          ]
+        }
+      },
+      "position": [200, 300]
+    },
+    {
+      "id": "switch-legal",
+      "name": "¿Validación legal OK?",
+      "type": "n8n-nodes-base.switch",
+      "parameters": {
+        "dataType": "boolean",
+        "value1": "{{$json.blocked}}",
+        "rules": [
+          {"value": "false", "output": "Contrato válido"},
+          {"value": "true", "output": "Bloqueado"}
+        ]
+      },
+      "position": [400, 300]
+    },
+    {
+      "id": "slack-legal-block",
+      "name": "Notificar Bloqueo Legal",
+      "type": "n8n-nodes-base.slack",
+      "parameters": {
+        "channel": "#legal-alerts",
+        "text": "⛔ JOB BLOQUEADO: Contrato {{$json.contract_id}} - {{$json.reason}}"
+      },
+      "position": [600, 100]
+    },
+    {
+      "id": "http-start-job",
+      "name": "Iniciar Job en Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/dubbing-jobs/{{$json.job_id}}/start"
+      },
+      "position": [600, 500]
+    },
+    {
+      "id": "http-get-status",
+      "name": "Poll: Estado del Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "http://backend:8000/api/dubbing-jobs/{{$json.id}}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "position": [800, 500]
+    },
+    {
+      "id": "wait-loop",
+      "name": "Esperar 10s y loop",
+      "type": "n8n-nodes-base.wait",
+      "parameters": {
+        "amount": 10,
+        "unit": "seconds"
+      },
+      "position": [1000, 500]
+    },
+    {
+      "id": "switch-status",
+      "name": "¿Estado final?",
+      "type": "n8n-nodes-base.switch",
+      "parameters": {
+        "dataType": "string",
+        "value1": "{{$json.status}}",
+        "rules": [
+          {"value": "awaiting_approval", "output": "Pendiente aprobación"},
+          {"value": "approved", "output": "Aprobado"},
+          {"value": "failed", "output": "Error"},
+          {"value": "blocked_legal", "output": "Bloqueado"}
+        ]
+      },
+      "position": [1200, 500]
+    },
+    {
+      "id": "slack-notify",
+      "name": "Notificar aprobación pendiente",
+      "type": "n8n-nodes-base.slack",
+      "parameters": {
+        "channel": "#dubbing-revision",
+        "text": "🎬 Job {{$json.id}} listo para revisión: {{$json.project_id}}"
+      },
+      "position": [1400, 400]
+    },
+    {
+      "id": "http-export",
+      "name": "Exportar entregables",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "http://backend:8000/api/dubbing-jobs/{{$json.id}}/export"
+      },
+      "position": [1400, 600]
+    },
+    {
+      "id": "comfysearch-find",
+      "name": "ComfySearch: Encontrar workflow óptimo",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/comfysearch/search",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "query", "value": "{{$json.search_query}}"},
+            {"name": "top_k", "value": 3}
+          ]
+        }
+      },
+      "position": [0, 100]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {"output": [{"node": "comfysearch-find", "index": 0}]},
+    "comfysearch-find": {"output": [{"node": "http-validate-contract", "index": 0}]},
+    "http-validate-contract": {"output": [{"node": "switch-legal", "index": 0}]},
+    "switch-legal": {
+      "output": [
+        {"node": "slack-legal-block", "index": 0},
+        {"node": "http-start-job", "index": 1}
+      ]
+    },
+    "http-start-job": {"output": [{"node": "http-get-status", "index": 0}]},
+    "http-get-status": {"output": [{"node": "wait-loop", "index": 0}]},
+    "wait-loop": {"output": [{"node": "http-get-status", "index": 0}]},
+    "switch-status": {
+      "output": [
+        {"node": "slack-notify", "index": 0},
+        {"node": "http-export", "index": 0}
+      ]
+    }
+  }
+}

@@ -19,6 +19,7 @@ import {
   Sparkles,
   Grid2x2,
   BadgeEuro,
+  Puzzle,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -31,6 +32,7 @@ const navItems = [
   { to: '/workflows', icon: GitBranch, label: 'Workflows' },
   { to: '/cid/pipeline-builder', icon: Sparkles, label: 'Pipeline Builder' },
   { to: '/solutions', icon: Grid2x2, label: 'Soluciones' },
+  { to: '/apps', icon: Puzzle, label: 'Apps' },
   { to: '/pricing', icon: BadgeEuro, label: 'Precios' },
   { to: '/plans', icon: CreditCard, label: 'Planes' },
   { to: '/storage-sources', icon: HardDrive, label: 'Storage' },

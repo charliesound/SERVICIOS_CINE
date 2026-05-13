@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    ports:
+      - "5055:5055"
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - COMFYSEARCH_CONFIG=/app/config/settings.yaml
+      - COMFYSEARCH_ROOTS=/app/config/workflow_roots.yaml
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5055
+      - FLASK_DEBUG=false
+    volumes:
+      - ./apps/api:/app/apps/api
+      - ./apps/web:/app/apps/web
+      - ./config:/app/config
+      - ./data:/app/data
+      - /opt/SERVICIOS_CINE/src/comfyui_workflows:/workflows:ro
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    command: >
+      sh -c "pip install -r /app/apps/api/requirements.txt &&
+             python /app/apps/api/app.py"
+
+volumes:
+  qdrant_data:

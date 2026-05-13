@@ -152,6 +152,12 @@ export const storyboardApi = {
     version: number
     style_preset: string
     shots_per_scene: number
+    generated_assets: string[]
+    total_shots: number
+    total_scenes: number
+    render_jobs: Array<{ job_id: string; backend?: string; workflow_key?: string; storyboard_shot_id?: string }>
+    render_errors: Array<{ storyboard_shot_id: string; error: string }>
+    created_at: string
   }> => {
     const { data } = await api.post(`/projects/${projectId}/storyboard/sequences/${sequenceId}/regenerate`, payload)
     return data

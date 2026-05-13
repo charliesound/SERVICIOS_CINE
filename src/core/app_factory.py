@@ -316,6 +316,11 @@ def _register_routers(app: FastAPI, settings) -> None:
         except Exception:
             pass
 
+    # ── ComfyUI Instance Registry ────────────────────────────────────────
+    from routes.comfyui_instance_routes import router as comfyui_instance_router
+
+    app.include_router(comfyui_instance_router, tags=["comfyui"])
+
     # ── CID internal test mode ───────────────────────────────────────────
     import os
 

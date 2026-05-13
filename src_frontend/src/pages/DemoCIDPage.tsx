@@ -20,6 +20,8 @@ import {
   Upload,
   Send,
   CheckCircle,
+  AlertCircle,
+  Loader,
   Shield,
   Briefcase,
   Star,
@@ -201,10 +203,14 @@ const initialFormState = {
 
 type FormData = typeof initialFormState
 
+const DEMO_CID_WEBHOOK = import.meta.env.VITE_DEMO_CID_WEBHOOK_URL
+
 export default function DemoCIDPage() {
   const { isAuthenticated } = useAuthStore()
   const [form, setForm] = useState<FormData>(initialFormState)
   const [formSubmitted, setFormSubmitted] = useState(false)
+  const [formSubmitting, setFormSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   useSeo({
@@ -244,10 +250,34 @@ export default function DemoCIDPage() {
   )
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault()
+      setFormError(null)
+      setFormSubmitting(true)
       trackEvent('submit_demo_cid_form', { ...form })
-      setFormSubmitted(true)
+
+      if (!DEMO_CID_WEBHOOK) {
+        setFormError('El servicio de envio no esta configurado. Contacta con el equipo de AILinkCinema.')
+        setFormSubmitting(false)
+        return
+      }
+
+      try {
+        const payload = { ...form, _timestamp: new Date().toISOString(), _source: 'demo-cid-page' }
+        const res = await fetch(DEMO_CID_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        setFormSubmitted(true)
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Error de conexion'
+        setFormError(`No se pudo enviar la solicitud (${msg}). Intentalo de nuevo o escribenos a contacto@ailinkcinema.com.`)
+        trackEvent('submit_demo_cid_form_error', { error: msg })
+      } finally {
+        setFormSubmitting(false)
+      }
     },
     [form]
   )
@@ -774,13 +804,24 @@ export default function DemoCIDPage() {
                       </span>
                     </label>
 
+                    {formError && (
+                      <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
+                        <p className="text-sm leading-6 text-red-200">{formError}</p>
+                      </div>
+                    )}
+
                     <button
                       type="submit"
-                      className="landing-cta-primary w-full justify-center py-4 text-base"
-                      onClick={() => trackEvent('submit_demo_cid_form')}
+                      disabled={formSubmitting}
+                      className="landing-cta-primary w-full justify-center py-4 text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Send className="h-4 w-4" />
-                      Enviar solicitud
+                      {formSubmitting ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                      {formSubmitting ? 'Enviando...' : 'Enviar solicitud'}
                     </button>
                   </form>
                 )}

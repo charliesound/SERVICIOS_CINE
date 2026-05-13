@@ -117,4 +117,8 @@ class StoryboardGenerationAuditResponse(BaseModel):
     overwrite: bool
     version: int
     generated_assets: list[str] = Field(default_factory=list)
+    total_shots: int = 0
+    total_scenes: int = 0
+    render_jobs: list[dict] = Field(default_factory=list)
+    render_errors: list[dict] = Field(default_factory=list)
     created_at: datetime

@@ -5,6 +5,8 @@ import { storyboardApi } from '@/api/storyboard'
 import { ShotCard } from '@/components/storyboard/ShotCard'
 import { AssetPickerModal } from '@/components/storyboard/AssetPickerModal'
 import DirectorFeedbackPanel from '@/components/storyboard/DirectorFeedbackPanel'
+import { ActionProgressPanel } from '@/components/ActionProgressPanel'
+import type { ActionProgressState } from '@/components/ActionProgressPanel'
 import type {
   CinematicShotMetadata,
   DirtyShot,
@@ -59,6 +61,7 @@ export default function StoryboardBuilderPage() {
   const [shotPlan, setShotPlan] = useState<SequenceStoryboardPlan | null>(null)
   const [isPlanning, setIsPlanning] = useState(false)
   const [activeTab, setActiveTab] = useState<'analyze' | 'sequences' | 'shots'>('analyze')
+  const [regenerationProgress, setRegenerationProgress] = useState<ActionProgressState | null>(null)
 
   const fetchSequences = useCallback(async () => {
     if (!projectId) return
@@ -175,11 +178,39 @@ export default function StoryboardBuilderPage() {
     if (!projectId) return
     setIsGenerating(true)
     setError(null)
+    setRegenerationProgress(null)
     try {
       if (regenerateSequence && selectedSequenceId) {
-        await storyboardApi.regenerateSequence(projectId, selectedSequenceId, {
+        setRegenerationProgress({
+          title: 'Regenerar storyboard',
+          status: 'queued',
+          percent: 0,
+          label: 'Iniciando regeneración...',
+        })
+        const result = await storyboardApi.regenerateSequence(projectId, selectedSequenceId, {
           style_preset: stylePreset,
           shots_per_scene: shotsPerScene,
+        })
+        setRegenerationProgress({
+          title: 'Regenerar storyboard',
+          status: 'processing',
+          percent: 50,
+          label: `Generando storyboard — ${result.total_shots} planos en ${result.total_scenes} escenas`,
+          helperText: result.render_jobs.length > 0
+            ? `${result.render_jobs.length} render(s) encolados`
+            : 'Estructura generada sin renders',
+          jobId: result.job_id,
+        })
+        await Promise.all([fetchShots(), fetchSequences()])
+        setRegenerationProgress({
+          title: 'Regenerar storyboard',
+          status: 'completed',
+          percent: 100,
+          label: 'Storyboard regenerado correctamente',
+          helperText: result.total_shots > 0
+            ? `${result.total_scenes} escenas, ${result.total_shots} planos generados. Assets: ${result.generated_assets.length > 0 ? result.generated_assets.join(', ') : 'solo estructura'}`
+            : 'Storyboard regenerado',
+          jobId: result.job_id,
         })
       } else {
         const payload: StoryboardGeneratePayload = {
@@ -197,11 +228,17 @@ export default function StoryboardBuilderPage() {
           validate_prompts: validatePrompts,
         }
         await storyboardApi.generate(projectId, payload)
+        await Promise.all([fetchShots(), fetchSequences()])
       }
-      await Promise.all([fetchShots(), fetchSequences()])
     } catch (err: any) {
       console.error(err)
-      setError(err?.response?.data?.detail || 'Error generating storyboard')
+      const msg = err?.response?.data?.detail || 'Error generating storyboard'
+      setError(msg)
+      setRegenerationProgress((current) =>
+        current
+          ? { ...current, status: 'failed', errorMessage: msg }
+          : null
+      )
     } finally {
       setIsGenerating(false)
     }
@@ -620,6 +657,15 @@ export default function StoryboardBuilderPage() {
                   )
                 })()}
 
+                {/* Regeneration progress */}
+                {regenerationProgress && (
+                  <ActionProgressPanel
+                    progress={regenerationProgress}
+                    onRetry={() => handleGenerate(true)}
+                    retryLabel="Reintentar regeneración"
+                  />
+                )}
+
                 {/* Plan result */}
                 {shotPlan && selectedSequenceId && (
                   <section className="card bg-dark-200/80 border border-cyan-500/20 p-6 space-y-4">
@@ -701,6 +747,13 @@ export default function StoryboardBuilderPage() {
                   </select>
                 </div>
               </div>
+              {regenerationProgress && (
+                <ActionProgressPanel
+                  progress={regenerationProgress}
+                  onRetry={() => handleGenerate(true)}
+                  retryLabel="Reintentar regeneración"
+                />
+              )}
             </section>
 
             {sequences.length > 0 && !selectedSequenceId && filteredShots.length === 0 && (

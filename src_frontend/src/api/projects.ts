@@ -177,6 +177,19 @@ export const projectsApi = {
     return data
   },
 
+  getJobProgress: async (projectId: string, jobId: string): Promise<{
+    job_id: string
+    job_type: string
+    status: string
+    progress_percent: number
+    progress_stage: string
+    progress_code: string
+    updated_at: string | null
+  }> => {
+    const { data } = await api.get(`/projects/${projectId}/jobs/${jobId}/progress`)
+    return data
+  },
+
   downloadDeliverable: async (deliverableId: string): Promise<Blob> => {
     const { data } = await api.get(`/delivery/deliverables/${deliverableId}/download`, {
       responseType: 'blob',

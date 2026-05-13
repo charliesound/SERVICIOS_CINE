@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
+import { ArrowRight, LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
 import LandingHeroCinematic from '@/components/landing/LandingHeroCinematic'
 import LandingProblemSolution from '@/components/landing/LandingProblemSolution'
 import LandingStudioModules from '@/components/landing/LandingStudioModules'
@@ -19,6 +19,12 @@ import { landingContent } from '@/data/landingContent'
 import { useSeo } from '@/hooks/useSeo'
 import { getPrimaryCIDTarget, useAuthStore } from '@/store'
 import { buildAbsoluteUrl, SEO_SITE_NAME } from '@/utils/seo'
+
+function trackEvent(eventName: string, payload?: Record<string, unknown>) {
+  if (typeof window !== 'undefined' && import.meta.env.DEV) {
+    console.info(`[Track] ${eventName}`, payload ?? {})
+  }
+}
 
 export default function LandingPage() {
   const { isAuthenticated, user } = useAuthStore()
@@ -220,6 +226,30 @@ export default function LandingPage() {
         <LandingPricingSection content={landingContent.pricing} />
 
         <TrustLegalSection content={landingContent.trustLegal} />
+
+        {/* CTA to /demo-cid */}
+        <section className="relative border-t border-white/5 py-20">
+          <div className="mx-auto max-w-5xl px-5 text-center md:px-8">
+            <div className="landing-brand-final-cta rounded-[2.4rem] p-8 sm:p-10 lg:p-12">
+              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-amber-300">
+                ¿Tienes un guion en desarrollo?
+              </p>
+              <h2 className="mt-4 font-display text-3xl font-semibold leading-[1.1] text-white md:text-5xl">
+                Prueba CID con tu proyecto y recibe un análisis visual y estratégico para pitching, financiación o producción.
+              </h2>
+              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <Link
+                  to="/demo-cid"
+                  className="landing-cta-primary text-base"
+                  onClick={() => trackEvent('click_home_to_demo_cid')}
+                >
+                  Probar CID con mi guion
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <LandingFinalCta
           content={landingContent.finalCta}

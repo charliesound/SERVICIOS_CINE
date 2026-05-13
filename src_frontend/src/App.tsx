@@ -52,10 +52,12 @@ import DeliverableDetailPage from './pages/DeliverableDetailPage'
 import ReviewsOverviewPage from './pages/ReviewsOverviewPage'
 import ReviewDetailPage from './pages/ReviewDetailPage'
 import CIDPipelineBuilderPage from './pages/CIDPipelineBuilderPage'
+import AppRegistryPage from './pages/AppRegistryPage'
 import SolutionsPage from './pages/SolutionsPage'
 import CIDProductPage from './pages/CIDProductPage'
 import SolutionDetailPage from './pages/SolutionDetailPage'
 import PricingPage from './pages/PricingPage'
+import DemoCIDPage from './pages/DemoCIDPage'
 import { applySeo, SEO_DEFAULT_DESCRIPTION, SEO_DEFAULT_TITLE } from '@/utils/seo'
 
 function RouteSeoDefaults() {
@@ -89,6 +91,7 @@ export default function App() {
         <Route path="/solutions/promo-video" element={<SolutionDetailPage />} />
         <Route path="/solutions/vfx" element={<SolutionDetailPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/demo-cid" element={<DemoCIDPage />} />
         <Route path="/legal/privacidad" element={<LegalPrivacyPage />} />
         <Route path="/legal/aviso-legal" element={<LegalNoticePage />} />
         <Route path="/legal/terminos" element={<LegalTermsPage />} />
@@ -180,8 +183,9 @@ export default function App() {
             <Route path="/cid/pipeline-builder" element={<CIDPipelineBuilderPage />} />
             <Route path="/plans" element={<PlansPage />} />
            <Route path="/admin" element={<AdminPage />} />
-           <Route path="/storage-sources" element={<StorageSourcesPage />} />
-           <Route path="/storage-sources/:sourceId" element={<StorageSourceDetailPage />} />
+            <Route path="/apps" element={<AppRegistryPage />} />
+            <Route path="/storage-sources" element={<StorageSourcesPage />} />
+            <Route path="/storage-sources/:sourceId" element={<StorageSourceDetailPage />} />
            <Route path="/ingest/scans" element={<IngestScansPage />} />
            <Route path="/ingest/scans/:scanId" element={<IngestScanDetailPage />} />
            <Route path="/ingest/assets" element={<MediaAssetsPage />} />

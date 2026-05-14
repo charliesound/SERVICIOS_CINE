@@ -6,10 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.core import Project, User as DBUser
+from dependencies.tenant_context import get_tenant_context, TenantContext
+from models.core import Project
 from models.storage import IngestScan, MediaAsset
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
 from schemas.ingest_schema import (
     IngestScanListResponse,
     IngestScanResponse,
@@ -22,24 +21,21 @@ from services.ingest_service import ingest_service
 router = APIRouter(prefix="/api/ingest", tags=["ingest"])
 
 
-async def _get_user_org_id(user_id: str, db: AsyncSession) -> Optional[str]:
-    result = await db.execute(select(DBUser).where(DBUser.id == user_id))
-    user = result.scalar_one_or_none()
-    return user.organization_id if user else None
-
-
 async def _ensure_project_access(
-    project_id: Optional[str], organization_id: str, db: AsyncSession
+    project_id: Optional[str], tenant: TenantContext, db: AsyncSession
 ) -> None:
     if not project_id:
         return
 
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    result = await db.execute(
+        select(Project).where(
+            Project.id == project_id,
+            Project.organization_id == str(tenant.organization_id),
+        )
+    )
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != organization_id:
-        raise HTTPException(status_code=403, detail="Access denied to this project")
 
 
 def _scan_response(scan: IngestScan) -> IngestScanResponse:
@@ -98,19 +94,12 @@ async def list_ingest_scans(
     source_id: Optional[str] = None,
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> IngestScanListResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    await _ensure_project_access(project_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> IngestScanListResponse:
+    await _ensure_project_access(project_id, tenant, db)
     scans = await ingest_service.list_scans(
         db,
-        organization_id=user_org_id,
+        organization_id=str(tenant.organization_id),
         project_id=project_id,
         source_id=source_id,
         status=status,
@@ -122,16 +111,9 @@ async def list_ingest_scans(
 async def get_ingest_scan_detail(
     scan_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> IngestScanResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    scan = await ingest_service.get_scan(db, scan_id, user_org_id)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> IngestScanResponse:
+    scan = await ingest_service.get_scan(db, scan_id, str(tenant.organization_id))
     if scan is None:
         raise HTTPException(status_code=404, detail="Ingest scan not found")
     return _scan_response(scan)
@@ -144,19 +126,12 @@ async def list_media_assets(
     status: Optional[str] = None,
     asset_type: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> MediaAssetListResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    await _ensure_project_access(project_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> MediaAssetListResponse:
+    await _ensure_project_access(project_id, tenant, db)
     assets = await ingest_service.list_assets(
         db,
-        organization_id=user_org_id,
+        organization_id=str(tenant.organization_id),
         project_id=project_id,
         source_id=source_id,
         status=status,
@@ -169,16 +144,9 @@ async def list_media_assets(
 async def get_media_asset_detail(
     asset_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> MediaAssetResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    asset = await ingest_service.get_asset(db, asset_id, user_org_id)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> MediaAssetResponse:
+    asset = await ingest_service.get_asset(db, asset_id, str(tenant.organization_id))
     if asset is None:
         raise HTTPException(status_code=404, detail="Media asset not found")
     return _asset_response(asset)

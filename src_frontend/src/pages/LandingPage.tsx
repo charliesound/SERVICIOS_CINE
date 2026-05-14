@@ -287,7 +287,7 @@ export default function LandingPage() {
                       </h3>
                       <p className="mt-2 text-lg text-cyan-200/80">Control total y viabilidad de produccion.</p>
                       <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                        Gestiona la viabilidad, presupuesto y planificacion de tu proyecto desde la fase de desarrollo. 
+                        Gestiona la viabilidad, presupuesto y planificacion de tu proyecto desde la fase de desarrollo.
                         Optimiza la financiacion y mantén el control operativo con inteligencia de industria.
                       </p>
                       <div className="mt-8 flex flex-wrap gap-3">

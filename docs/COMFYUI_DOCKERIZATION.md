@@ -136,6 +136,30 @@ Validated via Infra 8E:
 **Warnings**:
 
 - Do not use `megapak` tags for CID backend production unless explicitly desired.
-- Do not call `/prompt` until Infra 8G is authorized.
 - Healthcheck is currently `unhealthy` because the container lacks `python` binary (only `python3`); the API works regardless.
 - This is a **temporary validation mode**; native 8188 remains the default still instance until full cutover is validated.
+
+## Validated smoke results
+
+### Infra 8G — Direct ComfyUI `/prompt`
+
+- **Image**: `yanwk/comfyui-boot:cu130-slim-v2`
+- **Host port**: `8288`
+- **Checkpoint**: `realisticVisionV60B1_v51VAE.safetensors`
+- **Workflow nodes**: `CheckpointLoaderSimple`, `CLIPTextEncode` (×2), `EmptyLatentImage`, `KSampler`, `VAEDecode`, `SaveImage`
+- **Width/Height**: 512×512, steps=4, cfg=2.0, seed=14052026
+- **Prompt ID**: `1448ee28-b775-4b51-a2a8-be4b4646f21e`
+- **Duration**: 55.16 seconds (first load)
+- **Output**: `/mnt/g/COMFYUI_HUB/output/still/CID_DOCKER_STILL_SMOKE_8G_00001_.png` (351,223 bytes)
+- **Result**: **GO** — direct ComfyUI API validated
+
+### Infra 8H — CID infrastructure smoke
+
+- **CID layer used**: `ComfyUIFactory` → `ComfyUIClient` (internal service, no HTTP auth needed)
+- **Routing env override**: `COMFYUI_STILL_BASE_URL=http://127.0.0.1:8288`
+- **Aux env**: `ENABLE_COMFYUI_REAL_RENDER=true`, `AUTH_DISABLED=true`
+- **Prompt ID**: `b3adfa6f-5089-4a16-b287-60bcdf94e001`
+- **Output**: `/mnt/g/COMFYUI_HUB/output/still/CID_STILL_SMOKE_8H_00001_.png` (338,123 bytes)
+- **Result**: **GO** — CID infrastructure routed to Docker still and generated successfully
+- **Note**: HTTP render endpoint not yet validated with real auth (requires DB-backed user). The 8H test validates the internal CID infra layer.
+- **Next functional milestone**: endpoint CID with real auth.

@@ -121,6 +121,14 @@ curl http://127.0.0.1:11434/api/tags
 - Source of truth de modelos: `/mnt/i/COMFYUI_OK/models` (montado `:ro`).
 - Source of truth de hub operativo: `/mnt/g/COMFYUI_HUB` (`input/output/user/workflows` en read-write).
 
+## Runbook cutover still nativo → Docker
+
+- Ver `docs/CUTOVER_COMFYUI_STILL_DOCKER.md` para el plan detallado de sustitucion.
+- `8288` es el puerto temporal de validacion.
+- `8188` es el puerto final tras cutover.
+- No ejecutar cutover hasta que Infra 8K sea autorizado.
+- No exponer ComfyUI Docker directamente al usuario.
+
 ## Selecting Docker still for CID temporarily
 
 To route CID still/storyboard tasks to Docker ComfyUI on port 8288 (without modifying `.env`):

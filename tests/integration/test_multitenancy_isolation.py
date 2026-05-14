@@ -300,3 +300,47 @@ async def test_404_returns_json_with_detail(test_app):
     body = resp.json()
     assert "error" in body
     assert body["error"].get("request_id") == "cid-test-404-001"
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_access_org_a_project_detail(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_a_user_can_access_own_project(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}",
+            headers={"Authorization": f"Bearer {_tenant_a_token()}"},
+        )
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_list_org_a_projects(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/projects",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    projects = body.get("projects", body if isinstance(body, list) else [])
+    for p in projects:
+        org_id = p.get("organization_id", "")
+        assert org_id != SMOKE_ORG_A, f"Cross-tenant leak: org B can see org A project {p.get('id')}"

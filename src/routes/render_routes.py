@@ -119,19 +119,26 @@ async def create_job(
             project_id=job_data.project_id,
             metadata=job_data.parameters,
         )
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=503, detail="Render service unavailable")
 
     if response.status.value == "failed":
         error_text = (response.error or "").lower()
-        if "plan" in error_text:
+        if "plan" in error_text or "not allowed" in error_text:
             raise HTTPException(
                 status_code=403,
-                detail="Current plan does not allow this render task",
+                detail=response.error or "Current plan does not allow this render task",
             )
-        raise HTTPException(status_code=503, detail="Render service unavailable")
+        if "backend" in error_text or "no backend" in error_text or "unavailable" in error_text or "not reachable" in error_text:
+            raise HTTPException(
+                status_code=503,
+                detail=response.error or "Render backend unavailable",
+            )
+        raise HTTPException(status_code=422, detail=response.error or "Render job failed")
 
-    if response.status.value == "queued" and queue_item is None:
+    if queue_item is None and response.status.value != "failed":
         raise HTTPException(status_code=503, detail="Render queue unavailable")
 
     return _public_job_response(response)

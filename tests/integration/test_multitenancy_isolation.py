@@ -699,3 +699,153 @@ async def test_global_admin_cannot_bypass_script_version_routes(test_app):
             headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
         )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_list_documents_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/ingest/documents",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    for d in body.get("documents", []):
+        org_id = d.get("organization_id", "")
+        assert org_id != SMOKE_ORG_A, f"Cross-tenant leak: {org_id}"
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_get_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/ingest/documents/nonexistent-id",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_update_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.patch(
+            "/api/ingest/documents/nonexistent-id",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_extract_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/extract",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_classify_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/classify",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_structure_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/structure",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_approve_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/approve",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_list_document_events_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/ingest/documents/nonexistent-id/events",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_derive_document_preview_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/derive-preview",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_derive_document_report_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/derive-report",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={"report_payload": {}, "report_type": "daily"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_global_admin_cannot_bypass_document_routes(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/extract",
+            headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
+        )
+    assert resp.status_code == 404

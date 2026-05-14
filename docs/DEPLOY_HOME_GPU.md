@@ -121,6 +121,34 @@ curl http://127.0.0.1:11434/api/tags
 - Source of truth de modelos: `/mnt/i/COMFYUI_OK/models` (montado `:ro`).
 - Source of truth de hub operativo: `/mnt/g/COMFYUI_HUB` (`input/output/user/workflows` en read-write).
 
+## Selecting Docker still for CID temporarily
+
+To route CID still/storyboard tasks to Docker ComfyUI on port 8288 (without modifying `.env`):
+
+```bash
+COMFYUI_STILL_BASE_URL=http://127.0.0.1:8288 \
+COMFYUI_BASE_URL=http://127.0.0.1:8288 \
+COMFYUI_STORYBOARD_BASE_URL=http://127.0.0.1:8288 \
+AUTH_DISABLED=true \
+BACKEND_HOST=127.0.0.1 \
+python -m uvicorn src.app:app --host 127.0.0.1 --port 8011
+```
+
+Validate endpoints once the backend is up:
+
+```bash
+curl http://127.0.0.1:8011/health
+curl http://127.0.0.1:8011/api/ops/capabilities
+curl http://127.0.0.1:8011/api/v1/comfyui/instances
+curl http://127.0.0.1:8011/api/v1/comfyui/health
+curl http://127.0.0.1:8011/api/v1/comfyui/resolve/still
+curl http://127.0.0.1:8011/api/v1/comfyui/resolve/storyboard_realistic
+```
+
+- Do not call `/prompt` until Infra 8G is authorized.
+- Docker still must be running on 8288 before starting the backend.
+- Native still 8188 remains untouched during validation.
+
 ## Routing interno de ComfyUI por CID
 
 - El usuario entra a CID; no selecciona URLs de ComfyUI manualmente.

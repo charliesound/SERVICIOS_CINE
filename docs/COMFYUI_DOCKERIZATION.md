@@ -114,3 +114,28 @@ http://127.0.0.1:8288/system_stats
 - Objetivo operativo: usar los modelos existentes del host, sin duplicar descargas.
 - Primera validacion en `8288` debe limitarse a `GET /system_stats` y `GET /api/object_info`.
 - Mantener `COMFYUI_CONTAINER_ROOT=/root/ComfyUI` para esta familia de imagenes.
+
+## Validated Docker still candidate
+
+- **Image**: `yanwk/comfyui-boot:cu130-slim-v2`
+- **Host port**: `8288` (temporal, sin interferir con nativo 8188)
+- **Container port**: `8188`
+- **Container root**: `COMFYUI_CONTAINER_ROOT=/root/ComfyUI`
+- **Models**: `/mnt/i/COMFYUI_OK/models` (read-only)
+- **Hub**: `/mnt/g/COMFYUI_HUB` (read-write: input, output, user, workflows)
+
+Validated via Infra 8E:
+
+- `GET /system_stats` → HTTP 200 JSON
+- `GET /api/object_info` → HTTP 200 JSON, 3158 nodes
+- `GPU RTX 5090` visible (nvidia-smi, PyTorch 2.11.0+cu130)
+- No login/proxy (no 302, no redirect)
+- No large model auto-download (slim tag)
+- CID routing confirmed via env override `COMFYUI_STILL_BASE_URL=http://127.0.0.1:8288`
+
+**Warnings**:
+
+- Do not use `megapak` tags for CID backend production unless explicitly desired.
+- Do not call `/prompt` until Infra 8G is authorized.
+- Healthcheck is currently `unhealthy` because the container lacks `python` binary (only `python3`); the API works regardless.
+- This is a **temporary validation mode**; native 8188 remains the default still instance until full cutover is validated.

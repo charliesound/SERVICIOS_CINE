@@ -16,7 +16,7 @@ services:
       - "${COMFYUI_OUTPUT_STILL_DIR:-/mnt/g/COMFYUI_HUB/output/still}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/output"
       - "${COMFYUI_USER_STILL_DIR:-/mnt/g/COMFYUI_HUB/user/still}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/user"
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8188/system_stats', timeout=5).read()\""]
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8188/system_stats', timeout=5).read()\""]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -41,7 +41,7 @@ services:
       - "${COMFYUI_OUTPUT_VIDEO_DIR:-/mnt/g/COMFYUI_HUB/output/video}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/output"
       - "${COMFYUI_USER_VIDEO_DIR:-/mnt/g/COMFYUI_HUB/user/video}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/user"
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8189/system_stats', timeout=5).read()\""]
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8189/system_stats', timeout=5).read()\""]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -66,7 +66,7 @@ services:
       - "${COMFYUI_OUTPUT_DUBBING_DIR:-/mnt/g/COMFYUI_HUB/output/dubbing}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/output"
       - "${COMFYUI_USER_DUBBING_DIR:-/mnt/g/COMFYUI_HUB/user/dubbing}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/user"
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8190/system_stats', timeout=5).read()\""]
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8190/system_stats', timeout=5).read()\""]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -91,7 +91,7 @@ services:
       - "${COMFYUI_OUTPUT_RESTORATION_DIR:-/mnt/g/COMFYUI_HUB/output/restoration}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/output"
       - "${COMFYUI_USER_RESTORATION_DIR:-/mnt/g/COMFYUI_HUB/user/restoration}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/user"
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8191/system_stats', timeout=5).read()\""]
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8191/system_stats', timeout=5).read()\""]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -116,7 +116,7 @@ services:
       - "${COMFYUI_OUTPUT_3D_DIR:-/mnt/g/COMFYUI_HUB/output/3d}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/output"
       - "${COMFYUI_USER_3D_DIR:-/mnt/g/COMFYUI_HUB/user/3d}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/user"
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8192/system_stats', timeout=5).read()\""]
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8192/system_stats', timeout=5).read()\""]
       interval: 30s
       timeout: 10s
       retries: 5

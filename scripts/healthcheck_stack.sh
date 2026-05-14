@@ -70,6 +70,32 @@ else
     warn "qdrant — no container and no curl"
 fi
 
+# ── 4. n8n (optional) ─────────────────────────────────────────────────────
+echo "--- n8n ---"
+N8N_EXISTS=0
+if docker inspect ailinkcinema_n8n >/dev/null 2>&1; then
+    N8N_EXISTS=1
+fi
+
+if [ "$N8N_EXISTS" -eq 1 ]; then
+    if container_health ailinkcinema_n8n "n8n"; then
+        : # ok from container health
+    elif command -v curl &>/dev/null; then
+        n8n_port="${N8N_PORT:-5678}"
+        if curl -sf "http://127.0.0.1:${n8n_port}/healthz" >/dev/null 2>&1; then
+            pass "n8n (HTTP healthz)"
+        elif curl -sf "http://127.0.0.1:${n8n_port}/" >/dev/null 2>&1; then
+            pass "n8n (HTTP root)"
+        else
+            fail "n8n container exists but is not reachable"
+        fi
+    else
+        fail "n8n container exists but curl is unavailable"
+    fi
+else
+    warn "n8n not running (optional)"
+fi
+
 # ── Summary ──────────────────────────────────────────────────────────────
 echo "=============================="
 if [ "$FAIL" -eq 1 ]; then

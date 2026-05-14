@@ -6,8 +6,12 @@
 #   ./scripts/start_stack.sh help              — show this help
 #   ./scripts/start_stack.sh data              — PostgreSQL + Qdrant
 #   ./scripts/start_stack.sh data-full         — PostgreSQL + Qdrant + Redis
+#   ./scripts/start_stack.sh n8n               — PostgreSQL + n8n
+#   ./scripts/start_stack.sh n8n-full          — PostgreSQL + Qdrant + Redis + n8n
 #   ./scripts/start_stack.sh docker-data       — alias for data
 #   ./scripts/start_stack.sh docker-data-full  — alias for data-full
+#   ./scripts/start_stack.sh docker-n8n        — alias for n8n
+#   ./scripts/start_stack.sh docker-n8n-full   — alias for n8n-full
 #   ./scripts/start_stack.sh status            — run healthcheck
 # =============================================================================
 
@@ -15,6 +19,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 COMPOSE_BASE="-f compose.base.yml -f compose.data.yml"
+COMPOSE_N8N="-f compose.base.yml -f compose.data.yml -f compose.n8n.yml"
 SCRIPT_NAME="$(basename "$0")"
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -36,6 +41,19 @@ require_env_password() {
         exit 1
     fi
     echo "$pw"
+}
+
+require_n8n_encryption_key() {
+    local key="${N8N_ENCRYPTION_KEY:-}"
+    if [ -z "$key" ] && [ -f .env ]; then
+        key="$(grep -E '^N8N_ENCRYPTION_KEY=' .env | head -1 | cut -d= -f2-)"
+    fi
+    if [ -z "$key" ]; then
+        echo "ERROR: N8N_ENCRYPTION_KEY is not set."
+        echo "  Set it via environment or add to .env."
+        exit 1
+    fi
+    echo "$key"
 }
 
 # ── commands ─────────────────────────────────────────────────────────────
@@ -64,6 +82,38 @@ cmd_data_full() {
     echo "    ./scripts/healthcheck_stack.sh"
 }
 
+cmd_n8n() {
+    local pw key
+    pw="$(require_env_password)"
+    key="$(require_n8n_encryption_key)"
+    export POSTGRES_PASSWORD="$pw"
+    export N8N_ENCRYPTION_KEY="$key"
+    echo ">> Starting PostgreSQL + n8n ..."
+    docker compose $COMPOSE_N8N \
+        --profile with-postgres \
+        --profile with-n8n \
+        up -d postgres n8n
+    echo ">> Done. Run healthcheck:"
+    echo "    ./scripts/healthcheck_stack.sh"
+}
+
+cmd_n8n_full() {
+    local pw key
+    pw="$(require_env_password)"
+    key="$(require_n8n_encryption_key)"
+    export POSTGRES_PASSWORD="$pw"
+    export N8N_ENCRYPTION_KEY="$key"
+    echo ">> Starting PostgreSQL + Qdrant + Redis + n8n ..."
+    docker compose $COMPOSE_N8N \
+        --profile with-postgres \
+        --profile with-qdrant \
+        --profile with-redis \
+        --profile with-n8n \
+        up -d postgres qdrant redis n8n
+    echo ">> Done. Run healthcheck:"
+    echo "    ./scripts/healthcheck_stack.sh"
+}
+
 cmd_status() {
     if [ -x scripts/healthcheck_stack.sh ]; then
         exec scripts/healthcheck_stack.sh
@@ -83,6 +133,12 @@ case "${1:-help}" in
         ;;
     data-full|docker-data-full)
         cmd_data_full
+        ;;
+    n8n|docker-n8n)
+        cmd_n8n
+        ;;
+    n8n-full|docker-n8n-full)
+        cmd_n8n_full
         ;;
     status)
         cmd_status

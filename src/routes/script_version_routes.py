@@ -6,9 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.core import Project, User
-from routes.auth_routes import get_current_user_optional, get_tenant_context
-from schemas.auth_schema import UserResponse, TenantContext
+from dependencies.tenant_context import get_tenant_context, TenantContext
+from models.core import Project
 from services.script_version_service import ScriptVersionService, ScriptChangeAnalysisService
 
 router = APIRouter(prefix="/api/projects", tags=["script versioning"])
@@ -29,29 +28,32 @@ class CompareVersionsPayload(BaseModel):
     to_version_id: str
 
 
-async def _get_user_org_id(user_id: str, db: AsyncSession) -> Optional[str]:
-    from models.core import User
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    return user.organization_id if user else None
+async def _get_project_for_tenant_or_404(
+    db: AsyncSession,
+    project_id: str,
+    tenant: TenantContext,
+) -> Project:
+    result = await db.execute(
+        select(Project).where(
+            Project.id == project_id,
+            Project.organization_id == str(tenant.organization_id),
+        )
+    )
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
 
 
 @router.get("/{project_id}/script/versions")
 async def list_script_versions(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_org_id = str(tenant.organization_id)
     
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-    
-    project = await db.get(Project, project_id)
-    if not project or project.organization_id != user_org_id:
-        raise HTTPException(status_code=404, detail="Project not found")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
     
     service = ScriptVersionService(db)
     versions = await service.list_versions(project_id)
@@ -79,18 +81,11 @@ async def create_script_version(
     project_id: str,
     payload: CreateScriptVersionPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_org_id = str(tenant.organization_id)
     
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-    
-    project = await db.get(Project, project_id)
-    if not project or project.organization_id != user_org_id:
-        raise HTTPException(status_code=404, detail="Project not found")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
     
     service = ScriptVersionService(db)
     
@@ -129,14 +124,9 @@ async def get_script_version(
     project_id: str,
     version_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    user_org_id = str(tenant.organization_id)
     
     from models.script_versioning import ScriptVersion
     result = await db.execute(
@@ -171,18 +161,11 @@ async def activate_script_version(
     project_id: str,
     version_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_org_id = str(tenant.organization_id)
     
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-    
-    project = await db.get(Project, project_id)
-    if not project or project.organization_id != user_org_id:
-        raise HTTPException(status_code=404, detail="Project not found")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
     
     service = ScriptVersionService(db)
     version = await service.activate_version(project_id, version_id, project)
@@ -202,14 +185,9 @@ async def compare_script_versions(
     project_id: str,
     payload: CompareVersionsPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    user_org_id = str(tenant.organization_id)
     
     from models.script_versioning import ScriptVersion
     result = await db.execute(
@@ -256,15 +234,12 @@ async def compare_script_versions(
 async def list_change_reports(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-    
+    user_org_id = str(tenant.organization_id)
+
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
+
     from models.script_versioning import ScriptChangeReport
     result = await db.execute(
         select(ScriptChangeReport).where(
@@ -272,7 +247,7 @@ async def list_change_reports(
         ).order_by(ScriptChangeReport.created_at.desc())
     )
     reports = result.scalars().all()
-    
+
     return [
         {
             "id": r.id,
@@ -289,15 +264,12 @@ async def list_change_reports(
 async def get_module_statuses(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-    
+    user_org_id = str(tenant.organization_id)
+
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
+
     service = ScriptVersionService(db)
     statuses = await service.get_module_statuses(project_id)
     

@@ -593,3 +593,109 @@ async def test_global_admin_cannot_bypass_storage_isolation(test_app):
             headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
         )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_list_script_versions_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_create_script_version_in_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={"script_text": "Malicious script version"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_get_script_version_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions/nonexistent-id",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_activate_script_version_in_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions/nonexistent-id/activate",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_compare_versions_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions/compare",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={"from_version_id": "fake1", "to_version_id": "fake2"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_list_change_reports_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/change-reports",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_get_module_statuses_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/module-status",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_global_admin_cannot_bypass_script_version_routes(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions",
+            headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
+        )
+    assert resp.status_code == 404

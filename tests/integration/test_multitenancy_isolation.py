@@ -914,3 +914,84 @@ async def test_global_admin_cannot_bypass_ingest_routes(test_app):
             headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
         )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_anonymous_cannot_delete_saved_opportunity(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.delete(
+            "/api/producer/saved-opportunities/nonexistent-id",
+        )
+    assert resp.status_code in (401, 403), f"Expected 401/403, got {resp.status_code}"
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_delete_org_a_saved_opportunity(test_app):
+    from httpx import AsyncClient, ASGITransport
+    import uuid
+
+    transport = ASGITransport(app=test_app)
+    saved_id = uuid.uuid4().hex
+    unique_opp_id = f"demo-funding-{uuid.uuid4().hex[:8]}"
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        post = await client.post(
+            "/api/producer/saved-opportunities",
+            headers={"Authorization": f"Bearer {_tenant_a_token()}"},
+            json={
+                "project_id": SMOKE_PROJECT_ID,
+                "funding_opportunity_id": "demo-funding-001",
+                "notes": "Test",
+            },
+        )
+    assert post.status_code == 200, f"Setup failed: {post.text}"
+    source_id = post.json()["id"]
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.delete(
+            f"/api/producer/saved-opportunities/{source_id}",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404, f"Expected 404, got {resp.status_code}: {resp.text}"
+
+
+@pytest.mark.asyncio
+async def test_org_a_can_delete_own_saved_opportunity(test_app):
+    from httpx import AsyncClient, ASGITransport
+    import uuid
+
+    transport = ASGITransport(app=test_app)
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        post = await client.post(
+            "/api/producer/saved-opportunities",
+            headers={"Authorization": f"Bearer {_tenant_a_token()}"},
+            json={
+                "project_id": SMOKE_PROJECT_ID,
+                "funding_opportunity_id": "demo-funding-002",
+                "notes": "Test delete own",
+            },
+        )
+    assert post.status_code == 200, f"Setup failed: {post.text}"
+    source_id = post.json()["id"]
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        delete_resp = await client.delete(
+            f"/api/producer/saved-opportunities/{source_id}",
+            headers={"Authorization": f"Bearer {_tenant_a_token()}"},
+        )
+    assert delete_resp.status_code in (200, 204), (
+        f"Expected 200/204, got {delete_resp.status_code}: {delete_resp.text}"
+    )
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        get_resp = await client.get(
+            f"/api/producer/saved-opportunities?project_id={SMOKE_PROJECT_ID}",
+        )
+    assert get_resp.status_code == 200
+    items = get_resp.json()
+    ids = [item["id"] for item in items]
+    assert source_id not in ids, f"Deleted item {source_id} still present"

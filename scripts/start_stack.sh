@@ -8,6 +8,12 @@
 #   ./scripts/start_stack.sh data-full         — PostgreSQL + Qdrant + Redis
 #   ./scripts/start_stack.sh n8n               — PostgreSQL + n8n
 #   ./scripts/start_stack.sh n8n-full          — PostgreSQL + Qdrant + Redis + n8n
+#   ./scripts/start_stack.sh ollama            — Ollama CPU only
+#   ./scripts/start_stack.sh ollama-gpu        — Ollama GPU only
+#   ./scripts/start_stack.sh ai                — Qdrant + Ollama CPU
+#   ./scripts/start_stack.sh ai-gpu            — Qdrant + Ollama GPU
+#   ./scripts/start_stack.sh all               — Postgres + Qdrant + Redis + n8n + Ollama CPU
+#   ./scripts/start_stack.sh all-gpu           — Postgres + Qdrant + Redis + n8n + Ollama GPU
 #   ./scripts/start_stack.sh docker-data       — alias for data
 #   ./scripts/start_stack.sh docker-data-full  — alias for data-full
 #   ./scripts/start_stack.sh docker-n8n        — alias for n8n
@@ -20,6 +26,12 @@ cd "$(dirname "$0")/.."
 
 COMPOSE_BASE="-f compose.base.yml -f compose.data.yml"
 COMPOSE_N8N="-f compose.base.yml -f compose.data.yml -f compose.n8n.yml"
+COMPOSE_OLLAMA="-f compose.base.yml -f compose.ollama.yml"
+COMPOSE_AI="-f compose.base.yml -f compose.data.yml -f compose.ollama.yml"
+COMPOSE_ALL="-f compose.base.yml -f compose.data.yml -f compose.n8n.yml -f compose.ollama.yml"
+COMPOSE_OLLAMA_GPU="-f compose.base.yml -f compose.ollama.yml -f compose.ollama.gpu.yml"
+COMPOSE_AI_GPU="-f compose.base.yml -f compose.data.yml -f compose.ollama.yml -f compose.ollama.gpu.yml"
+COMPOSE_ALL_GPU="-f compose.base.yml -f compose.data.yml -f compose.n8n.yml -f compose.ollama.yml -f compose.ollama.gpu.yml"
 SCRIPT_NAME="$(basename "$0")"
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -114,6 +126,80 @@ cmd_n8n_full() {
     echo "    ./scripts/healthcheck_stack.sh"
 }
 
+cmd_ollama() {
+    echo ">> Starting Ollama (CPU) ..."
+    docker compose $COMPOSE_OLLAMA \
+        --profile with-ollama \
+        up -d ollama
+    echo ">> Done. Run healthcheck:"
+    echo "    ./scripts/healthcheck_stack.sh"
+}
+
+cmd_ollama_gpu() {
+    echo ">> Starting Ollama (GPU) ..."
+    docker compose $COMPOSE_OLLAMA_GPU \
+        --profile with-ollama \
+        up -d ollama
+    echo ">> Done. Run healthcheck:"
+    echo "    ./scripts/healthcheck_stack.sh"
+}
+
+cmd_ai() {
+    echo ">> Starting Qdrant + Ollama (CPU) ..."
+    docker compose $COMPOSE_AI \
+        --profile with-qdrant \
+        --profile with-ollama \
+        up -d qdrant ollama
+    echo ">> Done. Run healthcheck:"
+    echo "    ./scripts/healthcheck_stack.sh"
+}
+
+cmd_ai_gpu() {
+    echo ">> Starting Qdrant + Ollama (GPU) ..."
+    docker compose $COMPOSE_AI_GPU \
+        --profile with-qdrant \
+        --profile with-ollama \
+        up -d qdrant ollama
+    echo ">> Done. Run healthcheck:"
+    echo "    ./scripts/healthcheck_stack.sh"
+}
+
+cmd_all() {
+    local pw key
+    pw="$(require_env_password)"
+    key="$(require_n8n_encryption_key)"
+    export POSTGRES_PASSWORD="$pw"
+    export N8N_ENCRYPTION_KEY="$key"
+    echo ">> Starting Postgres + Qdrant + Redis + n8n + Ollama (CPU) ..."
+    docker compose $COMPOSE_ALL \
+        --profile with-postgres \
+        --profile with-qdrant \
+        --profile with-redis \
+        --profile with-n8n \
+        --profile with-ollama \
+        up -d postgres qdrant redis n8n ollama
+    echo ">> Done. Run healthcheck:"
+    echo "    ./scripts/healthcheck_stack.sh"
+}
+
+cmd_all_gpu() {
+    local pw key
+    pw="$(require_env_password)"
+    key="$(require_n8n_encryption_key)"
+    export POSTGRES_PASSWORD="$pw"
+    export N8N_ENCRYPTION_KEY="$key"
+    echo ">> Starting Postgres + Qdrant + Redis + n8n + Ollama (GPU) ..."
+    docker compose $COMPOSE_ALL_GPU \
+        --profile with-postgres \
+        --profile with-qdrant \
+        --profile with-redis \
+        --profile with-n8n \
+        --profile with-ollama \
+        up -d postgres qdrant redis n8n ollama
+    echo ">> Done. Run healthcheck:"
+    echo "    ./scripts/healthcheck_stack.sh"
+}
+
 cmd_status() {
     if [ -x scripts/healthcheck_stack.sh ]; then
         exec scripts/healthcheck_stack.sh
@@ -139,6 +225,24 @@ case "${1:-help}" in
         ;;
     n8n-full|docker-n8n-full)
         cmd_n8n_full
+        ;;
+    ollama)
+        cmd_ollama
+        ;;
+    ollama-gpu)
+        cmd_ollama_gpu
+        ;;
+    ai)
+        cmd_ai
+        ;;
+    ai-gpu)
+        cmd_ai_gpu
+        ;;
+    all)
+        cmd_all
+        ;;
+    all-gpu)
+        cmd_all_gpu
         ;;
     status)
         cmd_status

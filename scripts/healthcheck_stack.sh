@@ -96,6 +96,35 @@ else
     warn "n8n not running (optional)"
 fi
 
+# ── 5. Ollama (optional) ──────────────────────────────────────────────────
+echo "--- Ollama ---"
+OLLAMA_EXISTS=0
+if docker inspect ailinkcinema_ollama >/dev/null 2>&1; then
+    OLLAMA_EXISTS=1
+fi
+
+if [ "$OLLAMA_EXISTS" -eq 1 ]; then
+    if container_health ailinkcinema_ollama "ollama"; then
+        : # ok from container health
+    elif command -v curl &>/dev/null; then
+        oport="${OLLAMA_PORT:-11434}"
+        if ollama_tags="$(curl -sf "http://127.0.0.1:${oport}/api/tags" 2>/dev/null)"; then
+            if command -v jq &>/dev/null; then
+                model_count="$(printf '%s' "$ollama_tags" | jq -r '.models | length' 2>/dev/null || printf 'unknown')"
+                pass "ollama (HTTP /api/tags, models=${model_count})"
+            else
+                pass "ollama (HTTP /api/tags)"
+            fi
+        else
+            fail "ollama container exists but is not reachable"
+        fi
+    else
+        fail "ollama container exists but curl is unavailable"
+    fi
+else
+    warn "ollama not running (optional)"
+fi
+
 # ── Summary ──────────────────────────────────────────────────────────────
 echo "=============================="
 if [ "$FAIL" -eq 1 ]; then

@@ -3,8 +3,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from routes.auth_routes import get_tenant_context
-from schemas.auth_schema import TenantContext
+from dependencies.tenant_context import get_tenant_context, TenantContext
 from schemas.job_schema import JobSubmit, JobResponse, JobDetail
 from services.render_job_service import render_job_service
 from services.job_router import router as job_router, JobRequest
@@ -35,13 +34,13 @@ def _sanitize_job_error(status: str, error: Optional[str]) -> Optional[str]:
     return error
 
 
-async def _get_owned_job_resources(job_id: str, user_id: str):
+async def _get_owned_job_resources(job_id: str, tenant: TenantContext):
     queue_item = queue_service.get_status(job_id)
-    if queue_item and queue_item.user_id == user_id:
+    if queue_item and queue_item.user_id == tenant.user_id:
         return None, queue_item
 
     job = await job_router.get_job_status(job_id)
-    if job and job.user_id == user_id:
+    if job and job.user_id == tenant.user_id:
         return job, None
 
     return None, None
@@ -142,13 +141,12 @@ async def get_job(
     job_id: str,
     tenant: TenantContext = Depends(get_tenant_context),
 ):
-    job, queue_item = await _get_owned_job_resources(job_id, tenant.user_id)
-    if not job:
-        if not queue_item:
-            raise HTTPException(status_code=404, detail="Job not found")
+    job, queue_item = await _get_owned_job_resources(job_id, tenant)
+    if not job and not queue_item:
+        raise HTTPException(status_code=404, detail="Job not found")
 
+    if queue_item:
         tracking_payload = await _get_tracking_payload(job_id)
-
         return JobDetail(
             job_id=queue_item.job_id,
             task_type=queue_item.task_type,
@@ -219,7 +217,7 @@ async def retry_job(
     job_id: str,
     tenant: TenantContext = Depends(get_tenant_context),
 ):
-    job, queue_item = await _get_owned_job_resources(job_id, tenant.user_id)
+    job, queue_item = await _get_owned_job_resources(job_id, tenant)
     if not job and not queue_item:
         raise HTTPException(status_code=404, detail="Job not found")
 

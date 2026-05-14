@@ -9,4 +9,7 @@ export COMFYUI_IMAGE
 docker compose -f compose.base.yml -f compose.comfyui.yml --profile with-comfyui config >/dev/null
 docker compose -f compose.base.yml -f compose.comfyui.yml -f compose.comfyui.gpu.yml --profile with-comfyui config >/dev/null
 
+COMFYUI_STILL_HOST_PORT=8288 docker compose -f compose.base.yml -f compose.comfyui.yml --profile with-comfyui config >/dev/null
+COMFYUI_STILL_HOST_PORT=8288 docker compose -f compose.base.yml -f compose.comfyui.yml -f compose.comfyui.gpu.yml --profile with-comfyui config >/dev/null
+
 echo "PASS: ComfyUI compose skeleton config is valid (CPU/GPU overrides)."

@@ -80,3 +80,23 @@ docker compose -f compose.base.yml -f compose.comfyui.yml -f compose.comfyui.gpu
 
 ./scripts/smoke_comfyui_stack.sh
 ```
+
+## Primer arranque seguro: still en puerto temporal 8288
+
+- No detener ComfyUI nativo en esta fase.
+- Si `8188` esta ocupado por native still, usar puerto host temporal.
+- Configurar en entorno de prueba:
+
+```bash
+COMFYUI_STILL_HOST_PORT=8288
+```
+
+- El puerto interno del contenedor se mantiene en `8188`.
+- URL de validacion aislada:
+
+```text
+http://127.0.0.1:8288/system_stats
+```
+
+- No conectar CID todavia al Docker still.
+- No modificar `COMFYUI_STILL_BASE_URL` global salvo prueba aislada controlada.

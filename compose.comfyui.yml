@@ -7,7 +7,7 @@ services:
       COMFYUI_ARGS: --listen 0.0.0.0 --port 8188
       CLI_ARGS: --listen 0.0.0.0 --port 8188
     ports:
-      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:8188:8188"
+      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:${COMFYUI_STILL_HOST_PORT:-8188}:8188"
     volumes:
       - "${COMFYUI_STILL_MODELS_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-image/models}:/workspace/ComfyUI/models:ro"
       - "${COMFYUI_STILL_CUSTOM_NODES_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-image/custom_nodes}:/workspace/ComfyUI/custom_nodes"
@@ -15,7 +15,7 @@ services:
       - "${COMFYUI_STILL_OUTPUT_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-image/output}:/workspace/ComfyUI/output"
       - "${COMFYUI_STILL_USER_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-image/user}:/workspace/ComfyUI/user"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8188/system_stats >/dev/null"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8188/system_stats', timeout=5).read()\""]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -31,7 +31,7 @@ services:
       COMFYUI_ARGS: --listen 0.0.0.0 --port 8189
       CLI_ARGS: --listen 0.0.0.0 --port 8189
     ports:
-      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:8189:8189"
+      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:${COMFYUI_VIDEO_HOST_PORT:-8189}:8189"
     volumes:
       - "${COMFYUI_VIDEO_MODELS_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-video_cine/models}:/workspace/ComfyUI/models:ro"
       - "${COMFYUI_VIDEO_CUSTOM_NODES_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-video_cine/custom_nodes}:/workspace/ComfyUI/custom_nodes"
@@ -39,7 +39,7 @@ services:
       - "${COMFYUI_VIDEO_OUTPUT_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-video_cine/output}:/workspace/ComfyUI/output"
       - "${COMFYUI_VIDEO_USER_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-video_cine/user}:/workspace/ComfyUI/user"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8189/system_stats >/dev/null"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8189/system_stats', timeout=5).read()\""]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -55,7 +55,7 @@ services:
       COMFYUI_ARGS: --listen 0.0.0.0 --port 8190
       CLI_ARGS: --listen 0.0.0.0 --port 8190
     ports:
-      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:8190:8190"
+      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:${COMFYUI_DUBBING_HOST_PORT:-8190}:8190"
     volumes:
       - "${COMFYUI_DUBBING_MODELS_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-dubbing_audio/models}:/workspace/ComfyUI/models:ro"
       - "${COMFYUI_DUBBING_CUSTOM_NODES_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-dubbing_audio/custom_nodes}:/workspace/ComfyUI/custom_nodes"
@@ -63,7 +63,7 @@ services:
       - "${COMFYUI_DUBBING_OUTPUT_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-dubbing_audio/output}:/workspace/ComfyUI/output"
       - "${COMFYUI_DUBBING_USER_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-dubbing_audio/user}:/workspace/ComfyUI/user"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8190/system_stats >/dev/null"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8190/system_stats', timeout=5).read()\""]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -79,7 +79,7 @@ services:
       COMFYUI_ARGS: --listen 0.0.0.0 --port 8191
       CLI_ARGS: --listen 0.0.0.0 --port 8191
     ports:
-      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:8191:8191"
+      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:${COMFYUI_RESTORATION_HOST_PORT:-8191}:8191"
     volumes:
       - "${COMFYUI_RESTORATION_MODELS_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-restoration/models}:/workspace/ComfyUI/models:ro"
       - "${COMFYUI_RESTORATION_CUSTOM_NODES_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-restoration/custom_nodes}:/workspace/ComfyUI/custom_nodes"
@@ -87,7 +87,7 @@ services:
       - "${COMFYUI_RESTORATION_OUTPUT_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-restoration/output}:/workspace/ComfyUI/output"
       - "${COMFYUI_RESTORATION_USER_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-restoration/user}:/workspace/ComfyUI/user"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8191/system_stats >/dev/null"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8191/system_stats', timeout=5).read()\""]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -103,7 +103,7 @@ services:
       COMFYUI_ARGS: --listen 0.0.0.0 --port 8192
       CLI_ARGS: --listen 0.0.0.0 --port 8192
     ports:
-      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:8192:8192"
+      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:${COMFYUI_3D_HOST_PORT:-8192}:8192"
     volumes:
       - "${COMFYUI_3D_MODELS_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-image/models}:/workspace/ComfyUI/models:ro"
       - "${COMFYUI_3D_CUSTOM_NODES_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-3D/custom_nodes}:/workspace/ComfyUI/custom_nodes"
@@ -111,7 +111,7 @@ services:
       - "${COMFYUI_3D_OUTPUT_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-3D/output}:/workspace/ComfyUI/output"
       - "${COMFYUI_3D_USER_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-3D/user}:/workspace/ComfyUI/user"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8192/system_stats >/dev/null"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8192/system_stats', timeout=5).read()\""]
       interval: 30s
       timeout: 10s
       retries: 5

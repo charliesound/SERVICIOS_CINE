@@ -147,6 +147,8 @@ async def trigger_matcher_job(
         priority=0,
         user_plan="free",
         user_id=None,
+        project_id=project_id,
+        organization_id=organization_id,
     )
 
     await db.commit()

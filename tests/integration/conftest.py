@@ -14,6 +14,9 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = REPO_ROOT / "src"
 
+# Default to memory queue for SQLite compatibility in tests
+os.environ.setdefault("QUEUE_PERSISTENCE_MODE", "memory")
+
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 

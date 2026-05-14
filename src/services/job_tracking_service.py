@@ -10,14 +10,10 @@ from urllib.parse import urlencode
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.core import Organization, Project, ProjectJob, User
+from models.core import ProjectJob, User
 from models.history import JobHistory
 from models.storage import MediaAsset, MediaAssetStatus, MediaAssetType
 from services.ingest_service import ingest_service
-
-
-QUEUE_RUNTIME_ORGANIZATION_ID = "__queue_runtime__"
-QUEUE_RUNTIME_PROJECT_ID = "__queue_runtime__"
 
 
 class JobTrackingService:
@@ -36,36 +32,6 @@ class JobTrackingService:
         except json.JSONDecodeError:
             return payload
 
-    def _is_queue_runtime_context(self, organization_id: str, project_id: str) -> bool:
-        return (
-            organization_id == QUEUE_RUNTIME_ORGANIZATION_ID
-            and project_id == QUEUE_RUNTIME_PROJECT_ID
-        )
-
-    async def _ensure_queue_runtime_context(self, db: AsyncSession) -> None:
-        organization = await db.get(Organization, QUEUE_RUNTIME_ORGANIZATION_ID)
-        if organization is None:
-            organization = Organization(
-                id=QUEUE_RUNTIME_ORGANIZATION_ID,
-                name="Queue Runtime",
-                billing_plan="system",
-                is_active=True,
-            )
-            db.add(organization)
-
-        project = await db.get(Project, QUEUE_RUNTIME_PROJECT_ID)
-        if project is None:
-            project = Project(
-                id=QUEUE_RUNTIME_PROJECT_ID,
-                organization_id=QUEUE_RUNTIME_ORGANIZATION_ID,
-                name="Queue Runtime",
-                description="Internal runtime project for durable queue tracking",
-                status="system",
-            )
-            db.add(project)
-
-        await db.flush()
-
     async def record_job_event(
         self,
         db: AsyncSession,
@@ -81,9 +47,6 @@ class JobTrackingService:
         metadata_json: Optional[Any] = None,
         created_by: Optional[str] = None,
     ) -> JobHistory:
-        if self._is_queue_runtime_context(organization_id, project_id):
-            await self._ensure_queue_runtime_context(db)
-
         if created_by is not None and await db.get(User, created_by) is None:
             created_by = None
 

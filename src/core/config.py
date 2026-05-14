@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     feature_admin: bool = True
     feature_experimental: bool = False
     feature_postproduction: bool = False
-    queue_persistence_mode: Literal["memory", "database"] = "memory"
+    queue_persistence_mode: Literal["memory", "database"] = "database"
 
     # ── Demo ─────────────────────────────────────────────────────────────
     demo_enabled: bool = False

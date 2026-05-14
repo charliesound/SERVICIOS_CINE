@@ -103,7 +103,7 @@ def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
 
     queue_config["persistence_mode"] = os.getenv(
         "QUEUE_PERSISTENCE_MODE",
-        str(queue_config.get("persistence_mode", "memory")),
+        str(queue_config.get("persistence_mode", "database")),
     ).strip()
     queue_config["production_ready"] = queue_config["persistence_mode"].lower() != "memory"
 

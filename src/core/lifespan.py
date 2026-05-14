@@ -80,6 +80,8 @@ async def _run_startup_tasks(app: FastAPI, settings) -> None:
 
     if settings.queue_persistence_mode == "memory":
         logger.warning("Queue persistence mode is MEMORY_ONLY. Suitable for demo/dev, not durable enough for full production.")
+    else:
+        logger.info("Queue persistence mode is DATABASE (durable). Jobs survive process restarts.")
 
     if settings.demo_enabled:
         logger.warning("Demo routes are enabled. Keep ENABLE_DEMO_ROUTES disabled in production deployments.")

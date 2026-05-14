@@ -19,8 +19,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-QUEUE_RUNTIME_ORGANIZATION_ID = "__queue_runtime__"
-QUEUE_RUNTIME_PROJECT_ID = "__queue_runtime__"
+QUEUE_PERSISTENCE_DEFAULT = "database"
 
 
 class QueueStatus(Enum):
@@ -95,15 +94,8 @@ class QueueService:
         if self._initialized:
             return
         self._initialized = True
-        self._persistence_mode = (
-            os.getenv("QUEUE_PERSISTENCE_MODE", "memory").strip().lower() or "memory"
-        )
-        if self._persistence_mode not in {"memory", "db"}:
-            logger.warning(
-                "Unsupported queue persistence mode '%s'; falling back to memory-only queue",
-                self._persistence_mode,
-            )
-            self._persistence_mode = "memory"
+        raw_mode = os.getenv("QUEUE_PERSISTENCE_MODE", QUEUE_PERSISTENCE_DEFAULT).strip().lower()
+        self._persistence_mode = "db" if raw_mode in {"db", "database"} else "memory"
         self._queue: Dict[str, List[QueueItem]] = defaultdict(list)
         self._running: Dict[str, List[str]] = defaultdict(list)
         self._completed: Dict[str, QueueItem] = {}
@@ -263,6 +255,12 @@ class QueueService:
         AsyncSessionLocal, ProjectJob = self._get_db_types()
         from services.job_tracking_service import job_tracking_service
 
+        if not item.organization_id or not item.project_id:
+            raise ValueError(
+                f"Cannot persist queue job {item.job_id}: "
+                "organization_id and project_id are required in db mode"
+            )
+
         async with AsyncSessionLocal() as session:
             record = await session.get(ProjectJob, item.job_id)
             created_record = record is None
@@ -273,12 +271,10 @@ class QueueService:
                 recovery_reason=recovery_reason,
             )
             if record is None:
-                organization_id = item.organization_id or QUEUE_RUNTIME_ORGANIZATION_ID
-                project_id = item.project_id or QUEUE_RUNTIME_PROJECT_ID
                 record = ProjectJob(
                     id=item.job_id,
-                    organization_id=organization_id,
-                    project_id=project_id,
+                    organization_id=item.organization_id,
+                    project_id=item.project_id,
                     job_type=self._queue_job_type(item),
                     status=item.status.value,
                     result_data=payload,
@@ -291,14 +287,12 @@ class QueueService:
                 session.add(record)
                 await session.flush()
             else:
-                expected_org = item.organization_id or QUEUE_RUNTIME_ORGANIZATION_ID
-                expected_project = item.project_id or QUEUE_RUNTIME_PROJECT_ID
                 if (
-                    record.organization_id != expected_org
-                    or record.project_id != expected_project
+                    str(record.organization_id) != str(item.organization_id)
+                    or str(record.project_id) != str(item.project_id)
                 ):
                     logger.warning(
-                        "Skipping durable queue write for non-queue ProjectJob id=%s",
+                        "Skipping durable queue write for mismatched ProjectJob id=%s",
                         item.job_id,
                     )
                     return
@@ -341,8 +335,7 @@ class QueueService:
             result = await session.execute(
                 select(ProjectJob)
                 .where(
-                    ProjectJob.organization_id == QUEUE_RUNTIME_ORGANIZATION_ID,
-                    ProjectJob.project_id == QUEUE_RUNTIME_PROJECT_ID,
+                    ~ProjectJob.status.in_(list(TERMINAL_STATUSES)),
                 )
                 .order_by(ProjectJob.created_at.asc(), ProjectJob.id.asc())
             )
@@ -352,13 +345,6 @@ class QueueService:
         AsyncSessionLocal, ProjectJob = self._get_db_types()
         async with AsyncSessionLocal() as session:
             record = await session.get(ProjectJob, job_id)
-            if record is None:
-                return None
-            if (
-                record.organization_id != QUEUE_RUNTIME_ORGANIZATION_ID
-                or record.project_id != QUEUE_RUNTIME_PROJECT_ID
-            ):
-                return None
             return record
 
     def _record_transition(
@@ -457,6 +443,11 @@ class QueueService:
         created_by: Optional[str] = None,
         target_instance: Optional[str] = None,
     ) -> Optional[QueueItem]:
+        if self._is_db_mode() and (not organization_id or not project_id):
+            raise ValueError(
+                f"Cannot enqueue job {job_id}: "
+                "organization_id and project_id are required when persistence is database"
+            )
         if backend == "lab" and user_plan not in self._config.PLAN_LAB_ACCESS:
             item = QueueItem(
                 job_id=job_id,
@@ -506,8 +497,10 @@ class QueueService:
 
     def get_status(self, job_id: str) -> Optional[QueueItem]:
         item = self._job_map.get(job_id)
-        if item or not self._is_db_mode():
+        if item is not None:
             return item
+        if not self._is_db_mode():
+            return None
 
         record = self._run_db(self._get_persisted_job_async(job_id))
         if not record:

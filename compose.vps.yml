@@ -10,10 +10,17 @@ services:
     environment:
       # COMFYUI endpoints via Tailscale (home machine)
       COMFYUI_BASE_URL: ${COMFYUI_BASE_URL:-http://100.x.x.x:8188}
-      COMFYUI_STILL: ${COMFYUI_BASE_URL:-http://100.x.x.x:8188}
-      COMFYUI_VIDEO: ${COMFYUI_VIDEO_URL:-http://100.x.x.x:8189}
-      COMFYUI_DUBBING: ${COMFYUI_DUBBING_URL:-http://100.x.x.x:8190}
-      COMFYUI_LAB: ${COMFYUI_LAB_URL:-http://100.x.x.x:8191}
+      COMFYUI_STORYBOARD_BASE_URL: ${COMFYUI_STORYBOARD_BASE_URL:-http://100.x.x.x:8188}
+      COMFYUI_STILL_BASE_URL: ${COMFYUI_STILL_BASE_URL:-http://100.x.x.x:8188}
+      COMFYUI_VIDEO_BASE_URL: ${COMFYUI_VIDEO_BASE_URL:-http://100.x.x.x:8189}
+      COMFYUI_DUBBING_BASE_URL: ${COMFYUI_DUBBING_BASE_URL:-http://100.x.x.x:8190}
+      COMFYUI_RESTORATION_BASE_URL: ${COMFYUI_RESTORATION_BASE_URL:-http://100.x.x.x:8191}
+      COMFYUI_LAB_BASE_URL: ${COMFYUI_LAB_BASE_URL:-http://100.x.x.x:8191}
+      COMFYUI_3D_BASE_URL: ${COMFYUI_3D_BASE_URL:-http://100.x.x.x:8192}
+      COMFYUI_STILL: ${COMFYUI_STILL_BASE_URL:-http://100.x.x.x:8188}
+      COMFYUI_VIDEO: ${COMFYUI_VIDEO_BASE_URL:-http://100.x.x.x:8189}
+      COMFYUI_DUBBING: ${COMFYUI_DUBBING_BASE_URL:-http://100.x.x.x:8190}
+      COMFYUI_LAB: ${COMFYUI_LAB_BASE_URL:-http://100.x.x.x:8191}
       # VPS-specific settings
       DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./ailinkcinema.db}
       BACKEND_HOST: 0.0.0.0

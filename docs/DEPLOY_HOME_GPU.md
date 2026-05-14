@@ -110,3 +110,26 @@ curl http://127.0.0.1:11434/api/tags
 - [ ] n8n detras de acceso privado/autenticado.
 - [ ] Tailscale operativo en PC casa y laptop.
 - [ ] Accesos remotos auditados y minimizados.
+
+## Routing interno de ComfyUI por CID
+
+- El usuario entra a CID; no selecciona URLs de ComfyUI manualmente.
+- CID decide internamente la instancia ComfyUI segun `task_type`, workflow y capacidades.
+- ComfyUI no debe exponerse como interfaz de usuario normal.
+
+Mapa operativo:
+
+- still/storyboard -> 8188
+- video/cine -> 8189
+- dubbing/audio -> 8190
+- restoration/conform/cleanup -> 8191
+- 3D -> 8192
+
+Entornos:
+
+- En Docker Home, el backend usa `host.docker.internal` para alcanzar ComfyUI nativo.
+- En VPS sin GPU, el backend usa IP Tailscale/MagicDNS del PC casa.
+
+Comportamiento esperado:
+
+- Si una instancia esta caida, CID debe devolver error de capacidad/backend no disponible.

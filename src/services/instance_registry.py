@@ -4,6 +4,7 @@ from enum import Enum
 import yaml
 import aiohttp
 import asyncio
+import os
 from pathlib import Path
 
 
@@ -11,6 +12,8 @@ class BackendType(Enum):
     STILL = "still"
     VIDEO = "video"
     DUBBING = "dubbing"
+    RESTORATION = "restoration"
+    THREE_D = "3d"
     LAB = "lab"
 
 
@@ -72,12 +75,13 @@ class InstanceRegistry:
 
         self._backends.clear()
         for key, data in config['backends'].items():
+            base_url = self._resolve_backend_base_url(key, data['base_url'])
             self._backends[key] = BackendInstance(
                 name=data['name'],
                 type=BackendType(key),
                 host=data['host'],
                 port=data['port'],
-                base_url=data['base_url'],
+                base_url=base_url,
                 health_endpoint=data['health_endpoint'],
                 max_concurrent_jobs=data['max_concurrent_jobs'],
                 priority=data['priority'],
@@ -90,6 +94,26 @@ class InstanceRegistry:
             fallback_backend=config['routing_rules']['fallback_backend'],
             experimental_backend=config['routing_rules']['experimental_backend']
         )
+
+    def _resolve_backend_base_url(self, backend_key: str, yaml_base_url: str) -> str:
+        if backend_key == "still":
+            return (
+                os.getenv("COMFYUI_STILL_BASE_URL")
+                or os.getenv("COMFYUI_BASE_URL")
+                or os.getenv("COMFYUI_STORYBOARD_BASE_URL")
+                or yaml_base_url
+            )
+        if backend_key == "video":
+            return os.getenv("COMFYUI_VIDEO_BASE_URL") or yaml_base_url
+        if backend_key == "dubbing":
+            return os.getenv("COMFYUI_DUBBING_BASE_URL") or yaml_base_url
+        if backend_key == "restoration":
+            return os.getenv("COMFYUI_RESTORATION_BASE_URL") or yaml_base_url
+        if backend_key == "3d":
+            return os.getenv("COMFYUI_3D_BASE_URL") or yaml_base_url
+        if backend_key == "lab":
+            return os.getenv("COMFYUI_LAB_BASE_URL") or yaml_base_url
+        return yaml_base_url
 
     def get_backend(self, backend_key: str) -> Optional[BackendInstance]:
         return self._backends.get(backend_key)

@@ -488,3 +488,106 @@ async def test_global_admin_has_no_bypass_in_project_routes(test_app):
             headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
         )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_create_storage_source_in_org_a_project(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/storage-sources",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={
+                "organization_id": SMOKE_ORG_A,
+                "project_id": SMOKE_PROJECT_ID,
+                "name": "Cross-org source",
+                "source_type": "local",
+                "mount_path": "/tmp/cross-org",
+            },
+        )
+    assert resp.status_code == 404, f"Expected 404, got {resp.status_code}: {resp.text}"
+
+
+@pytest.mark.asyncio
+async def test_org_a_can_create_and_org_b_cannot_see_storage_source(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        create = await client.post(
+            "/api/storage-sources",
+            headers={"Authorization": f"Bearer {_tenant_a_token()}"},
+            json={
+                "organization_id": SMOKE_ORG_A,
+                "project_id": SMOKE_PROJECT_ID,
+                "name": "Tenant A Source",
+                "source_type": "local",
+                "mount_path": "/tmp/tenant-a",
+            },
+        )
+    assert create.status_code == 200, f"Create failed: {create.text}"
+    source_id = create.json()["id"]
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        detail = await client.get(
+            f"/api/storage-sources/{source_id}",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert detail.status_code == 404, (
+        f"Org B should not see org A storage source: {detail.status_code}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_update_storage_source_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        detail = await client.get(
+            "/api/storage-sources/nonexistent-id",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert detail.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_validate_storage_source_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/storage-sources/nonexistent-id/validate",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_launch_scan_in_org_a_storage(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/storage-sources/nonexistent-id/scan",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_global_admin_cannot_bypass_storage_isolation(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/storage-sources/nonexistent-id",
+            headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
+        )
+    assert resp.status_code == 404

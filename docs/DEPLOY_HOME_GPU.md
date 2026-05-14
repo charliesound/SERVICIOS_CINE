@@ -111,6 +111,11 @@ curl http://127.0.0.1:11434/api/tags
 - [ ] Tailscale operativo en PC casa y laptop.
 - [ ] Accesos remotos auditados y minimizados.
 
+## Referencia ComfyUI Docker
+
+- Ver `docs/COMFYUI_DOCKERIZATION.md` para el skeleton Docker (Infra 8B).
+- Ese documento define solo base de compose y validaciones de config, sin apagar ComfyUI nativo.
+
 ## Routing interno de ComfyUI por CID
 
 - El usuario entra a CID; no selecciona URLs de ComfyUI manualmente.

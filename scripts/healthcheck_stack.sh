@@ -125,6 +125,14 @@ else
     warn "ollama not running (optional)"
 fi
 
+# ── 6. ComfyUI Docker containers (optional, informational) ───────────────
+echo "--- ComfyUI Docker ---"
+if docker ps --format '{{.Names}}' | grep -Eq '^comfyui-(still|video|dubbing|restoration|3d)$'; then
+    warn "ComfyUI Docker containers detected (informational); validate /system_stats per instance before cutover"
+else
+    pass "No ComfyUI Docker containers running (native ComfyUI unaffected)"
+fi
+
 # ── Summary ──────────────────────────────────────────────────────────────
 echo "=============================="
 if [ "$FAIL" -eq 1 ]; then

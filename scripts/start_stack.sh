@@ -14,6 +14,8 @@
 #   ./scripts/start_stack.sh ai-gpu            — Qdrant + Ollama GPU
 #   ./scripts/start_stack.sh all               — Postgres + Qdrant + Redis + n8n + Ollama CPU
 #   ./scripts/start_stack.sh all-gpu           — Postgres + Qdrant + Redis + n8n + Ollama GPU
+#   ./scripts/start_stack.sh comfyui-config    — validate ComfyUI compose config only
+#   ./scripts/start_stack.sh comfyui-gpu-config — validate ComfyUI compose + GPU override only
 #   ./scripts/start_stack.sh docker-data       — alias for data
 #   ./scripts/start_stack.sh docker-data-full  — alias for data-full
 #   ./scripts/start_stack.sh docker-n8n        — alias for n8n
@@ -32,6 +34,8 @@ COMPOSE_ALL="-f compose.base.yml -f compose.data.yml -f compose.n8n.yml -f compo
 COMPOSE_OLLAMA_GPU="-f compose.base.yml -f compose.ollama.yml -f compose.ollama.gpu.yml"
 COMPOSE_AI_GPU="-f compose.base.yml -f compose.data.yml -f compose.ollama.yml -f compose.ollama.gpu.yml"
 COMPOSE_ALL_GPU="-f compose.base.yml -f compose.data.yml -f compose.n8n.yml -f compose.ollama.yml -f compose.ollama.gpu.yml"
+COMPOSE_COMFYUI="-f compose.base.yml -f compose.comfyui.yml"
+COMPOSE_COMFYUI_GPU="-f compose.base.yml -f compose.comfyui.yml -f compose.comfyui.gpu.yml"
 SCRIPT_NAME="$(basename "$0")"
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -209,6 +213,24 @@ cmd_status() {
     fi
 }
 
+cmd_comfyui_config() {
+    local img
+    img="${COMFYUI_IMAGE:-local/comfyui-placeholder:latest}"
+    export COMFYUI_IMAGE="$img"
+    echo ">> Validating ComfyUI compose config with COMFYUI_IMAGE=$COMFYUI_IMAGE ..."
+    docker compose $COMPOSE_COMFYUI --profile with-comfyui config >/dev/null
+    echo ">> PASS: ComfyUI compose config is valid."
+}
+
+cmd_comfyui_gpu_config() {
+    local img
+    img="${COMFYUI_IMAGE:-local/comfyui-placeholder:latest}"
+    export COMFYUI_IMAGE="$img"
+    echo ">> Validating ComfyUI compose GPU config with COMFYUI_IMAGE=$COMFYUI_IMAGE ..."
+    docker compose $COMPOSE_COMFYUI_GPU --profile with-comfyui config >/dev/null
+    echo ">> PASS: ComfyUI compose GPU config is valid."
+}
+
 # ── main ─────────────────────────────────────────────────────────────────
 case "${1:-help}" in
     help|--help|-h)
@@ -246,6 +268,12 @@ case "${1:-help}" in
         ;;
     status)
         cmd_status
+        ;;
+    comfyui-config)
+        cmd_comfyui_config
+        ;;
+    comfyui-gpu-config)
+        cmd_comfyui_gpu_config
         ;;
     *)
         echo "Unknown command: $1"

@@ -39,6 +39,48 @@ Laptop -> Tailscale -> PC casa -> Docker GPU stack
 - Ollama solo para backend interno o proxy privado.
 - Bases de datos siempre privadas, nunca publicas.
 
+## Acceso remoto privado con Tailscale Serve
+
+- Tailscale Serve comparte servicios locales solo dentro del tailnet.
+- No es lo mismo que Funnel.
+- Funnel expone servicios a internet publico; no usar Funnel salvo demo controlada.
+- Un servicio escuchando en `127.0.0.1` no es accesible directamente desde la laptop por IP Tailscale.
+- Para acceso remoto desde laptop usar Tailscale Serve o Caddy interno.
+
+Pasos base (manual, fuera del repo):
+
+1. Ejecutar `tailscale up`.
+2. Verificar estado con `tailscale status`.
+
+Ejemplos de exposicion privada en tailnet:
+
+```bash
+# Backend
+tailscale serve --bg 8010
+# o equivalente
+tailscale serve --bg localhost:8010
+
+# n8n (solo si esta protegido)
+tailscale serve --bg 5678
+
+# ComfyUI (solo administracion privada y no permanente)
+tailscale serve --bg 8188
+```
+
+Gestion del estado de Serve:
+
+```bash
+tailscale serve status
+tailscale serve off
+```
+
+Advertencias:
+
+- No exponer PostgreSQL, Redis, Qdrant ni Ollama con Tailscale Serve.
+- No usar Funnel para Ollama/ComfyUI.
+- Restringir acceso con ACLs de Tailscale si hay mas dispositivos o usuarios.
+- Los puertos ComfyUI 8188-8192 son sensibles; no exponerlos todos por defecto.
+
 ## 7) Diagnostico rapido
 
 ```bash

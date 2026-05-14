@@ -15,7 +15,6 @@ from database import get_db
 from dependencies.tenant_context import get_tenant_context, TenantContext
 from models.core import Project, ProjectJob, User as DBUser
 from models.storage import MediaAsset, MediaAssetType, MediaAssetStatus
-from schemas.auth_schema import UserResponse
 from services.document_service import document_service
 from services.job_tracking_service import job_tracking_service
 from services.plan_limits_service import plan_limits_service
@@ -129,12 +128,6 @@ class ProjectResponse(BaseModel):
     description: Optional[str]
     status: str
     script_text: Optional[str]
-
-
-async def _get_user_org_id(user_id: str, db: AsyncSession) -> Optional[str]:
-    result = await db.execute(select(DBUser).where(DBUser.id == user_id))
-    user = result.scalar_one_or_none()
-    return user.organization_id if user else None
 
 
 def _project_dict(project: Project) -> dict:
@@ -1187,20 +1180,15 @@ async def _build_project_export_payload(
     db: AsyncSession,
     *,
     project_id: str,
-    user_org_id: str,
+    tenant: TenantContext,
 ) -> dict[str, Any]:
-    project_result = await db.execute(select(Project).where(Project.id == project_id))
-    project = project_result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     jobs_result = await db.execute(
         select(ProjectJob)
         .where(
             ProjectJob.project_id == project_id,
-            ProjectJob.organization_id == user_org_id,
+            ProjectJob.organization_id == str(tenant.organization_id),
         )
         .order_by(ProjectJob.created_at.desc(), ProjectJob.id.desc())
     )
@@ -1210,7 +1198,7 @@ async def _build_project_export_payload(
         select(MediaAsset)
         .where(
             MediaAsset.project_id == project_id,
-            MediaAsset.organization_id == user_org_id,
+            MediaAsset.organization_id == str(tenant.organization_id),
         )
         .order_by(MediaAsset.created_at.desc(), MediaAsset.id.desc())
     )
@@ -1276,20 +1264,13 @@ async def list_project_jobs(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
 ):
-    user_org_id = str(tenant.organization_id)
-
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     result = await db.execute(
         select(ProjectJob)
         .where(
             ProjectJob.project_id == project_id,
-            ProjectJob.organization_id == user_org_id,
+            ProjectJob.organization_id == str(tenant.organization_id),
         )
         .order_by(ProjectJob.created_at.desc(), ProjectJob.id.desc())
     )
@@ -1441,8 +1422,9 @@ async def retry_project_job(
             select(Project).where(Project.id == project_id)
         )
         project = project_result.scalar_one_or_none()
-        if not project or not project.script_text:
-            raise ValueError("Project has no script text")
+        if not project or not project.script_text or str(project.organization_id) != str(tenant.organization_id):
+            raise ValueError("Project not available")
+
 
         if job.job_type == "analyze":
             doc = await document_service.create_script_document(
@@ -1638,20 +1620,13 @@ async def list_project_assets(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
 ):
-    user_org_id = str(tenant.organization_id)
-
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     result = await db.execute(
         select(MediaAsset)
         .where(
             MediaAsset.project_id == project_id,
-            MediaAsset.organization_id == user_org_id,
+            MediaAsset.organization_id == str(tenant.organization_id),
         )
         .order_by(MediaAsset.created_at.desc(), MediaAsset.id.desc())
     )
@@ -1685,20 +1660,13 @@ async def get_project_metrics(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
 ):
-    user_org_id = str(tenant.organization_id)
-
-    project_result = await db.execute(select(Project).where(Project.id == project_id))
-    project = project_result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     jobs_count = (
         await db.execute(
             select(func.count(ProjectJob.id)).where(
                 ProjectJob.project_id == project_id,
-                ProjectJob.organization_id == user_org_id,
+                ProjectJob.organization_id == str(tenant.organization_id),
             )
         )
     ).scalar_one() or 0
@@ -1746,11 +1714,13 @@ async def export_project_json(
 ):
     user_org_id = str(tenant.organization_id)
 
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
+
     await _enforce_export_permission(tenant.plan, export_format="json")
     payload = await _build_project_export_payload(
         db,
         project_id=project_id,
-        user_org_id=user_org_id,
+        tenant=tenant,
     )
 
     return Response(
@@ -1770,11 +1740,13 @@ async def export_project_zip(
 ):
     user_org_id = str(tenant.organization_id)
 
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
+
     await _enforce_export_permission(tenant.plan, export_format="zip")
     payload = await _build_project_export_payload(
         db,
         project_id=project_id,
-        user_org_id=user_org_id,
+        tenant=tenant,
     )
     archive_bytes = _build_project_export_zip(payload)
 
@@ -1833,12 +1805,7 @@ async def list_project_image_assets(
     if size > 100:
         size = 100
 
-    project_result = await db.execute(select(Project).where(Project.id == project_id))
-    project = project_result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != tenant.organization_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     base_query = select(MediaAsset).where(
         MediaAsset.project_id == project_id,

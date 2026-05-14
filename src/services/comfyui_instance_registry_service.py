@@ -82,13 +82,7 @@ class ComfyUIInstanceRegistry:
         return LEGACY_TASK_ALIASES.get(task_type, task_type)
 
     def _routing_tasks_for_backend(self, backend_key: str) -> list[str]:
-        rules = unified_registry._routing_rules
-        if not rules:
-            return []
-        legacy_tasks = []
-        for task, target in rules.task_type_mapping.items():
-            if target == backend_key:
-                legacy_tasks.append(task)
+        legacy_tasks = list(unified_registry.tasks_for_backend(backend_key))
         for task, normalized in LEGACY_TASK_ALIASES.items():
             if normalized in legacy_tasks:
                 legacy_tasks.append(task)
@@ -140,15 +134,14 @@ class ComfyUIInstanceRegistry:
     def get_instance_for_task(self, task_type: str) -> Optional[ComfyUIInstanceRecord]:
         self.load_instances()
         normalized = self._normalize_task_type(task_type)
-        rules = unified_registry._routing_rules
-        if not rules or normalized not in rules.task_type_mapping:
+        backend_key = unified_registry.backend_key_for_task(normalized)
+        if backend_key is None:
             return None
 
-        backend = unified_registry.resolve_backend_for_task(normalized)
+        backend = unified_registry.get_backend(backend_key)
         if backend is None:
             return None
 
-        backend_key = backend.type.value
         return self._to_legacy_record(backend_key, backend)
 
     async def check_instance_health(

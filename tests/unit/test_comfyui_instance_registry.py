@@ -87,10 +87,55 @@ def test_get_instance_for_task_i2v_maps_to_video():
     assert rec.port == 8189
 
 
+def test_get_instance_for_task_t2v_maps_to_video():
+    from services.comfyui_instance_registry_service import registry
+
+    rec = registry.get_instance_for_task("t2v")
+    assert rec is not None
+    assert rec.key == "video_cine"
+    assert rec.port == 8189
+
+
+def test_get_instance_for_task_previz_maps_to_video():
+    from services.comfyui_instance_registry_service import registry
+
+    rec = registry.get_instance_for_task("previz")
+    assert rec is not None
+    assert rec.key == "video_cine"
+    assert rec.port == 8189
+
+
 def test_get_instance_for_task_lipsync_maps_to_dubbing():
     from services.comfyui_instance_registry_service import registry
 
     rec = registry.get_instance_for_task("lipsync")
+    assert rec is not None
+    assert rec.key == "dubbing_audio"
+    assert rec.port == 8190
+
+
+def test_get_instance_for_task_dubbing_maps_to_dubbing():
+    from services.comfyui_instance_registry_service import registry
+
+    rec = registry.get_instance_for_task("dubbing")
+    assert rec is not None
+    assert rec.key == "dubbing_audio"
+    assert rec.port == 8190
+
+
+def test_get_instance_for_task_audio_maps_to_dubbing():
+    from services.comfyui_instance_registry_service import registry
+
+    rec = registry.get_instance_for_task("audio")
+    assert rec is not None
+    assert rec.key == "dubbing_audio"
+    assert rec.port == 8190
+
+
+def test_get_instance_for_task_voice_maps_to_dubbing():
+    from services.comfyui_instance_registry_service import registry
+
+    rec = registry.get_instance_for_task("voice")
     assert rec is not None
     assert rec.key == "dubbing_audio"
     assert rec.port == 8190
@@ -105,10 +150,55 @@ def test_get_instance_for_task_upscale_maps_to_restoration():
     assert rec.port == 8191
 
 
+def test_get_instance_for_task_cleanup_maps_to_restoration():
+    from services.comfyui_instance_registry_service import registry
+
+    rec = registry.get_instance_for_task("cleanup")
+    assert rec is not None
+    assert rec.key == "restoration"
+    assert rec.port == 8191
+
+
+def test_get_instance_for_task_repair_maps_to_restoration():
+    from services.comfyui_instance_registry_service import registry
+
+    rec = registry.get_instance_for_task("repair")
+    assert rec is not None
+    assert rec.key == "restoration"
+    assert rec.port == 8191
+
+
 def test_get_instance_for_task_mesh_maps_to_three_d():
     from services.comfyui_instance_registry_service import registry
 
     rec = registry.get_instance_for_task("mesh")
+    assert rec is not None
+    assert rec.key == "three_d"
+    assert rec.port == 8192
+
+
+def test_get_instance_for_task_depth_maps_to_three_d():
+    from services.comfyui_instance_registry_service import registry
+
+    rec = registry.get_instance_for_task("depth")
+    assert rec is not None
+    assert rec.key == "three_d"
+    assert rec.port == 8192
+
+
+def test_get_instance_for_task_scene_maps_to_three_d():
+    from services.comfyui_instance_registry_service import registry
+
+    rec = registry.get_instance_for_task("scene")
+    assert rec is not None
+    assert rec.key == "three_d"
+    assert rec.port == 8192
+
+
+def test_get_instance_for_task_3d_maps_to_three_d():
+    from services.comfyui_instance_registry_service import registry
+
+    rec = registry.get_instance_for_task("3d")
     assert rec is not None
     assert rec.key == "three_d"
     assert rec.port == 8192

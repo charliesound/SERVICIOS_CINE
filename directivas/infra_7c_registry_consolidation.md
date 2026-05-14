@@ -69,3 +69,10 @@ La ruta legada mantenia endpoints publicos y tests propios, generando riesgo de 
 - `src/config/comfyui_instances.yml` se mantiene temporalmente como referencia legacy, sin uso runtime en el wrapper.
 - Las rutas principales ya operan sobre unified registry.
 - Los tests legacy cubren compatibilidad de claves, task aliases, unknown task y shape de health responses.
+
+## Infra 7C3 — Public API
+
+- `instance_registry` expone API publica minima de routing (`has_task_mapping`, `tasks_for_backend`, `backend_key_for_task`, `get_routing_snapshot`).
+- Routes y wrapper legacy ya no deben acceder a `_routing_rules`.
+- Se recupera cobertura compacta para aliases y task routing en tests unitarios.
+- `src/config/comfyui_instances.yml` se mantiene como referencia legacy y no se elimina en esta fase.

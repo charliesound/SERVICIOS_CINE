@@ -102,3 +102,43 @@ def test_comfyui_api_client_no_longer_uses_hardcoded_default_when_env_missing(tm
     registry.load_config(config_path=str(temp_cfg))
 
     assert get_comfyui_base_url() == "http://registry-routed:8188"
+
+
+def test_has_task_mapping_for_storyboard_true():
+    from services.instance_registry import registry
+
+    assert registry.has_task_mapping("storyboard") is True
+
+
+def test_has_task_mapping_for_unknown_false():
+    from services.instance_registry import registry
+
+    assert registry.has_task_mapping("nonexistent_task_type_xyz") is False
+
+
+def test_backend_key_for_task_expected_mappings():
+    from services.instance_registry import registry
+
+    assert registry.backend_key_for_task("storyboard") == "still"
+    assert registry.backend_key_for_task("video") == "video"
+    assert registry.backend_key_for_task("cine") == "video"
+    assert registry.backend_key_for_task("dubbing") == "dubbing"
+    assert registry.backend_key_for_task("audio") == "dubbing"
+    assert registry.backend_key_for_task("restoration") == "restoration"
+    assert registry.backend_key_for_task("cleanup") == "restoration"
+    assert registry.backend_key_for_task("3d") == "3d"
+    assert registry.backend_key_for_task("scene_3d") == "3d"
+
+
+def test_tasks_for_backend_video_contains_expected_tasks():
+    from services.instance_registry import registry
+
+    tasks = set(registry.tasks_for_backend("video"))
+    assert {"video", "cine", "text_to_video"}.issubset(tasks)
+
+
+def test_tasks_for_backend_3d_contains_expected_tasks():
+    from services.instance_registry import registry
+
+    tasks = set(registry.tasks_for_backend("3d"))
+    assert {"3d", "scene_3d", "depth"}.issubset(tasks)

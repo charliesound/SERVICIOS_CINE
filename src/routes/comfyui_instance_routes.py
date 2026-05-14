@@ -57,21 +57,13 @@ def _backend_to_payload(backend_key: str, backend) -> dict:
         "base_url": backend.base_url,
         "port": backend.port,
         "enabled": backend.enabled,
-        "task_types": [
-            task
-            for task, target in registry._routing_rules.task_type_mapping.items()
-            if target == backend_key
-        ]
-        if registry._routing_rules
-        else [],
+        "task_types": registry.tasks_for_backend(backend_key),
         "health_endpoint": backend.health_endpoint,
     }
 
 
 def _supports_task(task_type: str) -> bool:
-    if not registry._routing_rules:
-        return False
-    return task_type in registry._routing_rules.task_type_mapping
+    return registry.has_task_mapping(task_type)
 
 
 def _normalize_task_type(task_type: str) -> str:
@@ -204,7 +196,7 @@ async def resolve_task_type(
         )
     return {
         "task_type": task_type,
-        "instance_key": _to_legacy_key(rec.type.value),
+        "instance_key": _to_legacy_key(registry.backend_key_for_task(normalized_task_type) or rec.type.value),
         "instance_name": rec.name,
         "base_url": rec.base_url,
         "port": rec.port,

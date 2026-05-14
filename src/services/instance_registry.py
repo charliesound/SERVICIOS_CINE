@@ -134,6 +134,30 @@ class InstanceRegistry:
         )
         return self.get_backend(backend_key)
 
+    def has_task_mapping(self, task_type: str) -> bool:
+        if not self._routing_rules:
+            return False
+        return task_type in self._routing_rules.task_type_mapping
+
+    def tasks_for_backend(self, backend_key: str) -> List[str]:
+        if not self._routing_rules:
+            return []
+        return [
+            task
+            for task, target in self._routing_rules.task_type_mapping.items()
+            if target == backend_key
+        ]
+
+    def backend_key_for_task(self, task_type: str) -> Optional[str]:
+        if not self._routing_rules:
+            return None
+        return self._routing_rules.task_type_mapping.get(task_type)
+
+    def get_routing_snapshot(self) -> Dict[str, str]:
+        if not self._routing_rules:
+            return {}
+        return dict(self._routing_rules.task_type_mapping)
+
     def get_backend_for_workflow(self, workflow_key: str) -> Optional[BackendInstance]:
         workflow_backend_map = {
             "sd_xl": "still",

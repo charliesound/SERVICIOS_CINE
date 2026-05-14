@@ -31,9 +31,12 @@ Todos en profile `with-comfyui`, con bind en host `127.0.0.1` por defecto y red 
 
 ## 5) Modelos: bind mounts, sin copiar 2.6 TB
 
-- Los servicios montan `models` desde rutas host existentes.
+- Source of truth de modelos en host: `/mnt/i/COMFYUI_OK/models`.
+- Los servicios montan `models` en modo read-only (`:ro`).
 - No se duplican modelos grandes en volumen Docker.
-- `comfyui-3d` puede apuntar a `ComfyUI-image/models` cuando comparten inode/datos.
+- Source of truth operativo para I/O y workflows: `/mnt/g/COMFYUI_HUB`.
+- `input`, `output`, `user` y `workflows` se montan en read-write.
+- No usar symlinks de `~/ai/ComfyUI_instances/*` como fuente principal de modelos.
 
 ## 6) Imagen ComfyUI parametrizada
 
@@ -110,3 +113,4 @@ http://127.0.0.1:8288/system_stats
 - Para CID backend conviene priorizar tags `slim`/`no-megapak` y reutilizar modelos host por bind mounts.
 - Objetivo operativo: usar los modelos existentes del host, sin duplicar descargas.
 - Primera validacion en `8288` debe limitarse a `GET /system_stats` y `GET /api/object_info`.
+- Mantener `COMFYUI_CONTAINER_ROOT=/root/ComfyUI` para esta familia de imagenes.

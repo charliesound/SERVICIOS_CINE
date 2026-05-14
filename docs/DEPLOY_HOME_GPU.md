@@ -118,6 +118,8 @@ curl http://127.0.0.1:11434/api/tags
 - Para el primer smoke Docker still sin impacto, usar puerto temporal `8288` (`COMFYUI_STILL_HOST_PORT=8288`).
 - Con imagenes `yanwk/comfyui-boot`, usar `COMFYUI_CONTAINER_ROOT=/root/ComfyUI`.
 - Evitar tags `megapak` en produccion CID; preferir `slim`/`no-megapak` para no descargar modelos duplicados.
+- Source of truth de modelos: `/mnt/i/COMFYUI_OK/models` (montado `:ro`).
+- Source of truth de hub operativo: `/mnt/g/COMFYUI_HUB` (`input/output/user/workflows` en read-write).
 
 ## Routing interno de ComfyUI por CID
 

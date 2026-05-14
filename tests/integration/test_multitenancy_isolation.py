@@ -932,27 +932,29 @@ async def test_anonymous_cannot_delete_saved_opportunity(test_app):
 async def test_org_b_cannot_delete_org_a_saved_opportunity(test_app):
     from httpx import AsyncClient, ASGITransport
     import uuid
+    from sqlalchemy import text
+    from database import engine
 
     transport = ASGITransport(app=test_app)
-    saved_id = uuid.uuid4().hex
-    unique_opp_id = f"demo-funding-{uuid.uuid4().hex[:8]}"
+    unique_id = uuid.uuid4().hex
 
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        post = await client.post(
-            "/api/producer/saved-opportunities",
-            headers={"Authorization": f"Bearer {_tenant_a_token()}"},
-            json={
-                "project_id": SMOKE_PROJECT_ID,
-                "funding_opportunity_id": "demo-funding-001",
-                "notes": "Test",
+    async with engine.begin() as conn:
+        await conn.execute(
+            text("""
+                INSERT INTO saved_opportunities (id, project_id, funding_opportunity_id, notes, created_at)
+                VALUES (:id, :pid, :fid, :notes, datetime('now'))
+            """),
+            {
+                "id": unique_id,
+                "pid": SMOKE_PROJECT_ID,
+                "fid": f"demo-cross-{uuid.uuid4().hex[:8]}",
+                "notes": "Cross-org test target",
             },
         )
-    assert post.status_code == 200, f"Setup failed: {post.text}"
-    source_id = post.json()["id"]
 
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         resp = await client.delete(
-            f"/api/producer/saved-opportunities/{source_id}",
+            f"/api/producer/saved-opportunities/{unique_id}",
             headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
         )
     assert resp.status_code == 404, f"Expected 404, got {resp.status_code}: {resp.text}"

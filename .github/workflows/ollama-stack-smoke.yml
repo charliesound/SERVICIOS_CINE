@@ -1,0 +1,67 @@
+name: Ollama Stack Smoke
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "compose.ollama.yml"
+      - "compose.ollama.gpu.yml"
+      - "compose.data.yml"
+      - "scripts/start_stack.sh"
+      - "scripts/healthcheck_stack.sh"
+      - "scripts/smoke_ollama_stack.sh"
+      - ".github/workflows/ollama-stack-smoke.yml"
+      - ".env.example"
+  workflow_dispatch:
+
+jobs:
+  ollama-stack-smoke:
+    name: Ollama CPU smoke and compose validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show tool versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Validate bash syntax
+        run: |
+          bash -n scripts/smoke_ollama_stack.sh
+          bash -n scripts/start_stack.sh
+          bash -n scripts/healthcheck_stack.sh
+
+      - name: Validate Ollama CPU compose config
+        run: |
+          docker compose \
+            -f compose.base.yml \
+            -f compose.ollama.yml \
+            --profile with-ollama \
+            config >/dev/null
+
+      - name: Validate Ollama GPU compose config only
+        run: |
+          docker compose \
+            -f compose.base.yml \
+            -f compose.ollama.yml \
+            -f compose.ollama.gpu.yml \
+            --profile with-ollama \
+            config >/dev/null
+
+      - name: Validate AI CPU compose config
+        run: |
+          docker compose \
+            -f compose.base.yml \
+            -f compose.data.yml \
+            -f compose.ollama.yml \
+            --profile with-qdrant \
+            --profile with-ollama \
+            config >/dev/null
+
+      - name: Run Ollama CPU smoke test
+        run: |
+          ./scripts/smoke_ollama_stack.sh

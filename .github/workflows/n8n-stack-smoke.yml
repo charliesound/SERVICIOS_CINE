@@ -1,0 +1,49 @@
+name: n8n Stack Smoke
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "compose.n8n.yml"
+      - "compose.data.yml"
+      - "scripts/start_stack.sh"
+      - "scripts/healthcheck_stack.sh"
+      - "scripts/smoke_n8n_stack.sh"
+      - ".github/workflows/n8n-stack-smoke.yml"
+      - ".env.example"
+  workflow_dispatch:
+
+jobs:
+  n8n-stack-smoke:
+    name: n8n smoke test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show tool versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Validate bash syntax
+        run: |
+          bash -n scripts/smoke_n8n_stack.sh
+          bash -n scripts/start_stack.sh
+          bash -n scripts/healthcheck_stack.sh
+
+      - name: Validate docker compose config
+        run: |
+          POSTGRES_PASSWORD=ci-test-pw \
+          N8N_ENCRYPTION_KEY=ci-encryption-key-1234567890123456789012 \
+          N8N_IMAGE=n8nio/n8n:1 \
+            docker compose -f compose.base.yml -f compose.data.yml -f compose.n8n.yml \
+              --profile with-postgres --profile with-n8n config >/dev/null
+
+      - name: Run n8n smoke test
+        env:
+          N8N_IMAGE: n8nio/n8n:1
+        run: |
+          ./scripts/smoke_n8n_stack.sh

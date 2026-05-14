@@ -6,7 +6,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from services.ollama_client_service import ollama_client
+from services.ollama_client_service import OllamaClientService, ollama_client
 from config import get_llm_settings
 
 logger = logging.getLogger(__name__)
@@ -68,8 +68,8 @@ class StoryboardPromptRefinementService:
         settings = get_llm_settings()
         
         # Determine visual model
-        visual_model = settings.get("visual_model", "gemma4:26b")
-        fallback_model = settings.get("fallback_model", "qwen3:30b")
+        visual_model = OllamaClientService.get_model_for_task("storyboard_prompt", settings)
+        fallback_model = OllamaClientService.get_model_for_task("fallback", settings)
         
         if not await ollama_client.is_model_available(visual_model):
             logger.warning(f"Visual model {visual_model} not available, falling back to {fallback_model}")
@@ -118,7 +118,7 @@ class StoryboardPromptRefinementService:
         
         return {
             "project_id": analysis_payload.get("project_id", ""),
-            "analysis_model": analysis_payload.get("model", "qwen3:30b"),
+            "analysis_model": analysis_payload.get("model", "qwen2.5:14b"),
             "visual_model": visual_model,
             "generation_mode": mode,
             "total_scenes": len(refined_scenes),

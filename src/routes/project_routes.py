@@ -12,16 +12,28 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.tenant_context import get_tenant_context, TenantContext
 from models.core import Project, ProjectJob, User as DBUser
 from models.storage import MediaAsset, MediaAssetType, MediaAssetStatus
-from routes.auth_routes import get_current_user_optional, get_tenant_context
-from schemas.auth_schema import UserResponse, TenantContext
 from services.document_service import document_service
 from services.job_tracking_service import job_tracking_service
 from services.plan_limits_service import plan_limits_service
 from services.script_intake_service import analysis_service
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
+
+
+async def _get_project_for_tenant_or_404(db: AsyncSession, project_id: str, tenant: TenantContext) -> Project:
+    result = await db.execute(
+        select(Project).where(
+            Project.id == project_id,
+            Project.organization_id == str(tenant.organization_id),
+        )
+    )
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
 
 
 class CreateProjectPayload(BaseModel):
@@ -116,12 +128,6 @@ class ProjectResponse(BaseModel):
     description: Optional[str]
     status: str
     script_text: Optional[str]
-
-
-async def _get_user_org_id(user_id: str, db: AsyncSession) -> Optional[str]:
-    result = await db.execute(select(DBUser).where(DBUser.id == user_id))
-    user = result.scalar_one_or_none()
-    return user.organization_id if user else None
 
 
 def _project_dict(project: Project) -> dict:
@@ -321,14 +327,9 @@ async def _enforce_export_permission(
 @router.get("")
 async def list_projects(
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    user_org_id = str(tenant.organization_id)
 
     result = await db.execute(
         select(Project)
@@ -344,19 +345,14 @@ async def list_projects(
 async def create_project(
     payload: CreateProjectPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    user_org_id = str(tenant.organization_id)
 
     await _enforce_plan_limit(
         db=db,
         organization_id=user_org_id,
-        user_plan=current_user.plan,
+        user_plan=tenant.plan,
         resource="projects",
     )
 
@@ -377,22 +373,11 @@ async def create_project(
 async def get_project(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_org_id = str(tenant.organization_id)
 
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     return _project_dict(project)
 
@@ -402,27 +387,16 @@ async def get_project_dashboard(
     project_id: str,
     role: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_org_id = str(tenant.organization_id)
 
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     from sqlalchemy import func, select
     from models.core import User
     
-    result = await db.execute(select(User).where(User.id == current_user.user_id))
+    result = await db.execute(select(User).where(User.id == tenant.user_id))
     user = result.scalar_one_or_none()
     user_role = user.role if user else "viewer"
     
@@ -709,22 +683,11 @@ async def update_project_script(
     project_id: str,
     payload: UpdateScriptPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_org_id = str(tenant.organization_id)
 
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     project.script_text = payload.script_text
     await db.commit()
@@ -865,22 +828,11 @@ async def _parse_storyboard(script_text: str) -> StoryboardResponse:
 async def analyze_project_script(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_org_id = str(tenant.organization_id)
 
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     if not project.script_text:
         raise HTTPException(
@@ -890,13 +842,13 @@ async def analyze_project_script(
     await _enforce_plan_limit(
         db=db,
         organization_id=user_org_id,
-        user_plan=current_user.plan,
+        user_plan=tenant.plan,
         resource="jobs",
     )
     await _enforce_plan_limit(
         db=db,
         organization_id=user_org_id,
-        user_plan=current_user.plan,
+        user_plan=tenant.plan,
         resource="analyses",
     )
 
@@ -905,7 +857,7 @@ async def analyze_project_script(
         project_id=project_id,
         job_type="analyze",
         status="pending",
-        created_by=current_user.user_id,
+        created_by=tenant.user_id,
     )
     db.add(job)
     await db.flush()
@@ -939,14 +891,14 @@ async def analyze_project_script(
             project_id=project_id,
             file_name=f"{project.name}_script.txt",
             raw_text=project.script_text,
-            uploaded_by=current_user.user_id,
+            uploaded_by=tenant.user_id,
         )
 
         doc = await document_service.classify_document(
-            db, doc, created_by=current_user.user_id
+            db, doc, created_by=tenant.user_id
         )
         doc = await document_service.structure_document(
-            db, doc, created_by=current_user.user_id
+            db, doc, created_by=tenant.user_id
         )
 
         classification = getattr(doc, "classification", None)
@@ -1002,7 +954,7 @@ async def analyze_project_script(
             content_ref=f"virtual://{project_id}/{job.id}/analysis.json",
             asset_source="script_analysis",
             metadata_json=result_payload,
-            created_by=current_user.user_id,
+            created_by=tenant.user_id,
         )
         await _record_project_job_event(
             db,
@@ -1052,22 +1004,11 @@ async def analyze_project_script(
 async def generate_storyboard(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_org_id = str(tenant.organization_id)
 
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     if not project.script_text:
         raise HTTPException(
@@ -1077,13 +1018,13 @@ async def generate_storyboard(
     await _enforce_plan_limit(
         db=db,
         organization_id=user_org_id,
-        user_plan=current_user.plan,
+        user_plan=tenant.plan,
         resource="jobs",
     )
     await _enforce_plan_limit(
         db=db,
         organization_id=user_org_id,
-        user_plan=current_user.plan,
+        user_plan=tenant.plan,
         resource="storyboards",
     )
 
@@ -1092,7 +1033,7 @@ async def generate_storyboard(
         project_id=project_id,
         job_type="storyboard",
         status="pending",
-        created_by=current_user.user_id,
+        created_by=tenant.user_id,
     )
     db.add(job)
     await db.flush()
@@ -1157,7 +1098,7 @@ async def generate_storyboard(
             content_ref=f"virtual://{project_id}/{job.id}/storyboard.json",
             asset_source="script_storyboard",
             metadata_json=result_payload,
-            created_by=current_user.user_id,
+            created_by=tenant.user_id,
         )
         await _record_project_job_event(
             db,
@@ -1239,20 +1180,15 @@ async def _build_project_export_payload(
     db: AsyncSession,
     *,
     project_id: str,
-    user_org_id: str,
+    tenant: TenantContext,
 ) -> dict[str, Any]:
-    project_result = await db.execute(select(Project).where(Project.id == project_id))
-    project = project_result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     jobs_result = await db.execute(
         select(ProjectJob)
         .where(
             ProjectJob.project_id == project_id,
-            ProjectJob.organization_id == user_org_id,
+            ProjectJob.organization_id == str(tenant.organization_id),
         )
         .order_by(ProjectJob.created_at.desc(), ProjectJob.id.desc())
     )
@@ -1262,7 +1198,7 @@ async def _build_project_export_payload(
         select(MediaAsset)
         .where(
             MediaAsset.project_id == project_id,
-            MediaAsset.organization_id == user_org_id,
+            MediaAsset.organization_id == str(tenant.organization_id),
         )
         .order_by(MediaAsset.created_at.desc(), MediaAsset.id.desc())
     )
@@ -1326,27 +1262,15 @@ async def _upsert_project_asset(
 async def list_project_jobs(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     result = await db.execute(
         select(ProjectJob)
         .where(
             ProjectJob.project_id == project_id,
-            ProjectJob.organization_id == user_org_id,
+            ProjectJob.organization_id == str(tenant.organization_id),
         )
         .order_by(ProjectJob.created_at.desc(), ProjectJob.id.desc())
     )
@@ -1362,14 +1286,9 @@ async def get_project_job(
     project_id: str,
     job_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    user_org_id = str(tenant.organization_id)
 
     result = await db.execute(
         select(ProjectJob).where(
@@ -1390,14 +1309,9 @@ async def get_project_job(
 async def get_job_by_id(
     job_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    user_org_id = str(tenant.organization_id)
 
     result = await db.execute(
         select(ProjectJob).where(
@@ -1421,14 +1335,9 @@ async def get_job_progress(
     project_id: str,
     job_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    user_org_id = str(tenant.organization_id)
 
     result = await db.execute(
         select(ProjectJob).where(
@@ -1457,14 +1366,9 @@ async def retry_project_job(
     project_id: str,
     job_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    user_org_id = str(tenant.organization_id)
 
     result = await db.execute(
         select(ProjectJob).where(
@@ -1518,8 +1422,9 @@ async def retry_project_job(
             select(Project).where(Project.id == project_id)
         )
         project = project_result.scalar_one_or_none()
-        if not project or not project.script_text:
-            raise ValueError("Project has no script text")
+        if not project or not project.script_text or str(project.organization_id) != str(tenant.organization_id):
+            raise ValueError("Project not available")
+
 
         if job.job_type == "analyze":
             doc = await document_service.create_script_document(
@@ -1528,13 +1433,13 @@ async def retry_project_job(
                 project_id=project_id,
                 file_name=f"{project.name}_script.txt",
                 raw_text=project.script_text,
-                uploaded_by=current_user.user_id,
+                uploaded_by=tenant.user_id,
             )
             doc = await document_service.classify_document(
-                db, doc, created_by=current_user.user_id
+                db, doc, created_by=tenant.user_id
             )
             doc = await document_service.structure_document(
-                db, doc, created_by=current_user.user_id
+                db, doc, created_by=tenant.user_id
             )
             classification = getattr(doc, "classification", None)
             structured_data = getattr(doc, "structured_data", None)
@@ -1589,7 +1494,7 @@ async def retry_project_job(
                 content_ref=f"virtual://{project_id}/{job.id}/analysis.json",
                 asset_source="script_analysis",
                 metadata_json=result_payload,
-                created_by=current_user.user_id,
+                created_by=tenant.user_id,
             )
             await _record_project_job_event(
                 db,
@@ -1641,7 +1546,7 @@ async def retry_project_job(
                 content_ref=f"virtual://{project_id}/{job.id}/storyboard.json",
                 asset_source="script_storyboard",
                 metadata_json=result_payload,
-                created_by=current_user.user_id,
+                created_by=tenant.user_id,
             )
             await _record_project_job_event(
                 db,
@@ -1713,27 +1618,15 @@ class ProjectMetricsResponse(BaseModel):
 async def list_project_assets(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     result = await db.execute(
         select(MediaAsset)
         .where(
             MediaAsset.project_id == project_id,
-            MediaAsset.organization_id == user_org_id,
+            MediaAsset.organization_id == str(tenant.organization_id),
         )
         .order_by(MediaAsset.created_at.desc(), MediaAsset.id.desc())
     )
@@ -1765,27 +1658,15 @@ async def list_project_assets(
 async def get_project_metrics(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    project_result = await db.execute(select(Project).where(Project.id == project_id))
-    project = project_result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != user_org_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     jobs_count = (
         await db.execute(
             select(func.count(ProjectJob.id)).where(
                 ProjectJob.project_id == project_id,
-                ProjectJob.organization_id == user_org_id,
+                ProjectJob.organization_id == str(tenant.organization_id),
             )
         )
     ).scalar_one() or 0
@@ -1829,20 +1710,17 @@ async def get_project_metrics(
 async def export_project_json(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_org_id = str(tenant.organization_id)
 
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
-    await _enforce_export_permission(current_user.plan, export_format="json")
+    await _enforce_export_permission(tenant.plan, export_format="json")
     payload = await _build_project_export_payload(
         db,
         project_id=project_id,
-        user_org_id=user_org_id,
+        tenant=tenant,
     )
 
     return Response(
@@ -1858,20 +1736,17 @@ async def export_project_json(
 async def export_project_zip(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_org_id = str(tenant.organization_id)
 
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
-    await _enforce_export_permission(current_user.plan, export_format="zip")
+    await _enforce_export_permission(tenant.plan, export_format="zip")
     payload = await _build_project_export_payload(
         db,
         project_id=project_id,
-        user_org_id=user_org_id,
+        tenant=tenant,
     )
     archive_bytes = _build_project_export_zip(payload)
 
@@ -1930,12 +1805,7 @@ async def list_project_image_assets(
     if size > 100:
         size = 100
 
-    project_result = await db.execute(select(Project).where(Project.id == project_id))
-    project = project_result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if project.organization_id != tenant.organization_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     base_query = select(MediaAsset).where(
         MediaAsset.project_id == project_id,

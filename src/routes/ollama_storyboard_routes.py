@@ -10,7 +10,7 @@ from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from services.local_script_analysis_service import local_script_analysis_service
 from services.storyboard_prompt_refinement_service import storyboard_prompt_refinement_service
-from services.ollama_client_service import ollama_client
+from services.ollama_client_service import OllamaClientService, ollama_client
 
 router = APIRouter(prefix="/api", tags=["ollama-storyboard"])
 
@@ -25,10 +25,10 @@ async def get_ollama_status():
     except Exception:
         pass
     
-    base_url = settings.get("base_url", "http://127.0.0.1:11434")
-    analysis_model = settings.get("analysis_model", "qwen3:30b")
-    visual_model = settings.get("visual_model", "gemma4:26b")
-    fallback_model = settings.get("fallback_model", "qwen3:30b")
+    base_url = settings.get("ollama_base_url", "http://127.0.0.1:11434")
+    analysis_model = OllamaClientService.get_model_for_task("script_analysis", settings)
+    visual_model = OllamaClientService.get_model_for_task("visual", settings)
+    fallback_model = OllamaClientService.get_model_for_task("fallback", settings)
     
     health = await ollama_client.healthcheck()
     models = []
@@ -150,7 +150,7 @@ async def generate_storyboard_prompts_from_analysis(
         # Return base prompts only
         return {
             "project_id": project_id,
-            "analysis_model": analysis_data.get("model", "qwen3:30b"),
+            "analysis_model": analysis_data.get("model", "qwen2.5:14b"),
             "visual_model": None,
             "generation_mode": mode,
             "total_scenes": len(filtered_scenes),

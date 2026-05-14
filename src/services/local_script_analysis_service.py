@@ -6,7 +6,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from services.ollama_client_service import ollama_client
+from services.ollama_client_service import OllamaClientService, ollama_client
 from config import get_llm_settings
 
 logger = logging.getLogger(__name__)
@@ -120,7 +120,7 @@ class LocalScriptAnalysisService:
     ) -> Dict[str, Any]:
         """Analyze script using Qwen3:30b via Ollama."""
         settings = get_llm_settings()
-        model = settings.get("analysis_model", "qwen3:30b")
+        model = OllamaClientService.get_model_for_task("script_analysis", settings)
         
         if not await ollama_client.is_model_available(model):
             raise RuntimeError(f"Model {model} not available. Run: ollama pull {model}")

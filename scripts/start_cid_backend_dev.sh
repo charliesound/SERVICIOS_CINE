@@ -10,6 +10,7 @@ fi
 
 source .venv/bin/activate
 export PYTHONPATH="$PWD/src"
+BACKEND_HOST="${BACKEND_HOST:-127.0.0.1}"
 
 if ss -ltnp | grep -q ':8010'; then
   echo "AILinkCinema backend ya está usando el puerto 8010."
@@ -23,7 +24,7 @@ echo "URL: http://127.0.0.1:8010"
 echo "PYTHONPATH=$PYTHONPATH"
 
 python -m uvicorn app:app \
-  --host 0.0.0.0 \
+  --host "$BACKEND_HOST" \
   --port 8010 \
   --reload \
   --reload-dir src

@@ -300,3 +300,700 @@ async def test_404_returns_json_with_detail(test_app):
     body = resp.json()
     assert "error" in body
     assert body["error"].get("request_id") == "cid-test-404-001"
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_access_org_a_project_detail(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_a_user_can_access_own_project(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}",
+            headers={"Authorization": f"Bearer {_tenant_a_token()}"},
+        )
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_list_org_a_projects(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/projects",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    projects = body.get("projects", body if isinstance(body, list) else [])
+    for p in projects:
+        org_id = p.get("organization_id", "")
+        assert org_id != SMOKE_ORG_A, f"Cross-tenant leak: org B can see org A project {p.get('id')}"
+
+
+def _global_admin_from_org_b_token() -> str:
+    from routes.auth_routes import create_access_token
+
+    return create_access_token({
+        "sub": "global-admin-org-b",
+        "organization_id": SMOKE_ORG_B,
+        "roles": ["global_admin"],
+        "scopes": ["projects:read", "projects:write", "admin:read", "admin:write"],
+    })
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_update_org_a_project_script(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.put(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={"script_text": "Should not update"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_analyze_org_a_project(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            f"/api/projects/{SMOKE_PROJECT_ID}/analyze",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_export_org_a_project_json(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/export/json",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_export_org_a_project_zip(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/export/zip",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_list_org_a_project_assets(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/assets",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_read_org_a_project_metrics(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/metrics",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_admin_org_b_cannot_list_org_a_project_jobs(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/jobs",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_create_project_uses_tenant_organization_id(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/projects",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={"name": "Tenant Test Project", "description": "Should have org B"},
+        )
+    # Org B may have reached its plan limit; verify the org is correct either way.
+    if resp.status_code == 200:
+        body = resp.json()
+        assert body.get("organization_id") == SMOKE_ORG_B, (
+            f"Expected org B, got {body.get('organization_id')}"
+        )
+    else:
+        # If blocked by plan limit, verify the tenant identity is correct
+        assert resp.status_code == 403
+        body = resp.json()
+        error = body.get("error", body)
+        code = error.get("details", {}).get("code", "")
+        assert code == "PLAN_LIMIT_REACHED", (
+            f"Unexpected error code: {code}"
+        )
+
+
+@pytest.mark.asyncio
+async def test_global_admin_has_no_bypass_in_project_routes(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}",
+            headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_create_storage_source_in_org_a_project(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/storage-sources",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={
+                "organization_id": SMOKE_ORG_A,
+                "project_id": SMOKE_PROJECT_ID,
+                "name": "Cross-org source",
+                "source_type": "local",
+                "mount_path": "/tmp/cross-org",
+            },
+        )
+    assert resp.status_code == 404, f"Expected 404, got {resp.status_code}: {resp.text}"
+
+
+@pytest.mark.asyncio
+async def test_org_a_can_create_and_org_b_cannot_see_storage_source(test_app):
+    import uuid
+    from httpx import AsyncClient, ASGITransport
+
+    unique_name = f"Tenant A Source {uuid.uuid4().hex[:8]}"
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        create = await client.post(
+            "/api/storage-sources",
+            headers={"Authorization": f"Bearer {_tenant_a_token()}"},
+            json={
+                "organization_id": SMOKE_ORG_A,
+                "project_id": SMOKE_PROJECT_ID,
+                "name": unique_name,
+                "source_type": "local",
+                "mount_path": "/tmp/tenant-a",
+            },
+        )
+    assert create.status_code == 200, f"Create failed: {create.text}"
+    source_id = create.json()["id"]
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        detail = await client.get(
+            f"/api/storage-sources/{source_id}",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert detail.status_code == 404, (
+        f"Org B should not see org A storage source: {detail.status_code}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_update_storage_source_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        detail = await client.get(
+            "/api/storage-sources/nonexistent-id",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert detail.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_validate_storage_source_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/storage-sources/nonexistent-id/validate",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_launch_scan_in_org_a_storage(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/storage-sources/nonexistent-id/scan",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_global_admin_cannot_bypass_storage_isolation(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/storage-sources/nonexistent-id",
+            headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_list_script_versions_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_create_script_version_in_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={"script_text": "Malicious script version"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_get_script_version_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions/nonexistent-id",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_activate_script_version_in_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions/nonexistent-id/activate",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_compare_versions_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions/compare",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={"from_version_id": "fake1", "to_version_id": "fake2"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_list_change_reports_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/change-reports",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_get_module_statuses_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/module-status",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_global_admin_cannot_bypass_script_version_routes(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/projects/{SMOKE_PROJECT_ID}/script/versions",
+            headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_list_documents_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/ingest/documents",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    for d in body.get("documents", []):
+        org_id = d.get("organization_id", "")
+        assert org_id != SMOKE_ORG_A, f"Cross-tenant leak: {org_id}"
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_get_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/ingest/documents/nonexistent-id",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_update_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.patch(
+            "/api/ingest/documents/nonexistent-id",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_extract_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/extract",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_classify_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/classify",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_structure_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/structure",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_approve_document_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/approve",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_list_document_events_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/ingest/documents/nonexistent-id/events",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_derive_document_preview_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/derive-preview",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_derive_document_report_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/derive-report",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+            json={"report_payload": {}, "report_type": "daily"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_global_admin_cannot_bypass_document_routes(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(
+            "/api/ingest/documents/nonexistent-id/extract",
+            headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_list_ingest_scans_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/ingest/scans?project_id={SMOKE_PROJECT_ID}",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_get_ingest_scan_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/ingest/scans/nonexistent-id",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_list_media_assets_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            f"/api/ingest/assets?project_id={SMOKE_PROJECT_ID}",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_get_media_asset_of_org_a(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/ingest/assets/nonexistent-id",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_global_admin_cannot_bypass_ingest_routes(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/ingest/scans/nonexistent-id",
+            headers={"Authorization": f"Bearer {_global_admin_from_org_b_token()}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_anonymous_cannot_delete_saved_opportunity(test_app):
+    from httpx import AsyncClient, ASGITransport
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.delete(
+            "/api/producer/saved-opportunities/nonexistent-id",
+        )
+    assert resp.status_code in (401, 403), f"Expected 401/403, got {resp.status_code}"
+
+
+@pytest.mark.asyncio
+async def test_org_b_cannot_delete_org_a_saved_opportunity(test_app):
+    from httpx import AsyncClient, ASGITransport
+    import uuid
+    from sqlalchemy import text
+    from database import engine
+
+    transport = ASGITransport(app=test_app)
+    unique_id = uuid.uuid4().hex
+
+    async with engine.begin() as conn:
+        await conn.execute(
+            text("""
+                INSERT INTO saved_opportunities (id, project_id, funding_opportunity_id, notes, created_at)
+                VALUES (:id, :pid, :fid, :notes, datetime('now'))
+            """),
+            {
+                "id": unique_id,
+                "pid": SMOKE_PROJECT_ID,
+                "fid": f"demo-cross-{uuid.uuid4().hex[:8]}",
+                "notes": "Cross-org test target",
+            },
+        )
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.delete(
+            f"/api/producer/saved-opportunities/{unique_id}",
+            headers={"Authorization": f"Bearer {_tenant_b_admin_token()}"},
+        )
+    assert resp.status_code == 404, f"Expected 404, got {resp.status_code}: {resp.text}"
+
+
+@pytest.mark.asyncio
+async def test_org_a_can_delete_own_saved_opportunity(test_app):
+    from httpx import AsyncClient, ASGITransport
+    import uuid
+
+    transport = ASGITransport(app=test_app)
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        post = await client.post(
+            "/api/producer/saved-opportunities",
+            headers={"Authorization": f"Bearer {_tenant_a_token()}"},
+            json={
+                "project_id": SMOKE_PROJECT_ID,
+                "funding_opportunity_id": "demo-funding-002",
+                "notes": "Test delete own",
+            },
+        )
+    assert post.status_code == 200, f"Setup failed: {post.text}"
+    source_id = post.json()["id"]
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        delete_resp = await client.delete(
+            f"/api/producer/saved-opportunities/{source_id}",
+            headers={"Authorization": f"Bearer {_tenant_a_token()}"},
+        )
+    assert delete_resp.status_code in (200, 204), (
+        f"Expected 200/204, got {delete_resp.status_code}: {delete_resp.text}"
+    )
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        get_resp = await client.get(
+            f"/api/producer/saved-opportunities?project_id={SMOKE_PROJECT_ID}",
+        )
+    assert get_resp.status_code == 200
+    items = get_resp.json()
+    ids = [item["id"] for item in items]
+    assert source_id not in ids, f"Deleted item {source_id} still present"

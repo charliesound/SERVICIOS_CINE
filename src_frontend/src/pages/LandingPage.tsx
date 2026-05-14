@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Clapperboard, LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Clapperboard, Film, LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
 import LandingHeroCinematic from '@/components/landing/LandingHeroCinematic'
 import LandingProblemSolution from '@/components/landing/LandingProblemSolution'
 import LandingStudioModules from '@/components/landing/LandingStudioModules'
@@ -237,34 +237,68 @@ export default function LandingPage() {
 
             <LandingReveal delay={60}>
               <div className="mt-14">
-                <div className="landing-brand-solution-card relative overflow-hidden rounded-[1.85rem] p-8 md:p-10">
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
-                        <Clapperboard className="h-7 w-7" />
+                <div className="grid gap-8 lg:grid-cols-2">
+                  <div className="landing-brand-solution-card relative overflow-hidden rounded-[1.85rem] p-8 md:p-10">
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
+                          <Clapperboard className="h-7 w-7" />
+                        </div>
+                        <div>
+                          <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-amber-200">
+                            Director / Realizador
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-amber-200">
-                          Director / Realizador
-                        </span>
+                      <h3 className="mt-6 text-3xl font-semibold text-white md:text-4xl">
+                        Director AI Studio
+                      </h3>
+                      <p className="mt-2 text-lg text-amber-200/80">Del guion a la vision del director.</p>
+                      <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
+                        Convierte un guion en una vision cinematografica clara: analisis dramatico, tono visual,
+                        secuencias clave, storyboard y dossier creativo para preproduccion o pitching.
+                      </p>
+                      <div className="mt-8 flex flex-wrap gap-3">
+                        <Link
+                          to="/soluciones/director"
+                          className="landing-cta-primary"
+                        >
+                          Ver solucion para directores
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
                       </div>
                     </div>
-                    <h3 className="mt-6 text-3xl font-semibold text-white md:text-4xl">
-                      Director AI Studio
-                    </h3>
-                    <p className="mt-2 text-lg text-amber-200/80">Del guion a la vision del director.</p>
-                    <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                      Convierte un guion en una vision cinematografica clara: analisis dramatico, tono visual,
-                      secuencias clave, storyboard y dossier creativo para preproduccion o pitching.
-                    </p>
-                    <div className="mt-8 flex flex-wrap gap-3">
-                      <Link
-                        to="/soluciones/director"
-                        className="landing-cta-primary"
-                      >
-                        Ver solucion para directores
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
+                  </div>
+
+                  <div className="landing-brand-solution-card relative overflow-hidden rounded-[1.85rem] p-8 md:p-10 border-white/10 bg-white/[0.02]">
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-300">
+                          <Film className="h-7 w-7" />
+                        </div>
+                        <div>
+                          <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-cyan-200">
+                            Productor / Ejecutivo
+                          </span>
+                        </div>
+                      </div>
+                      <h3 className="mt-6 text-3xl font-semibold text-white md:text-4xl">
+                        Producer AI Studio
+                      </h3>
+                      <p className="mt-2 text-lg text-cyan-200/80">Control total y viabilidad de produccion.</p>
+                      <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
+                        Gestiona la viabilidad, presupuesto y planificacion de tu proyecto desde la fase de desarrollo.
+                        Optimiza la financiacion y mantén el control operativo con inteligencia de industria.
+                      </p>
+                      <div className="mt-8 flex flex-wrap gap-3">
+                        <Link
+                          to="/soluciones/productor"
+                          className="landing-cta-primary border-cyan-500/50 hover:bg-cyan-500/10"
+                        >
+                          Ver solucion para productores
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>

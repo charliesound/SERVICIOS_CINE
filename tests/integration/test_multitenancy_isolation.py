@@ -512,8 +512,10 @@ async def test_org_b_cannot_create_storage_source_in_org_a_project(test_app):
 
 @pytest.mark.asyncio
 async def test_org_a_can_create_and_org_b_cannot_see_storage_source(test_app):
+    import uuid
     from httpx import AsyncClient, ASGITransport
 
+    unique_name = f"Tenant A Source {uuid.uuid4().hex[:8]}"
     transport = ASGITransport(app=test_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         create = await client.post(
@@ -522,7 +524,7 @@ async def test_org_a_can_create_and_org_b_cannot_see_storage_source(test_app):
             json={
                 "organization_id": SMOKE_ORG_A,
                 "project_id": SMOKE_PROJECT_ID,
-                "name": "Tenant A Source",
+                "name": unique_name,
                 "source_type": "local",
                 "mount_path": "/tmp/tenant-a",
             },

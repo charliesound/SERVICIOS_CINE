@@ -61,3 +61,11 @@ La ruta legada mantenia endpoints publicos y tests propios, generando riesgo de 
 - `git status --short`
 - `python -m py_compile src/routes/comfyui_instance_routes.py tests/unit/test_comfyui_instance_routes.py`
 - `python -m pytest tests/unit/test_comfyui_instance_routes.py -q`
+
+## Infra 7C2 — Legacy wrapper
+
+- `src/services/comfyui_instance_registry_service.py` queda en estado deprecated como wrapper compatible.
+- Source of truth operativo: `services.instance_registry` + `src/config/instances.yml`.
+- `src/config/comfyui_instances.yml` se mantiene temporalmente como referencia legacy, sin uso runtime en el wrapper.
+- Las rutas principales ya operan sobre unified registry.
+- Los tests legacy cubren compatibilidad de claves, task aliases, unknown task y shape de health responses.

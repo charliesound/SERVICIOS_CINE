@@ -116,6 +116,8 @@ curl http://127.0.0.1:11434/api/tags
 - Ver `docs/COMFYUI_DOCKERIZATION.md` para el skeleton Docker (Infra 8B).
 - Ese documento define solo base de compose y validaciones de config, sin apagar ComfyUI nativo.
 - Para el primer smoke Docker still sin impacto, usar puerto temporal `8288` (`COMFYUI_STILL_HOST_PORT=8288`).
+- Con imagenes `yanwk/comfyui-boot`, usar `COMFYUI_CONTAINER_ROOT=/root/ComfyUI`.
+- Evitar tags `megapak` en produccion CID; preferir `slim`/`no-megapak` para no descargar modelos duplicados.
 
 ## Routing interno de ComfyUI por CID
 

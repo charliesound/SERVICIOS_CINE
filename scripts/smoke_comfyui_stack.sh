@@ -4,7 +4,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 COMFYUI_IMAGE="${COMFYUI_IMAGE:-local/comfyui-placeholder:latest}"
+COMFYUI_CONTAINER_ROOT="${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}"
 export COMFYUI_IMAGE
+export COMFYUI_CONTAINER_ROOT
 
 docker compose -f compose.base.yml -f compose.comfyui.yml --profile with-comfyui config >/dev/null
 docker compose -f compose.base.yml -f compose.comfyui.yml -f compose.comfyui.gpu.yml --profile with-comfyui config >/dev/null

@@ -100,3 +100,13 @@ http://127.0.0.1:8288/system_stats
 
 - No conectar CID todavia al Docker still.
 - No modificar `COMFYUI_STILL_BASE_URL` global salvo prueba aislada controlada.
+
+## Imagen yanwk/comfyui-boot
+
+- `yanwk/comfyui-boot` usa raiz interna de ComfyUI en `/root/ComfyUI`.
+- No usar mounts en `/workspace/ComfyUI` con esta familia de imagenes.
+- Definir `COMFYUI_CONTAINER_ROOT=/root/ComfyUI` para alinear modelos, `custom_nodes`, `input`, `output` y `user`.
+- Los tags `megapak` pueden disparar bootstrap con descargas pesadas de modelos.
+- Para CID backend conviene priorizar tags `slim`/`no-megapak` y reutilizar modelos host por bind mounts.
+- Objetivo operativo: usar los modelos existentes del host, sin duplicar descargas.
+- Primera validacion en `8288` debe limitarse a `GET /system_stats` y `GET /api/object_info`.

@@ -20,6 +20,8 @@ export type SolutionSlug =
   | 'sound-post'
   | 'promo-video'
   | 'vfx'
+  | 'director'
+  | 'producer'
 
 export interface SolutionEntry {
   slug: SolutionSlug
@@ -190,6 +192,38 @@ export const standaloneSolutions: SolutionEntry[] = [
     bullets: ['Assets visuales y referencias', 'Mejora de planos', 'Apoyo a fases de VFX y enhancement'],
     includedInCid: true,
     ctaLabel: 'Ver VFX & Enhancement AI',
+  },
+  {
+    slug: 'director',
+    path: '/soluciones/director',
+    title: 'Director AI Studio',
+    shortTitle: 'Director AI Studio',
+    type: 'Modulo independiente',
+    icon: Clapperboard,
+    priceLabel: 'Acceso bajo demo',
+    description:
+      'Del guion a la vision del director: analisis dramatico, tono visual, storyboard y dossier creativo.',
+    heroDescription:
+      'Convierte un guion en una vision cinematografica clara con analisis, tono visual y storyboard conectado.',
+    bullets: ['Analisis dramatico', 'Tono visual por secuencia', 'Dossier creativo del director'],
+    includedInCid: true,
+    ctaLabel: 'Ver Director AI Studio',
+  },
+  {
+    slug: 'producer',
+    path: '/soluciones/productor',
+    title: 'Producer AI Studio',
+    shortTitle: 'Producer AI Studio',
+    type: 'Modulo independiente',
+    icon: Film,
+    priceLabel: 'Acceso bajo demo',
+    description:
+      'Control total de produccion: analisis de viabilidad, presupuesto inteligente, financiacion y planificacion.',
+    heroDescription:
+      'Gestiona tu produccion desde el guion con herramientas financieras, operativas y de control real.',
+    bullets: ['Presupuesto inteligente', 'Plan de financiacion', 'Control de produccion real'],
+    includedInCid: true,
+    ctaLabel: 'Ver Producer AI Studio',
   },
 ]
 

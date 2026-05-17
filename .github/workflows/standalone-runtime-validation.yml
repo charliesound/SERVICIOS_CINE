@@ -108,6 +108,42 @@ jobs:
             fi
           fi
 
+      - name: Normalize CI env values
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          env_path = Path(".env")
+          text = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+
+          replacements = {
+              "CORS_ALLOWED_ORIGINS": '["http://localhost:3000","http://127.0.0.1:3000"]',
+          }
+
+          lines = text.splitlines()
+          output = []
+          seen = set()
+
+          for line in lines:
+              stripped = line.strip()
+              if not stripped or stripped.startswith("#") or "=" not in line:
+                  output.append(line)
+                  continue
+
+              key = line.split("=", 1)[0].strip()
+              if key in replacements:
+                  output.append(f"{key}={replacements[key]}")
+                  seen.add(key)
+              else:
+                  output.append(line)
+
+          for key, value in replacements.items():
+              if key not in seen:
+                  output.append(f"{key}={value}")
+
+          env_path.write_text("\n".join(output) + "\n", encoding="utf-8")
+          PY
+
       - name: Validate docker compose configs
         run: |
           cat > /tmp/ai_dubbing_prod_ci.env <<'ENV'

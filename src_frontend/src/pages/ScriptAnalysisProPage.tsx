@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Sparkles, FileJson, FileText, Layers, AlertCircle, CheckCircle2, Loader2, Lock, BookOpen, Film, Briefcase, WalletCards } from 'lucide-react'
+import { ArrowLeft, Sparkles, FileJson, FileText, Layers, AlertCircle, CheckCircle2, Loader2, Lock, BookOpen, Film, Briefcase, WalletCards, Lightbulb } from 'lucide-react'
 import { scriptAnalysisApi } from '@/api/scriptAnalysis'
 import { projectsApi, type Project } from '@/api'
 import { getApiErrorMessage } from '@/utils/apiErrors'
@@ -350,6 +350,24 @@ export default function ScriptAnalysisProPage() {
           )}
         </div>
       )}
+
+      {/* Demo helper */}
+      <div className="card bg-gradient-to-r from-amber-500/5 to-transparent border border-amber-500/10 p-5 mb-8">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+            <Lightbulb className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <p className="font-medium text-sm text-amber-200">Cómo probar este módulo</p>
+            <p className="text-gray-400 text-sm mt-1 leading-relaxed">
+              Selecciona un proyecto con guion cargado desde <span className="text-gray-300">Proyectos</span>,
+              pulsa <span className="text-gray-300">Script Analysis Pro</span> en el encabezado del proyecto y luego
+              haz clic en <span className="text-gray-300">Analizar guion</span>.
+              Una vez completado, podrás exportar el análisis en JSON o Markdown.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* What you get */}
       <div className="card bg-dark-200/80 border border-white/5 p-6 mb-8">

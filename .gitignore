@@ -91,3 +91,4 @@ data/smoke_tenant_A/
 
 # Local Docker runtime data
 /deploy/docker/data/
+AGENTS.md

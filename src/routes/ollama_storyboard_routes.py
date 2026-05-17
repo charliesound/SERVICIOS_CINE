@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, Dict, Optional
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from services.local_script_analysis_service import local_script_analysis_service
@@ -92,6 +93,7 @@ async def generate_storyboard_prompts_from_analysis(
     project_id: str,
     payload: Dict[str, Any],
     tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("storyboard_ai")),
     db: AsyncSession = Depends(get_db),
 ):
     """Generate storyboard prompts from existing analysis."""

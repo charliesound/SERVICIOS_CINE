@@ -74,7 +74,7 @@ def _seed_test_data() -> None:
         _insert_row(
             connection,
             "organizations",
-            {"id": ORG_A, "name": "Matcher V3 Test Org", "billing_plan": "free", "is_active": 1},
+            {"id": ORG_A, "name": "Matcher V3 Test Org", "billing_plan": "producer", "is_active": 1},
         )
 
         # Create admin user
@@ -90,8 +90,8 @@ def _seed_test_data() -> None:
                 "full_name": "Matcher Admin A",
                 "role": "ADMIN",
                 "is_active": 1,
-                "billing_plan": "free",
-                "program": "demo",
+                "billing_plan": "producer",
+                "program": "producer",
                 "signup_type": "seed",
                 "account_status": "active",
                 "access_level": "admin",

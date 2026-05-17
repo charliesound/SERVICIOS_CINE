@@ -13,8 +13,7 @@ from dependencies.tenant_context import get_tenant_context, TenantContext
 from models.producer import DemoRequestRecord, SavedOpportunity, FundingOpportunity
 from models.core import Project
 from services.producer_catalog import DEMO_OPPORTUNITIES
-from routes.auth_routes import get_current_user_optional, check_project_ownership
-from schemas.auth_schema import UserResponse
+from routes.auth_routes import check_project_ownership
 from services.logging_service import logger
 
 
@@ -164,11 +163,8 @@ async def list_saved_opportunities(
 async def create_saved_opportunity(
     request: SavedOpportunityCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> SavedOpportunityResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
     project_result = await db.execute(
         select(Project).where(Project.id == request.project_id)
     )
@@ -176,7 +172,7 @@ async def create_saved_opportunity(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    user_id = current_user.user_id
+    user_id = tenant.user_id
     has_ownership = await check_project_ownership(request.project_id, user_id, db)
     if not has_ownership:
         logger.warning(

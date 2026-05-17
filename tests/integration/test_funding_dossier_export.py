@@ -76,8 +76,8 @@ def _insert_row(connection: sqlite3.Connection, table_name: str, payload: dict[s
 def _seed_test_data() -> None:
     connection = sqlite3.connect(str(TEST_DB_PATH))
     try:
-        _insert_row(connection, "organizations", {"id": ORG_A, "name": "Funding Dossier Org A", "billing_plan": "free", "is_active": 1})
-        _insert_row(connection, "organizations", {"id": ORG_B, "name": "Funding Dossier Org B", "billing_plan": "free", "is_active": 1})
+        _insert_row(connection, "organizations", {"id": ORG_A, "name": "Funding Dossier Org A", "billing_plan": "producer", "is_active": 1})
+        _insert_row(connection, "organizations", {"id": ORG_B, "name": "Funding Dossier Org B", "billing_plan": "producer", "is_active": 1})
 
         _insert_row(
             connection,
@@ -91,8 +91,8 @@ def _seed_test_data() -> None:
                 "full_name": "Dossier Admin A",
                 "role": "ADMIN",
                 "is_active": 1,
-                "billing_plan": "free",
-                "program": "demo",
+                "billing_plan": "producer",
+                "program": "producer",
                 "signup_type": "seed",
                 "account_status": "active",
                 "access_level": "admin",
@@ -112,8 +112,8 @@ def _seed_test_data() -> None:
                 "full_name": "Dossier User B",
                 "role": "PRODUCER",
                 "is_active": 1,
-                "billing_plan": "free",
-                "program": "demo",
+                "billing_plan": "producer",
+                "program": "producer",
                 "signup_type": "seed",
                 "account_status": "active",
                 "access_level": "standard",

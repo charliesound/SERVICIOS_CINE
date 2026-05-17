@@ -16,6 +16,9 @@ def require_module_access(module_key: str):
     async def _dependency(
         tenant: TenantContext = Depends(get_tenant_context),
     ) -> TenantContext:
+        if tenant.is_admin or tenant.is_global_admin:
+            return tenant
+
         plan_name = normalize_plan_name(getattr(tenant, "plan", "free"))
         try:
             access_state = module_catalog_service.get_module_access_state(

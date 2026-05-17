@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from models.core import Project
 from dependencies.tenant_context import get_tenant_context, require_write_permission
 from schemas.auth_schema import TenantContext
@@ -24,7 +25,11 @@ from schemas.requirement_checklist_item_schema import (
 )
 
 
-router = APIRouter(prefix="/api/projects", tags=["project-funding"])
+router = APIRouter(
+    prefix="/api/projects",
+    tags=["project-funding"],
+    dependencies=[Depends(require_module_access("funding_grants"))],
+)
 
 
 class ProjectFundingSourceCreate(BaseModel):

@@ -84,11 +84,11 @@ def _seed_shared_smoke_dataset(db_path: Path) -> None:
 
         cursor.execute(
             "INSERT OR REPLACE INTO organizations (id, name, billing_plan, is_active) VALUES (?, ?, ?, ?)",
-            (SMOKE_ORG_A, "Smoke Tenant A", "free", 1),
+            (SMOKE_ORG_A, "Smoke Tenant A", "producer", 1),
         )
         cursor.execute(
             "INSERT OR REPLACE INTO organizations (id, name, billing_plan, is_active) VALUES (?, ?, ?, ?)",
-            (SMOKE_ORG_B, "Smoke Tenant B", "free", 1),
+            (SMOKE_ORG_B, "Smoke Tenant B", "producer", 1),
         )
 
         users = [
@@ -101,8 +101,8 @@ def _seed_shared_smoke_dataset(db_path: Path) -> None:
                 "Smoke Admin",
                 "ADMIN",
                 1,
-                "free",
-                "demo",
+                "producer",
+                "producer",
                 "seed",
                 "active",
                 "admin",
@@ -118,8 +118,8 @@ def _seed_shared_smoke_dataset(db_path: Path) -> None:
                 "Smoke Tenant A",
                 "PRODUCER",
                 1,
-                "free",
-                "demo",
+                "producer",
+                "producer",
                 "seed",
                 "active",
                 "standard",
@@ -135,8 +135,8 @@ def _seed_shared_smoke_dataset(db_path: Path) -> None:
                 "Smoke Tenant B",
                 "PRODUCER",
                 1,
-                "free",
-                "demo",
+                "producer",
+                "producer",
                 "seed",
                 "active",
                 "standard",

@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import AsyncSessionLocal, get_db
+from dependencies.module_access import require_module_access
 from models.core import Project, ProjectJob
 from models.production import ProductionBreakdown
 from dependencies.tenant_context import get_tenant_context, require_write_permission
@@ -96,7 +97,11 @@ async def get_funding_opportunity(
     })
 
 
-router = APIRouter(prefix="/api/projects", tags=["funding"])
+router = APIRouter(
+    prefix="/api/projects",
+    tags=["funding"],
+    dependencies=[Depends(require_module_access("funding_grants"))],
+)
 
 
 async def _record_funding_job_event(

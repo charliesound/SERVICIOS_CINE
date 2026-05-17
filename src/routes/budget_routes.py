@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from models.budget_estimator import BudgetEstimate, BudgetLineItem, BUDGET_LEVELS
 from models.core import Project
 from routes.auth_routes import get_current_user_optional
@@ -34,7 +35,11 @@ from services.role_permission_service import (
 from services.project_access_service import check_permission
 
 
-router = APIRouter(prefix="/api/projects/{project_id}/budgets", tags=["budgets"])
+router = APIRouter(
+    prefix="/api/projects/{project_id}/budgets",
+    tags=["budgets"],
+    dependencies=[Depends(require_module_access("budget_lite"))],
+)
 
 
 class GenerateBudgetPayload(BaseModel):

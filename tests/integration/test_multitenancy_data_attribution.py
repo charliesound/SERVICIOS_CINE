@@ -11,6 +11,8 @@ SRC_DIR = REPO_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+DB_PATH = REPO_ROOT / "ailinkcinema_s2.db"
+
 os.environ["AUTH_SECRET_KEY"] = "a" * 32
 os.environ["APP_SECRET_KEY"] = "a" * 32
 os.environ["JWT_SECRET"] = "a" * 32

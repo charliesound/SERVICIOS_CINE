@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from services.sales_target_service import (
@@ -21,7 +22,11 @@ from services.sales_target_service import (
 from models.distribution import SALES_TARGET_TYPES, SALES_OPPORTUNITY_STATUS
 
 
-router = APIRouter(prefix="/api", tags=["sales-targets"])
+router = APIRouter(
+    prefix="/api",
+    tags=["sales-targets"],
+    dependencies=[Depends(require_module_access("delivery_distribution"))],
+)
 
 
 class SalesTargetCreate(BaseModel):

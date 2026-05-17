@@ -11,6 +11,7 @@ SRC_DIR = REPO_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+
 os.environ["AUTH_SECRET_KEY"] = "a" * 32
 os.environ["APP_SECRET_KEY"] = "a" * 32
 os.environ["JWT_SECRET"] = "a" * 32
@@ -964,8 +965,24 @@ async def test_org_b_cannot_delete_org_a_saved_opportunity(test_app):
 async def test_org_a_can_delete_own_saved_opportunity(test_app):
     from httpx import AsyncClient, ASGITransport
     import uuid
+    from sqlalchemy import text
+    from database import engine
 
     transport = ASGITransport(app=test_app)
+
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                """
+                DELETE FROM saved_opportunities
+                WHERE project_id = :pid AND funding_opportunity_id = :fid
+                """
+            ),
+            {
+                "pid": SMOKE_PROJECT_ID,
+                "fid": "demo-funding-002",
+            },
+        )
 
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         post = await client.post(

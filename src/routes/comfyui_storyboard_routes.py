@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from services.comfyui_model_inventory_service import ComfyUIInventoryError
@@ -26,6 +27,7 @@ async def render_storyboard_scenes(
     project_id: str,
     payload: dict[str, Any],
     tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("storyboard_ai")),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     try:

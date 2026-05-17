@@ -54,6 +54,16 @@ jobs:
           bash -n scripts/healthcheck_stack.sh
           bash -n scripts/smoke_data_stack.sh
 
+      - name: Create CI env file from example
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+
       - name: Validate docker compose config
         run: |
           POSTGRES_PASSWORD=ci-test-pw \

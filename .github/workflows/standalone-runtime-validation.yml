@@ -98,6 +98,16 @@ jobs:
           fi
           npm run build
 
+      - name: Create CI env file from example
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+
       - name: Validate docker compose configs
         run: |
           cat > /tmp/ai_dubbing_prod_ci.env <<'ENV'

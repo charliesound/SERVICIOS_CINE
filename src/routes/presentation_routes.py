@@ -8,6 +8,7 @@ from PIL import Image as PILImage
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.delivery_schema import DeliverableResponse
@@ -25,7 +26,11 @@ from services.presentation_service import (
 )
 
 
-router = APIRouter(prefix="/api/projects", tags=["presentation"])
+router = APIRouter(
+    prefix="/api/projects",
+    tags=["presentation"],
+    dependencies=[Depends(require_module_access("pitch_deck"))],
+)
 
 
 def _deliverable_response(deliverable) -> DeliverableResponse:

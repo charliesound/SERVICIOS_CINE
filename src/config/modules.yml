@@ -99,6 +99,7 @@ modules:
     recommended_pack: Development Pack
     route_prefixes:
       - /api/pipelines
+      - /api/cid/script-to-prompt
     feature_flag_key: module_pipeline_builder
 
   breakdown:

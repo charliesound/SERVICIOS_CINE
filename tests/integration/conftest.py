@@ -296,7 +296,7 @@ def _install_alembic_run_proxy(module, db_path: Path | None) -> None:
             and len(command) >= 5
             and command[1:5] == ["-m", "alembic", "upgrade", "head"]
         ):
-            env = dict(kwargs.get("env") or os.environ)
+            env = dict(kwargs.pop("env", None) or os.environ)
             env["DATABASE_URL"] = _database_url_for_path(db_path)
 
             if _sqlite_table_exists(db_path, "organizations"):

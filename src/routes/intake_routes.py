@@ -13,6 +13,7 @@ from dependencies.tenant_context import get_tenant_context, require_write_permis
 from models.core import Project
 from schemas.auth_schema import TenantContext
 from services.script_analysis_export_service import script_analysis_export_service
+from services.breakdown_export_service import breakdown_export_service
 from services.script_intake_service import analysis_service
 
 
@@ -213,3 +214,58 @@ async def export_script_analysis(
             "Content-Disposition": f'attachment; filename="CID_script_analysis_{project_id}.md"',
         },
     )
+
+
+@router.get("/{project_id}/breakdown/export")
+async def export_breakdown(
+    project_id: str,
+    format: str = Query("json", alias="format"),
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("breakdown")),
+):
+    if format not in ("json", "csv", "md"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported format '{format}'. Use 'json', 'csv', or 'md'.",
+        )
+
+    payload = await breakdown_export_service.build_export_payload(
+        db, project_id
+    )
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if not payload.get("has_breakdown"):
+        raise HTTPException(status_code=404, detail="No breakdown found for project")
+
+    if format == "json":
+        # Remove the internal flag before returning
+        payload.pop("_project_exists", None)
+        payload.pop("has_breakdown", None)
+        return JSONResponse(
+            content=payload,
+            headers={
+                "Content-Disposition": f'attachment; filename="CID_breakdown_{project_id}.json"',
+            },
+        )
+
+    if format == "csv":
+        body = breakdown_export_service.to_csv(payload)
+        return Response(
+            content=body,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="CID_breakdown_{project_id}.csv"',
+            },
+        )
+
+    body = breakdown_export_service.to_markdown(payload)
+    return Response(
+        content=body,
+        media_type="text/markdown",
+        headers={
+            "Content-Disposition": f'attachment; filename="CID_breakdown_{project_id}.md"',
+        },
+    )
+

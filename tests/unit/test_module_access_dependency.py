@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from pathlib import Path
@@ -167,3 +168,81 @@ def test_cid_stateless_endpoint_remains_accessible() -> None:
 
     assert response.status_code == 200
     assert isinstance(response.json(), list)
+
+
+# --- logging observability ---
+
+def test_blocked_event_logs_module_and_reason(caplog) -> None:
+    caplog.set_level(logging.WARNING)
+    app = _build_test_app("funding_grants", "free", is_admin=False)
+    client = TestClient(app)
+
+    response = client.get("/protected/test")
+
+    assert response.status_code == 403
+    assert any(
+        "event=MODULE_ACCESS_BLOCKED" in record.message
+        and "module=funding_grants" in record.message
+        and "locked_reason" in record.message
+        for record in caplog.records
+    )
+
+
+def test_blocked_event_logs_user_and_org(caplog) -> None:
+    caplog.set_level(logging.WARNING)
+    app = _build_test_app("pitch_deck", "free", is_admin=False)
+    client = TestClient(app)
+
+    response = client.get("/protected/test")
+
+    assert response.status_code == 403
+    assert any(
+        "event=MODULE_ACCESS_BLOCKED" in record.message
+        and "user_id=user-1" in record.message
+        and "organization_id=org-1" in record.message
+        and "source=module_access_dependency" in record.message
+        for record in caplog.records
+    )
+
+
+def test_blocked_event_logs_path_and_method(caplog) -> None:
+    caplog.set_level(logging.WARNING)
+    app = _build_test_app("pipeline_builder", "free", is_admin=False)
+    client = TestClient(app)
+
+    response = client.get("/protected/test")
+
+    assert response.status_code == 403
+    assert any(
+        "event=MODULE_ACCESS_BLOCKED" in record.message
+        and "path=/protected/test" in record.message
+        and "method=GET" in record.message
+        for record in caplog.records
+    )
+
+
+def test_admin_bypass_logs_granted_event(caplog) -> None:
+    caplog.set_level(logging.INFO)
+    app = _build_test_app("funding_grants", "free", is_admin=True)
+    client = TestClient(app)
+
+    response = client.get("/protected/test")
+
+    assert response.status_code == 200
+    assert any(
+        "event=MODULE_ACCESS_GRANTED_BY_ADMIN" in record.message
+        and "module=funding_grants" in record.message
+        for record in caplog.records
+    )
+
+
+def test_admin_bypass_not_logged_as_blocked(caplog) -> None:
+    caplog.set_level(logging.WARNING)
+    app = _build_test_app("funding_grants", "free", is_admin=True)
+    client = TestClient(app)
+
+    response = client.get("/protected/test")
+
+    assert response.status_code == 200
+    for record in caplog.records:
+        assert "MODULE_ACCESS_BLOCKED" not in record.message

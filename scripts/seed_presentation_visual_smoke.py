@@ -2,19 +2,49 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 from PIL import Image, ImageDraw
 
 
-DEFAULT_DB_PATH = Path("/opt/SERVICIOS_CINE/ailinkcinema_s2.db")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _sqlite_path_from_database_url(raw_url: str | None) -> Path | None:
+    if not raw_url:
+        return None
+    parsed = urlparse(raw_url)
+    if parsed.scheme != "sqlite+aiosqlite":
+        return None
+    db_path = parsed.path
+    if not db_path:
+        return None
+    return Path(db_path).resolve()
+
+
+def _default_db_path() -> Path:
+    from_env = os.environ.get("PRESENTATION_VISUAL_DB_PATH")
+    if from_env:
+        return Path(from_env).resolve()
+    test_db_url = _sqlite_path_from_database_url(os.environ.get("TEST_DATABASE_URL"))
+    if test_db_url is not None:
+        return test_db_url
+    db_url = _sqlite_path_from_database_url(os.environ.get("DATABASE_URL"))
+    if db_url is not None:
+        return db_url
+    return (Path("/tmp") / "ailinkcinema_presentation_visual_smoke.db").resolve()
+
+
+DEFAULT_DB_PATH = _default_db_path()
 DEFAULT_PROJECT_ID = "32fb858f66ef4569a7bc12db3b5ef2fd"
 DEFAULT_ORGANIZATION_ID = "db4d7a5dadc9457ebaa2993a30d48201"
 DEFAULT_STORAGE_SOURCE_ID = "d7fac025-fa34-487d-a83a-d81ce2aadcac"
-DEFAULT_PROJECT_ROOT = Path("/opt/SERVICIOS_CINE/data/smoke_tenant_A/project_alpha")
+DEFAULT_PROJECT_ROOT = REPO_ROOT / "data" / "smoke_tenant_A" / "project_alpha"
 DEFAULT_STORYBOARD_DIR = DEFAULT_PROJECT_ROOT / "storyboard"
 
 
@@ -85,12 +115,32 @@ def ensure_visual_smoke_assets(
     storage_source_id: str = DEFAULT_STORAGE_SOURCE_ID,
     project_root: Path = DEFAULT_PROJECT_ROOT,
 ) -> list[dict[str, str]]:
+    project_root = Path(project_root).resolve()
     storyboard_dir = project_root / "storyboard"
     results: list[dict[str, str]] = []
 
     connection = sqlite3.connect(str(db_path))
     try:
         cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO storage_sources (
+                id, organization_id, project_id, name, source_type, mount_path, status, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                storage_source_id,
+                organization_id,
+                project_id,
+                "Smoke storyboard root",
+                "local",
+                str(project_root),
+                "active",
+                None,
+            ),
+        )
+
         for spec in VISUAL_ASSET_SPECS:
             file_path = storyboard_dir / spec.file_name
             _ensure_fixture_image(file_path, spec)

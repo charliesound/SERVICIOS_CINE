@@ -397,10 +397,13 @@ def _install_alembic_run_proxy(module, db_path: Path | None) -> None:
                     check=True,
                     env=env,
                 )
+                _seed_shared_smoke_dataset(db_path)
                 return subprocess.CompletedProcess(command, 0, "", "")
 
             try:
-                return subprocess.run(command, *args, env=env, **kwargs)
+                completed = subprocess.run(command, *args, env=env, **kwargs)
+                _seed_shared_smoke_dataset(db_path)
+                return completed
             except subprocess.CalledProcessError as exc:
                 stderr = exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")
                 stdout = exc.stdout.decode() if isinstance(exc.stdout, bytes) else (exc.stdout or "")
@@ -413,6 +416,7 @@ def _install_alembic_run_proxy(module, db_path: Path | None) -> None:
                     check=True,
                     env=env,
                 )
+                _seed_shared_smoke_dataset(db_path)
                 return subprocess.CompletedProcess(command, 0, stdout, stderr)
 
         return subprocess.run(command, *args, **kwargs)

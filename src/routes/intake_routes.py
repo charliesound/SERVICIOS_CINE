@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from typing import Any, Optional
 import uuid
@@ -12,6 +12,7 @@ from dependencies.module_access import require_module_access
 from dependencies.tenant_context import get_tenant_context, require_write_permission
 from models.core import Project
 from schemas.auth_schema import TenantContext
+from services.script_analysis_export_service import script_analysis_export_service
 from services.script_intake_service import analysis_service
 
 
@@ -172,3 +173,41 @@ async def get_breakdown_departments(
         "project_id": project_id,
         "departments": departments,
     })
+
+
+@router.get("/{project_id}/analysis/export")
+async def export_script_analysis(
+    project_id: str,
+    format: str = Query("json", alias="format"),
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("script_analysis")),
+):
+    if format not in ("json", "md"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported format '{format}'. Use 'json' or 'md'.",
+        )
+
+    payload = await script_analysis_export_service.build_export_payload(
+        db, project_id
+    )
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if format == "json":
+        return JSONResponse(
+            content=payload,
+            headers={
+                "Content-Disposition": f'attachment; filename="CID_script_analysis_{project_id}.json"',
+            },
+        )
+
+    body = script_analysis_export_service.to_markdown(payload)
+    return Response(
+        content=body,
+        media_type="text/markdown",
+        headers={
+            "Content-Disposition": f'attachment; filename="CID_script_analysis_{project_id}.md"',
+        },
+    )

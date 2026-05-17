@@ -11,6 +11,7 @@ export { documentsApi } from './documents'
 export { reportsApi } from './reports'
 export { editorialApi } from './editorial'
 export { projectsApi, type Project } from './projects'
+export { breakdownApi } from './breakdown'
 export {
   projectFundingApi,
   type FundingChecklist,

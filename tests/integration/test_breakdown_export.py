@@ -348,7 +348,12 @@ class BreakdownExportIntegrationTest(unittest.TestCase):
             headers=headers,
         )
         self.assertEqual(response.status_code, 403)
-        self.assertIn("MODULE_ACCESS_BLOCKED", response.json()["detail"])
+        body = response.json()
+        detail = body.get("detail")
+        if isinstance(detail, dict):
+            self.assertEqual(detail.get("code"), "MODULE_ACCESS_BLOCKED")
+        else:
+            self.assertIn("MODULE_ACCESS_BLOCKED", str(body))
 
 if __name__ == "__main__":
     unittest.main()

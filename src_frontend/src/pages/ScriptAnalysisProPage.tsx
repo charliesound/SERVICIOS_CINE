@@ -399,17 +399,30 @@ export default function ScriptAnalysisProPage() {
           El análisis de guion es la base de estos módulos. Actívalos para ampliar el flujo de producción.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {DOWNSTREAM_MODULES.map((mod) => (
-            <div key={mod.key} className="flex items-start gap-3 p-4 bg-white/[0.03] rounded-xl border border-white/5">
-              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
-                <mod.icon className="w-5 h-5 text-gray-300" />
+          {DOWNSTREAM_MODULES.map((mod) => {
+            const path = mod.key === 'breakdown' ? `/projects/${projectId}/breakdown` : '#'
+            const isLink = path !== '#'
+            const inner = (
+              <div className="flex items-start gap-3 p-4 bg-white/[0.03] rounded-xl border border-white/5 h-full hover:border-white/20 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
+                  <mod.icon className="w-5 h-5 text-gray-300" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-white">{mod.label}</p>
+                  <p className="text-gray-400 text-xs mt-0.5">{mod.description}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-sm text-white">{mod.label}</p>
-                <p className="text-gray-400 text-xs mt-0.5">{mod.description}</p>
+            )
+            return isLink ? (
+              <Link key={mod.key} to={path} className="block">
+                {inner}
+              </Link>
+            ) : (
+              <div key={mod.key}>
+                {inner}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

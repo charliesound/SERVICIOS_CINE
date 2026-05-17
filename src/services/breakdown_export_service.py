@@ -223,7 +223,7 @@ class BreakdownExportService:
 
         breakdowns = payload.get("breakdowns", [])
         if breakdowns:
-            lines.append(f"## Scene Breakdowns ({len(breakdowns)})")
+            lines.append(f"## Scenes / Scene Breakdowns ({len(breakdowns)})")
             for bd in breakdowns:
                 heading = bd.get("heading") or bd.get("scene_id") or ""
                 lines.append(f"### {heading}")

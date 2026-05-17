@@ -223,6 +223,62 @@ class ScriptAnalysisEnforcementIntegrationTest(unittest.TestCase):
             )
         self.assertEqual(response.status_code, 403)
 
+    def test_breakdown_endpoint_without_module_access_returns_403(self) -> None:
+        target = (
+            "dependencies.module_access.module_catalog_service.get_module_access_state"
+        )
+        with patch(target) as mock_get:
+            mock_get.return_value = ModuleAccessState(
+                enabled=False,
+                locked_reason="plan_feature_missing",
+            )
+            response = self.client.get(
+                f"/api/projects/{PROJECT_ID}/breakdown/scenes",
+                headers=self.non_admin_headers,
+            )
+        self.assertEqual(response.status_code, 403)
+        body = response.json()
+        detail = body.get("detail")
+        if isinstance(detail, dict):
+            self.assertEqual(detail.get("code"), "MODULE_ACCESS_BLOCKED")
+            self.assertEqual(detail.get("module"), "breakdown")
+        else:
+            self.assertIn("MODULE_ACCESS_BLOCKED", str(body))
+            self.assertIn("breakdown", str(body))
+
+    def test_breakdown_endpoint_with_module_access_returns_200(self) -> None:
+        target = (
+            "dependencies.module_access.module_catalog_service.get_module_access_state"
+        )
+        with patch(target) as mock_get:
+            mock_get.return_value = ModuleAccessState(
+                enabled=True,
+                locked_reason="",
+            )
+            response = self.client.get(
+                f"/api/projects/{PROJECT_ID}/breakdown/departments",
+                headers=self.non_admin_headers,
+            )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get("project_id"), PROJECT_ID)
+
+    def test_breakdown_endpoint_admin_bypass_keeps_access(self) -> None:
+        target = (
+            "dependencies.module_access.module_catalog_service.get_module_access_state"
+        )
+        with patch(target) as mock_get:
+            mock_get.return_value = ModuleAccessState(
+                enabled=False,
+                locked_reason="plan_feature_missing",
+            )
+            response = self.client.get(
+                f"/api/projects/{PROJECT_ID}/breakdown/scenes",
+                headers=self.headers,
+            )
+        self.assertEqual(response.status_code, 200)
+        mock_get.assert_not_called()
+
     # --- Unprotected endpoints ---
 
     def test_intake_idea_unprotected_returns_200(self) -> None:

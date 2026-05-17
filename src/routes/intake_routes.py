@@ -136,6 +136,7 @@ async def get_breakdown_scenes(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("breakdown")),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -158,6 +159,7 @@ async def get_breakdown_departments(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("breakdown")),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)

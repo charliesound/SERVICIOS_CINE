@@ -66,6 +66,12 @@ function resolveModuleAction(module: ModuleViewModel): ModuleCardAction {
         variant: 'primary',
       }
     case 'script_analysis':
+      return {
+        label: 'Abrir módulo',
+        href: '/projects',
+        helperText: 'Selecciona un proyecto y pulsa "Script Analysis Pro" desde la vista del proyecto para acceder al workspace dedicado.',
+        variant: 'primary',
+      }
     case 'pitch_deck':
     case 'storyboard_ai':
     case 'breakdown':

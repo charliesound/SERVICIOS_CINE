@@ -963,6 +963,13 @@ export default function ProjectDetailPage() {
             Dashboard
           </Link>
           <Link
+            to={`/projects/${projectId}/script-analysis`}
+            className="px-4 py-2 text-sm border border-amber-500/20 hover:border-amber-400/30 text-amber-300 rounded-xl transition-colors flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            Script Analysis Pro
+          </Link>
+          <Link
             to={`/projects/${projectId}/storyboard-builder`}
             className="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-medium transition-colors flex items-center gap-2"
           >

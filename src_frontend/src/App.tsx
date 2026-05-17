@@ -60,6 +60,7 @@ import DemoCIDPage from './pages/DemoCIDPage'
 import DirectorSolutionPage from './pages/DirectorSolutionPage'
 import ProducerSolutionPage from './pages/ProducerSolutionPage'
 import AppRegistryPage from './pages/AppRegistryPage'
+import ModulesCatalogPage from './pages/ModulesCatalogPage'
 import { applySeo, SEO_DEFAULT_DESCRIPTION, SEO_DEFAULT_TITLE } from '@/utils/seo'
 
 function RouteSeoDefaults() {
@@ -165,6 +166,7 @@ export default function App() {
           />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/modules" element={<ModulesCatalogPage />} />
           <Route path="/projects/new" element={<NewProjectPage />} />
           <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
           <Route path="/projects/:projectId/dashboard" element={<ProjectDashboardPage />} />

@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store'
 import {
   LayoutDashboard,
+  Layers3,
   PlusCircle,
   ListOrdered,
   GitBranch,
@@ -32,6 +33,7 @@ const navItems = [
   { to: '/workflows', icon: GitBranch, label: 'Workflows' },
   { to: '/cid/pipeline-builder', icon: Sparkles, label: 'Pipeline Builder' },
   { to: '/solutions', icon: Grid2x2, label: 'Soluciones' },
+  { to: '/modules', icon: Layers3, label: 'Módulos' },
   { to: '/apps', icon: Puzzle, label: 'Apps' },
   { to: '/pricing', icon: BadgeEuro, label: 'Precios' },
   { to: '/plans', icon: CreditCard, label: 'Planes' },

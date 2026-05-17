@@ -172,6 +172,7 @@ def _register_routers(app: FastAPI, settings) -> None:
     from routes.queue_routes import router as queue_router
     from routes.workflow_routes import router as workflow_router
     from routes.plan_routes import router as plan_router
+    from routes.module_catalog_routes import router as module_catalog_router
     from routes.ops_routes import router as ops_router
     from routes.metrics_routes import router as metrics_router
     from routes.events_routes import router as events_router
@@ -180,6 +181,7 @@ def _register_routers(app: FastAPI, settings) -> None:
     app.include_router(queue_router, tags=["queue"])
     app.include_router(workflow_router, tags=["workflows"])
     app.include_router(plan_router, tags=["plans"])
+    app.include_router(module_catalog_router, tags=["modules"])
     app.include_router(ops_router, tags=["ops"])
     app.include_router(metrics_router, tags=["metrics"])
     app.include_router(events_router, tags=["events"])

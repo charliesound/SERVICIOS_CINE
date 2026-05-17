@@ -59,6 +59,7 @@ async def get_ollama_status():
 async def analyze_script_local_ollama(
     project_id: str,
     tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("script_analysis")),
     db: AsyncSession = Depends(get_db),
 ):
     """Analyze script using local Qwen3:30b via Ollama."""

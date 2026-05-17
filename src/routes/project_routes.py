@@ -12,6 +12,7 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from dependencies.tenant_context import get_tenant_context, TenantContext
 from models.core import Project, ProjectJob, User as DBUser
 from models.storage import MediaAsset, MediaAssetType, MediaAssetStatus
@@ -684,6 +685,7 @@ async def update_project_script(
     payload: UpdateScriptPayload,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("script_analysis")),
 ):
     user_org_id = str(tenant.organization_id)
 
@@ -829,6 +831,7 @@ async def analyze_project_script(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("script_analysis")),
 ):
     user_org_id = str(tenant.organization_id)
 

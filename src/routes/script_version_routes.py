@@ -6,11 +6,16 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from dependencies.tenant_context import get_tenant_context, TenantContext
 from models.core import Project
 from services.script_version_service import ScriptVersionService, ScriptChangeAnalysisService
 
-router = APIRouter(prefix="/api/projects", tags=["script versioning"])
+router = APIRouter(
+    prefix="/api/projects",
+    tags=["script versioning"],
+    dependencies=[Depends(require_module_access("script_analysis"))],
+)
 
 
 class CreateScriptVersionPayload(BaseModel):

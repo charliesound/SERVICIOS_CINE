@@ -1,17 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Any, Optional
 import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.core import Project
+from dependencies.module_access import require_module_access
 from dependencies.tenant_context import get_tenant_context, require_write_permission
+from models.core import Project
 from schemas.auth_schema import TenantContext
-from services.script_intake_service import script_intake_service, analysis_service
+from services.script_intake_service import analysis_service
 
 
 router = APIRouter(prefix="/api/projects", tags=["intake"])
@@ -60,6 +61,7 @@ async def intake_script(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _write: Any = Depends(require_write_permission),
+    _module_access: TenantContext = Depends(require_module_access("script_analysis")),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -85,6 +87,7 @@ async def run_analysis(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _write: Any = Depends(require_write_permission),
+    _module_access: TenantContext = Depends(require_module_access("script_analysis")),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -112,6 +115,7 @@ async def get_analysis_summary(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("script_analysis")),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)

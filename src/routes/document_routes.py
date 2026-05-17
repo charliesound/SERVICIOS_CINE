@@ -7,7 +7,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.core import User as DBUser
 from models.document import (
     DocumentAsset,
     DocumentClassification,
@@ -16,8 +15,7 @@ from models.document import (
     DocumentStructuredData,
 )
 from models.storage import IngestEvent
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
+from dependencies.tenant_context import get_tenant_context, TenantContext
 from schemas.document_schema import (
     DerivePreviewResponse,
     DeriveReportRequest,
@@ -38,12 +36,6 @@ from services.document_service import document_service
 
 
 router = APIRouter(prefix="/api/ingest/documents", tags=["documents"])
-
-
-async def _get_user_org_id(user_id: str, db: AsyncSession) -> Optional[str]:
-    result = await db.execute(select(DBUser).where(DBUser.id == user_id))
-    user = result.scalar_one_or_none()
-    return user.organization_id if user else None
 
 
 def _parse_json_payload(raw_value: Optional[str]) -> Optional[dict]:
@@ -175,10 +167,10 @@ def _event_response(event: IngestEvent) -> DocumentEventResponse:
 
 async def _get_document_or_404(
     document_id: str,
-    user_org_id: str,
+    tenant: TenantContext,
     db: AsyncSession,
 ) -> DocumentAsset:
-    document = await document_service.get_document(db, document_id, user_org_id)
+    document = await document_service.get_document(db, document_id, str(tenant.organization_id))
     if document is None:
         raise HTTPException(status_code=404, detail="Document not found")
     return document
@@ -188,19 +180,13 @@ async def _get_document_or_404(
 async def create_document_asset(
     payload: DocumentAssetCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DocumentAssetResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DocumentAssetResponse:
     document = await document_service.create_document(
         db,
-        user_org_id=user_org_id,
+        user_org_id=str(tenant.organization_id),
         payload=payload.model_dump(exclude_none=True),
-        uploaded_by=current_user.user_id,
+        uploaded_by=tenant.user_id,
     )
     return _document_response(document)
 
@@ -211,17 +197,11 @@ async def list_document_assets(
     status: Optional[str] = None,
     doc_type: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DocumentAssetListResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DocumentAssetListResponse:
     documents = await document_service.list_documents(
         db,
-        organization_id=user_org_id,
+        organization_id=str(tenant.organization_id),
         project_id=project_id,
         status=status,
         doc_type=doc_type,
@@ -235,15 +215,9 @@ async def list_document_assets(
 async def get_document_asset(
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DocumentAssetResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    document = await _get_document_or_404(document_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DocumentAssetResponse:
+    document = await _get_document_or_404(document_id, tenant, db)
     return _document_response(document)
 
 
@@ -252,15 +226,9 @@ async def update_document_asset(
     document_id: str,
     payload: DocumentAssetUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DocumentAssetResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    document = await _get_document_or_404(document_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DocumentAssetResponse:
+    document = await _get_document_or_404(document_id, tenant, db)
     updated = await document_service.update_document(
         db,
         document,
@@ -268,7 +236,7 @@ async def update_document_asset(
         original_path=payload.original_path,
         structured_payload_json=payload.structured_payload_json,
         review_status=payload.review_status,
-        updated_by=current_user.user_id,
+        updated_by=tenant.user_id,
     )
     return _document_response(updated)
 
@@ -277,17 +245,11 @@ async def update_document_asset(
 async def extract_document_asset(
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DocumentAssetResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    document = await _get_document_or_404(document_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DocumentAssetResponse:
+    document = await _get_document_or_404(document_id, tenant, db)
     extracted = await document_service.extract_document(
-        db, document, created_by=current_user.user_id
+        db, document, created_by=tenant.user_id
     )
     return _document_response(extracted)
 
@@ -296,17 +258,11 @@ async def extract_document_asset(
 async def classify_document_asset(
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DocumentAssetResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    document = await _get_document_or_404(document_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DocumentAssetResponse:
+    document = await _get_document_or_404(document_id, tenant, db)
     classified = await document_service.classify_document(
-        db, document, created_by=current_user.user_id
+        db, document, created_by=tenant.user_id
     )
     return _document_response(classified)
 
@@ -315,17 +271,11 @@ async def classify_document_asset(
 async def structure_document_asset(
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DocumentAssetResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    document = await _get_document_or_404(document_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DocumentAssetResponse:
+    document = await _get_document_or_404(document_id, tenant, db)
     structured = await document_service.structure_document(
-        db, document, created_by=current_user.user_id
+        db, document, created_by=tenant.user_id
     )
     return _document_response(structured)
 
@@ -335,19 +285,13 @@ async def approve_document_asset(
     document_id: str,
     payload: DocumentApproveRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DocumentAssetResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    document = await _get_document_or_404(document_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DocumentAssetResponse:
+    document = await _get_document_or_404(document_id, tenant, db)
     approved = await document_service.approve_document(
         db,
         document,
-        approved_by=payload.approved_by or current_user.user_id,
+        approved_by=payload.approved_by or tenant.user_id,
     )
     return _document_response(approved)
 
@@ -356,15 +300,9 @@ async def approve_document_asset(
 async def list_document_asset_events(
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DocumentEventListResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    document = await _get_document_or_404(document_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DocumentEventListResponse:
+    document = await _get_document_or_404(document_id, tenant, db)
     events = await document_service.list_document_events(db, document)
     return DocumentEventListResponse(
         events=[_event_response(event) for event in events]
@@ -375,17 +313,11 @@ async def list_document_asset_events(
 async def derive_document_preview(
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DerivePreviewResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    document = await _get_document_or_404(document_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DerivePreviewResponse:
+    document = await _get_document_or_404(document_id, tenant, db)
     preview = await document_service.derive_preview(
-        db, document, created_by=current_user.user_id
+        db, document, created_by=tenant.user_id
     )
     return DerivePreviewResponse(**preview)
 
@@ -395,15 +327,9 @@ async def derive_document_report(
     document_id: str,
     payload: DeriveReportRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
-) -> DeriveReportResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    document = await _get_document_or_404(document_id, user_org_id, db)
+    tenant: TenantContext = Depends(get_tenant_context),
+    ) -> DeriveReportResponse:
+    document = await _get_document_or_404(document_id, tenant, db)
     report_payload = {
         **payload.report_payload,
         "shooting_day_id": payload.shooting_day_id,
@@ -417,6 +343,6 @@ async def derive_document_report(
         document,
         report_payload=report_payload,
         report_type=payload.report_type,
-        created_by=current_user.user_id,
+        created_by=tenant.user_id,
     )
     return DeriveReportResponse(**result)

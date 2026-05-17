@@ -6,12 +6,37 @@ import subprocess
 import sys
 import unittest
 from pathlib import Path
+from urllib.parse import urlparse
 
-sys.path.insert(0, "/opt/SERVICIOS_CINE/src")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
 
-DB_PATH = Path(
-    os.environ.get("PRESENTATION_VISUAL_DB_PATH", "/opt/SERVICIOS_CINE/ailinkcinema_s2.db")
-).resolve()
+
+def _sqlite_path_from_database_url(raw_url: str | None) -> Path | None:
+    if not raw_url:
+        return None
+    parsed = urlparse(raw_url)
+    if parsed.scheme != "sqlite+aiosqlite":
+        return None
+    if not parsed.path:
+        return None
+    return Path(parsed.path).resolve()
+
+
+def _resolve_test_db_path() -> Path:
+    from_visual = os.environ.get("PRESENTATION_VISUAL_DB_PATH")
+    if from_visual:
+        return Path(from_visual).resolve()
+    from_test_db = _sqlite_path_from_database_url(os.environ.get("TEST_DATABASE_URL"))
+    if from_test_db is not None:
+        return from_test_db
+    from_db = _sqlite_path_from_database_url(os.environ.get("DATABASE_URL"))
+    if from_db is not None:
+        return from_db
+    return (Path("/tmp") / "ailinkcinema_manual_shot_editor.db").resolve()
+
+DB_PATH = _resolve_test_db_path()
 os.environ.setdefault("DATABASE_URL", f"sqlite+aiosqlite:///{DB_PATH}")
 os.environ.setdefault("QUEUE_AUTO_START_SCHEDULER", "0")
 

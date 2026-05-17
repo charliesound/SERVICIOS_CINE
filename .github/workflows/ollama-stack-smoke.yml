@@ -1,0 +1,113 @@
+name: Ollama Stack Smoke
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "compose.ollama.yml"
+      - "compose.ollama.gpu.yml"
+      - "compose.data.yml"
+      - "scripts/start_stack.sh"
+      - "scripts/healthcheck_stack.sh"
+      - "scripts/smoke_ollama_stack.sh"
+      - ".github/workflows/ollama-stack-smoke.yml"
+      - ".env.example"
+  workflow_dispatch:
+
+jobs:
+  ollama-stack-smoke:
+    name: Ollama CPU smoke and compose validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show tool versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Create CI env file from example
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+
+      - name: Validate bash syntax
+        run: |
+          bash -n scripts/smoke_ollama_stack.sh
+          bash -n scripts/start_stack.sh
+          bash -n scripts/healthcheck_stack.sh
+
+      - name: Normalize CI env values
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          env_path = Path(".env")
+          text = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+
+          replacements = {
+              "CORS_ALLOWED_ORIGINS": '["http://localhost:3000","http://127.0.0.1:3000"]',
+          }
+
+          lines = text.splitlines()
+          output = []
+          seen = set()
+
+          for line in lines:
+              stripped = line.strip()
+              if not stripped or stripped.startswith("#") or "=" not in line:
+                  output.append(line)
+                  continue
+
+              key = line.split("=", 1)[0].strip()
+              if key in replacements:
+                  output.append(f"{key}={replacements[key]}")
+                  seen.add(key)
+              else:
+                  output.append(line)
+
+          for key, value in replacements.items():
+              if key not in seen:
+                  output.append(f"{key}={value}")
+
+          env_path.write_text("\n".join(output) + "\n", encoding="utf-8")
+          PY
+
+      - name: Validate Ollama CPU compose config
+        run: |
+          docker compose \
+            -f compose.base.yml \
+            -f compose.ollama.yml \
+            --profile with-ollama \
+            config >/dev/null
+
+      - name: Validate Ollama GPU compose config only
+        run: |
+          docker compose \
+            -f compose.base.yml \
+            -f compose.ollama.yml \
+            -f compose.ollama.gpu.yml \
+            --profile with-ollama \
+            config >/dev/null
+
+      - name: Validate AI CPU compose config
+        run: |
+          docker compose \
+            -f compose.base.yml \
+            -f compose.data.yml \
+            -f compose.ollama.yml \
+            --profile with-qdrant \
+            --profile with-ollama \
+            config >/dev/null
+
+      - name: Run Ollama CPU smoke test
+        run: |
+          ./scripts/smoke_ollama_stack.sh

@@ -23,11 +23,11 @@ def _reset():
     from core.config import reload_settings
 
     reload_settings()
-    from services.comfyui_instance_registry_service import registry
+    from services.instance_registry import registry
 
     registry._initialized = False
     registry.__init__()
-    registry.load_instances()
+    registry.load_config()
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ class TestListInstances:
             resp = await client.get("/api/v1/comfyui/instances")
         assert resp.status_code == 200
         body = resp.json()
-        assert len(body) == 5
+        assert len(body) == 6
 
     @pytest.mark.asyncio
     async def test_list_instances_has_expected_keys(self, test_app):
@@ -58,7 +58,7 @@ class TestListInstances:
             resp = await client.get("/api/v1/comfyui/instances")
         body = resp.json()
         keys = {i["key"] for i in body}
-        expected = {"image", "video_cine", "dubbing_audio", "restoration", "three_d"}
+        expected = {"image", "video_cine", "dubbing_audio", "restoration", "three_d", "lab"}
         assert keys == expected
 
     @pytest.mark.asyncio
@@ -98,7 +98,7 @@ class TestGetInstance:
         assert resp.status_code == 200
         body = resp.json()
         assert body["key"] == "image"
-        assert body["name"] == "Image"
+        assert body["name"] == "Still Image Generation"
         assert body["port"] == 8188
 
     @pytest.mark.asyncio
@@ -254,10 +254,10 @@ class TestComfyUIHealth:
             resp = await client.get("/api/v1/comfyui/health")
         assert resp.status_code == 200
         body = resp.json()
-        assert body["total"] == 5
+        assert body["total"] == 6
         assert "online" in body
         assert "offline" in body
-        assert body["online"] + body["offline"] == 5
+        assert body["online"] + body["offline"] == 6
 
 
 class TestInstanceHealth:

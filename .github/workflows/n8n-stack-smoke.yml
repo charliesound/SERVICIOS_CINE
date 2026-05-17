@@ -1,0 +1,95 @@
+name: n8n Stack Smoke
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "compose.n8n.yml"
+      - "compose.data.yml"
+      - "scripts/start_stack.sh"
+      - "scripts/healthcheck_stack.sh"
+      - "scripts/smoke_n8n_stack.sh"
+      - ".github/workflows/n8n-stack-smoke.yml"
+      - ".env.example"
+  workflow_dispatch:
+
+jobs:
+  n8n-stack-smoke:
+    name: n8n smoke test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show tool versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Create CI env file from example
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+
+      - name: Validate bash syntax
+        run: |
+          bash -n scripts/smoke_n8n_stack.sh
+          bash -n scripts/start_stack.sh
+          bash -n scripts/healthcheck_stack.sh
+
+      - name: Normalize CI env values
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          env_path = Path(".env")
+          text = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+
+          replacements = {
+              "CORS_ALLOWED_ORIGINS": '["http://localhost:3000","http://127.0.0.1:3000"]',
+          }
+
+          lines = text.splitlines()
+          output = []
+          seen = set()
+
+          for line in lines:
+              stripped = line.strip()
+              if not stripped or stripped.startswith("#") or "=" not in line:
+                  output.append(line)
+                  continue
+
+              key = line.split("=", 1)[0].strip()
+              if key in replacements:
+                  output.append(f"{key}={replacements[key]}")
+                  seen.add(key)
+              else:
+                  output.append(line)
+
+          for key, value in replacements.items():
+              if key not in seen:
+                  output.append(f"{key}={value}")
+
+          env_path.write_text("\n".join(output) + "\n", encoding="utf-8")
+          PY
+
+      - name: Validate docker compose config
+        run: |
+          POSTGRES_PASSWORD=ci-test-pw \
+          N8N_ENCRYPTION_KEY=ci-encryption-key-1234567890123456789012 \
+          N8N_IMAGE=n8nio/n8n:1 \
+            docker compose -f compose.base.yml -f compose.data.yml -f compose.n8n.yml \
+              --profile with-postgres --profile with-n8n config >/dev/null
+
+      - name: Run n8n smoke test
+        env:
+          N8N_IMAGE: n8nio/n8n:1
+        run: |
+          ./scripts/smoke_n8n_stack.sh

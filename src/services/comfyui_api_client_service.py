@@ -7,13 +7,28 @@ from typing import Any
 from urllib import error as urlerror
 from urllib import request as urlrequest
 
-
-DEFAULT_COMFYUI_BASE_URL = "http://127.0.0.1:8188"
 DEFAULT_CLIENT_ID = "ailinkcinema-storyboard"
 
 
 def get_comfyui_base_url() -> str:
-    return os.environ.get("COMFYUI_STORYBOARD_BASE_URL", DEFAULT_COMFYUI_BASE_URL).rstrip("/")
+    storyboard_override = os.environ.get("COMFYUI_STORYBOARD_BASE_URL", "").strip()
+    if storyboard_override:
+        return storyboard_override.rstrip("/")
+
+    from services.instance_registry import registry
+
+    if not registry.get_all_backends():
+        registry.load_config()
+
+    backend = registry.resolve_backend_for_task("storyboard_realistic")
+    if backend and backend.base_url:
+        return backend.base_url.rstrip("/")
+
+    fallback = registry.get_backend("still")
+    if fallback and fallback.base_url:
+        return fallback.base_url.rstrip("/")
+
+    return (os.environ.get("COMFYUI_BASE_URL", "http://localhost:8188")).rstrip("/")
 
 
 def is_real_render_enabled() -> bool:

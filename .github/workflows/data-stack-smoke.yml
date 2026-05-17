@@ -1,0 +1,146 @@
+name: Data Stack Smoke
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "compose*.yml"
+      - "scripts/*stack*.sh"
+      - "scripts/smoke_data_stack.sh"
+      - ".github/workflows/data-stack-smoke.yml"
+      - "requirements*.txt"
+      - "src/**"
+      - "tests/**"
+      - "alembic/**"
+      - "alembic.ini"
+  workflow_dispatch:
+
+jobs:
+  data-stack-smoke:
+    name: Data stack smoke + Python validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "No requirements file found"
+            exit 1
+          fi
+
+      - name: Show tool versions
+        run: |
+          python --version
+          docker --version
+          docker compose version
+
+      - name: Validate bash syntax of data stack scripts
+        run: |
+          bash -n scripts/start_stack.sh
+          bash -n scripts/healthcheck_stack.sh
+          bash -n scripts/smoke_data_stack.sh
+
+      - name: Create CI env file from example
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+
+      - name: Normalize CI env values
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          env_path = Path(".env")
+          text = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+
+          replacements = {
+              "CORS_ALLOWED_ORIGINS": '["http://localhost:3000","http://127.0.0.1:3000"]',
+          }
+
+          lines = text.splitlines()
+          output = []
+          seen = set()
+
+          for line in lines:
+              stripped = line.strip()
+              if not stripped or stripped.startswith("#") or "=" not in line:
+                  output.append(line)
+                  continue
+
+              key = line.split("=", 1)[0].strip()
+              if key in replacements:
+                  output.append(f"{key}={replacements[key]}")
+                  seen.add(key)
+              else:
+                  output.append(line)
+
+          for key, value in replacements.items():
+              if key not in seen:
+                  output.append(f"{key}={value}")
+
+          env_path.write_text("\n".join(output) + "\n", encoding="utf-8")
+          PY
+
+      - name: Validate docker compose config
+        run: |
+          POSTGRES_PASSWORD=ci-test-pw \
+            docker compose -f compose.base.yml -f compose.data.yml \
+              --profile with-postgres --profile with-qdrant \
+              config >/dev/null
+
+          POSTGRES_PASSWORD=ci-test-pw \
+            docker compose -f compose.base.yml -f compose.data.yml \
+              --profile with-postgres --profile with-qdrant --profile with-redis \
+              config >/dev/null
+
+      - name: Run data stack smoke test
+        run: |
+          ./scripts/smoke_data_stack.sh
+
+      - name: Python compile all source files
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          python -m compileall -q src tests
+
+      - name: Run unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          python -m pytest tests/unit/ -q
+
+      - name: Run integration tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          python -m pytest tests/integration/ -q
+
+      - name: Verify Alembic single head
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          HEAD_COUNT="$(alembic heads | sed '/^\s*$/d' | wc -l)"
+          alembic heads
+          if [ "$HEAD_COUNT" -ne 1 ]; then
+            echo "Expected exactly one Alembic head, got $HEAD_COUNT"
+            exit 1
+          fi

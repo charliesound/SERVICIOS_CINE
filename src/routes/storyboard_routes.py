@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.shot_schema import StoryboardShotListResponse, StoryboardShotResponse
@@ -41,7 +42,11 @@ from services.script_sequence_mapping_service import script_sequence_mapping_ser
 from services.storyboard_service import storyboard_service, StoryboardGenerationMode
 
 
-router = APIRouter(prefix="/api/projects", tags=["storyboard"])
+router = APIRouter(
+    prefix="/api/projects",
+    tags=["storyboard"],
+    dependencies=[Depends(require_module_access("storyboard_ai"))],
+)
 
 
 @router.get("/{project_id}/storyboard/options", response_model=StoryboardOptionsResponse)

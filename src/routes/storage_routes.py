@@ -7,14 +7,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.core import Project, User as DBUser
+from dependencies.tenant_context import get_tenant_context, TenantContext
+from models.core import Project
 from models.storage import (
     StorageAuthorization,
     StorageSource,
     StorageWatchPath,
 )
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
 from schemas.ingest_schema import IngestScanLaunchRequest, IngestScanResponse
 from schemas.storage_schema import (
     StorageAuthorizationCreate,
@@ -38,27 +37,16 @@ from services.logging_service import logger
 router = APIRouter(prefix="/api/storage-sources", tags=["storage-sources"])
 
 
-async def _get_user_org_id(user_id: str, db: AsyncSession) -> Optional[str]:
-    result = await db.execute(select(DBUser).where(DBUser.id == user_id))
-    user = result.scalar_one_or_none()
-    return user.organization_id if user else None
-
-
 async def _check_storage_source_access(
     source_id: str,
-    user_id: str,
+    tenant: TenantContext,
     db: AsyncSession,
 ) -> StorageSource:
     source = await storage_service.get_storage_source(db, source_id)
     if not source:
         raise HTTPException(status_code=404, detail="Storage source not found")
-
-    user_org_id = await _get_user_org_id(user_id, db)
-    if not user_org_id or source.organization_id != user_org_id:
-        raise HTTPException(
-            status_code=403, detail="Access denied to this storage source"
-        )
-
+    if str(source.organization_id) != str(tenant.organization_id):
+        raise HTTPException(status_code=404, detail="Storage source not found")
     return source
 
 
@@ -126,42 +114,28 @@ def _scan_response(scan) -> IngestScanResponse:
 async def create_storage_source(
     payload: StorageSourceCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> StorageSourceResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-
-    if payload.organization_id != user_org_id:
-        raise HTTPException(
-            status_code=403,
-            detail="Cannot create storage source for a different organization",
-        )
+    user_org_id = str(tenant.organization_id)
 
     project_result = await db.execute(
-        select(Project).where(Project.id == payload.project_id)
+        select(Project).where(
+            Project.id == payload.project_id,
+            Project.organization_id == user_org_id,
+        )
     )
     project = project_result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    if project.organization_id != user_org_id:
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied to this project",
-        )
-
     source = await storage_service.create_storage_source(
         db,
-        organization_id=payload.organization_id,
+        organization_id=user_org_id,
         project_id=payload.project_id,
         name=payload.name,
         source_type=payload.source_type,
         mount_path=payload.mount_path,
-        created_by=current_user.user_id,
+        created_by=tenant.user_id,
     )
 
     return _source_response(source)
@@ -171,22 +145,20 @@ async def create_storage_source(
 async def list_storage_sources(
     project_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> StorageSourceListResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
+    user_org_id = str(tenant.organization_id)
 
     if project_id:
         project_result = await db.execute(
-            select(Project).where(Project.id == project_id)
+            select(Project).where(
+                Project.id == project_id,
+                Project.organization_id == user_org_id,
+            )
         )
         project = project_result.scalar_one_or_none()
-        if project and project.organization_id != user_org_id:
-            raise HTTPException(status_code=403, detail="Access denied to this project")
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
 
     sources = await storage_service.list_storage_sources(db, user_org_id, project_id)
     return StorageSourceListResponse(
@@ -198,12 +170,9 @@ async def list_storage_sources(
 async def get_storage_source_detail(
     source_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> StorageSourceResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    source = await _check_storage_source_access(source_id, current_user.user_id, db)
+    source = await _check_storage_source_access(source_id, tenant, db)
     return _source_response(source)
 
 
@@ -212,12 +181,9 @@ async def update_storage_source(
     source_id: str,
     update: StorageSourceUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> StorageSourceResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    source = await _check_storage_source_access(source_id, current_user.user_id, db)
+    source = await _check_storage_source_access(source_id, tenant, db)
     updated = await storage_service.update_storage_source(
         db, source, name=update.name, status=update.status
     )
@@ -228,14 +194,11 @@ async def update_storage_source(
 async def validate_storage_source(
     source_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> StorageSourceValidateResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    source = await _check_storage_source_access(source_id, current_user.user_id, db)
+    source = await _check_storage_source_access(source_id, tenant, db)
     result = await storage_service.validate_storage_source(
-        db, source, user_id=current_user.user_id
+        db, source, user_id=tenant.user_id
     )
     return StorageSourceValidateResponse(**result)
 
@@ -245,18 +208,15 @@ async def authorize_storage_source(
     source_id: str,
     payload: StorageAuthorizationCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> AuthResponseSchema:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    source = await _check_storage_source_access(source_id, current_user.user_id, db)
+    source = await _check_storage_source_access(source_id, tenant, db)
     authorization = await storage_service.authorize_storage_source(
         db,
         source=source,
         authorization_mode=payload.authorization_mode,
         scope_path=payload.scope_path,
-        granted_by=current_user.user_id,
+        granted_by=tenant.user_id,
         expires_at=payload.expires_at,
     )
     return _authorization_response(authorization)
@@ -268,12 +228,9 @@ async def authorize_storage_source(
 async def list_storage_authorizations(
     source_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> StorageAuthorizationListResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    await _check_storage_source_access(source_id, current_user.user_id, db)
+    await _check_storage_source_access(source_id, tenant, db)
     auths = await storage_service.list_authorizations(db, source_id)
     return StorageAuthorizationListResponse(
         authorizations=[_authorization_response(a) for a in auths]
@@ -285,12 +242,9 @@ async def create_watch_path(
     source_id: str,
     payload: StorageWatchPathCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> StorageWatchPathResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    source = await _check_storage_source_access(source_id, current_user.user_id, db)
+    source = await _check_storage_source_access(source_id, tenant, db)
     watch = await storage_service.create_watch_path(db, source, payload.watch_path)
     return _watch_path_response(watch)
 
@@ -299,12 +253,9 @@ async def create_watch_path(
 async def list_watch_paths(
     source_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> StorageWatchPathListResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    await _check_storage_source_access(source_id, current_user.user_id, db)
+    await _check_storage_source_access(source_id, tenant, db)
     paths = await storage_service.list_watch_paths(db, source_id)
     return StorageWatchPathListResponse(
         watch_paths=[_watch_path_response(p) for p in paths]
@@ -315,14 +266,11 @@ async def list_watch_paths(
 async def storage_handshake(
     source_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> StorageHandshakeResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    source = await _check_storage_source_access(source_id, current_user.user_id, db)
+    source = await _check_storage_source_access(source_id, tenant, db)
     validation_result = await storage_service.validate_storage_source(
-        db, source, user_id=current_user.user_id
+        db, source, user_id=tenant.user_id
     )
     auths = await storage_service.list_authorizations(db, source_id)
 
@@ -343,16 +291,13 @@ async def launch_storage_scan(
     source_id: str,
     payload: IngestScanLaunchRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> IngestScanResponse:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    source = await _check_storage_source_access(source_id, current_user.user_id, db)
+    source = await _check_storage_source_access(source_id, tenant, db)
     scan = await ingest_service.launch_scan(
         db,
         source=source,
-        created_by=current_user.user_id,
+        created_by=tenant.user_id,
         watch_path_id=payload.watch_path_id,
     )
     return _scan_response(scan)

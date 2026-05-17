@@ -1,0 +1,285 @@
+modules:
+  core:
+    key: core
+    name: CID Core
+    short_description: Base SaaS con autenticacion, organizaciones, proyectos, planes y tenancy.
+    category: foundation
+    status: PARCIAL_AVANZADO
+    commercial_status: PARCIAL_INICIAL
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: true
+    visible_in_catalog: true
+    dependencies: []
+    recommended_pack: Core
+    route_prefixes:
+      - /api/auth
+      - /api/projects
+      - /api/plans
+      - /api/admin
+    feature_flag_key: module_core
+
+  script_analysis:
+    key: script_analysis
+    name: CID Script Analysis Pro
+    short_description: Analisis de guion, sinopsis, versiones e impacto narrativo.
+    category: development
+    status: PARCIAL_AVANZADO
+    commercial_status: PARCIAL_AVANZADO
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+    recommended_pack: Development Pack
+    route_prefixes:
+      - /api/projects/*/analyze
+      - /api/projects/*/analysis
+      - /api/projects/*/script
+    feature_flag_key: module_script_analysis
+
+  pitch_deck:
+    key: pitch_deck
+    name: CID Pitch Deck
+    short_description: Dossier de presentacion para productor con exportaciones compartibles.
+    category: development
+    status: PARCIAL_AVANZADO
+    commercial_status: PARCIAL_AVANZADO
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+      - script_analysis
+      - budget_lite
+      - funding_grants
+    recommended_pack: Development Pack
+    route_prefixes:
+      - /api/projects/*/producer-pitch
+      - /api/projects/*/presentation
+    feature_flag_key: module_pitch_deck
+
+  storyboard_ai:
+    key: storyboard_ai
+    name: CID Storyboard AI
+    short_description: Planificacion de planos y generacion storyboard asistida por IA.
+    category: preproduction
+    status: PARCIAL_AVANZADO
+    commercial_status: PARCIAL_AVANZADO
+    requires_gpu: true
+    requires_local_gpu_node: true
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+      - script_analysis
+    recommended_pack: Development Pack
+    route_prefixes:
+      - /api/projects/*/storyboard
+      - /api/storyboard
+      - /api/projects/*/shots
+    feature_flag_key: module_storyboard_ai
+
+  pipeline_builder:
+    key: pipeline_builder
+    name: CID Pipeline Builder
+    short_description: Catalogo y simulacion de pipelines audiovisuales por intencion creativa.
+    category: orchestration
+    status: PARCIAL_AVANZADO
+    commercial_status: PARCIAL_INICIAL
+    requires_gpu: true
+    requires_local_gpu_node: true
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+      - storyboard_ai
+    recommended_pack: Development Pack
+    route_prefixes:
+      - /api/pipelines
+      - /api/cid/script-to-prompt
+    feature_flag_key: module_pipeline_builder
+
+  breakdown:
+    key: breakdown
+    name: CID Breakdown
+    short_description: Desglose tecnico de escenas y departamentos desde el guion.
+    category: preproduction
+    status: PARCIAL_INICIAL
+    commercial_status: PENDIENTE
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+      - script_analysis
+    recommended_pack: Production Pack
+    route_prefixes:
+      - /api/projects/*/breakdown
+    feature_flag_key: module_breakdown
+
+  budget_lite:
+    key: budget_lite
+    name: CID Budget Lite
+    short_description: Presupuesto estimado por partidas con export JSON y CSV.
+    category: preproduction
+    status: PARCIAL_AVANZADO
+    commercial_status: PARCIAL_AVANZADO
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+      - script_analysis
+      - breakdown
+    recommended_pack: Production Pack
+    route_prefixes:
+      - /api/projects/*/budgets
+    feature_flag_key: module_budget_lite
+
+  production_manager_lite:
+    key: production_manager_lite
+    name: CID Production Manager Lite
+    short_description: Miembros, cambios, shooting plan y control operativo ligero.
+    category: production
+    status: PARCIAL_INICIAL
+    commercial_status: PENDIENTE
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+      - breakdown
+      - budget_lite
+    recommended_pack: Production Pack
+    route_prefixes:
+      - /api/projects/*/members
+      - /api/projects/*/change-requests
+      - /api/projects/*/shooting-plans
+      - /api/projects/*/planned-shots
+    feature_flag_key: module_production_manager_lite
+
+  call_sheet:
+    key: call_sheet
+    name: CID Call Sheet
+    short_description: Convocatorias diarias de rodaje y logistica de jornada.
+    category: production
+    status: PENDIENTE
+    commercial_status: PENDIENTE
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+      - production_manager_lite
+    recommended_pack: Production Pack
+    route_prefixes: []
+    feature_flag_key: module_call_sheet
+
+  legal_documents:
+    key: legal_documents
+    name: CID Legal Documents
+    short_description: Ingestion y consulta de documentos legales del proyecto.
+    category: legal
+    status: PARCIAL_INICIAL
+    commercial_status: PENDIENTE
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+    recommended_pack: Funding Pack
+    route_prefixes:
+      - /api/projects/*/documents
+      - /api/documents
+    feature_flag_key: module_legal_documents
+
+  funding_grants:
+    key: funding_grants
+    name: CID Funding & Grants
+    short_description: Match, tracking y dossier de ayudas y subvenciones.
+    category: funding
+    status: HECHO
+    commercial_status: PARCIAL_AVANZADO
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+      - script_analysis
+      - budget_lite
+      - legal_documents
+    recommended_pack: Funding Pack
+    route_prefixes:
+      - /api/funding
+      - /api/projects/*/funding
+    feature_flag_key: module_funding_grants
+
+  postproduction:
+    key: postproduction
+    name: CID Postproduction
+    short_description: Editorial, reconciliacion, assembly y paquetes FCPXML/DaVinci.
+    category: postproduction
+    status: PARCIAL_AVANZADO
+    commercial_status: PARCIAL_INICIAL
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+    recommended_pack: Post Pack
+    route_prefixes:
+      - /api/projects/*/editorial
+      - /api/postproduction
+    feature_flag_key: module_postproduction
+
+  sound_post_ai:
+    key: sound_post_ai
+    name: CID Sound Post AI
+    short_description: Metadatos de audio, dual system y flujos de sonido asistidos.
+    category: postproduction
+    status: PARCIAL_INICIAL
+    commercial_status: PENDIENTE
+    requires_gpu: true
+    requires_local_gpu_node: true
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+      - postproduction
+    recommended_pack: Post Pack
+    route_prefixes:
+      - /api/projects/*/editorial/audio-metadata
+      - /api/dubbing
+    feature_flag_key: module_sound_post_ai
+
+  delivery_distribution:
+    key: delivery_distribution
+    name: CID Delivery & Distribution
+    short_description: Deliverables, packs comerciales, CRM y exportaciones de entrega.
+    category: delivery
+    status: PARCIAL_AVANZADO
+    commercial_status: PARCIAL_AVANZADO
+    requires_gpu: false
+    requires_local_gpu_node: false
+    default_enabled: false
+    visible_in_catalog: true
+    dependencies:
+      - core
+      - pitch_deck
+    recommended_pack: Funding Pack
+    route_prefixes:
+      - /api/delivery
+      - /api/projects/*/distribution-packs
+      - /api/crm
+      - /api/sales-targets
+    feature_flag_key: module_delivery_distribution

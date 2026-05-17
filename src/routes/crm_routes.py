@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from models.crm import CONTACT_TYPES, OPPORTUNITY_TYPES, OPPORTUNITY_STATUS, COMMUNICATION_TYPES
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
@@ -32,7 +33,11 @@ from services.crm_service import (
 )
 
 
-router = APIRouter(prefix="/api", tags=["commercial-crm"])
+router = APIRouter(
+    prefix="/api",
+    tags=["commercial-crm"],
+    dependencies=[Depends(require_module_access("delivery_distribution"))],
+)
 
 
 class CRMContactCreate(BaseModel):

@@ -84,12 +84,12 @@ def _seed_test_data() -> None:
         _insert_row(
             connection,
             "organizations",
-            {"id": ORG_A, "name": "Funding Matcher Org A", "billing_plan": "free", "is_active": 1},
+            {"id": ORG_A, "name": "Funding Matcher Org A", "billing_plan": "producer", "is_active": 1},
         )
         _insert_row(
             connection,
             "organizations",
-            {"id": ORG_B, "name": "Funding Matcher Org B", "billing_plan": "free", "is_active": 1},
+            {"id": ORG_B, "name": "Funding Matcher Org B", "billing_plan": "producer", "is_active": 1},
         )
 
         _insert_row(
@@ -104,8 +104,8 @@ def _seed_test_data() -> None:
                 "full_name": "Matcher Admin A",
                 "role": "ADMIN",
                 "is_active": 1,
-                "billing_plan": "free",
-                "program": "demo",
+                "billing_plan": "producer",
+                "program": "producer",
                 "signup_type": "seed",
                 "account_status": "active",
                 "access_level": "admin",
@@ -126,8 +126,8 @@ def _seed_test_data() -> None:
                 "full_name": "Matcher User B",
                 "role": "PRODUCER",
                 "is_active": 1,
-                "billing_plan": "free",
-                "program": "demo",
+                "billing_plan": "producer",
+                "program": "producer",
                 "signup_type": "seed",
                 "account_status": "active",
                 "access_level": "standard",

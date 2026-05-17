@@ -47,6 +47,40 @@ backends:
       - "audio_sync"
       - "lip_sync"
 
+  restoration:
+    name: "Restoration / Conform / Cleanup"
+    type: "comfyui"
+    host: "127.0.0.1"
+    port: 8191
+    base_url: "http://127.0.0.1:8191"
+    health_endpoint: "/system_stats"
+    max_concurrent_jobs: 1
+    priority: 2
+    enabled: true
+    capabilities:
+      - "image_restoration"
+      - "video_restoration"
+      - "conform"
+      - "cleanup"
+      - "restoration"
+
+  3d:
+    name: "3D Generation"
+    type: "comfyui"
+    host: "127.0.0.1"
+    port: 8192
+    base_url: "http://127.0.0.1:8192"
+    health_endpoint: "/system_stats"
+    max_concurrent_jobs: 1
+    priority: 2
+    enabled: true
+    capabilities:
+      - "3d_generation"
+      - "nerf"
+      - "scene_3d"
+      - "depth"
+      - "geometry"
+
   lab:
     name: "Experimental Lab / Storyboard Sketch"
     type: "comfyui"
@@ -73,19 +107,36 @@ routing_rules:
     outpaint: "still"
 
     # Storyboard modes (dual routing)
+    storyboard: "still"
     storyboard_realistic: "still"
     storyboard_sketch: "lab"
 
     # Video generation
     video: "video"
+    cine: "video"
     text_to_video: "video"
     img2vid: "video"
 
     # Dubbing/Audio
     dubbing: "dubbing"
+    audio: "dubbing"
     voice: "dubbing"
     tts: "dubbing"
     voice_clone: "dubbing"
+
+    # Restoration / conform
+    restoration: "restoration"
+    restore: "restoration"
+    conform: "restoration"
+    cleanup: "restoration"
+    picture_conform: "restoration"
+
+    # 3D
+    3d: "3d"
+    three_d: "3d"
+    nerf: "3d"
+    scene_3d: "3d"
+    depth: "3d"
 
     # Experimental
     experimental: "lab"

@@ -1,0 +1,125 @@
+services:
+  comfyui-still:
+    image: ${COMFYUI_IMAGE:?Set COMFYUI_IMAGE in .env}
+    profiles: ["with-comfyui"]
+    restart: unless-stopped
+    environment:
+      COMFYUI_ARGS: --listen 0.0.0.0 --port 8188
+      CLI_ARGS: --listen 0.0.0.0 --port 8188
+    ports:
+      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:${COMFYUI_STILL_HOST_PORT:-8188}:8188"
+    volumes:
+      - "${COMFYUI_MODELS_BASE_DIR:-/mnt/i/COMFYUI_OK/models}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/models:ro"
+      - "${COMFYUI_STILL_CUSTOM_NODES_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-image/custom_nodes}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/custom_nodes"
+      - "${COMFYUI_INPUT_DIR:-/mnt/g/COMFYUI_HUB/input}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/input"
+      - "${COMFYUI_WORKFLOWS_DIR:-/mnt/g/COMFYUI_HUB/workflows}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/workflows"
+      - "${COMFYUI_OUTPUT_STILL_DIR:-/mnt/g/COMFYUI_HUB/output/still}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/output"
+      - "${COMFYUI_USER_STILL_DIR:-/mnt/g/COMFYUI_HUB/user/still}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/user"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8188/system_stats', timeout=5).read()\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    networks:
+      - private_net
+
+  comfyui-video:
+    image: ${COMFYUI_IMAGE:?Set COMFYUI_IMAGE in .env}
+    profiles: ["with-comfyui"]
+    restart: unless-stopped
+    environment:
+      COMFYUI_ARGS: --listen 0.0.0.0 --port 8189
+      CLI_ARGS: --listen 0.0.0.0 --port 8189
+    ports:
+      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:${COMFYUI_VIDEO_HOST_PORT:-8189}:8189"
+    volumes:
+      - "${COMFYUI_MODELS_BASE_DIR:-/mnt/i/COMFYUI_OK/models}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/models:ro"
+      - "${COMFYUI_VIDEO_CUSTOM_NODES_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-video_cine/custom_nodes}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/custom_nodes"
+      - "${COMFYUI_INPUT_DIR:-/mnt/g/COMFYUI_HUB/input}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/input"
+      - "${COMFYUI_WORKFLOWS_DIR:-/mnt/g/COMFYUI_HUB/workflows}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/workflows"
+      - "${COMFYUI_OUTPUT_VIDEO_DIR:-/mnt/g/COMFYUI_HUB/output/video}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/output"
+      - "${COMFYUI_USER_VIDEO_DIR:-/mnt/g/COMFYUI_HUB/user/video}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/user"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8189/system_stats', timeout=5).read()\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    networks:
+      - private_net
+
+  comfyui-dubbing:
+    image: ${COMFYUI_IMAGE:?Set COMFYUI_IMAGE in .env}
+    profiles: ["with-comfyui"]
+    restart: unless-stopped
+    environment:
+      COMFYUI_ARGS: --listen 0.0.0.0 --port 8190
+      CLI_ARGS: --listen 0.0.0.0 --port 8190
+    ports:
+      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:${COMFYUI_DUBBING_HOST_PORT:-8190}:8190"
+    volumes:
+      - "${COMFYUI_MODELS_BASE_DIR:-/mnt/i/COMFYUI_OK/models}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/models:ro"
+      - "${COMFYUI_DUBBING_CUSTOM_NODES_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-dubbing_audio/custom_nodes}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/custom_nodes"
+      - "${COMFYUI_INPUT_DIR:-/mnt/g/COMFYUI_HUB/input}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/input"
+      - "${COMFYUI_WORKFLOWS_DIR:-/mnt/g/COMFYUI_HUB/workflows}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/workflows"
+      - "${COMFYUI_OUTPUT_DUBBING_DIR:-/mnt/g/COMFYUI_HUB/output/dubbing}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/output"
+      - "${COMFYUI_USER_DUBBING_DIR:-/mnt/g/COMFYUI_HUB/user/dubbing}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/user"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8190/system_stats', timeout=5).read()\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    networks:
+      - private_net
+
+  comfyui-restoration:
+    image: ${COMFYUI_IMAGE:?Set COMFYUI_IMAGE in .env}
+    profiles: ["with-comfyui"]
+    restart: unless-stopped
+    environment:
+      COMFYUI_ARGS: --listen 0.0.0.0 --port 8191
+      CLI_ARGS: --listen 0.0.0.0 --port 8191
+    ports:
+      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:${COMFYUI_RESTORATION_HOST_PORT:-8191}:8191"
+    volumes:
+      - "${COMFYUI_MODELS_BASE_DIR:-/mnt/i/COMFYUI_OK/models}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/models:ro"
+      - "${COMFYUI_RESTORATION_CUSTOM_NODES_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-restoration/custom_nodes}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/custom_nodes"
+      - "${COMFYUI_INPUT_DIR:-/mnt/g/COMFYUI_HUB/input}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/input"
+      - "${COMFYUI_WORKFLOWS_DIR:-/mnt/g/COMFYUI_HUB/workflows}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/workflows"
+      - "${COMFYUI_OUTPUT_RESTORATION_DIR:-/mnt/g/COMFYUI_HUB/output/restoration}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/output"
+      - "${COMFYUI_USER_RESTORATION_DIR:-/mnt/g/COMFYUI_HUB/user/restoration}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/user"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8191/system_stats', timeout=5).read()\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    networks:
+      - private_net
+
+  comfyui-3d:
+    image: ${COMFYUI_IMAGE:?Set COMFYUI_IMAGE in .env}
+    profiles: ["with-comfyui"]
+    restart: unless-stopped
+    environment:
+      COMFYUI_ARGS: --listen 0.0.0.0 --port 8192
+      CLI_ARGS: --listen 0.0.0.0 --port 8192
+    ports:
+      - "${COMFYUI_BIND_ADDR:-127.0.0.1}:${COMFYUI_3D_HOST_PORT:-8192}:8192"
+    volumes:
+      - "${COMFYUI_MODELS_BASE_DIR:-/mnt/i/COMFYUI_OK/models}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/models:ro"
+      - "${COMFYUI_3D_CUSTOM_NODES_DIR:-/home/harliesound/ai/ComfyUI_instances/ComfyUI-3D/custom_nodes}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/custom_nodes"
+      - "${COMFYUI_INPUT_DIR:-/mnt/g/COMFYUI_HUB/input}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/input"
+      - "${COMFYUI_WORKFLOWS_DIR:-/mnt/g/COMFYUI_HUB/workflows}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/workflows"
+      - "${COMFYUI_OUTPUT_3D_DIR:-/mnt/g/COMFYUI_HUB/output/3d}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/output"
+      - "${COMFYUI_USER_3D_DIR:-/mnt/g/COMFYUI_HUB/user/3d}:${COMFYUI_CONTAINER_ROOT:-/root/ComfyUI}/user"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8192/system_stats', timeout=5).read()\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    networks:
+      - private_net

@@ -2,6 +2,7 @@ export { authApi, userApi } from './auth'
 export { renderApi } from './render'
 export { queueApi } from './queue'
 export { workflowApi } from './workflow'
+export { moduleCatalogApi } from './moduleCatalog'
 export { plansApi } from './plans'
 export { opsApi } from './ops'
 export { storageApi } from './storage'
@@ -10,6 +11,7 @@ export { documentsApi } from './documents'
 export { reportsApi } from './reports'
 export { editorialApi } from './editorial'
 export { projectsApi, type Project } from './projects'
+export { breakdownApi } from './breakdown'
 export {
   projectFundingApi,
   type FundingChecklist,

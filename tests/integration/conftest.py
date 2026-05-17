@@ -42,6 +42,96 @@ SMOKE_PROJECT_ID = "32fb858f66ef4569a7bc12db3b5ef2fd"
 SMOKE_STORAGE_SOURCE_ID = "d7fac025-fa34-487d-a83a-d81ce2aadcac"
 SMOKE_STORAGE_ROOT = REPO_ROOT / "data" / "smoke_tenant_A" / "project_alpha"
 
+_MINIMAL_PNG_BYTES = (
+    b"\x89PNG\r\n\x1a\n"
+    b"\x00\x00\x00\rIHDR"
+    b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00"
+    b"\x90wS\xde"
+    b"\x00\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0\x00\x00\x03\x01\x01\x00"
+    b"\xc9\xfe\x92\xef"
+    b"\x00\x00\x00\x00IEND\xaeB`\x82"
+)
+
+
+def _placeholder_bytes(file_name: str, mime_type: str | None) -> bytes:
+    name = file_name.lower()
+    mime = (mime_type or "").lower()
+    if mime == "image/png" or name.endswith(".png"):
+        return _MINIMAL_PNG_BYTES
+    if mime in {"application/pdf"} or name.endswith(".pdf"):
+        return b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
+    if mime.startswith("image/"):
+        return _MINIMAL_PNG_BYTES
+    return b"smoke placeholder\n"
+
+
+def _ensure_shared_smoke_filesystem_fixture(db_path: Path) -> None:
+    data_root = REPO_ROOT / "data"
+    (data_root / "smoke_tenant_A").mkdir(parents=True, exist_ok=True)
+    (data_root / "smoke_tenant_B").mkdir(parents=True, exist_ok=True)
+
+    if not _sqlite_table_exists(db_path, "storage_sources"):
+        return
+
+    connection = sqlite3.connect(str(db_path))
+    try:
+        cursor = connection.cursor()
+        storage_rows = cursor.execute(
+            """
+            SELECT id, mount_path
+            FROM storage_sources
+            WHERE organization_id IN (?, ?)
+            """,
+            (SMOKE_ORG_A, SMOKE_ORG_B),
+        ).fetchall()
+
+        storage_roots_by_id: dict[str, Path] = {}
+        for storage_id, mount_path in storage_rows:
+            mount_text = (mount_path or "").strip()
+            if not mount_text:
+                continue
+            root_path = Path(mount_text)
+            if not root_path.is_absolute():
+                root_path = (REPO_ROOT / root_path).resolve()
+            else:
+                root_path = root_path.resolve()
+            root_path.mkdir(parents=True, exist_ok=True)
+            storage_roots_by_id[str(storage_id)] = root_path
+
+        if not _sqlite_table_exists(db_path, "media_assets"):
+            return
+
+        asset_rows = cursor.execute(
+            """
+            SELECT storage_source_id, file_name, relative_path, canonical_path, mime_type
+            FROM media_assets
+            WHERE project_id = ? AND organization_id IN (?, ?)
+            """,
+            (SMOKE_PROJECT_ID, SMOKE_ORG_A, SMOKE_ORG_B),
+        ).fetchall()
+
+        for storage_source_id, file_name, relative_path, canonical_path, mime_type in asset_rows:
+            storage_root = storage_roots_by_id.get(str(storage_source_id or ""))
+            file_path: Path | None = None
+
+            if canonical_path:
+                canonical = Path(str(canonical_path))
+                file_path = canonical if canonical.is_absolute() else (REPO_ROOT / canonical)
+            elif storage_root and relative_path:
+                file_path = storage_root / str(relative_path)
+            elif storage_root and file_name:
+                file_path = storage_root / str(file_name)
+
+            if file_path is None:
+                continue
+
+            file_path = file_path.resolve()
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            if not file_path.exists():
+                file_path.write_bytes(_placeholder_bytes(str(file_name or file_path.name), mime_type))
+    finally:
+        connection.close()
+
 
 def _is_project_module(module_name: str) -> bool:
     return any(
@@ -84,11 +174,11 @@ def _seed_shared_smoke_dataset(db_path: Path) -> None:
 
         cursor.execute(
             "INSERT OR REPLACE INTO organizations (id, name, billing_plan, is_active) VALUES (?, ?, ?, ?)",
-            (SMOKE_ORG_A, "Smoke Tenant A", "free", 1),
+            (SMOKE_ORG_A, "Smoke Tenant A", "producer", 1),
         )
         cursor.execute(
             "INSERT OR REPLACE INTO organizations (id, name, billing_plan, is_active) VALUES (?, ?, ?, ?)",
-            (SMOKE_ORG_B, "Smoke Tenant B", "free", 1),
+            (SMOKE_ORG_B, "Smoke Tenant B", "producer", 1),
         )
 
         users = [
@@ -101,8 +191,8 @@ def _seed_shared_smoke_dataset(db_path: Path) -> None:
                 "Smoke Admin",
                 "ADMIN",
                 1,
-                "free",
-                "demo",
+                "producer",
+                "producer",
                 "seed",
                 "active",
                 "admin",
@@ -118,8 +208,8 @@ def _seed_shared_smoke_dataset(db_path: Path) -> None:
                 "Smoke Tenant A",
                 "PRODUCER",
                 1,
-                "free",
-                "demo",
+                "producer",
+                "producer",
                 "seed",
                 "active",
                 "standard",
@@ -135,8 +225,8 @@ def _seed_shared_smoke_dataset(db_path: Path) -> None:
                 "Smoke Tenant B",
                 "PRODUCER",
                 1,
-                "free",
-                "demo",
+                "producer",
+                "producer",
                 "seed",
                 "active",
                 "standard",
@@ -194,6 +284,8 @@ def _seed_shared_smoke_dataset(db_path: Path) -> None:
         connection.commit()
     finally:
         connection.close()
+
+    _ensure_shared_smoke_filesystem_fixture(db_path)
 
 
 def _resolve_module_db_path(module) -> Path | None:
@@ -296,7 +388,7 @@ def _install_alembic_run_proxy(module, db_path: Path | None) -> None:
             and len(command) >= 5
             and command[1:5] == ["-m", "alembic", "upgrade", "head"]
         ):
-            env = dict(kwargs.get("env") or os.environ)
+            env = dict(kwargs.pop("env", None) or os.environ)
             env["DATABASE_URL"] = _database_url_for_path(db_path)
 
             if _sqlite_table_exists(db_path, "organizations"):
@@ -305,10 +397,13 @@ def _install_alembic_run_proxy(module, db_path: Path | None) -> None:
                     check=True,
                     env=env,
                 )
+                _seed_shared_smoke_dataset(db_path)
                 return subprocess.CompletedProcess(command, 0, "", "")
 
             try:
-                return subprocess.run(command, *args, env=env, **kwargs)
+                completed = subprocess.run(command, *args, env=env, **kwargs)
+                _seed_shared_smoke_dataset(db_path)
+                return completed
             except subprocess.CalledProcessError as exc:
                 stderr = exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")
                 stdout = exc.stdout.decode() if isinstance(exc.stdout, bytes) else (exc.stdout or "")
@@ -321,6 +416,7 @@ def _install_alembic_run_proxy(module, db_path: Path | None) -> None:
                     check=True,
                     env=env,
                 )
+                _seed_shared_smoke_dataset(db_path)
                 return subprocess.CompletedProcess(command, 0, stdout, stderr)
 
         return subprocess.run(command, *args, **kwargs)

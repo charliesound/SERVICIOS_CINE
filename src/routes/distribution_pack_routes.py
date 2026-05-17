@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from models.core import Project
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
@@ -26,7 +27,11 @@ from services.distribution_pack_service import (
 from models.distribution import PACK_TYPE
 
 
-router = APIRouter(prefix="/api/projects", tags=["distribution"])
+router = APIRouter(
+    prefix="/api/projects",
+    tags=["distribution"],
+    dependencies=[Depends(require_module_access("delivery_distribution"))],
+)
 
 
 class DistributionPackUpdate(BaseModel):

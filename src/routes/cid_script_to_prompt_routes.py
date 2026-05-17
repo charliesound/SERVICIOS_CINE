@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
+from dependencies.module_access import require_module_access
 from models.core import Project
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
@@ -65,6 +67,7 @@ async def analyze_full_script_endpoint(
     payload: FullScriptAnalysisRequest,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("pipeline_builder")),
 ) -> FullScriptAnalysisResult:
     script_text = payload.script_text or ""
     if not script_text and payload.project_id:

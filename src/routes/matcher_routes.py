@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
 from database import get_db
+from dependencies.module_access import require_module_access
 from dependencies.tenant_context import TenantContext, require_organization, require_write_permission
 from models.matcher import MatcherJob, MatcherJobStatus
 from schemas.matcher_schema import (
@@ -15,7 +16,11 @@ from schemas.matcher_schema import (
 )
 from services.project_funding_service import project_funding_service
 
-router = APIRouter(prefix="/api/projects/{project_id}/funding/matcher", tags=["matcher"])
+router = APIRouter(
+    prefix="/api/projects/{project_id}/funding/matcher",
+    tags=["matcher"],
+    dependencies=[Depends(require_module_access("funding_grants"))],
+)
 
 
 @router.post("/trigger", response_model=MatcherJobResponse, status_code=status.HTTP_202_ACCEPTED)

@@ -1,0 +1,18 @@
+# Requires NVIDIA Container Toolkit installed on host.
+# Intended for home PC with RTX 5090.
+# Do not use on VPS hosts without GPU.
+# Validate GPU with:
+# docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi
+
+services:
+  ollama:
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu

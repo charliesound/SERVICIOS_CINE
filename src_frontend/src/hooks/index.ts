@@ -3,6 +3,7 @@ export { useJobs, useJob, useCreateJob, useRetryJob } from './useJobs'
 export { useWorkflowCatalog, usePlanWorkflow, useBuildWorkflow, usePresets, useCreatePreset } from './useWorkflow'
 export { useQueueStatus, useJobQueueStatus } from './useQueue'
 export { usePlansCatalog, useUserPlanStatus, usePlanDetails } from './usePlans'
+export { useModuleCatalog, useMyModules, useModuleDetail } from './useModules'
 export { useIngestScan, useIngestScans, useLaunchStorageScan, useMediaAsset, useMediaAssets } from './useIngest'
 export {
   useApproveDocument,

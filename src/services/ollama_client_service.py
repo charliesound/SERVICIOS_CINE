@@ -4,6 +4,7 @@ Supports Qwen3:30b, Gemma4:26b/31b, and automatic fallback.
 """
 import json
 import logging
+import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -12,6 +13,51 @@ import httpx
 from config import get_llm_settings
 
 logger = logging.getLogger(__name__)
+
+
+_TASK_MODEL_SETTINGS_MAP = {
+    "script_analysis": (
+        "script_analysis_model",
+        "analysis_model",
+        "ollama_model",
+    ),
+    "storyboard_prompt": (
+        "storyboard_prompt_model",
+        "ollama_model",
+    ),
+    "pipeline_builder": (
+        "pipeline_builder_model",
+        "ollama_model",
+    ),
+    "quick": (
+        "quick_model",
+        "ollama_model",
+    ),
+    "visual": (
+        "visual_model",
+        "ollama_model",
+    ),
+    "fallback": (
+        "fallback_model",
+        "ollama_model",
+    ),
+    "smoke": (
+        "smoke_model",
+        "ollama_model",
+    ),
+}
+
+_TASK_MODEL_ENV_MAP = {
+    "script_analysis_model": "OLLAMA_SCRIPT_ANALYSIS_MODEL",
+    "analysis_model": "OLLAMA_ANALYSIS_MODEL",
+    "storyboard_prompt_model": "OLLAMA_STORYBOARD_PROMPT_MODEL",
+    "pipeline_builder_model": "OLLAMA_PIPELINE_BUILDER_MODEL",
+    "quick_model": "OLLAMA_QUICK_MODEL",
+    "visual_model": "OLLAMA_VISUAL_MODEL",
+    "fallback_model": "OLLAMA_FALLBACK_MODEL",
+    "smoke_model": "OLLAMA_SMOKE_MODEL",
+    "ollama_model": "OLLAMA_MODEL",
+}
 
 
 class OllamaClientService:
@@ -25,8 +71,45 @@ class OllamaClientService:
     def _ensure_client(self):
         if self._client is None:
             settings = get_llm_settings()
-            self._base_url = settings.get("base_url", "http://127.0.0.1:11434")
+            self._base_url = settings.get("ollama_base_url", "http://127.0.0.1:11434")
             self._client = httpx.AsyncClient(base_url=self._base_url, timeout=300.0)
+
+    @staticmethod
+    def get_model_for_task(task: str, settings: dict | None = None) -> str:
+        """
+        Resolve the best Ollama model for a CID task.
+
+        Resolution order:
+        1. Task-specific setting/env.
+        2. Compatible alias setting/env.
+        3. OLLAMA_MODEL.
+        4. Hardcoded safe default: qwen2.5:14b.
+        """
+        safe_default = "qwen2.5:14b"
+        if settings is None:
+            settings = get_llm_settings()
+
+        setting_keys = _TASK_MODEL_SETTINGS_MAP.get(task, ("ollama_model",))
+        for setting_key in setting_keys:
+            setting_value = settings.get(setting_key)
+            if isinstance(setting_value, str) and setting_value.strip():
+                return setting_value.strip()
+
+            env_var = _TASK_MODEL_ENV_MAP.get(setting_key)
+            if env_var:
+                env_value = os.getenv(env_var)
+                if isinstance(env_value, str) and env_value.strip():
+                    return env_value.strip()
+
+        global_model = settings.get("ollama_model")
+        if isinstance(global_model, str) and global_model.strip():
+            return global_model.strip()
+
+        env_global = os.getenv("OLLAMA_MODEL")
+        if isinstance(env_global, str) and env_global.strip():
+            return env_global.strip()
+
+        return safe_default
 
     async def healthcheck(self) -> Dict[str, Any]:
         """Check if Ollama is running."""
@@ -53,7 +136,7 @@ class OllamaClientService:
     async def is_model_available(self, model_name: str) -> bool:
         """Check if a specific model is available."""
         models = await self.list_models()
-        # Normalize: qwen3:30b matches qwen3:latest if qwen3:30b not found
+        # Normalize: model:tag matches model:latest if exact tag is missing
         normalized = [m.split(":")[0] for m in models]
         target = model_name.split(":")[0]
         return model_name in models or target in normalized

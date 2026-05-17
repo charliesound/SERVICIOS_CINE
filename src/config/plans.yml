@@ -12,6 +12,7 @@ plans:
     features:
       - watermark_enabled
       - basic_project_export
+      - module_script_analysis
     limits:
       max_images_per_day: 10
       max_video_seconds_per_month: 0
@@ -40,6 +41,7 @@ plans:
     features:
       - watermark_enabled
       - community_support
+      - module_script_analysis
     limits:
       max_images_per_day: 10
       max_video_seconds_per_month: 0
@@ -70,6 +72,10 @@ plans:
       - no_watermark
       - email_support
       - api_basic
+      - module_script_analysis
+      - module_breakdown
+      - module_budget_lite
+      - module_legal_documents
     limits:
       max_images_per_day: 100
       max_video_seconds_per_month: 0
@@ -102,6 +108,14 @@ plans:
       - priority_queue
       - storyboard_export
       - project_metrics
+      - module_script_analysis
+      - module_breakdown
+      - module_budget_lite
+      - module_legal_documents
+      - module_funding_grants
+      - module_pitch_deck
+      - module_production_manager_lite
+      - module_delivery_distribution
     limits:
       max_images_per_day: 250
       max_video_seconds_per_month: 600
@@ -134,6 +148,9 @@ plans:
       - priority_queue
       - api_full
       - team_sharing
+      - module_storyboard_ai
+      - module_pipeline_builder
+      - module_postproduction
     limits:
       max_images_per_day: 500
       max_video_seconds_per_month: 1800
@@ -169,6 +186,8 @@ plans:
       - dedicated_support
       - custom_workflows
       - white_label
+      - module_call_sheet
+      - module_sound_post_ai
     limits:
       max_images_per_day: 999999
       max_video_seconds_per_month: 999999

@@ -7,6 +7,7 @@ export * from './storage'
 export * from './ingest'
 export * from './document'
 export * from './reports'
+export * from './modules'
 export type {
   SignupType,
   CIDProgram,

@@ -1940,6 +1940,8 @@ class StoryboardService:
         )
         db.add(new_shot)
         await db.flush()
+        await db.commit()
+        await db.refresh(new_shot)
 
         prompt_payload = {
             "preset_key": "storyboard_realistic",

@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import threading
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -12,6 +13,7 @@ from collections import defaultdict
 from typing import Optional, Dict, Any, List, TYPE_CHECKING
 
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 
 if TYPE_CHECKING:
     from models.core import ProjectJob
@@ -355,13 +357,26 @@ class QueueService:
     ) -> None:
         if not self._is_db_mode():
             return
-        self._run_db(
-            self._persist_transition_async(
-                item,
-                event=event,
-                recovery_reason=recovery_reason,
-            )
-        )
+        max_retries = 3
+        backoffs = [0.1, 0.25, 0.5]
+        for attempt in range(max_retries + 1):
+            try:
+                self._run_db(
+                    self._persist_transition_async(
+                        item,
+                        event=event,
+                        recovery_reason=recovery_reason,
+                    )
+                )
+                return
+            except OperationalError as exc:
+                from database import IS_SQLITE
+
+                message = str(exc).lower()
+                is_locked = "database is locked" in message
+                if not IS_SQLITE or not is_locked or attempt >= max_retries:
+                    raise
+                time.sleep(backoffs[attempt])
 
     def recover_on_startup(self) -> Dict[str, Any]:
         summary = {

@@ -19,6 +19,7 @@ from models.storage import MediaAsset, MediaAssetType, MediaAssetStatus
 from services.document_service import document_service
 from services.job_tracking_service import job_tracking_service
 from services.plan_limits_service import plan_limits_service
+from services.production_advisor_reference_service import load_production_advisor_reference
 from services.script_intake_service import analysis_service
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
@@ -934,6 +935,11 @@ async def analyze_project_script(
             structured_payload=persisted_structured_payload,
         )
         structured_payload["analysis_summary"] = analysis_summary
+        advisor_reference = load_production_advisor_reference()
+        structured_payload["production_advisor_reference"] = {
+            "available": advisor_reference.get("available", False),
+            "path": advisor_reference.get("path"),
+        }
 
         result_payload = {
             "document_id": str(doc.id),
@@ -1475,6 +1481,11 @@ async def retry_project_job(
                 structured_payload=persisted_structured_payload,
             )
             structured_payload["analysis_summary"] = analysis_summary
+            advisor_reference = load_production_advisor_reference()
+            structured_payload["production_advisor_reference"] = {
+                "available": advisor_reference.get("available", False),
+                "path": advisor_reference.get("path"),
+            }
             result_payload = {
                 "document_id": str(doc.id),
                 "doc_type": str(classification.doc_type)

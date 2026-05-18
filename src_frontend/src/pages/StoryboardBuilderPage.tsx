@@ -33,6 +33,23 @@ function dedupeList(items: string[]): string {
   }).join(', ') || '—'
 }
 
+function extractSequenceNumber(value?: string | null): number | null {
+  if (!value) return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (/^\d+$/.test(trimmed)) return Number(trimmed)
+  const match = trimmed.match(/(?:seq|sequence|s)_?0*(\d+)$/i)
+  return match ? Number(match[1]) : null
+}
+
+function resolveSequenceAlias(sequenceId: string, sequences: StoryboardSequence[]): StoryboardSequence | null {
+  const direct = sequences.find((sequence) => sequence.sequence_id === sequenceId)
+  if (direct) return direct
+  const number = extractSequenceNumber(sequenceId)
+  if (number == null) return null
+  return sequences.find((sequence) => sequence.sequence_number === number) || null
+}
+
 export default function StoryboardBuilderPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const [shots, setShots] = useState<DirtyShot[]>([])
@@ -94,7 +111,7 @@ export default function StoryboardBuilderPage() {
   }, [fetchShots, fetchSequences])
 
   const currentSequence = useMemo(
-    () => sequences.find((s) => s.sequence_id === selectedSequenceId) || null,
+    () => resolveSequenceAlias(selectedSequenceId, sequences),
     [sequences, selectedSequenceId]
   )
 
@@ -130,7 +147,10 @@ export default function StoryboardBuilderPage() {
     setSelectedSequenceEntry(entry)
     setShotPlan(null)
     try {
-      const plan = await storyboardApi.planSequence(projectId, entry.sequence_id)
+      const canonicalSequence = resolveSequenceAlias(entry.sequence_id, sequences)
+      const requestedSequenceId = canonicalSequence?.sequence_id || entry.sequence_id
+      const plan = await storyboardApi.planSequence(projectId, requestedSequenceId)
+      setSelectedSequenceId(requestedSequenceId)
       setShotPlan(plan)
       setActiveTab('sequences')
     } catch (err: any) {
@@ -145,11 +165,17 @@ export default function StoryboardBuilderPage() {
     setIsGenerating(true)
     setError(null)
     try {
-      await storyboardApi.generateBySequence(projectId, sequenceId, {
+      const canonicalSequence = resolveSequenceAlias(sequenceId, sequences)
+      const requestedSequenceId = canonicalSequence?.sequence_id || sequenceId
+      const response = await storyboardApi.generateBySequence(projectId, requestedSequenceId, {
         style_preset: stylePreset,
         shots_per_scene: shotsPerScene,
         overwrite: true,
       })
+      const resolvedResponseSequence = response.sequence_id
+        ? resolveSequenceAlias(response.sequence_id, sequences)?.sequence_id || response.sequence_id
+        : requestedSequenceId
+      setSelectedSequenceId(resolvedResponseSequence)
       await Promise.all([fetchShots(), fetchSequences()])
       setActiveTab('shots')
     } catch (err: any) {

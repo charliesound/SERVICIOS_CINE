@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT / "src"
@@ -87,6 +89,41 @@ def _sample_sequences() -> list[StoryboardSequenceBlock]:
     ]
 
 
+def _canonical_sequences() -> list[StoryboardSequenceBlock]:
+    return [
+        StoryboardSequenceBlock(
+            sequence_id="seq_01",
+            sequence_number=1,
+            title="Secuencia 1",
+            summary="Primer bloque",
+            included_scenes=[1, 2],
+            characters=["A"],
+            location="CASA",
+            emotional_arc="setup",
+            estimated_duration=120,
+            estimated_shots=6,
+        )
+    ]
+
+
+class _FakeDb:
+    def __init__(self) -> None:
+        self.items: list[object] = []
+        self._id_counter = 0
+
+    def add(self, obj: object) -> None:
+        self.items.append(obj)
+
+    async def flush(self) -> None:
+        for obj in self.items:
+            if getattr(obj, "id", None) is None:
+                self._id_counter += 1
+                setattr(obj, "id", f"fake-{self._id_counter}")
+
+    async def commit(self) -> None:
+        return None
+
+
 def test_sequence_blocks_from_analysis_accepts_objects() -> None:
     service = StoryboardService()
     analysis_data = {
@@ -101,6 +138,200 @@ def test_sequence_blocks_from_analysis_accepts_objects() -> None:
     assert blocks[0].sequence_id == "seq_001"
     assert resolved is not None
     assert resolved.sequence_id == "seq_001"
+
+
+def test_resolve_sequence_block_aliases_to_canonical_seq_01() -> None:
+    service = StoryboardService()
+    blocks = _canonical_sequences()
+
+    assert service._resolve_sequence_block(blocks, "seq_001") is not None
+    assert service._resolve_sequence_block(blocks, "seq_001").sequence_id == "seq_01"
+    assert service._resolve_sequence_block(blocks, "sequence_001").sequence_id == "seq_01"
+    assert service._resolve_sequence_block(blocks, "1").sequence_id == "seq_01"
+
+
+def test_get_sequence_storyboard_uses_canonical_sequence_id_for_alias(monkeypatch) -> None:
+    service = StoryboardService()
+    captured: dict[str, str] = {}
+
+    async def fake_get_project_for_tenant(db, *, project_id, tenant):
+        return SimpleNamespace(id=project_id, organization_id=tenant.organization_id, script_text="INT. CASA - NOCHE")
+
+    async def fake_get_analysis_payload(db, project):
+        return {"scenes": _sample_scenes(), "sequences": _canonical_sequences()}
+
+    async def fake_build_storyboard_status(db, *, project_id):
+        return {"sequences": {"seq_01": {"shots": 4, "version": 2}}}
+
+    async def fake_list_storyboard_shots(db, *, project_id, tenant, mode=None, sequence_id=None, scene_number=None):
+        captured["sequence_id"] = str(sequence_id)
+        return [SimpleNamespace(id="shot-1", sequence_id="seq_01")], 2
+
+    monkeypatch.setattr(service, "_get_project_for_tenant", fake_get_project_for_tenant)
+    monkeypatch.setattr(service, "_get_analysis_payload", fake_get_analysis_payload)
+    monkeypatch.setattr(service, "_build_storyboard_status", fake_build_storyboard_status)
+    monkeypatch.setattr(service, "list_storyboard_shots", fake_list_storyboard_shots)
+
+    sequence, shots = asyncio.run(
+        service.get_sequence_storyboard(
+            object(),
+            project_id="project-1",
+            sequence_id="seq_001",
+            tenant=SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False),
+        )
+    )
+
+    assert captured["sequence_id"] == "seq_01"
+    assert sequence["sequence_id"] == "seq_01"
+    assert len(shots) == 1
+
+
+def test_get_sequence_storyboard_preserves_canonical_sequence_id(monkeypatch) -> None:
+    service = StoryboardService()
+    captured: dict[str, str] = {}
+
+    async def fake_get_project_for_tenant(db, *, project_id, tenant):
+        return SimpleNamespace(id=project_id, organization_id=tenant.organization_id, script_text="INT. CASA - NOCHE")
+
+    async def fake_get_analysis_payload(db, project):
+        return {"scenes": _sample_scenes(), "sequences": _canonical_sequences()}
+
+    async def fake_build_storyboard_status(db, *, project_id):
+        return {"sequences": {"seq_01": {"shots": 4, "version": 2}}}
+
+    async def fake_list_storyboard_shots(db, *, project_id, tenant, mode=None, sequence_id=None, scene_number=None):
+        captured["sequence_id"] = str(sequence_id)
+        return [SimpleNamespace(id="shot-1", sequence_id="seq_01")], 2
+
+    monkeypatch.setattr(service, "_get_project_for_tenant", fake_get_project_for_tenant)
+    monkeypatch.setattr(service, "_get_analysis_payload", fake_get_analysis_payload)
+    monkeypatch.setattr(service, "_build_storyboard_status", fake_build_storyboard_status)
+    monkeypatch.setattr(service, "list_storyboard_shots", fake_list_storyboard_shots)
+
+    sequence, shots = asyncio.run(
+        service.get_sequence_storyboard(
+            object(),
+            project_id="project-1",
+            sequence_id="seq_01",
+            tenant=SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False),
+        )
+    )
+
+    assert captured["sequence_id"] == "seq_01"
+    assert sequence["sequence_id"] == "seq_01"
+    assert len(shots) == 1
+
+
+def test_generate_storyboard_returns_canonical_sequence_id(monkeypatch) -> None:
+    service = StoryboardService()
+    fake_db = _FakeDb()
+    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False)
+    project = SimpleNamespace(id="project-1", name="Proyecto QA", description=None, script_text="INT. CASA - NOCHE")
+
+    async def fake_get_project_for_tenant(db, *, project_id, tenant):
+        return project
+
+    async def fake_get_analysis_payload(db, project):
+        return {
+            "scenes": [
+                {
+                    "scene_number": 1,
+                    "heading": "INT. CASA - NOCHE",
+                    "location": "CASA",
+                    "time_of_day": "NOCHE",
+                    "action_blocks": ["Un personaje entra en silencio."],
+                    "scene_id": "scene_001",
+                }
+            ],
+            "sequences": _canonical_sequences(),
+        }
+
+    async def fake_next_generation_version(db, **kwargs):
+        return 1
+
+    async def fake_update_progress(*args, **kwargs):
+        return None
+
+    async def fake_record_project_job_event(*args, **kwargs):
+        return None
+
+    async def fake_upsert_job_asset(*args, **kwargs):
+        return SimpleNamespace(id="asset-1")
+
+    async def fake_run_llm_storyboard_prompts_or_none(**kwargs):
+        return None
+
+    monkeypatch.setattr(service, "_get_project_for_tenant", fake_get_project_for_tenant)
+    monkeypatch.setattr(service, "_get_analysis_payload", fake_get_analysis_payload)
+    monkeypatch.setattr(service, "_next_generation_version", fake_next_generation_version)
+    monkeypatch.setattr(service, "_run_llm_storyboard_prompts_or_none", fake_run_llm_storyboard_prompts_or_none)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.update_progress", fake_update_progress)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.record_project_job_event", fake_record_project_job_event)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.upsert_job_asset", fake_upsert_job_asset)
+
+    result = asyncio.run(
+        service.generate_storyboard(
+            fake_db,
+            project_id="project-1",
+            tenant=tenant,
+            mode=StoryboardGenerationMode.SEQUENCE,
+            sequence_id="seq_001",
+            sequence_ids=[],
+            scene_start=None,
+            scene_end=None,
+            selected_scene_ids=[],
+            scene_numbers=[],
+            style_preset="graphic_novel",
+            shots_per_scene=2,
+            max_scenes=None,
+            overwrite=False,
+        )
+    )
+
+    created_shots = [item for item in fake_db.items if item.__class__.__name__ == "StoryboardShot"]
+    assert result["sequence_id"] == "seq_01"
+    assert created_shots
+    assert all(getattr(shot, "sequence_id", None) == "seq_01" for shot in created_shots)
+
+
+def test_export_sequence_zip_accepts_alias(monkeypatch, tmp_path) -> None:
+    from routes.storyboard_routes import export_sequence_storyboard_zip
+
+    asset_path = tmp_path / "frame.webp"
+    asset_path.write_bytes(b"frame-bytes")
+
+    async def fake_get_sequence_storyboard(db, *, project_id, sequence_id, tenant):
+        assert sequence_id == "seq_001"
+        return (
+            {"sequence_id": "seq_01"},
+            [SimpleNamespace(asset_id="asset-1", sequence_order=1, created_at=None)],
+        )
+
+    async def fake_get_asset_preview_payload(db, *, project_id, asset_id, tenant):
+        return {
+            "kind": "file",
+            "path": str(asset_path),
+            "filename": "frame.webp",
+        }
+
+    monkeypatch.setattr("routes.storyboard_routes.storyboard_service.get_sequence_storyboard", fake_get_sequence_storyboard)
+    monkeypatch.setattr(
+        "services.presentation_service.presentation_service.get_asset_preview_payload",
+        fake_get_asset_preview_payload,
+    )
+
+    response = asyncio.run(
+        export_sequence_storyboard_zip(
+            project_id="project-1",
+            sequence_id="seq_001",
+            db=object(),
+            tenant=SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False),
+        )
+    )
+
+    assert response.status_code == 200
+    assert response.media_type == "application/zip"
+    assert 'sequence_seq_01_storyboard.zip' in response.headers.get("Content-Disposition", "")
 
 
 def test_contract_full_script_selection_returns_all_scenes() -> None:

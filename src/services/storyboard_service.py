@@ -156,6 +156,15 @@ class StoryboardService:
         scene_number: Optional[int] = None,
     ) -> tuple[list[StoryboardShot], Optional[int]]:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+        if sequence_id:
+            try:
+                analysis_data = await self._get_analysis_payload(db, project)
+                sequence_id = self._canonical_sequence_id(
+                    self._sequence_blocks_from_analysis(analysis_data),
+                    sequence_id,
+                )
+            except HTTPException:
+                pass
         query = select(StoryboardShot).where(
             StoryboardShot.project_id == project_id,
             StoryboardShot.organization_id == str(project.organization_id),
@@ -225,21 +234,22 @@ class StoryboardService:
         sequence_id: str,
         tenant: TenantContext,
     ) -> tuple[dict[str, Any], list[StoryboardShot]]:
-        sequences = await self.list_storyboard_sequences(db, project_id=project_id, tenant=tenant)
-        sequence = next((item for item in sequences if item["sequence_id"] == sequence_id), None)
-        if sequence is None:
-            blocks = self._sequence_blocks_from_analysis(
-                await self._get_analysis_payload(db, await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant))
-            )
-            resolved = self._resolve_sequence_block(blocks, sequence_id)
-            if resolved is None:
-                raise HTTPException(status_code=404, detail="Sequence not found")
-            sequence = self._sequence_block_dict(resolved, await self._build_storyboard_status(db, project_id=project_id))
+        project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+        analysis_data = await self._get_analysis_payload(db, project)
+        blocks = self._sequence_blocks_from_analysis(analysis_data)
+        resolved = self._resolve_sequence_block(blocks, sequence_id)
+        if resolved is None:
+            raise HTTPException(status_code=404, detail="Sequence not found")
+        canonical_sequence_id = resolved.sequence_id
+        sequence = self._sequence_block_dict(
+            resolved,
+            await self._build_storyboard_status(db, project_id=project_id),
+        )
         shots, _version = await self.list_storyboard_shots(
             db,
             project_id=project_id,
             tenant=tenant,
-            sequence_id=sequence_id,
+            sequence_id=canonical_sequence_id,
         )
         return sequence, shots
 
@@ -271,6 +281,8 @@ class StoryboardService:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
         analysis_data = await self._get_analysis_payload(db, project)
         sequences = self._sequence_blocks_from_analysis(analysis_data)
+        sequence_id = self._canonical_sequence_id(sequences, sequence_id)
+        sequence_ids = self._canonical_sequence_ids(sequences, sequence_ids or [])
 
         if use_cinematic_intelligence and director_lens_id:
             try:
@@ -292,7 +304,7 @@ class StoryboardService:
             sequences=sequences,
             mode=mode,
             sequence_id=sequence_id,
-            sequence_ids=sequence_ids or [],
+            sequence_ids=sequence_ids,
             scene_start=scene_start,
             scene_end=scene_end,
             selected_scene_ids=selected_scene_ids or [],
@@ -342,7 +354,7 @@ class StoryboardService:
                 "mode": mode,
                 "generation_mode": mode,
                 "sequence_id": sequence_id,
-                "sequence_ids": sequence_ids or [],
+                "sequence_ids": sequence_ids,
                 "scene_start": scene_start,
                 "scene_end": scene_end,
                 "style_preset": style_preset,
@@ -471,7 +483,7 @@ class StoryboardService:
             "mode": mode,
             "generation_mode": mode,
             "sequence_id": sequence_id,
-            "sequence_ids": sequence_ids or [],
+            "sequence_ids": sequence_ids,
             "scene_start": scene_start,
             "scene_end": scene_end,
             "selected_scene_ids": selected_scene_ids or [],
@@ -623,7 +635,7 @@ class StoryboardService:
             "generation_mode": mode,
             "version": version,
             "sequence_id": sequence_id,
-            "sequence_ids": sequence_ids or [],
+            "sequence_ids": sequence_ids,
             "scene_start": scene_start,
             "scene_end": scene_end,
             "selected_scene_numbers": [self._scene_number(scene) for scene in selected_scenes],
@@ -776,6 +788,8 @@ class StoryboardService:
 
     def _resolve_sequence_block(self, blocks: list[StoryboardSequenceBlock], sequence_id: str) -> StoryboardSequenceBlock | None:
         """Resolve a sequence block from any seq_01/seq_001/1 format."""
+        if not sequence_id or not str(sequence_id).strip():
+            return None
         # 1. Exact match
         for b in blocks:
             if b.sequence_id == sequence_id:
@@ -797,6 +811,33 @@ class StoryboardService:
                     if b.sequence_id == fmt:
                         return b
         return None
+
+    def _canonical_sequence_id(
+        self,
+        blocks: list[StoryboardSequenceBlock],
+        sequence_id: Optional[str],
+    ) -> Optional[str]:
+        if sequence_id is None:
+            return None
+        stripped = str(sequence_id).strip()
+        if not stripped:
+            return None
+        resolved = self._resolve_sequence_block(blocks, stripped)
+        return resolved.sequence_id if resolved is not None else stripped
+
+    def _canonical_sequence_ids(
+        self,
+        blocks: list[StoryboardSequenceBlock],
+        sequence_ids: list[str],
+    ) -> list[str]:
+        canonical_ids: list[str] = []
+        seen: set[str] = set()
+        for sequence_id in sequence_ids:
+            canonical = self._canonical_sequence_id(blocks, sequence_id)
+            if canonical and canonical not in seen:
+                seen.add(canonical)
+                canonical_ids.append(canonical)
+        return canonical_ids
 
     def _sequence_block_dict(self, block: StoryboardSequenceBlock, status: dict[str, Any]) -> dict[str, Any]:
         seq_status = status.get("sequences", {}).get(block.sequence_id, {})

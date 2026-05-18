@@ -413,6 +413,16 @@ class StoryboardService:
                     if llm_shot_bundle and llm_shot_bundle.shots
                     else self._build_scene_shots(scene, shots_per_scene=shots_per_scene, style_preset=style_preset)
                 )
+            shot_payloads = [
+                self._enrich_storyboard_shot_payload(
+                    scene=scene,
+                    shot_payload=shot,
+                    sequence_for_scene=sequence_for_scene,
+                    style_preset=style_preset,
+                    shot_order=index + 1,
+                )
+                for index, shot in enumerate(shot_payloads)
+            ]
             generated_scenes_payload.append(
                 {
                     "scene_number": scene_number,
@@ -443,7 +453,7 @@ class StoryboardService:
                     sequence_order=current_offset + offset,
                     scene_number=scene_number,
                     scene_heading=scene.get("heading") or f"ESCENA {scene_number}",
-                    narrative_text=shot.get("description") or shot.get("narrative_text"),
+                    narrative_text=shot.get("narrative_text") or shot.get("positive_prompt") or shot.get("description"),
                     shot_type=shot["shot_type"],
                     visual_mode=style_preset,
                     generation_mode=mode,
@@ -461,7 +471,7 @@ class StoryboardService:
                         "shot_payload": shot,
                         "scene_number": shot_record.scene_number,
                         "shot_type": shot_record.shot_type,
-                        "prompt_summary": shot_record.narrative_text,
+                        "prompt_summary": shot.get("positive_prompt") or shot_record.narrative_text,
                     }
                 )
                 created_shots += 1
@@ -982,6 +992,185 @@ class StoryboardService:
             )
         return shots
 
+    def _normalize_text_list(self, values: list[Any]) -> list[str]:
+        cleaned: list[str] = []
+        seen: set[str] = set()
+        for value in values:
+            text = str(value or "").strip()
+            if not text:
+                continue
+            key = text.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            cleaned.append(text)
+        return cleaned
+
+    def _dialogue_lines(self, scene: dict[str, Any]) -> list[str]:
+        lines: list[str] = []
+        for block in scene.get("dialogue_blocks", []) or []:
+            if isinstance(block, dict):
+                character = str(block.get("character") or "").strip()
+                text = str(block.get("text") or "").strip()
+            else:
+                character = str(getattr(block, "character", "") or "").strip()
+                text = str(getattr(block, "text", "") or "").strip()
+            if character and text:
+                lines.append(f"{character}: {text}")
+            elif text:
+                lines.append(text)
+        return lines
+
+    def _scene_script_excerpt(self, scene: dict[str, Any], *, max_length: int = 240) -> str:
+        fragments: list[str] = []
+        heading = str(scene.get("heading") or "").strip()
+        if heading:
+            fragments.append(heading)
+        fragments.extend(str(item).strip() for item in (scene.get("action_blocks") or []) if str(item).strip())
+        fragments.extend(self._dialogue_lines(scene)[:2])
+        excerpt = " ".join(fragment for fragment in fragments if fragment).strip()
+        if len(excerpt) <= max_length:
+            return excerpt
+        return excerpt[: max_length - 1].rstrip() + "..."
+
+    def _build_enriched_negative_prompt(self, base_negative: str | None) -> str:
+        tokens = self._normalize_text_list(
+            [
+                base_negative or "",
+                "blurry",
+                "low quality",
+                "distorted",
+                "deformed hands",
+                "extra fingers",
+                "watermark",
+                "text",
+                "logo",
+                "daylight in night scenes",
+                "extra characters not present in script",
+                "wrong props",
+                "inconsistent wardrobe",
+                "inconsistent location",
+                "generic fantasy elements",
+            ]
+        )
+        return ", ".join(tokens)
+
+    def _enrich_storyboard_shot_payload(
+        self,
+        *,
+        scene: dict[str, Any],
+        shot_payload: dict[str, Any],
+        sequence_for_scene: Optional[StoryboardSequenceBlock],
+        style_preset: str,
+        shot_order: int,
+    ) -> dict[str, Any]:
+        payload = dict(shot_payload)
+        metadata_payload = payload.get("metadata_json") or {}
+        if isinstance(metadata_payload, str):
+            try:
+                metadata_payload = json.loads(metadata_payload)
+            except Exception:
+                metadata_payload = {}
+        elif not isinstance(metadata_payload, dict):
+            metadata_payload = {}
+
+        script_scene = self._scene_dict_to_script_scene(scene)
+        continuity_anchors = continuity_memory_service.build_continuity_anchors(script_scene)
+        scene_heading = str(scene.get("heading") or f"ESCENA {self._scene_number(scene)}").strip()
+        location = str(scene.get("location") or sequence_for_scene.location or scene_heading).strip()
+        time_of_day = str(scene.get("time_of_day") or "").strip() or "unspecified time"
+        characters = self._normalize_text_list(
+            list(scene.get("characters_detected") or [])
+            + list(scene.get("characters") or [])
+            + (sequence_for_scene.characters if sequence_for_scene else [])
+        )
+        main_character = ", ".join(characters[:2]) if characters else "main subject from the script"
+        action_line = str(payload.get("description") or payload.get("narrative_text") or "").strip()
+        script_excerpt = self._scene_script_excerpt(scene)
+        if not action_line:
+            action_line = script_excerpt or scene_heading
+        visual_elements = self._normalize_text_list(
+            list(scene.get("visual_anchors") or [])
+            + list(scene.get("props") or [])
+            + continuity_anchors[:4]
+        )
+        key_visual = ", ".join(visual_elements[:4]) if visual_elements else "script-faithful visual continuity"
+        emotional_intent = str(
+            scene.get("emotional_tone")
+            or metadata_payload.get("directorial_intent", {}).get("dramatic_intent")
+            or payload.get("visual_style")
+            or (sequence_for_scene.emotional_arc if sequence_for_scene else "")
+            or "cinematic tension"
+        ).strip()
+        shot_objective = str(
+            metadata_payload.get("shot_editorial_purpose", {}).get("purpose")
+            or payload.get("shot_plan_reason")
+            or scene.get("dramatic_objective")
+            or action_line
+        ).strip()
+        shot_type = str(payload.get("shot_type") or "MS").strip() or "MS"
+        continuity_phrase = ", ".join(
+            self._normalize_text_list(
+                [
+                    f"sequence {sequence_for_scene.sequence_id}" if sequence_for_scene else "",
+                    f"location {location}" if location else "",
+                    f"time {time_of_day}" if time_of_day else "",
+                    *visual_elements[:2],
+                ]
+            )
+        )
+        base_positive = str(payload.get("positive_prompt") or payload.get("prompt") or "").strip()
+        prompt_parts = [
+            "cinematic storyboard frame",
+            main_character,
+            action_line,
+            f"exact location: {location}",
+            f"time and atmosphere: {time_of_day}, {emotional_intent}",
+            f"key visual element: {key_visual}",
+            f"{shot_type} shot",
+            f"continuity with the sequence: {continuity_phrase}" if continuity_phrase else "",
+            f"consistent visual style: {style_preset.replace('_', ' ')}",
+            f"scene heading: {scene_heading}",
+            f"script excerpt: {script_excerpt}" if script_excerpt else "",
+            f"shot objective: {shot_objective}" if shot_objective else "",
+            f"script-faithful detail: {base_positive}" if base_positive and base_positive not in action_line else "",
+            "avoid elements not present in the script",
+        ]
+        enriched_positive = ". ".join(part for part in prompt_parts if part)
+        enriched_negative = self._build_enriched_negative_prompt(str(payload.get("negative_prompt") or ""))
+
+        metadata_payload.update(
+            {
+                "script_excerpt_used": script_excerpt,
+                "positive_prompt": enriched_positive,
+                "negative_prompt": enriched_negative,
+                "character_continuity": characters,
+                "location_continuity": {
+                    "location": location,
+                    "time_of_day": time_of_day,
+                    "sequence_id": sequence_for_scene.sequence_id if sequence_for_scene else None,
+                },
+                "visual_continuity": {
+                    "anchors": visual_elements,
+                    "continuity_phrase": continuity_phrase,
+                },
+                "scene_heading": scene_heading,
+                "emotional_intent": emotional_intent,
+                "shot_objective": shot_objective,
+                "shot_order": shot_order,
+            }
+        )
+
+        payload["description"] = action_line[:180]
+        payload["narrative_text"] = enriched_positive[:500]
+        payload["positive_prompt"] = enriched_positive
+        payload["negative_prompt"] = enriched_negative
+        payload["metadata_json"] = metadata_payload
+        payload["continuity_notes"] = continuity_phrase
+        payload["script_excerpt_used"] = script_excerpt
+        payload["shot_plan_reason"] = payload.get("shot_plan_reason") or shot_objective
+        return payload
+
     def _detect_shot_type(self, text: str) -> str:
         text_lower = text.lower()
         for shot_type, keywords in self.SHOT_KEYWORDS.items():
@@ -1175,6 +1364,14 @@ class StoryboardService:
         shot_id: str,
         scene_number: Optional[int],
     ) -> dict[str, Any]:
+        metadata_payload = shot_payload.get("metadata_json") or {}
+        if isinstance(metadata_payload, str):
+            try:
+                metadata_payload = json.loads(metadata_payload)
+            except Exception:
+                metadata_payload = {}
+        elif not isinstance(metadata_payload, dict):
+            metadata_payload = {}
         scene_heading = scene.get("heading") or "Scene"
         location = scene.get("location") or "unknown location"
         time_of_day = scene.get("time_of_day") or "unspecified time"
@@ -1182,8 +1379,10 @@ class StoryboardService:
         tone = shot_payload.get("visual_style") or "cinematic realistic storyboard frame"
         project_context = str(project.description or "").strip()
         primary_prompt = (
-            shot_payload.get("positive_prompt")
+            metadata_payload.get("positive_prompt")
+            or shot_payload.get("positive_prompt")
             or shot_payload.get("prompt")
+            or shot_payload.get("narrative_text")
             or shot_payload.get("description")
             or scene_heading
         )
@@ -1204,9 +1403,17 @@ class StoryboardService:
             prompt_parts.append(f"Composition: {shot_payload['composition']}")
         if shot_payload.get("continuity_notes"):
             prompt_parts.append(f"Continuity: {shot_payload['continuity_notes']}")
+        if metadata_payload.get("shot_objective"):
+            prompt_parts.append(f"Shot objective: {metadata_payload['shot_objective']}")
+        if metadata_payload.get("script_excerpt_used"):
+            prompt_parts.append(f"Script excerpt: {metadata_payload['script_excerpt_used']}")
         if project_context:
             prompt_parts.append(f"Project context: {project_context}")
-        negative = shot_payload.get("negative_prompt") or "blurry, low quality, distorted, deformed hands, extra fingers, watermark, text, logo"
+        negative = (
+            metadata_payload.get("negative_prompt")
+            or shot_payload.get("negative_prompt")
+            or "blurry, low quality, distorted, deformed hands, extra fingers, watermark, text, logo"
+        )
         return {
             "preset_key": "storyboard_realistic",
             "prompt": ", ".join(part for part in prompt_parts if part),

@@ -42,6 +42,22 @@ MINIMAL_SCENE: dict = {
 
 EMPTY_SCENE: dict = {}
 
+SCRIPT_FAITHFUL_SCENE: dict = {
+    "scene_number": 9,
+    "heading": "INT. CASA ABANDONADA - NOCHE",
+    "location": "CASA ABANDONADA",
+    "time_of_day": "NOCHE",
+    "action_blocks": [
+        "Marta entra en la casa abandonada iluminando el pasillo con una linterna.",
+        "La sombra de Marta tiembla sobre la pared mientras escucha un ruido fuera de cuadro.",
+    ],
+    "characters_detected": ["MARTA"],
+    "props": ["linterna"],
+    "visual_anchors": ["sombra larga", "pared desconchada"],
+    "dramatic_objective": "avanzar con cautela hacia el origen del ruido",
+    "emotional_tone": "suspense oscuro",
+}
+
 
 class TestSceneDictToScriptScene:
     def test_full_scene_dict(self) -> None:
@@ -204,6 +220,51 @@ class TestBuildCinematicStoryboardShot:
         dumped = json.dumps(shots, ensure_ascii=False, default=str)
         reloaded = json.loads(dumped)
         assert len(reloaded) == 2
+
+    def test_script_faithful_metadata_contains_enriched_prompt_fields(self) -> None:
+        service = StoryboardService()
+        shot = service._enrich_storyboard_shot_payload(
+            scene=SCRIPT_FAITHFUL_SCENE,
+            shot_payload=service._build_cinematic_storyboard_shot(
+                SCRIPT_FAITHFUL_SCENE,
+                shots_per_scene=1,
+                style_preset="cinematic_realistic",
+            )[0],
+            sequence_for_scene=None,
+            style_preset="cinematic_realistic",
+            shot_order=1,
+        )
+
+        meta = shot["metadata_json"]
+        assert meta["script_excerpt_used"]
+        assert meta["positive_prompt"]
+        assert meta["negative_prompt"]
+        assert meta["character_continuity"] == ["MARTA"]
+        assert meta["location_continuity"]["location"] == "CASA ABANDONADA"
+        assert meta["scene_heading"] == "INT. CASA ABANDONADA - NOCHE"
+        assert meta["emotional_intent"]
+        assert meta["shot_objective"]
+
+    def test_script_faithful_positive_prompt_mentions_core_story_elements(self) -> None:
+        service = StoryboardService()
+        shot = service._enrich_storyboard_shot_payload(
+            scene=SCRIPT_FAITHFUL_SCENE,
+            shot_payload={
+                "shot_type": "MS",
+                "description": "Marta avanza con la linterna por el pasillo de la casa abandonada.",
+                "negative_prompt": "",
+                "metadata_json": {},
+            },
+            sequence_for_scene=None,
+            style_preset="cinematic_realistic",
+            shot_order=1,
+        )
+
+        positive = shot["positive_prompt"].lower()
+        assert "marta" in positive
+        assert "linterna" in positive
+        assert "casa abandonada" in positive
+        assert "noche" in positive
 
 
 class TestStoryboardGenerateRequestSchema:

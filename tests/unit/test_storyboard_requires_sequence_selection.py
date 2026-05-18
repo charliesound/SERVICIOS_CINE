@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import sys
 from pathlib import Path
@@ -58,6 +59,25 @@ def _sample_scenes() -> list[dict[str, object]]:
         {"scene_number": 3, "heading": "INT. CAFE - TARDE", "scene_id": "scene_003"},
         {"scene_number": 4, "heading": "EXT. PARQUE - NOCHE", "scene_id": "scene_004"},
     ]
+
+
+def _marta_scene() -> dict[str, object]:
+    return {
+        "scene_number": 1,
+        "heading": "INT. CASA ABANDONADA - NOCHE",
+        "location": "CASA ABANDONADA",
+        "time_of_day": "NOCHE",
+        "action_blocks": [
+            "Marta entra en la casa abandonada iluminando el pasillo con una linterna.",
+            "La sombra de Marta vibra sobre la pared mientras avanza en silencio.",
+        ],
+        "characters_detected": ["MARTA"],
+        "props": ["linterna"],
+        "visual_anchors": ["sombra larga", "pared desconchada"],
+        "dramatic_objective": "avanzar con cautela hacia el ruido",
+        "emotional_tone": "suspense oscuro",
+        "scene_id": "scene_001",
+    }
 
 
 def _sample_sequences() -> list[StoryboardSequenceBlock]:
@@ -122,6 +142,15 @@ class _FakeDb:
 
     async def commit(self) -> None:
         return None
+
+
+class _VersionCounter:
+    def __init__(self) -> None:
+        self.current = 0
+
+    async def __call__(self, db, **kwargs):
+        self.current += 1
+        return self.current
 
 
 def test_sequence_blocks_from_analysis_accepts_objects() -> None:
@@ -292,6 +321,199 @@ def test_generate_storyboard_returns_canonical_sequence_id(monkeypatch) -> None:
     assert result["sequence_id"] == "seq_01"
     assert created_shots
     assert all(getattr(shot, "sequence_id", None) == "seq_01" for shot in created_shots)
+
+
+def test_generate_storyboard_metadata_contains_enriched_prompts(monkeypatch) -> None:
+    service = StoryboardService()
+    fake_db = _FakeDb()
+    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False)
+    project = SimpleNamespace(id="project-1", name="Proyecto QA", description=None, script_text="INT. CASA ABANDONADA - NOCHE")
+
+    async def fake_get_project_for_tenant(db, *, project_id, tenant):
+        return project
+
+    async def fake_get_analysis_payload(db, project):
+        return {"scenes": [_marta_scene()], "sequences": _canonical_sequences()}
+
+    async def fake_update_progress(*args, **kwargs):
+        return None
+
+    async def fake_record_project_job_event(*args, **kwargs):
+        return None
+
+    async def fake_upsert_job_asset(*args, **kwargs):
+        return SimpleNamespace(id="asset-1")
+
+    async def fake_run_llm_storyboard_prompts_or_none(**kwargs):
+        return None
+
+    monkeypatch.setattr(service, "_get_project_for_tenant", fake_get_project_for_tenant)
+    monkeypatch.setattr(service, "_get_analysis_payload", fake_get_analysis_payload)
+    monkeypatch.setattr(service, "_next_generation_version", _VersionCounter())
+    monkeypatch.setattr(service, "_run_llm_storyboard_prompts_or_none", fake_run_llm_storyboard_prompts_or_none)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.update_progress", fake_update_progress)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.record_project_job_event", fake_record_project_job_event)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.upsert_job_asset", fake_upsert_job_asset)
+
+    asyncio.run(
+        service.generate_storyboard(
+            fake_db,
+            project_id="project-1",
+            tenant=tenant,
+            mode=StoryboardGenerationMode.SEQUENCE,
+            sequence_id="seq_001",
+            sequence_ids=[],
+            scene_start=None,
+            scene_end=None,
+            selected_scene_ids=[],
+            scene_numbers=[],
+            style_preset="graphic_novel",
+            shots_per_scene=2,
+            max_scenes=None,
+            overwrite=False,
+        )
+    )
+
+    created_shots = [item for item in fake_db.items if item.__class__.__name__ == "StoryboardShot"]
+    metadata_json = getattr(created_shots[0], "metadata_json", "")
+    metadata = json.loads(metadata_json)
+
+    assert metadata["script_excerpt_used"]
+    assert metadata["positive_prompt"]
+    assert metadata["negative_prompt"]
+    assert "MARTA" in metadata["character_continuity"]
+    assert metadata["location_continuity"]["location"] == "CASA ABANDONADA"
+    assert metadata["visual_continuity"]["anchors"]
+
+
+def test_generate_storyboard_overwrite_keeps_unique_active_sequence_order(monkeypatch) -> None:
+    service = StoryboardService()
+    fake_db = _FakeDb()
+    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False)
+    project = SimpleNamespace(id="project-1", name="Proyecto QA", description=None, script_text="INT. CASA ABANDONADA - NOCHE")
+
+    async def fake_get_project_for_tenant(db, *, project_id, tenant):
+        return project
+
+    async def fake_get_analysis_payload(db, project):
+        return {"scenes": [_marta_scene()], "sequences": _canonical_sequences()}
+
+    async def fake_update_progress(*args, **kwargs):
+        return None
+
+    async def fake_record_project_job_event(*args, **kwargs):
+        return None
+
+    async def fake_upsert_job_asset(*args, **kwargs):
+        return SimpleNamespace(id="asset-1")
+
+    async def fake_run_llm_storyboard_prompts_or_none(**kwargs):
+        return None
+
+    async def fake_deactivate_scope_shots(db, **kwargs):
+        assert kwargs["sequence_id"] == "seq_01"
+        for item in fake_db.items:
+            if item.__class__.__name__ == "StoryboardShot" and getattr(item, "sequence_id", None) == "seq_01":
+                setattr(item, "is_active", False)
+
+    monkeypatch.setattr(service, "_get_project_for_tenant", fake_get_project_for_tenant)
+    monkeypatch.setattr(service, "_get_analysis_payload", fake_get_analysis_payload)
+    monkeypatch.setattr(service, "_next_generation_version", _VersionCounter())
+    monkeypatch.setattr(service, "_run_llm_storyboard_prompts_or_none", fake_run_llm_storyboard_prompts_or_none)
+    monkeypatch.setattr(service, "_deactivate_scope_shots", fake_deactivate_scope_shots)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.update_progress", fake_update_progress)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.record_project_job_event", fake_record_project_job_event)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.upsert_job_asset", fake_upsert_job_asset)
+
+    for _ in range(2):
+        asyncio.run(
+            service.generate_storyboard(
+                fake_db,
+                project_id="project-1",
+                tenant=tenant,
+                mode=StoryboardGenerationMode.SEQUENCE,
+                sequence_id="seq_001",
+                sequence_ids=[],
+                scene_start=None,
+                scene_end=None,
+                selected_scene_ids=[],
+                scene_numbers=[],
+                style_preset="graphic_novel",
+                shots_per_scene=2,
+                max_scenes=None,
+                overwrite=True,
+            )
+        )
+
+    active_shots = [item for item in fake_db.items if item.__class__.__name__ == "StoryboardShot" and getattr(item, "is_active", False)]
+    active_orders = [getattr(shot, "sequence_order", None) for shot in active_shots]
+    assert active_orders == [1, 2]
+    assert len(active_orders) == len(set(active_orders))
+
+
+def test_render_queue_receives_enriched_prompt(monkeypatch) -> None:
+    service = StoryboardService()
+    fake_db = _FakeDb()
+    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False)
+    project = SimpleNamespace(id="project-1", name="Proyecto QA", description=None, script_text="INT. CASA ABANDONADA - NOCHE")
+    captured: dict[str, str] = {}
+
+    async def fake_get_project_for_tenant(db, *, project_id, tenant):
+        return project
+
+    async def fake_get_analysis_payload(db, project):
+        return {"scenes": [_marta_scene()], "sequences": _canonical_sequences()}
+
+    async def fake_update_progress(*args, **kwargs):
+        return None
+
+    async def fake_record_project_job_event(*args, **kwargs):
+        return None
+
+    async def fake_upsert_job_asset(*args, **kwargs):
+        return SimpleNamespace(id="asset-1")
+
+    async def fake_run_llm_storyboard_prompts_or_none(**kwargs):
+        return None
+
+    async def fake_submit_job(**kwargs):
+        captured["prompt"] = kwargs["prompt"]["prompt"]
+        captured["negative_prompt"] = kwargs["prompt"]["negative_prompt"]
+        return SimpleNamespace(job_id="render-1", backend="still", error="queue unavailable", status=SimpleNamespace(value="failed")), None
+
+    monkeypatch.setattr(service, "_get_project_for_tenant", fake_get_project_for_tenant)
+    monkeypatch.setattr(service, "_get_analysis_payload", fake_get_analysis_payload)
+    monkeypatch.setattr(service, "_next_generation_version", _VersionCounter())
+    monkeypatch.setattr(service, "_run_llm_storyboard_prompts_or_none", fake_run_llm_storyboard_prompts_or_none)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.update_progress", fake_update_progress)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.record_project_job_event", fake_record_project_job_event)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.upsert_job_asset", fake_upsert_job_asset)
+    monkeypatch.setattr("services.storyboard_service.render_job_service.submit_job", fake_submit_job)
+
+    asyncio.run(
+        service.generate_storyboard(
+            fake_db,
+            project_id="project-1",
+            tenant=tenant,
+            mode=StoryboardGenerationMode.SEQUENCE,
+            sequence_id="seq_001",
+            sequence_ids=[],
+            scene_start=None,
+            scene_end=None,
+            selected_scene_ids=[],
+            scene_numbers=[],
+            style_preset="cinematic_realistic",
+            shots_per_scene=1,
+            max_scenes=None,
+            overwrite=False,
+        )
+    )
+
+    prompt = captured["prompt"].lower()
+    assert "marta" in prompt
+    assert "linterna" in prompt
+    assert "casa abandonada" in prompt
+    assert "noche" in prompt
 
 
 def test_export_sequence_zip_accepts_alias(monkeypatch, tmp_path) -> None:

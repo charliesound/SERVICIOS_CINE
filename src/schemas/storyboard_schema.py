@@ -24,7 +24,7 @@ class StoryboardGenerateRequest(BaseModel):
     scene_end: Optional[int] = None
     selected_scene_ids: list[str] = Field(default_factory=list)
     scene_numbers: list[int] = Field(default_factory=list)
-    style_preset: str = "cinematic_realistic"
+    style_preset: str = "hand_drawn_storyboard"
     visual_mode: Optional[str] = None
     shots_per_scene: int = 3
     max_scenes: Optional[int] = None
@@ -37,7 +37,7 @@ class StoryboardGenerateRequest(BaseModel):
 
 
 class StoryboardSequencePlanRequest(BaseModel):
-    style_preset: str = "cinematic_realistic"
+    style_preset: str = "hand_drawn_storyboard"
     shots_per_scene: int = 5
 
 

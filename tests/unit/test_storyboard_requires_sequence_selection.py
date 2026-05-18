@@ -206,7 +206,7 @@ def test_get_sequence_storyboard_uses_canonical_sequence_id_for_alias(monkeypatc
             object(),
             project_id="project-1",
             sequence_id="seq_001",
-            tenant=SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False),
+            tenant=SimpleNamespace(organization_id="org-1", user_id="user-1", plan="free", is_global_admin=False),
         )
     )
 
@@ -242,7 +242,7 @@ def test_get_sequence_storyboard_preserves_canonical_sequence_id(monkeypatch) ->
             object(),
             project_id="project-1",
             sequence_id="seq_01",
-            tenant=SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False),
+            tenant=SimpleNamespace(organization_id="org-1", user_id="user-1", plan="free", is_global_admin=False),
         )
     )
 
@@ -254,7 +254,7 @@ def test_get_sequence_storyboard_preserves_canonical_sequence_id(monkeypatch) ->
 def test_generate_storyboard_returns_canonical_sequence_id(monkeypatch) -> None:
     service = StoryboardService()
     fake_db = _FakeDb()
-    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False)
+    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", plan="free", is_global_admin=False)
     project = SimpleNamespace(id="project-1", name="Proyecto QA", description=None, script_text="INT. CASA - NOCHE")
 
     async def fake_get_project_for_tenant(db, *, project_id, tenant):
@@ -290,10 +290,17 @@ def test_generate_storyboard_returns_canonical_sequence_id(monkeypatch) -> None:
     async def fake_run_llm_storyboard_prompts_or_none(**kwargs):
         return None
 
+    async def fake_submit_job(**kwargs):
+        return (
+            SimpleNamespace(job_id="job-1", error=None, backend="still", status=SimpleNamespace(value="queued")),
+            SimpleNamespace(job_id="job-1"),
+        )
+
     monkeypatch.setattr(service, "_get_project_for_tenant", fake_get_project_for_tenant)
     monkeypatch.setattr(service, "_get_analysis_payload", fake_get_analysis_payload)
     monkeypatch.setattr(service, "_next_generation_version", fake_next_generation_version)
     monkeypatch.setattr(service, "_run_llm_storyboard_prompts_or_none", fake_run_llm_storyboard_prompts_or_none)
+    monkeypatch.setattr("services.storyboard_service.render_job_service.submit_job", fake_submit_job)
     monkeypatch.setattr("services.storyboard_service.job_tracking_service.update_progress", fake_update_progress)
     monkeypatch.setattr("services.storyboard_service.job_tracking_service.record_project_job_event", fake_record_project_job_event)
     monkeypatch.setattr("services.storyboard_service.job_tracking_service.upsert_job_asset", fake_upsert_job_asset)
@@ -326,7 +333,7 @@ def test_generate_storyboard_returns_canonical_sequence_id(monkeypatch) -> None:
 def test_generate_storyboard_metadata_contains_enriched_prompts(monkeypatch) -> None:
     service = StoryboardService()
     fake_db = _FakeDb()
-    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False)
+    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", plan="free", is_global_admin=False)
     project = SimpleNamespace(id="project-1", name="Proyecto QA", description=None, script_text="INT. CASA ABANDONADA - NOCHE")
 
     async def fake_get_project_for_tenant(db, *, project_id, tenant):
@@ -347,10 +354,17 @@ def test_generate_storyboard_metadata_contains_enriched_prompts(monkeypatch) -> 
     async def fake_run_llm_storyboard_prompts_or_none(**kwargs):
         return None
 
+    async def fake_submit_job(**kwargs):
+        return (
+            SimpleNamespace(job_id="job-1", error=None, backend="still", status=SimpleNamespace(value="queued")),
+            SimpleNamespace(job_id="job-1"),
+        )
+
     monkeypatch.setattr(service, "_get_project_for_tenant", fake_get_project_for_tenant)
     monkeypatch.setattr(service, "_get_analysis_payload", fake_get_analysis_payload)
     monkeypatch.setattr(service, "_next_generation_version", _VersionCounter())
     monkeypatch.setattr(service, "_run_llm_storyboard_prompts_or_none", fake_run_llm_storyboard_prompts_or_none)
+    monkeypatch.setattr("services.storyboard_service.render_job_service.submit_job", fake_submit_job)
     monkeypatch.setattr("services.storyboard_service.job_tracking_service.update_progress", fake_update_progress)
     monkeypatch.setattr("services.storyboard_service.job_tracking_service.record_project_job_event", fake_record_project_job_event)
     monkeypatch.setattr("services.storyboard_service.job_tracking_service.upsert_job_asset", fake_upsert_job_asset)
@@ -393,7 +407,7 @@ def test_generate_storyboard_metadata_contains_enriched_prompts(monkeypatch) -> 
 def test_generate_storyboard_overwrite_keeps_unique_active_sequence_order(monkeypatch) -> None:
     service = StoryboardService()
     fake_db = _FakeDb()
-    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False)
+    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", plan="free", is_global_admin=False)
     project = SimpleNamespace(id="project-1", name="Proyecto QA", description=None, script_text="INT. CASA ABANDONADA - NOCHE")
 
     async def fake_get_project_for_tenant(db, *, project_id, tenant):
@@ -414,6 +428,12 @@ def test_generate_storyboard_overwrite_keeps_unique_active_sequence_order(monkey
     async def fake_run_llm_storyboard_prompts_or_none(**kwargs):
         return None
 
+    async def fake_submit_job(**kwargs):
+        return (
+            SimpleNamespace(job_id="job-1", error=None, backend="still", status=SimpleNamespace(value="queued")),
+            SimpleNamespace(job_id="job-1"),
+        )
+
     async def fake_deactivate_scope_shots(db, **kwargs):
         assert kwargs["sequence_id"] == "seq_01"
         for item in fake_db.items:
@@ -424,6 +444,7 @@ def test_generate_storyboard_overwrite_keeps_unique_active_sequence_order(monkey
     monkeypatch.setattr(service, "_get_analysis_payload", fake_get_analysis_payload)
     monkeypatch.setattr(service, "_next_generation_version", _VersionCounter())
     monkeypatch.setattr(service, "_run_llm_storyboard_prompts_or_none", fake_run_llm_storyboard_prompts_or_none)
+    monkeypatch.setattr("services.storyboard_service.render_job_service.submit_job", fake_submit_job)
     monkeypatch.setattr(service, "_deactivate_scope_shots", fake_deactivate_scope_shots)
     monkeypatch.setattr("services.storyboard_service.job_tracking_service.update_progress", fake_update_progress)
     monkeypatch.setattr("services.storyboard_service.job_tracking_service.record_project_job_event", fake_record_project_job_event)
@@ -458,7 +479,7 @@ def test_generate_storyboard_overwrite_keeps_unique_active_sequence_order(monkey
 def test_render_queue_receives_enriched_prompt(monkeypatch) -> None:
     service = StoryboardService()
     fake_db = _FakeDb()
-    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False)
+    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", plan="free", is_global_admin=False)
     project = SimpleNamespace(id="project-1", name="Proyecto QA", description=None, script_text="INT. CASA ABANDONADA - NOCHE")
     captured: dict[str, str] = {}
 
@@ -551,7 +572,7 @@ def test_export_sequence_zip_accepts_alias(monkeypatch, tmp_path) -> None:
             project_id="project-1",
             sequence_id="seq_001",
             db=object(),
-            tenant=SimpleNamespace(organization_id="org-1", user_id="user-1", is_global_admin=False),
+            tenant=SimpleNamespace(organization_id="org-1", user_id="user-1", plan="free", is_global_admin=False),
         )
     )
 
@@ -774,4 +795,4 @@ def test_schema_scope_fields_defaults_are_stable() -> None:
     assert req.scene_numbers == []
     assert req.shots_per_scene == 3
     assert req.overwrite is False
-    assert req.style_preset == "cinematic_realistic"
+    assert req.style_preset == "hand_drawn_storyboard"

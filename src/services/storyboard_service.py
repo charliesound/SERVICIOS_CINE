@@ -74,6 +74,11 @@ class StoryboardSequenceBlock:
 
 class StoryboardService:
     STORYBOARD_STYLES = [
+        "hand_drawn_storyboard",
+        "rough_pencil_storyboard",
+        "ink_storyboard",
+        "charcoal_storyboard",
+        "graphic_novel_storyboard",
         "cinematic_realistic",
         "graphic_novel",
         "moody_noir",
@@ -87,7 +92,59 @@ class StoryboardService:
         "TRACKING": ["runs", "walks", "follows", "chases", "moves"],
         "POV": ["sees", "notices", "discovers", "finds"],
     }
-    RENDER_ENABLED_STYLES = {"cinematic_realistic", "storyboard_realistic"}
+    RENDER_ENABLED_STYLES = {
+        "hand_drawn_storyboard",
+        "rough_pencil_storyboard",
+        "ink_storyboard",
+        "charcoal_storyboard",
+        "graphic_novel_storyboard",
+        "cinematic_realistic",
+        "storyboard_realistic",
+        "moody_noir",
+        "commercial_pitch",
+    }
+
+    NON_REALISTIC_NEGATIVE = (
+        "photorealistic, hyper realistic, ultra realistic, realistic skin texture, skin pores, DSLR, RAW photo, "
+        "cinematic photography, 3d render, octane render, unreal engine, glossy, beauty lighting, final movie frame"
+    )
+
+    def build_storyboard_visual_style_prompt(self, style_preset: str) -> dict[str, str]:
+        preset = (style_preset or "hand_drawn_storyboard").strip().lower()
+        aliases = {
+            "graphic_novel": "graphic_novel_storyboard",
+        }
+        normalized = aliases.get(preset, preset)
+        if normalized not in {
+            "hand_drawn_storyboard",
+            "rough_pencil_storyboard",
+            "ink_storyboard",
+            "charcoal_storyboard",
+            "graphic_novel_storyboard",
+            "cinematic_realistic",
+            "moody_noir",
+            "commercial_pitch",
+        }:
+            normalized = "hand_drawn_storyboard"
+
+        style_prompts = {
+            "hand_drawn_storyboard": "hand-drawn cinematic storyboard, rough pencil sketch, professional storyboard artist style, black and white, monochrome line art, expressive loose strokes, director storyboard panel, film blocking sketch, cinematic composition, camera framing notes, previsualization drawing, clean readable silhouettes, shot planning sketch",
+            "rough_pencil_storyboard": "rough pencil storyboard drawing, hand-sketched cinematic panel, monochrome graphite lines, production storyboard rough pass, gesture-driven linework",
+            "ink_storyboard": "ink storyboard line art, strong black contours, monochrome storyboard frame, cinematic blocking illustration, clean directional hatching",
+            "charcoal_storyboard": "charcoal storyboard concept frame, expressive dark tonal sketch, cinematic silhouette planning, monochrome textured strokes",
+            "graphic_novel_storyboard": "graphic novel storyboard panel, dramatic line art, stylized monochrome shading, cinematic framing and action readability",
+            "cinematic_realistic": "cinematic realistic storyboard frame",
+            "moody_noir": "moody noir storyboard frame",
+            "commercial_pitch": "commercial pitch storyboard frame",
+        }
+        legacy_realistic = normalized in {"cinematic_realistic", "moody_noir", "commercial_pitch"}
+        return {
+            "positive_style_prompt": style_prompts[normalized],
+            "negative_style_prompt": "" if legacy_realistic else self.NON_REALISTIC_NEGATIVE,
+            "normalized_style_preset": normalized,
+            "preset_key": "storyboard_realistic" if legacy_realistic else "storyboard_sketch",
+            "checkpoint": "Realistic_Vision_V2.0.safetensors" if legacy_realistic else "",
+        }
 
     async def _run_llm_storyboard_prompts_or_none(
         self,
@@ -1451,7 +1508,8 @@ class StoryboardService:
         location = scene.get("location") or "unknown location"
         time_of_day = scene.get("time_of_day") or "unspecified time"
         shot_type = shot_payload.get("shot_type") or "MS"
-        tone = shot_payload.get("visual_style") or "cinematic realistic storyboard frame"
+        style_cfg = self.build_storyboard_visual_style_prompt(style_preset)
+        tone = shot_payload.get("visual_style") or style_cfg["positive_style_prompt"]
         project_context = str(project.description or "").strip()
         primary_prompt = (
             metadata_payload.get("positive_prompt")
@@ -1462,6 +1520,7 @@ class StoryboardService:
             or scene_heading
         )
         prompt_parts = [
+            style_cfg["positive_style_prompt"],
             tone,
             f"{shot_type} shot",
             primary_prompt,
@@ -1484,16 +1543,18 @@ class StoryboardService:
             prompt_parts.append(f"Script excerpt: {metadata_payload['script_excerpt_used']}")
         if project_context:
             prompt_parts.append(f"Project context: {project_context}")
-        negative = (
+        base_negative = (
             metadata_payload.get("negative_prompt")
             or shot_payload.get("negative_prompt")
             or "blurry, low quality, distorted, deformed hands, extra fingers, watermark, text, logo"
         )
+        style_negative = style_cfg["negative_style_prompt"]
+        negative = ", ".join(part for part in [base_negative, style_negative] if part)
         return {
-            "preset_key": "storyboard_realistic",
+            "preset_key": style_cfg.get("preset_key") or "storyboard_realistic",
             "prompt": ", ".join(part for part in prompt_parts if part),
             "negative_prompt": negative,
-            "checkpoint": "Realistic_Vision_V2.0.safetensors",
+            "checkpoint": style_cfg.get("checkpoint") or "",
             "width": 1024,
             "height": 576,
             "steps": 20,
@@ -1943,11 +2004,19 @@ class StoryboardService:
         await db.commit()
         await db.refresh(new_shot)
 
+        regen_style = self.build_storyboard_visual_style_prompt(source_shot.visual_mode or "hand_drawn_storyboard")
         prompt_payload = {
-            "preset_key": "storyboard_realistic",
+            "preset_key": regen_style.get("preset_key") or "storyboard_realistic",
             "prompt": regen_prompt,
-            "negative_prompt": metadata.get("negative_prompt") or "blurry, low quality, distorted, watermark, text",
-            "checkpoint": "Realistic_Vision_V2.0.safetensors",
+            "negative_prompt": ", ".join(
+                part
+                for part in [
+                    metadata.get("negative_prompt") or "blurry, low quality, distorted, watermark, text",
+                    regen_style.get("negative_style_prompt") or "",
+                ]
+                if part
+            ),
+            "checkpoint": regen_style.get("checkpoint") or "",
             "width": 1024,
             "height": 576,
             "steps": 20,
@@ -1955,7 +2024,7 @@ class StoryboardService:
             "sampler_name": "euler",
             "scheduler": "normal",
             "filename_prefix": f"storyboard_regen_{str(project.id)[:8]}_{str(new_shot.id)[:8]}",
-            "style_preset": source_shot.visual_mode or "cinematic_realistic",
+            "style_preset": source_shot.visual_mode or "hand_drawn_storyboard",
         }
         response, queue_item = await render_job_service.submit_job(
             tenant=tenant,

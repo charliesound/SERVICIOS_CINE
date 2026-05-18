@@ -62,7 +62,7 @@ export default function StoryboardBuilderPage() {
   const [sequences, setSequences] = useState<StoryboardSequence[]>([])
   const [selectedMode] = useState<StoryboardSelectionMode>('FULL_SCRIPT')
   const [selectedSequenceId, setSelectedSequenceId] = useState<string>('')
-  const [stylePreset] = useState('cinematic_realistic')
+  const [stylePreset, setStylePreset] = useState('hand_drawn_storyboard')
   const [shotsPerScene] = useState(3)
   const [directorLensId] = useState<string>('')
   const [montageProfileId] = useState<string>('')
@@ -376,6 +376,22 @@ export default function StoryboardBuilderPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+              <label htmlFor="storyboard-style" className="text-xs text-slate-300">Estilo visual storyboard</label>
+              <select
+                id="storyboard-style"
+                value={stylePreset}
+                onChange={(event) => setStylePreset(event.target.value)}
+                className="bg-transparent text-sm text-white outline-none"
+              >
+                <option value="hand_drawn_storyboard">Dibujo storyboard a mano</option>
+                <option value="rough_pencil_storyboard">Boceto a lápiz</option>
+                <option value="ink_storyboard">Tinta / line art</option>
+                <option value="charcoal_storyboard">Carboncillo cinematográfico</option>
+                <option value="graphic_novel_storyboard">Novela gráfica</option>
+                <option value="cinematic_realistic">Previz realista</option>
+              </select>
+            </div>
             <button onClick={() => { fetchShots(); fetchSequences() }}
               className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors">
               <RefreshCw className="w-4 h-4" /> Refresh

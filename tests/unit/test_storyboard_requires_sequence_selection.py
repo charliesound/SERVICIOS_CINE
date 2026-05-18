@@ -87,6 +87,22 @@ def _sample_sequences() -> list[StoryboardSequenceBlock]:
     ]
 
 
+def test_sequence_blocks_from_analysis_accepts_objects() -> None:
+    service = StoryboardService()
+    analysis_data = {
+        "scenes": _sample_scenes(),
+        "sequences": _sample_sequences(),
+    }
+
+    blocks = service._sequence_blocks_from_analysis(analysis_data)
+    resolved = service._resolve_sequence_block(blocks, "seq_001")
+
+    assert blocks
+    assert blocks[0].sequence_id == "seq_001"
+    assert resolved is not None
+    assert resolved.sequence_id == "seq_001"
+
+
 def test_contract_full_script_selection_returns_all_scenes() -> None:
     service = StoryboardService()
     scenes = _sample_scenes()

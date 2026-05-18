@@ -671,22 +671,39 @@ class StoryboardService:
         }
 
     def _sequence_blocks_from_analysis(self, analysis_data: dict[str, Any]) -> list[StoryboardSequenceBlock]:
+        def _value(block: Any, key: str, default: Any = None) -> Any:
+            if isinstance(block, dict):
+                return block.get(key, default)
+            return getattr(block, key, default)
+
         existing = analysis_data.get("sequences")
         if isinstance(existing, list) and existing:
             blocks: list[StoryboardSequenceBlock] = []
             for item in existing:
+                sequence_number = _value(item, "sequence_number", len(blocks) + 1)
+                try:
+                    sequence_number = int(sequence_number or len(blocks) + 1)
+                except (TypeError, ValueError):
+                    sequence_number = len(blocks) + 1
+
+                included_scenes_raw = _value(item, "included_scenes", []) or []
+                characters_raw = _value(item, "characters", []) or []
                 blocks.append(
                     StoryboardSequenceBlock(
-                        sequence_id=str(item.get("sequence_id") or item.get("id") or f"seq_{item.get('sequence_number', 1):02d}"),
-                        sequence_number=int(item.get("sequence_number") or len(blocks) + 1),
-                        title=str(item.get("title") or f"Sequence {len(blocks) + 1}"),
-                        summary=str(item.get("summary") or ""),
-                        included_scenes=[int(value) for value in item.get("included_scenes", []) if value is not None],
-                        characters=[str(value) for value in item.get("characters", []) if value],
-                        location=item.get("location"),
-                        emotional_arc=item.get("emotional_arc"),
-                        estimated_duration=item.get("estimated_duration"),
-                        estimated_shots=int(item.get("estimated_shots") or 0),
+                        sequence_id=str(
+                            _value(item, "sequence_id")
+                            or _value(item, "id")
+                            or f"seq_{sequence_number:02d}"
+                        ),
+                        sequence_number=sequence_number,
+                        title=str(_value(item, "title") or f"Sequence {len(blocks) + 1}"),
+                        summary=str(_value(item, "summary") or ""),
+                        included_scenes=[int(value) for value in included_scenes_raw if value is not None],
+                        characters=[str(value) for value in characters_raw if value],
+                        location=_value(item, "location"),
+                        emotional_arc=_value(item, "emotional_arc"),
+                        estimated_duration=_value(item, "estimated_duration"),
+                        estimated_shots=int(_value(item, "estimated_shots") or 0),
                     )
                 )
             return blocks

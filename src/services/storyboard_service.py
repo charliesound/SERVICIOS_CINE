@@ -202,7 +202,11 @@ class StoryboardService:
                 shot.asset_file_name = asset.file_name  # type: ignore[attr-defined]
                 shot.asset_mime_type = asset.mime_type  # type: ignore[attr-defined]
                 shot.thumbnail_url = f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/thumbnail"  # type: ignore[attr-defined]
-                shot.preview_url = asset.content_ref or f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/preview"  # type: ignore[attr-defined]
+                content_ref = asset.content_ref
+                if content_ref and content_ref.startswith("file://"):
+                    shot.preview_url = f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/preview"  # type: ignore[attr-defined]
+                else:
+                    shot.preview_url = content_ref or f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/preview"  # type: ignore[attr-defined]
                 shot.render_status = "completed"  # type: ignore[attr-defined]
             elif render_job_id:
                 shot.render_job_id = render_job_id  # type: ignore[attr-defined]

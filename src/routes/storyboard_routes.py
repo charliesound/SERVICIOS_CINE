@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -461,3 +461,104 @@ async def get_shot_revision_history(
         except (json.JSONDecodeError, TypeError):
             metadata_raw = {}
     return metadata_raw.get("revision_history", [])
+
+
+@router.get(
+    "/{project_id}/storyboard/sequences/{sequence_id}/export/zip",
+)
+async def export_sequence_storyboard_zip(
+    project_id: str,
+    sequence_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> Response:
+    await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+    
+    from sqlalchemy import select
+    from models.storyboard import StoryboardShot
+    
+    query = select(StoryboardShot).where(
+        StoryboardShot.project_id == project_id,
+        StoryboardShot.sequence_id == sequence_id,
+        StoryboardShot.is_active.is_(True),
+    )
+    if not tenant.is_global_admin:
+        query = query.where(StoryboardShot.organization_id == tenant.organization_id)
+        
+    query = query.order_by(StoryboardShot.sequence_order.asc(), StoryboardShot.created_at.asc())
+    result = await db.execute(query)
+    shots = list(result.scalars().all())
+    
+    if not shots:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No shots found for sequence {sequence_id}"
+        )
+        
+    from services.presentation_service import presentation_service
+    import io
+    import zipfile
+    from pathlib import Path
+    
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        added_filenames = set()
+        for idx, shot in enumerate(shots):
+            if not shot.asset_id:
+                continue
+            
+            try:
+                payload = await presentation_service.get_asset_preview_payload(
+                    db,
+                    project_id=project_id,
+                    asset_id=shot.asset_id,
+                    tenant=tenant,
+                )
+            except Exception:
+                continue
+                
+            if payload.get("kind") != "file":
+                continue
+                
+            file_path_str = payload.get("path")
+            if not file_path_str:
+                continue
+                
+            file_path = Path(file_path_str)
+            if not file_path.is_file():
+                continue
+                
+            file_bytes = file_path.read_bytes()
+            original_filename = payload.get("filename") or file_path.name
+            suffix = Path(original_filename).suffix or ".webp"
+            
+            clean_sequence_order = str(shot.sequence_order).zfill(2)
+            zip_filename = f"shot_{clean_sequence_order}{suffix}"
+            
+            counter = 1
+            base_zip_filename = f"shot_{clean_sequence_order}"
+            while zip_filename in added_filenames:
+                zip_filename = f"{base_zip_filename}_{counter}{suffix}"
+                counter += 1
+                
+            added_filenames.add(zip_filename)
+            zip_file.writestr(zip_filename, file_bytes)
+            
+    if not added_filenames:
+        raise HTTPException(
+            status_code=404,
+            detail="No physical render assets found to export for this sequence."
+        )
+        
+    zip_buffer.seek(0)
+    zip_bytes = zip_buffer.getvalue()
+    
+    safe_sequence_id = "".join(c if c.isalnum() else "_" for c in sequence_id)
+    zip_filename = f"sequence_{safe_sequence_id}_storyboard.zip"
+    
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
+    )

@@ -384,6 +384,10 @@ def test_generate_storyboard_metadata_contains_enriched_prompts(monkeypatch) -> 
     assert "MARTA" in metadata["character_continuity"]
     assert metadata["location_continuity"]["location"] == "CASA ABANDONADA"
     assert metadata["visual_continuity"]["anchors"]
+    assert metadata["prompt_reference_sources"]
+    assert metadata["prompt_model_family"] == "wan22"
+    assert metadata["consistency_checklist"]
+    assert metadata["diagnostic_rules_applied"]
 
 
 def test_generate_storyboard_overwrite_keeps_unique_active_sequence_order(monkeypatch) -> None:

@@ -44,6 +44,7 @@ from services.prompt_revision_service import prompt_revision_service
 from services.render_job_service import render_job_service
 from services.script_intake_service import script_intake_service
 from services.semantic_prompt_validation_service import semantic_prompt_validation_service
+from services.storyboard_prompt_reference_service import storyboard_prompt_reference_service
 
 
 class StoryboardGenerationMode:
@@ -1109,6 +1110,14 @@ class StoryboardService:
             or action_line
         ).strip()
         shot_type = str(payload.get("shot_type") or "MS").strip() or "MS"
+        camera_motion = str(
+            metadata_payload.get("shot_editorial_purpose", {}).get("cut_reason")
+            or payload.get("camera_movement")
+            or ("handheld subtle" if shot_type == "POV" else "dolly in" if shot_type == "TRACKING" else "locked frame")
+        ).strip()
+        lighting_style = str(payload.get("lighting") or metadata_payload.get("directorial_intent", {}).get("lighting") or time_of_day).strip()
+        lens_style = str(payload.get("lens") or metadata_payload.get("directorial_intent", {}).get("lens") or "50mm cinematic prime").strip()
+        prompt_model_family = str(metadata_payload.get("prompt_model_family") or payload.get("prompt_model_family") or "wan22").strip() or "wan22"
         continuity_phrase = ", ".join(
             self._normalize_text_list(
                 [
@@ -1119,54 +1128,59 @@ class StoryboardService:
                 ]
             )
         )
-        base_positive = str(payload.get("positive_prompt") or payload.get("prompt") or "").strip()
-        prompt_parts = [
-            "cinematic storyboard frame",
-            main_character,
-            action_line,
-            f"exact location: {location}",
-            f"time and atmosphere: {time_of_day}, {emotional_intent}",
-            f"key visual element: {key_visual}",
-            f"{shot_type} shot",
-            f"continuity with the sequence: {continuity_phrase}" if continuity_phrase else "",
-            f"consistent visual style: {style_preset.replace('_', ' ')}",
-            f"scene heading: {scene_heading}",
-            f"script excerpt: {script_excerpt}" if script_excerpt else "",
-            f"shot objective: {shot_objective}" if shot_objective else "",
-            f"script-faithful detail: {base_positive}" if base_positive and base_positive not in action_line else "",
-            "avoid elements not present in the script",
-        ]
-        enriched_positive = ". ".join(part for part in prompt_parts if part)
-        enriched_negative = self._build_enriched_negative_prompt(str(payload.get("negative_prompt") or ""))
-
-        metadata_payload.update(
-            {
-                "script_excerpt_used": script_excerpt,
-                "positive_prompt": enriched_positive,
-                "negative_prompt": enriched_negative,
-                "character_continuity": characters,
-                "location_continuity": {
-                    "location": location,
-                    "time_of_day": time_of_day,
-                    "sequence_id": sequence_for_scene.sequence_id if sequence_for_scene else None,
-                },
-                "visual_continuity": {
-                    "anchors": visual_elements,
-                    "continuity_phrase": continuity_phrase,
-                },
-                "scene_heading": scene_heading,
-                "emotional_intent": emotional_intent,
-                "shot_objective": shot_objective,
-                "shot_order": shot_order,
-            }
+        visual_constraints = self._normalize_text_list(
+            [
+                "stable identity",
+                "consistent outfit",
+                "prop continuity",
+                "no text",
+                "no watermark",
+                "avoid elements not present in the script",
+            ]
         )
+        base_positive = str(payload.get("positive_prompt") or payload.get("prompt") or "").strip()
+        prompt_package = storyboard_prompt_reference_service.build_wan22_t2v_prompt_package(
+            main_character=main_character,
+            character_continuity=characters,
+            action=action_line if not base_positive else f"{action_line}; script-faithful detail: {base_positive}",
+            location=location,
+            time_of_day=time_of_day,
+            emotional_intent=emotional_intent,
+            camera_motion=camera_motion,
+            lighting_style=lighting_style,
+            lens_style=lens_style,
+            background_details=key_visual,
+            continuity_constraints=self._normalize_text_list([continuity_phrase, *characters]),
+            visual_constraints=visual_constraints,
+            shot_type=shot_type,
+            scene_heading=scene_heading,
+            shot_objective=shot_objective,
+            script_excerpt_used=script_excerpt,
+            model_family=prompt_model_family,
+            strict_negative=True,
+            diagnostic_rules_applied=["wan22_t2v_prompt_director", "negative_prompt_library", "camera_motion_dictionary"],
+            shot_plan={
+                "shot_type": shot_type,
+                "camera_motion": camera_motion,
+                "lighting_style": lighting_style,
+                "lens_style": lens_style,
+            },
+            single_continuous_take=True,
+        )
+        enriched_positive = prompt_package["positive_prompt"]
+        enriched_negative = prompt_package["negative_prompt"]
+        metadata_payload.update(prompt_package["metadata"])
+        metadata_payload["location_continuity"]["sequence_id"] = sequence_for_scene.sequence_id if sequence_for_scene else None
+        metadata_payload["visual_continuity"]["continuity_phrase"] = continuity_phrase
+        metadata_payload["visual_continuity"]["anchors"] = visual_elements
+        metadata_payload["shot_order"] = shot_order
 
         payload["description"] = action_line[:180]
         payload["narrative_text"] = enriched_positive[:500]
         payload["positive_prompt"] = enriched_positive
         payload["negative_prompt"] = enriched_negative
         payload["metadata_json"] = metadata_payload
-        payload["continuity_notes"] = continuity_phrase
+        payload["continuity_notes"] = continuity_phrase or camera_motion
         payload["script_excerpt_used"] = script_excerpt
         payload["shot_plan_reason"] = payload.get("shot_plan_reason") or shot_objective
         return payload

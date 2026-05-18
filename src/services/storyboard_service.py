@@ -814,6 +814,8 @@ class StoryboardService:
         if normalized_mode == StoryboardGenerationMode.FULL_SCRIPT:
             return scenes[:max_scenes] if max_scenes and max_scenes > 0 else scenes
         if normalized_mode == StoryboardGenerationMode.SEQUENCE:
+            if sequence_id is None or not str(sequence_id).strip():
+                raise HTTPException(status_code=400, detail="sequence_id is required for SEQUENCE mode")
             sequence = next((item for item in sequences if item.sequence_id == sequence_id), None)
             if sequence is None:
                 sequence = self._resolve_sequence_block(sequences, sequence_id)

@@ -4,8 +4,6 @@ import os
 import sys
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT / "src"
 os.environ.setdefault("AUTH_SECRET_KEY", "AilinkCinemaAuthRuntimeValue987654321XYZ")
@@ -209,15 +207,7 @@ def test_contract_single_scene_mode_selects_one_scene_from_selected_ids() -> Non
     assert [scene["scene_number"] for scene in selected] == [3]
 
 
-@pytest.mark.xfail(
-    raises=AttributeError,
-    strict=True,
-    reason=(
-        "Current implementation calls _resolve_sequence_block with sequence_id=None and crashes before HTTPException. "
-        "Next commit should normalize this to HTTP 400/404 contract."
-    ),
-)
-def test_contract_sequence_mode_without_sequence_id_returns_404_sequence_not_found() -> None:
+def test_contract_sequence_mode_without_sequence_id_returns_400() -> None:
     service = StoryboardService()
     try:
         service._select_scenes(
@@ -234,8 +224,8 @@ def test_contract_sequence_mode_without_sequence_id_returns_404_sequence_not_fou
         )
         raise AssertionError("Expected HTTPException")
     except HTTPException as exc:
-        assert exc.status_code == 404
-        assert exc.detail == "Sequence not found"
+        assert exc.status_code == 400
+        assert exc.detail == "sequence_id is required for SEQUENCE mode"
 
 
 def test_contract_scene_range_missing_boundaries_returns_400() -> None:

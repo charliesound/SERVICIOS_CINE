@@ -45,6 +45,7 @@ from services.prompt_revision_service import prompt_revision_service
 from services.render_job_service import render_job_service
 from services.script_intake_service import script_intake_service
 from services.semantic_prompt_validation_service import semantic_prompt_validation_service
+from services.storyboard_image_script_validation_service import storyboard_image_script_validation_service
 from services.storyboard_prompt_reference_service import storyboard_prompt_reference_service
 
 
@@ -1214,6 +1215,25 @@ class StoryboardService:
         metadata_payload["visual_constraints"] = visual_constraints
         metadata_payload["model_prompt_family"] = model_guidance["model_prompt_family"]
         metadata_payload["model_specific_guidance"] = model_guidance
+
+        validation_payload = storyboard_image_script_validation_service.build_validation_payload(
+            script_excerpt_used=script_excerpt,
+            positive_prompt=enriched_positive,
+            scene_heading=scene_heading,
+            shot_type=shot_type,
+            characters=characters,
+            location=location,
+            visual_constraints=visual_constraints,
+            atmosphere=scene_guidance["atmosphere"],
+        )
+        validation_result = storyboard_image_script_validation_service.validate_shot(
+            validation_payload=validation_payload,
+            observed_visual_text=str(metadata_payload.get("render_observation_text") or ""),
+        )
+        metadata_payload["validation_result"] = validation_result
+        metadata_payload["validation_score"] = validation_result["overall_match_score"]
+        metadata_payload["validation_failures"] = validation_result["missing_elements"] + validation_result["incorrect_elements"]
+        metadata_payload["suggested_regeneration_prompt"] = validation_result["suggested_regeneration_prompt"]
 
         payload["description"] = action_line[:180]
         payload["narrative_text"] = enriched_positive[:500]

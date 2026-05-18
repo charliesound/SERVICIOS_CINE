@@ -244,6 +244,9 @@ class TestBuildCinematicStoryboardShot:
         assert meta["scene_heading"] == "INT. CASA ABANDONADA - NOCHE"
         assert meta["emotional_intent"]
         assert meta["shot_objective"]
+        assert "validation_result" in meta
+        assert "validation_score" in meta
+        assert "suggested_regeneration_prompt" in meta
 
     def test_script_faithful_positive_prompt_mentions_core_story_elements(self) -> None:
         service = StoryboardService()

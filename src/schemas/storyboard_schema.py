@@ -126,10 +126,12 @@ class StoryboardGenerationAuditResponse(BaseModel):
 
 class StoryboardShotRegenerateRequest(BaseModel):
     threshold: float = 70.0
+    include_unvalidated: bool = True
 
 
 class StoryboardFailedRegenerateRequest(BaseModel):
     threshold: float = 70.0
+    include_unvalidated: bool = True
 
 
 class StoryboardRegeneratedShotItem(BaseModel):

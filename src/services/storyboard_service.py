@@ -1690,7 +1690,12 @@ class StoryboardService:
             message=self._build_revision_message(interpretation, revision, requires_confirmation),
         )
 
-    def _failed_shots_from_candidates(self, candidates: list[StoryboardShot], threshold: float = 70) -> list[StoryboardShot]:
+    def _failed_shots_from_candidates(
+        self,
+        candidates: list[StoryboardShot],
+        threshold: float = 70,
+        include_unvalidated: bool = True,
+    ) -> list[StoryboardShot]:
         failed: list[StoryboardShot] = []
         for shot in candidates:
             metadata = self._shot_metadata_dict(shot)
@@ -1700,6 +1705,8 @@ class StoryboardService:
                 if isinstance(validation_result, dict):
                     score_value = validation_result.get("overall_match_score")
             if score_value is None:
+                if include_unvalidated:
+                    failed.append(shot)
                 continue
             try:
                 numeric = float(score_value)
@@ -1718,6 +1725,7 @@ class StoryboardService:
         sequence_id: str,
         organization_id: str,
         threshold: float = 70,
+        include_unvalidated: bool = True,
     ) -> tuple[str, list[StoryboardShot]]:
         project = await self._get_project_for_tenant(
             db,
@@ -1743,7 +1751,11 @@ class StoryboardService:
             ).order_by(StoryboardShot.sequence_order.asc(), StoryboardShot.created_at.asc())
         )
         shots = list(result.scalars().all())
-        return canonical_sequence_id, self._failed_shots_from_candidates(shots, threshold=threshold)
+        return canonical_sequence_id, self._failed_shots_from_candidates(
+            shots,
+            threshold=threshold,
+            include_unvalidated=include_unvalidated,
+        )
 
     async def regenerate_storyboard_shot_from_validation(
         self,
@@ -1753,6 +1765,7 @@ class StoryboardService:
         shot_id: str,
         tenant: TenantContext,
         threshold: float = 70,
+        include_unvalidated: bool = True,
     ) -> dict[str, Any]:
         regen_job_id = f"regen-{uuid4().hex}"
         result = await db.execute(
@@ -1772,6 +1785,24 @@ class StoryboardService:
         if score is None and isinstance(metadata.get("validation_result"), dict):
             score = metadata["validation_result"].get("overall_match_score")
         score_pct = self._normalize_score_to_percentage(score)
+        if score_pct is None and not include_unvalidated:
+            return {
+                "job_id": regen_job_id,
+                "project_id": project_id,
+                "sequence_id": source_shot.sequence_id,
+                "regenerated_shots": [],
+                "skipped_shots": [
+                    {
+                        "shot_id": str(source_shot.id),
+                        "source_shot_id": str(source_shot.id),
+                        "sequence_id": source_shot.sequence_id,
+                        "status": "skipped",
+                        "reason": "validation_score is null and include_unvalidated=false",
+                    }
+                ],
+                "threshold": threshold,
+                "status": "completed",
+            }
         if score_pct is not None and score_pct >= threshold:
             return {
                 "job_id": regen_job_id,
@@ -1817,6 +1848,7 @@ class StoryboardService:
         sequence_id: str,
         tenant: TenantContext,
         threshold: float = 70,
+        include_unvalidated: bool = True,
     ) -> dict[str, Any]:
         regen_job_id = f"regen-{uuid4().hex}"
         canonical_sequence_id, failed_shots = await self.find_failed_storyboard_shots(
@@ -1825,6 +1857,7 @@ class StoryboardService:
             sequence_id=sequence_id,
             organization_id=tenant.organization_id,
             threshold=threshold,
+            include_unvalidated=include_unvalidated,
         )
         regenerated: list[dict[str, Any]] = []
         skipped: list[dict[str, Any]] = []

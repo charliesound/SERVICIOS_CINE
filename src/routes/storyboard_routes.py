@@ -380,6 +380,7 @@ async def regenerate_storyboard_shot(
         shot_id=shot_id,
         tenant=tenant,
         threshold=payload.threshold,
+        include_unvalidated=payload.include_unvalidated,
     )
     return StoryboardRegenerateShotsResponse(**result)
 
@@ -401,6 +402,7 @@ async def regenerate_failed_storyboard_sequence_shots(
         sequence_id=sequence_id,
         tenant=tenant,
         threshold=payload.threshold,
+        include_unvalidated=payload.include_unvalidated,
     )
     return StoryboardRegenerateShotsResponse(**result)
 

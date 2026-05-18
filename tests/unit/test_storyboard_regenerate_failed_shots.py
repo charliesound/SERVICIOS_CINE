@@ -25,7 +25,7 @@ from schemas.storyboard_schema import (  # noqa: E402
 from services.storyboard_service import StoryboardService  # noqa: E402
 
 
-def _shot(shot_id: str, score: float, suggested: str = "") -> SimpleNamespace:
+def _shot(shot_id: str, score: float | None, suggested: str = "") -> SimpleNamespace:
     return SimpleNamespace(
         id=shot_id,
         metadata_json={
@@ -41,6 +41,26 @@ def test_failed_shots_from_candidates_respects_threshold() -> None:
     failed = service._failed_shots_from_candidates(candidates, threshold=70)
     failed_ids = {str(item.id) for item in failed}
     assert failed_ids == {"a", "c"}
+
+
+def test_null_validation_score_included_when_flag_true() -> None:
+    service = StoryboardService()
+    candidates = [_shot("a", None), _shot("b", 90), _shot("c", 50)]
+    failed = service._failed_shots_from_candidates(candidates, threshold=70, include_unvalidated=True)
+    failed_ids = {str(item.id) for item in failed}
+    assert "a" in failed_ids
+    assert "b" not in failed_ids
+    assert "c" in failed_ids
+
+
+def test_null_validation_score_excluded_when_flag_false() -> None:
+    service = StoryboardService()
+    candidates = [_shot("a", None), _shot("b", 90), _shot("c", 50)]
+    failed = service._failed_shots_from_candidates(candidates, threshold=70, include_unvalidated=False)
+    failed_ids = {str(item.id) for item in failed}
+    assert "a" not in failed_ids
+    assert "b" not in failed_ids
+    assert "c" in failed_ids
 
 
 def test_resolve_regeneration_prompt_uses_suggested_prompt() -> None:
@@ -133,3 +153,26 @@ def test_regenerate_failed_sequence_returns_canonical_alias(monkeypatch) -> None
         )
     )
     assert result["sequence_id"] == "seq_01"
+
+
+def test_enriched_metadata_contains_validation_score() -> None:
+    service = StoryboardService()
+    scene = {
+        "scene_number": 1,
+        "heading": "INT. CASA ABANDONADA - NOCHE",
+        "location": "CASA ABANDONADA",
+        "time_of_day": "NOCHE",
+        "action_blocks": ["Marta entra en la casa abandonada con una linterna."],
+        "characters_detected": ["MARTA"],
+    }
+    shot = service._enrich_storyboard_shot_payload(
+        scene=scene,
+        shot_payload={"shot_type": "MS", "description": "Marta entra", "metadata_json": {}},
+        sequence_for_scene=None,
+        style_preset="cinematic_realistic",
+        shot_order=1,
+    )
+    meta = shot["metadata_json"]
+    assert "validation_result" in meta
+    assert "validation_score" in meta
+    assert "suggested_regeneration_prompt" in meta

@@ -10,6 +10,7 @@ from schemas.auth_schema import TenantContext
 
 class MockStatus(Enum):
     FAILED = "failed"
+    QUEUED = "queued"
 
 
 class MockResponse:
@@ -24,6 +25,24 @@ class MockResponse:
 
 def _response_text(response):
     return str(response.json()).lower()
+
+
+def test_render_routes_without_token_returns_401():
+    app.dependency_overrides.clear()
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/render/jobs",
+        json={
+            "task_type": "still",
+            "workflow_key": "still_storyboard_frame",
+            "prompt": {"prompt": "test"},
+            "user_id": "test_user",
+            "user_plan": "enterprise",
+        },
+    )
+
+    assert response.status_code == 401
 
 
 @pytest.fixture
@@ -122,3 +141,57 @@ def test_render_routes_failed_job_generic_error(client):
         
         assert response.status_code == 422
         assert "some generic error" in _response_text(response)
+
+
+def test_render_routes_returns_503_when_render_service_raises(client):
+    with patch(
+        "routes.render_routes.render_job_service.submit_job",
+        new_callable=AsyncMock,
+    ) as mock_submit:
+        mock_submit.side_effect = RuntimeError("ComfyUI at http://offline:8188 is unavailable")
+
+        response = client.post(
+            "/api/render/jobs",
+            json={
+                "user_id": "test_user",
+                "user_plan": "enterprise",
+                "task_type": "still",
+                "workflow_key": "still_storyboard_frame",
+                "prompt": {"prompt": "test prompt"},
+                "project_id": "test_project",
+            },
+        )
+
+        assert response.status_code == 503
+        assert "render service unavailable" in _response_text(response)
+
+
+def test_render_routes_queued_job_returns_202_with_job_id(client):
+    with patch(
+        "routes.render_routes.render_job_service.submit_job",
+        new_callable=AsyncMock,
+    ) as mock_submit:
+        mock_response = MockResponse(status=MockStatus.QUEUED)
+        mock_response.queue_position = 2
+        mock_response.estimated_time = 45
+        mock_submit.return_value = (mock_response, object())
+
+        response = client.post(
+            "/api/render/jobs",
+            json={
+                "user_id": "test_user",
+                "user_plan": "enterprise",
+                "task_type": "still",
+                "workflow_key": "still_storyboard_frame",
+                "prompt": {"prompt": "test prompt"},
+                "project_id": "test_project",
+                "priority": 5,
+            },
+        )
+
+        body = response.json()
+        assert response.status_code == 202
+        assert body["job_id"] == "test_job_id"
+        assert body["status"] == "queued"
+        assert body["backend"] == "test_backend"
+        assert body["backend_url"] == ""

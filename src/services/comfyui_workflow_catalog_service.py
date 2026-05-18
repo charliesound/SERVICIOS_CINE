@@ -23,7 +23,7 @@ WORKFLOW_CATALOG: list[dict[str, Any]] = [
             "sampler": "dpmpp_2m",
             "scheduler": "karras",
         },
-        "workflow_path": str(WORKFLOWS_DIR / "cinematic_storyboard_sdxl.json"),
+        "workflow_path": str(WORKFLOWS_DIR / "cinematic_storyboard_sdxl.template.json"),
     },
     {
         "id": "storyboard_fast_sdxl",
@@ -39,7 +39,7 @@ WORKFLOW_CATALOG: list[dict[str, Any]] = [
             "steps": 18,
             "cfg": 5.5,
         },
-        "workflow_path": str(WORKFLOWS_DIR / "storyboard_fast_sdxl.json"),
+        "workflow_path": str(WORKFLOWS_DIR / "storyboard_fast_sdxl.template.json"),
     },
     {
         "id": "cinematic_still_flux",

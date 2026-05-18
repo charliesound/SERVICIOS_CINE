@@ -12,8 +12,8 @@ WORKFLOWS_DIR = Path(__file__).resolve().parents[1] / "comfyui_workflows"
 # ---------------------------------------------------------------------------
 WORKFLOW_TEMPLATE_PATHS: dict[str, Path] = {
     "cinematic_flux_cine_2": WORKFLOWS_DIR / "imported_templates" / "flux_cine_2.template.json",
-    "cinematic_storyboard_sdxl": WORKFLOWS_DIR / "cinematic_storyboard_sdxl.json",  # raw workflow
-    "storyboard_fast_sdxl": WORKFLOWS_DIR / "storyboard_fast_sdxl.json",
+    "cinematic_storyboard_sdxl": WORKFLOWS_DIR / "cinematic_storyboard_sdxl.template.json",
+    "storyboard_fast_sdxl": WORKFLOWS_DIR / "storyboard_fast_sdxl.template.json",
     "cinematic_still_flux": WORKFLOWS_DIR / "cinematic_still_flux.json",
 }
 

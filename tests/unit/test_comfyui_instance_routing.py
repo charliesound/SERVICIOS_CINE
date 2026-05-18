@@ -72,6 +72,16 @@ def test_env_override_for_video_base_url(monkeypatch):
     assert _resolve("video").base_url == "http://override-video:9999"
 
 
+def test_env_override_for_storyboard_still_base_url(monkeypatch):
+    monkeypatch.setenv("COMFYUI_STILL_BASE_URL", "http://override-still:8289")
+    from services.instance_registry import registry
+
+    registry._initialized = False
+    registry.__init__()
+    registry.load_config()
+    assert _resolve("storyboard").base_url == "http://override-still:8289"
+
+
 def test_env_override_for_3d_base_url(monkeypatch):
     monkeypatch.setenv("COMFYUI_3D_BASE_URL", "http://override-3d:9998")
     from services.instance_registry import registry

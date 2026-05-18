@@ -50,7 +50,7 @@ async def _get_owned_job_resources(job_id: str, user_id: str):
 def _public_job_response(response: JobResponse) -> JobResponse:
     return JobResponse(
         job_id=response.job_id,
-        status=response.status,
+        status=response.status.value if hasattr(response.status, "value") else str(response.status),
         backend=response.backend,
         backend_url="",
         queue_position=response.queue_position,
@@ -67,7 +67,7 @@ async def _get_tracking_payload(job_id: str) -> dict[str, list[dict]]:
         )
 
 
-@router.post("/jobs", response_model=JobResponse)
+@router.post("/jobs", response_model=JobResponse, status_code=202)
 async def create_job(
     job_data: JobSubmit,
     tenant: TenantContext = Depends(get_tenant_context),

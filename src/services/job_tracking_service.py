@@ -1,19 +1,27 @@
 from __future__ import annotations
 
 import json
+import logging
 import mimetypes
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urlencode
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import get_settings
 from models.core import ProjectJob, User
 from models.history import JobHistory
 from models.storage import MediaAsset, MediaAssetStatus, MediaAssetType
 from services.ingest_service import ingest_service
+
+
+logger = logging.getLogger(__name__)
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class JobTrackingService:
@@ -156,7 +164,12 @@ class JobTrackingService:
         status: str = MediaAssetStatus.INDEXED,
         file_extension: str = "json",
         mime_type: str = "application/json",
+        relative_path: Optional[str] = None,
+        canonical_path: Optional[str] = None,
+        file_size: Optional[int] = None,
     ) -> MediaAsset:
+        stored_relative_path = relative_path or content_ref
+        stored_canonical_path = canonical_path or content_ref
         result = await db.execute(
             select(MediaAsset).where(
                 MediaAsset.organization_id == organization_id,
@@ -173,8 +186,8 @@ class JobTrackingService:
                 project_id=project_id,
                 storage_source_id=None,
                 file_name=file_name,
-                relative_path=content_ref,
-                canonical_path=content_ref,
+                relative_path=stored_relative_path,
+                canonical_path=stored_canonical_path,
                 content_ref=content_ref,
                 file_extension=file_extension,
                 mime_type=mime_type,
@@ -185,18 +198,110 @@ class JobTrackingService:
                 status=status,
                 created_by=created_by,
                 created_at=datetime.utcnow(),
+                file_size=max(0, int(file_size or 0)),
             )
             db.add(asset)
         else:
             asset.file_name = file_name
-            asset.relative_path = content_ref
-            asset.canonical_path = content_ref
+            asset.relative_path = stored_relative_path
+            asset.canonical_path = stored_canonical_path
             asset.content_ref = content_ref
             asset.metadata_json = self._encode_json(metadata_json)
             asset.status = status
+            asset.file_size = max(0, int(file_size or 0))
 
         await db.flush()
         return asset
+
+    def _storage_output_root(self) -> Path:
+        output_root = Path(get_settings().storage_output_dir)
+        if not output_root.is_absolute():
+            output_root = (REPO_ROOT / output_root).resolve()
+        return output_root
+
+    def _safe_path_component(self, value: str, fallback: str) -> str:
+        normalized = re.sub(r"[^A-Za-z0-9._-]+", "_", (value or "").strip())
+        normalized = normalized.strip("._")
+        return normalized[:120] or fallback
+
+    def _build_local_asset_paths(
+        self,
+        *,
+        job: ProjectJob,
+        file_name: str,
+        node_id: str,
+        index: int,
+    ) -> tuple[Path, str]:
+        output_root = self._storage_output_root()
+        relative_dir = Path("renders") / str(job.organization_id) / str(job.project_id) / str(job.id)
+        safe_stem = self._safe_path_component(Path(file_name).stem, "asset")
+        safe_suffix = Path(file_name).suffix.lower() or ".bin"
+        safe_node = self._safe_path_component(node_id, "node")
+        stored_name = f"{safe_node}_{index:02d}_{safe_stem}{safe_suffix}"
+        relative_path = relative_dir / stored_name
+        return output_root / relative_path, relative_path.as_posix()
+
+    async def _download_backend_asset(
+        self,
+        *,
+        backend_base_url: str,
+        filename: str,
+        subfolder: Optional[str],
+        output_type: Optional[str],
+    ) -> tuple[bytes, str]:
+        content_ref = self._build_backend_content_ref(
+            backend_base_url=backend_base_url,
+            filename=filename,
+            subfolder=subfolder,
+            output_type=output_type,
+        )
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            response = await client.get(content_ref)
+            response.raise_for_status()
+            return response.content, content_ref
+
+    def _create_thumbnail_webp(
+        self,
+        *,
+        file_path: Path,
+        relative_path: str,
+        mime_type: Optional[str],
+    ) -> Optional[dict[str, str]]:
+        if not (mime_type or "").startswith("image/"):
+            return None
+
+        try:
+            from PIL import Image as PILImage
+        except Exception:
+            return None
+
+        thumb_path = file_path.with_name(f"{file_path.stem}_thumb.webp")
+        thumb_relative = str(Path(relative_path).with_name(thumb_path.name).as_posix())
+
+        try:
+            with PILImage.open(file_path) as img:
+                if img.mode not in ("RGB", "RGBA"):
+                    img = img.convert("RGB")
+                width = min(256, img.width)
+                if width <= 0:
+                    return None
+                ratio = width / img.width
+                height = max(1, int(img.height * ratio))
+                img.resize((width, height), PILImage.LANCZOS).save(
+                    thumb_path,
+                    format="WEBP",
+                    quality=80,
+                    method=6,
+                )
+        except Exception as exc:
+            logger.warning("Thumbnail generation failed for %s: %s", file_path, exc)
+            return None
+
+        return {
+            "thumbnail_path": str(thumb_path),
+            "thumbnail_relative_path": thumb_relative,
+            "thumbnail_content_ref": f"file://{thumb_path}",
+        }
 
     async def list_job_history(
         self,
@@ -366,14 +471,26 @@ class JobTrackingService:
                     extension = (
                         Path(normalized_filename).suffix.lower().lstrip(".") or "bin"
                     )
-                    content_ref = self._build_backend_content_ref(
+                    file_bytes, backend_content_ref = await self._download_backend_asset(
                         backend_base_url=backend_base_url,
                         filename=normalized_filename,
                         subfolder=subfolder if isinstance(subfolder, str) else None,
-                        output_type=output_type
-                        if isinstance(output_type, str)
-                        else None,
+                        output_type=output_type if isinstance(output_type, str) else None,
                     )
+                    stored_path, relative_path = self._build_local_asset_paths(
+                        job=job,
+                        file_name=normalized_filename,
+                        node_id=str(node_id),
+                        index=index,
+                    )
+                    stored_path.parent.mkdir(parents=True, exist_ok=True)
+                    stored_path.write_bytes(file_bytes)
+                    thumbnail_metadata = self._create_thumbnail_webp(
+                        file_path=stored_path,
+                        relative_path=relative_path,
+                        mime_type=mime_type,
+                    ) or {}
+                    content_ref = f"file://{stored_path}"
 
                     asset = await self.upsert_job_asset(
                         db,
@@ -388,13 +505,21 @@ class JobTrackingService:
                             "node_id": str(node_id),
                             "output_kind": output_kind,
                             "backend_base_url": backend_base_url,
+                            "backend_content_ref": backend_content_ref,
+                            "storage_path": str(stored_path),
+                            "canonical_path": str(stored_path),
+                            "relative_path": relative_path,
                             "output": entry,
+                            **thumbnail_metadata,
                         },
                         created_by=job.created_by,
                         asset_type=asset_type,
                         status=MediaAssetStatus.INDEXED,
                         file_extension=extension,
                         mime_type=mime_type or "application/octet-stream",
+                        relative_path=relative_path,
+                        canonical_path=str(stored_path),
+                        file_size=len(file_bytes),
                     )
                     created_assets.append(asset)
 

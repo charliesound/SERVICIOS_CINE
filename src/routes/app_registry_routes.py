@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from src.services.app_registry import (
+from services.app_registry import (
     get_all_apps, get_app, get_integrated_apps,
     get_standalone_apps, get_apps_by_category, get_app_categories,
     load_all,

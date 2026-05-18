@@ -67,11 +67,15 @@ export const projectsApi = {
     documentType = 'script',
     visibilityScope = 'project',
   ): Promise<{
-    id: string
-    file_name: string
-    mime_type: string
-    extracted_text?: string | null
-    upload_status: string
+     id: string
+     file_name: string
+     detected_format?: string | null
+     extraction_method?: string | null
+     markdown_available?: boolean | null
+     text_length?: number | null
+     mime_type: string
+     extracted_text?: string | null
+     upload_status: string
     error_message?: string | null
   }> => {
     const formData = new FormData()

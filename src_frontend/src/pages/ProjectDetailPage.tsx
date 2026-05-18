@@ -593,20 +593,15 @@ export default function ProjectDetailPage() {
     setSelectedScriptFileName(file.name)
     try {
       const extension = file.name.split('.').pop()?.toLowerCase() || ''
-      if (extension === 'txt' || extension === 'md') {
-        const text = await file.text()
-        await projectsApi.intakeScript(projectId, { script_text: text })
-        setScriptText(text)
-      } else if (extension === 'pdf' || extension === 'docx') {
-        const document = await projectsApi.uploadScriptDocument(projectId, file)
-        if (document.extracted_text) {
-          await projectsApi.intakeScript(projectId, { script_text: document.extracted_text })
-          setScriptText(document.extracted_text)
-        } else {
-          throw new Error(document.error_message || 'No se pudo extraer texto del documento')
-        }
+      if (!['txt', 'md', 'pdf', 'docx'].includes(extension)) {
+        throw new Error('Formato no soportado. Usa .txt, .md, .pdf o .docx.')
+      }
+      const document = await projectsApi.uploadScriptDocument(projectId, file)
+      if (document.extracted_text) {
+        await projectsApi.intakeScript(projectId, { script_text: document.extracted_text })
+        setScriptText(document.extracted_text)
       } else {
-        throw new Error('Este formato requiere extracción backend. Usa .txt/.md por ahora.')
+        throw new Error(document.error_message || 'No se pudo extraer texto del documento')
       }
       const updated = await projectsApi.get(projectId)
       setProject(updated)

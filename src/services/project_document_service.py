@@ -26,6 +26,7 @@ from models.document import (
 from models.matcher import MatcherJob, MatcherJobStatus
 from services.project_document_rag_service import project_document_rag_service
 from services.queue_service import queue_service
+from services.script_document_conversion_service import script_document_conversion_service
 
 
 class ProjectDocumentService:
@@ -37,6 +38,7 @@ class ProjectDocumentService:
             "application/octet-stream",
         },
         ".txt": {"text/plain", "application/octet-stream", "text/markdown"},
+        ".md": {"text/markdown", "text/plain", "application/octet-stream", "text/x-markdown"},
     }
     ALLOWED_DOCUMENT_TYPES = {
         ProjectDocumentType.SCRIPT,
@@ -120,7 +122,7 @@ class ProjectDocumentService:
         return target_dir / stored_name
 
     def _extract_text(self, file_path: Path, extension: str) -> str:
-        if extension == ".txt":
+        if extension in {".txt", ".md"}:
             for encoding in ("utf-8", "utf-8-sig", "latin-1"):
                 try:
                     return file_path.read_text(encoding=encoding)
@@ -150,6 +152,9 @@ class ProjectDocumentService:
                             parts.append(joined)
             return "\n".join(parts)
         raise RuntimeError("Unsupported extraction path")
+
+    def _build_markdown_sidecar_path(self, storage_path: Path) -> Path:
+        return storage_path.with_name(f"{storage_path.stem}__converted.md")
 
     async def import_document_bytes(
         self,
@@ -224,8 +229,42 @@ class ProjectDocumentService:
             document.error_message = None
 
         try:
-            extracted_text = self._extract_text(storage_path, extension)
-            document.extracted_text = extracted_text
+            detected_format = extension.lstrip(".")
+            extraction_method = "legacy_extract"
+            markdown_available = False
+            text_length = 0
+            if normalized_document_type == ProjectDocumentType.SCRIPT:
+                conversion = script_document_conversion_service.convert_uploaded_script_to_markdown(
+                    path=storage_path,
+                    mime_type=(mime_type or "application/octet-stream").strip().lower(),
+                )
+                document.extracted_text = conversion["markdown_text"] or conversion["analysis_text"]
+                project.script_text = (conversion["analysis_text"] or "")[:16000000] or None
+                detected_format = str(conversion["detected_format"])
+                extraction_method = str(conversion["extraction_method"])
+                markdown_available = bool(conversion["markdown_available"])
+                text_length = int(conversion["text_length"])
+                document.detected_format = detected_format
+                document.extraction_method = extraction_method
+                document.markdown_available = markdown_available
+                document.text_length = text_length
+                if markdown_available and document.extracted_text:
+                    markdown_path = self._build_markdown_sidecar_path(storage_path)
+                    markdown_path.write_text(document.extracted_text, encoding="utf-8")
+                    document.generated_markdown_path = str(markdown_path)
+                if not document.extracted_text:
+                    raise RuntimeError(
+                        "No se pudo extraer texto util del guion. El PDF puede requerir OCR no disponible."
+                    )
+            else:
+                extracted_text = self._extract_text(storage_path, extension)
+                document.extracted_text = extracted_text
+                markdown_available = bool((extracted_text or "").strip())
+                text_length = len((extracted_text or "").strip())
+                document.detected_format = detected_format
+                document.extraction_method = extraction_method
+                document.markdown_available = markdown_available
+                document.text_length = text_length
             await project_document_rag_service.index_document(
                 db,
                 document=document,

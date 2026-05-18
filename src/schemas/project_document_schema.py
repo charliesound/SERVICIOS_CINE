@@ -18,6 +18,10 @@ class ProjectDocumentResponse(BaseModel):
     storage_path: str
     checksum: str
     extracted_text: str | None = None
+    detected_format: str | None = None
+    extraction_method: str | None = None
+    markdown_available: bool | None = None
+    text_length: int | None = None
     visibility_scope: str
     error_message: str | None = None
     created_at: datetime

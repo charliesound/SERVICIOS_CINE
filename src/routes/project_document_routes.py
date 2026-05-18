@@ -30,6 +30,7 @@ router = APIRouter(prefix="/api/projects", tags=["project-documents"])
 
 
 def _to_response(document) -> ProjectDocumentResponse:
+    extracted_text = getattr(document, "extracted_text", None)
     return ProjectDocumentResponse(
         id=str(document.id),
         project_id=str(document.project_id),
@@ -42,7 +43,11 @@ def _to_response(document) -> ProjectDocumentResponse:
         file_size=float(document.file_size),
         storage_path=str(document.storage_path),
         checksum=str(document.checksum),
-        extracted_text=getattr(document, "extracted_text", None),
+        extracted_text=extracted_text,
+        detected_format=getattr(document, "detected_format", None),
+        extraction_method=getattr(document, "extraction_method", None),
+        markdown_available=getattr(document, "markdown_available", bool((extracted_text or "").strip())),
+        text_length=getattr(document, "text_length", len((extracted_text or "").strip())),
         visibility_scope=str(document.visibility_scope),
         error_message=getattr(document, "error_message", None),
         created_at=document.created_at,

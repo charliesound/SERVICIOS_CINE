@@ -33,6 +33,7 @@ from schemas.cid_director_feedback_schema import (
     StoryboardRevisionResult,
 )
 from services.cinematic_intent_service import cinematic_intent_service
+from services.cinematography_prompt_reference_service import cinematography_prompt_reference_service
 from services.continuity_memory_service import continuity_memory_service
 from services.director_feedback_interpretation_service import director_feedback_interpretation_service
 from services.director_lens_service import director_lens_service
@@ -1167,6 +1168,31 @@ class StoryboardService:
             },
             single_continuous_take=True,
         )
+        scene_guidance = cinematography_prompt_reference_service.build_cinematography_guidance_for_script_scene(
+            scene_heading=scene_heading,
+            emotional_intent=emotional_intent,
+            location=location,
+            time_of_day=time_of_day,
+        )
+        shot_guidance = cinematography_prompt_reference_service.build_visual_prompt_guidance_for_shot(
+            shot_type=shot_type,
+            action=action_line,
+            emotional_intent=emotional_intent,
+        )
+        color_grading_vocab = cinematography_prompt_reference_service.extract_color_grading_vocabulary()
+        color_grading = color_grading_vocab[0] if color_grading_vocab else "cinematic grade"
+        model_guidance = cinematography_prompt_reference_service.build_model_specific_prompt_guidance(
+            model_family=prompt_model_family,
+            subject=main_character,
+            action=action_line,
+            environment=location,
+            lighting=scene_guidance["lighting_style"],
+            style=style_preset,
+        )
+        cinematography_sources = [
+            value["path"]
+            for value in cinematography_prompt_reference_service.load_cinematography_prompt_references()["references"].values()
+        ]
         enriched_positive = prompt_package["positive_prompt"]
         enriched_negative = prompt_package["negative_prompt"]
         metadata_payload.update(prompt_package["metadata"])
@@ -1174,6 +1200,20 @@ class StoryboardService:
         metadata_payload["visual_continuity"]["continuity_phrase"] = continuity_phrase
         metadata_payload["visual_continuity"]["anchors"] = visual_elements
         metadata_payload["shot_order"] = shot_order
+        metadata_payload["cinematography_reference_sources"] = cinematography_sources
+        metadata_payload["shot_type"] = shot_guidance["shot_type"]
+        metadata_payload["framing"] = shot_guidance["framing"]
+        metadata_payload["camera_angle"] = shot_guidance["camera_angle"]
+        metadata_payload["camera_motion"] = shot_guidance["camera_motion"]
+        metadata_payload["lens_suggestion"] = lens_style
+        metadata_payload["lighting_style"] = scene_guidance["lighting_style"]
+        metadata_payload["color_palette"] = scene_guidance["color_palette"]
+        metadata_payload["color_grading"] = color_grading
+        metadata_payload["atmosphere"] = scene_guidance["atmosphere"]
+        metadata_payload["composition_notes"] = shot_guidance["composition"]
+        metadata_payload["visual_constraints"] = visual_constraints
+        metadata_payload["model_prompt_family"] = model_guidance["model_prompt_family"]
+        metadata_payload["model_specific_guidance"] = model_guidance
 
         payload["description"] = action_line[:180]
         payload["narrative_text"] = enriched_positive[:500]

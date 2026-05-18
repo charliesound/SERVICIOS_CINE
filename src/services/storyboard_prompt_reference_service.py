@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Optional
 
+from services.cinematography_prompt_reference_service import cinematography_prompt_reference_service
+
 
 REFERENCE_FILES = {
     "maestro_rules": "comfyui_maestro_pro_juan_carlos.md",
@@ -250,6 +252,7 @@ class StoryboardPromptReferenceService:
             ]),
             shot_plan=shot_plan or {},
             diagnostic_rules_applied=diagnostic_rules_applied or ["wan22_t2v_prompt_director"],
+            shot_type=shot_type,
         )
         return {
             "prompt_model_family": model_family,
@@ -278,11 +281,26 @@ class StoryboardPromptReferenceService:
         consistency_checklist: Optional[list[str]] = None,
         shot_plan: Optional[dict[str, Any]] = None,
         diagnostic_rules_applied: Optional[list[str]] = None,
+        cinematography_reference_sources: Optional[list[str]] = None,
+        shot_type: str = "",
+        framing: str = "",
+        camera_angle: str = "",
+        lens_suggestion: str = "",
+        color_palette: str = "",
+        color_grading: str = "",
+        atmosphere: str = "",
+        composition_notes: str = "",
+        model_specific_guidance: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         loaded = self.load_prompt_references()
+        cinematography_loaded = cinematography_prompt_reference_service.load_cinematography_prompt_references()
         prompt_reference_sources = [
             value["path"]
             for value in loaded["references"].values()
+        ]
+        resolved_cinematography_sources = cinematography_reference_sources or [
+            value["path"]
+            for value in cinematography_loaded["references"].values()
         ]
         return {
             "script_excerpt_used": script_excerpt_used,
@@ -303,6 +321,16 @@ class StoryboardPromptReferenceService:
             "emotional_intent": emotional_intent,
             "shot_objective": shot_objective,
             "diagnostic_rules_applied": diagnostic_rules_applied or [],
+            "cinematography_reference_sources": resolved_cinematography_sources,
+            "shot_type": shot_type,
+            "framing": framing,
+            "camera_angle": camera_angle,
+            "lens_suggestion": lens_suggestion,
+            "color_palette": color_palette,
+            "color_grading": color_grading,
+            "atmosphere": atmosphere,
+            "composition_notes": composition_notes,
+            "model_specific_guidance": model_specific_guidance or {},
         }
 
     def _parse_negative_prompt_library(self, content: str) -> dict[str, str]:

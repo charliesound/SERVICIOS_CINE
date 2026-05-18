@@ -25,7 +25,7 @@ export const storyboardApi = {
   },
 
   analyzeFullScript: async (projectId: string): Promise<FullScriptAnalysisResult> => {
-    const { data } = await api.post<FullScriptAnalysisResult>('/api/cid/script/analyze-full', {
+    const { data } = await api.post<FullScriptAnalysisResult>('/api/cid/script-to-prompt/analyze-full', {
       project_id: projectId,
       script_text: '',
     })
@@ -160,6 +160,13 @@ export const storyboardApi = {
     created_at: string
   }> => {
     const { data } = await api.post(`/projects/${projectId}/storyboard/sequences/${sequenceId}/regenerate`, payload)
+    return data
+  },
+
+  exportSequenceZip: async (projectId: string, sequenceId: string): Promise<Blob> => {
+    const { data } = await api.get(`/projects/${projectId}/storyboard/sequences/${sequenceId}/export/zip`, {
+      responseType: 'blob',
+    })
     return data
   },
 }

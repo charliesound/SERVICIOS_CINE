@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Optional
+from uuid import uuid4
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
@@ -1688,6 +1689,309 @@ class StoryboardService:
             metadata_json=updated_metadata,
             message=self._build_revision_message(interpretation, revision, requires_confirmation),
         )
+
+    def _failed_shots_from_candidates(self, candidates: list[StoryboardShot], threshold: float = 70) -> list[StoryboardShot]:
+        failed: list[StoryboardShot] = []
+        for shot in candidates:
+            metadata = self._shot_metadata_dict(shot)
+            score_value = metadata.get("validation_score")
+            if score_value is None:
+                validation_result = metadata.get("validation_result")
+                if isinstance(validation_result, dict):
+                    score_value = validation_result.get("overall_match_score")
+            if score_value is None:
+                continue
+            try:
+                numeric = float(score_value)
+            except Exception:
+                continue
+            normalized = numeric * 100.0 if numeric <= 1.0 else numeric
+            if normalized < threshold:
+                failed.append(shot)
+        return failed
+
+    async def find_failed_storyboard_shots(
+        self,
+        db: AsyncSession,
+        *,
+        project_id: str,
+        sequence_id: str,
+        organization_id: str,
+        threshold: float = 70,
+    ) -> tuple[str, list[StoryboardShot]]:
+        project = await self._get_project_for_tenant(
+            db,
+            project_id=project_id,
+            tenant=TenantContext(
+                organization_id=organization_id,
+                user_id="system",
+                role="system",
+                is_global_admin=False,
+            ),
+        )
+        analysis_data = await self._get_analysis_payload(db, project)
+        canonical_sequence_id = self._canonical_sequence_id(
+            self._sequence_blocks_from_analysis(analysis_data),
+            sequence_id,
+        )
+        result = await db.execute(
+            select(StoryboardShot).where(
+                StoryboardShot.project_id == project_id,
+                StoryboardShot.organization_id == organization_id,
+                StoryboardShot.sequence_id == canonical_sequence_id,
+                StoryboardShot.is_active.is_(True),
+            ).order_by(StoryboardShot.sequence_order.asc(), StoryboardShot.created_at.asc())
+        )
+        shots = list(result.scalars().all())
+        return canonical_sequence_id, self._failed_shots_from_candidates(shots, threshold=threshold)
+
+    async def regenerate_storyboard_shot_from_validation(
+        self,
+        db: AsyncSession,
+        *,
+        project_id: str,
+        shot_id: str,
+        tenant: TenantContext,
+        threshold: float = 70,
+    ) -> dict[str, Any]:
+        regen_job_id = f"regen-{uuid4().hex}"
+        result = await db.execute(
+            select(StoryboardShot).where(
+                StoryboardShot.id == shot_id,
+                StoryboardShot.project_id == project_id,
+                StoryboardShot.organization_id == tenant.organization_id,
+                StoryboardShot.is_active.is_(True),
+            )
+        )
+        source_shot = result.scalar_one_or_none()
+        if source_shot is None:
+            raise HTTPException(status_code=404, detail="Shot not found")
+
+        metadata = self._shot_metadata_dict(source_shot)
+        score = metadata.get("validation_score")
+        if score is None and isinstance(metadata.get("validation_result"), dict):
+            score = metadata["validation_result"].get("overall_match_score")
+        score_pct = self._normalize_score_to_percentage(score)
+        if score_pct is not None and score_pct >= threshold:
+            return {
+                "job_id": regen_job_id,
+                "project_id": project_id,
+                "sequence_id": source_shot.sequence_id,
+                "regenerated_shots": [],
+                "skipped_shots": [
+                    {
+                        "shot_id": str(source_shot.id),
+                        "source_shot_id": str(source_shot.id),
+                        "sequence_id": source_shot.sequence_id,
+                        "status": "skipped",
+                        "reason": f"validation_score {score_pct:.2f} >= threshold {threshold}",
+                    }
+                ],
+                "threshold": threshold,
+                "status": "completed",
+            }
+
+        regenerated_item = await self._regenerate_single_shot(
+            db,
+            tenant=tenant,
+            project_id=project_id,
+            source_shot=source_shot,
+            regen_job_id=regen_job_id,
+        )
+        await db.commit()
+        return {
+            "job_id": regen_job_id,
+            "project_id": project_id,
+            "sequence_id": source_shot.sequence_id,
+            "regenerated_shots": [regenerated_item],
+            "skipped_shots": [],
+            "threshold": threshold,
+            "status": "completed",
+        }
+
+    async def regenerate_failed_storyboard_shots(
+        self,
+        db: AsyncSession,
+        *,
+        project_id: str,
+        sequence_id: str,
+        tenant: TenantContext,
+        threshold: float = 70,
+    ) -> dict[str, Any]:
+        regen_job_id = f"regen-{uuid4().hex}"
+        canonical_sequence_id, failed_shots = await self.find_failed_storyboard_shots(
+            db,
+            project_id=project_id,
+            sequence_id=sequence_id,
+            organization_id=tenant.organization_id,
+            threshold=threshold,
+        )
+        regenerated: list[dict[str, Any]] = []
+        skipped: list[dict[str, Any]] = []
+        if not failed_shots:
+            return {
+                "job_id": regen_job_id,
+                "project_id": project_id,
+                "sequence_id": canonical_sequence_id,
+                "regenerated_shots": [],
+                "skipped_shots": [],
+                "threshold": threshold,
+                "status": "completed",
+            }
+        for shot in failed_shots:
+            try:
+                item = await self._regenerate_single_shot(
+                    db,
+                    tenant=tenant,
+                    project_id=project_id,
+                    source_shot=shot,
+                    regen_job_id=regen_job_id,
+                )
+                regenerated.append(item)
+            except Exception as exc:
+                skipped.append(
+                    {
+                        "shot_id": str(shot.id),
+                        "source_shot_id": str(shot.id),
+                        "sequence_id": shot.sequence_id,
+                        "status": "skipped",
+                        "reason": str(exc),
+                    }
+                )
+        await db.commit()
+        return {
+            "job_id": regen_job_id,
+            "project_id": project_id,
+            "sequence_id": canonical_sequence_id,
+            "regenerated_shots": regenerated,
+            "skipped_shots": skipped,
+            "threshold": threshold,
+            "status": "completed",
+        }
+
+    async def _regenerate_single_shot(
+        self,
+        db: AsyncSession,
+        *,
+        tenant: TenantContext,
+        project_id: str,
+        source_shot: StoryboardShot,
+        regen_job_id: str,
+    ) -> dict[str, Any]:
+        project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+        metadata = self._shot_metadata_dict(source_shot)
+        regen_prompt = self._resolve_regeneration_prompt(metadata)
+        metadata["manual_regeneration"] = {
+            "source_shot_id": str(source_shot.id),
+            "regen_job_id": regen_job_id,
+            "used_prompt": regen_prompt,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        metadata.setdefault("validation_result", {})
+        metadata["validation_result"]["used_for_regeneration"] = True
+        new_shot = StoryboardShot(
+            project_id=source_shot.project_id,
+            organization_id=source_shot.organization_id,
+            sequence_id=source_shot.sequence_id,
+            sequence_order=source_shot.sequence_order,
+            scene_number=source_shot.scene_number,
+            scene_heading=source_shot.scene_heading,
+            narrative_text=regen_prompt,
+            shot_type=source_shot.shot_type,
+            visual_mode=source_shot.visual_mode,
+            generation_mode=source_shot.generation_mode,
+            generation_job_id=regen_job_id,
+            version=source_shot.version,
+            metadata_json=json.dumps(metadata, ensure_ascii=False, default=str),
+            is_active=True,
+        )
+        db.add(new_shot)
+        await db.flush()
+
+        prompt_payload = {
+            "preset_key": "storyboard_realistic",
+            "prompt": regen_prompt,
+            "negative_prompt": metadata.get("negative_prompt") or "blurry, low quality, distorted, watermark, text",
+            "checkpoint": "Realistic_Vision_V2.0.safetensors",
+            "width": 1024,
+            "height": 576,
+            "steps": 20,
+            "cfg": 7.0,
+            "sampler_name": "euler",
+            "scheduler": "normal",
+            "filename_prefix": f"storyboard_regen_{str(project.id)[:8]}_{str(new_shot.id)[:8]}",
+            "style_preset": source_shot.visual_mode or "cinematic_realistic",
+        }
+        response, queue_item = await render_job_service.submit_job(
+            tenant=tenant,
+            task_type="still",
+            workflow_key="still_storyboard_frame",
+            prompt=prompt_payload,
+            priority=5,
+            target_instance="still",
+            project_id=project_id,
+            metadata={
+                "storyboard_shot_id": str(new_shot.id),
+                "storyboard_regen_job_id": regen_job_id,
+                "source_shot_id": str(source_shot.id),
+                "sequence_id": source_shot.sequence_id,
+            },
+        )
+        render_job_id = response.job_id if queue_item is not None else None
+        status = "queued" if queue_item is not None else "skipped"
+        reason = None if queue_item is not None else (response.error or "Render queue unavailable")
+        return {
+            "shot_id": str(new_shot.id),
+            "source_shot_id": str(source_shot.id),
+            "sequence_id": source_shot.sequence_id,
+            "status": status,
+            "render_job_id": render_job_id,
+            "reason": reason,
+        }
+
+    def _normalize_score_to_percentage(self, value: Any) -> float | None:
+        if value is None:
+            return None
+        try:
+            numeric = float(value)
+        except Exception:
+            return None
+        return numeric * 100.0 if numeric <= 1.0 else numeric
+
+    def _shot_metadata_dict(self, shot: StoryboardShot) -> dict[str, Any]:
+        if not shot.metadata_json:
+            return {}
+        if isinstance(shot.metadata_json, dict):
+            return dict(shot.metadata_json)
+        try:
+            parsed = json.loads(shot.metadata_json)
+            return parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            return {}
+
+    def _resolve_regeneration_prompt(self, metadata: dict[str, Any]) -> str:
+        prompt = str(metadata.get("suggested_regeneration_prompt") or "").strip()
+        if prompt:
+            return prompt
+        failures = metadata.get("validation_failures") or []
+        if not isinstance(failures, list):
+            failures = []
+        script_excerpt = str(metadata.get("script_excerpt_used") or "")
+        positive_prompt = str(metadata.get("positive_prompt") or "")
+        payload = storyboard_image_script_validation_service.build_validation_payload(
+            script_excerpt_used=script_excerpt,
+            positive_prompt=positive_prompt,
+            scene_heading=str(metadata.get("scene_heading") or ""),
+            shot_type=str(metadata.get("shot_type") or "MS"),
+            characters=list(metadata.get("character_continuity") or []),
+            location=str((metadata.get("location_continuity") or {}).get("location") or ""),
+            visual_constraints=list(metadata.get("visual_constraints") or []),
+            atmosphere=str(metadata.get("atmosphere") or ""),
+        )
+        base = storyboard_image_script_validation_service.build_regeneration_prompt(validation_payload=payload)
+        if failures:
+            return f"{base} Critical fixes: {', '.join(str(item) for item in failures)}."
+        return base
 
     def _build_revision_message(
         self,

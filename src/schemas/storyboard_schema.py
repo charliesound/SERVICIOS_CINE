@@ -122,3 +122,30 @@ class StoryboardGenerationAuditResponse(BaseModel):
     render_jobs: list[dict] = Field(default_factory=list)
     render_errors: list[dict] = Field(default_factory=list)
     created_at: datetime
+
+
+class StoryboardShotRegenerateRequest(BaseModel):
+    threshold: float = 70.0
+
+
+class StoryboardFailedRegenerateRequest(BaseModel):
+    threshold: float = 70.0
+
+
+class StoryboardRegeneratedShotItem(BaseModel):
+    shot_id: str
+    source_shot_id: Optional[str] = None
+    sequence_id: Optional[str] = None
+    status: str
+    render_job_id: Optional[str] = None
+    reason: Optional[str] = None
+
+
+class StoryboardRegenerateShotsResponse(BaseModel):
+    job_id: str
+    project_id: str
+    sequence_id: Optional[str] = None
+    regenerated_shots: list[StoryboardRegeneratedShotItem] = Field(default_factory=list)
+    skipped_shots: list[StoryboardRegeneratedShotItem] = Field(default_factory=list)
+    threshold: float
+    status: str

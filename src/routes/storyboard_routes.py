@@ -11,11 +11,14 @@ from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.shot_schema import StoryboardShotListResponse, StoryboardShotResponse
 from schemas.storyboard_schema import (
+    StoryboardFailedRegenerateRequest,
     StoryboardGenerateRequest,
     StoryboardGenerationAuditResponse,
     StoryboardJobResponse,
     StoryboardListResponse,
     StoryboardOptionsResponse,
+    StoryboardRegenerateShotsResponse,
+    StoryboardShotRegenerateRequest,
     StoryboardSequenceDetailResponse,
     StoryboardSequenceResponse,
 )
@@ -358,6 +361,48 @@ async def submit_shot_director_feedback(
         feedback=payload,
         tenant=tenant,
     )
+
+
+@router.post(
+    "/{project_id}/storyboard/shots/{shot_id}/regenerate",
+    response_model=StoryboardRegenerateShotsResponse,
+)
+async def regenerate_storyboard_shot(
+    project_id: str,
+    shot_id: str,
+    payload: StoryboardShotRegenerateRequest,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> StoryboardRegenerateShotsResponse:
+    result = await storyboard_service.regenerate_storyboard_shot_from_validation(
+        db,
+        project_id=project_id,
+        shot_id=shot_id,
+        tenant=tenant,
+        threshold=payload.threshold,
+    )
+    return StoryboardRegenerateShotsResponse(**result)
+
+
+@router.post(
+    "/{project_id}/storyboard/sequences/{sequence_id}/regenerate-failed",
+    response_model=StoryboardRegenerateShotsResponse,
+)
+async def regenerate_failed_storyboard_sequence_shots(
+    project_id: str,
+    sequence_id: str,
+    payload: StoryboardFailedRegenerateRequest,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> StoryboardRegenerateShotsResponse:
+    result = await storyboard_service.regenerate_failed_storyboard_shots(
+        db,
+        project_id=project_id,
+        sequence_id=sequence_id,
+        tenant=tenant,
+        threshold=payload.threshold,
+    )
+    return StoryboardRegenerateShotsResponse(**result)
 
 
 @router.post(

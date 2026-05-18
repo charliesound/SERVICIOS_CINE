@@ -20,7 +20,7 @@ api.interceptors.response.use(
   async (error) => {
     const { response, config } = error
 
-    if (response?.status === 401 || response?.status === 403) {
+    if (response?.status === 401) {
       localStorage.removeItem('token')
 
       try {

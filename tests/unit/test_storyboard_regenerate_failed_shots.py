@@ -63,6 +63,18 @@ def test_null_validation_score_excluded_when_flag_false() -> None:
     assert "c" in failed_ids
 
 
+def test_fallback_uses_validation_result_overall_match_score() -> None:
+    service = StoryboardService()
+    candidates = [
+        SimpleNamespace(id="a", metadata_json={"validation_result": {"overall_match_score": 0.5}}),
+        SimpleNamespace(id="b", metadata_json={"validation_result": {"overall_match_score": 0.9}}),
+    ]
+    failed = service._failed_shots_from_candidates(candidates, threshold=70, include_unvalidated=False)
+    failed_ids = {str(item.id) for item in failed}
+    assert "a" in failed_ids
+    assert "b" not in failed_ids
+
+
 def test_resolve_regeneration_prompt_uses_suggested_prompt() -> None:
     service = StoryboardService()
     prompt = service._resolve_regeneration_prompt(

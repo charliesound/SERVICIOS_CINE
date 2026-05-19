@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+import uuid
 from pathlib import Path
 
 import pytest
@@ -29,7 +30,10 @@ async def test_ingestion_builds_points_and_upserts(tmp_path: Path, monkeypatch: 
     async def fake_create_collection(*, name, vector_size, distance="Cosine"):
         return True
 
+    captured_points: dict[str, object] = {"points": []}
+
     async def fake_upsert_points(*, collection, points):
+        captured_points["points"] = points
         return len(points) > 0
 
     monkeypatch.setattr("scripts.ingest_screenwriting_theory.project_document_rag_service._embed_texts", fake_embed_texts)
@@ -39,3 +43,20 @@ async def test_ingestion_builds_points_and_upserts(tmp_path: Path, monkeypatch: 
     result = await run_ingest(theory_dir)
     assert result["status"] == "ok"
     assert result["points"] > 0
+    points = captured_points["points"]
+    assert isinstance(points, list)
+    assert points
+    first = points[0]
+    point_id = first.get("id")
+    assert isinstance(point_id, str)
+    parsed = uuid.UUID(point_id)
+    assert str(parsed) == point_id
+    assert not point_id.startswith("author-title-")
+    payload = first.get("payload")
+    assert isinstance(payload, dict)
+    assert payload.get("source_file")
+    assert payload.get("title")
+    assert payload.get("author")
+    assert "chapter" in payload
+    assert payload.get("topic") == "screenwriting_theory"
+    assert "chunk_index" in payload

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,11 @@ from services.qdrant_service import qdrant_service
 
 
 THEORY_COLLECTION = "cid_screenwriting_theory"
+
+
+def _stable_point_id(*, source_file: str, chunk_index: int, chunk_text: str) -> str:
+    seed = f"{source_file}:{chunk_index}:{chunk_text[:80]}"
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, seed))
 
 
 def _read_text(path: Path) -> str:
@@ -54,7 +60,11 @@ async def run_ingest(base_dir: Path) -> dict[str, Any]:
         meta = _infer_metadata(path)
         for index, chunk in enumerate(chunks):
             vector = vectors[index] if index < len(vectors) else project_document_rag_service._embed_text(chunk)
-            point_id = f"{path.stem}-{index}"
+            point_id = _stable_point_id(
+                source_file=meta["source_file"],
+                chunk_index=index,
+                chunk_text=chunk,
+            )
             all_points.append(
                 {
                     "id": point_id,

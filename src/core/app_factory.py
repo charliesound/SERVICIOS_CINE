@@ -278,12 +278,14 @@ def _register_routers(app: FastAPI, settings) -> None:
     from routes.concept_art_routes import router as concept_art_router
     from routes.cid_script_to_prompt_routes import router as cid_script_to_prompt_router
     from routes.cid_visual_reference_routes import router as cid_visual_reference_router
+    from routes.script_intelligence_routes import router as script_intelligence_router
 
     app.include_router(ollama_storyboard_router, tags=["ollama-storyboard"])
     app.include_router(comfyui_storyboard_router, tags=["comfyui-storyboard"])
     app.include_router(concept_art_router, tags=["concept-art"])
     app.include_router(cid_script_to_prompt_router, tags=["cid-script-to-prompt"])
     app.include_router(cid_visual_reference_router, tags=["cid-visual-reference"])
+    app.include_router(script_intelligence_router, tags=["script-intelligence"])
 
     # ── ComfySearch / Solutions / Dubbing / App Registry ─────────────────
     from routes.comfysearch_routes import router as comfysearch_router

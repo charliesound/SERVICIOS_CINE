@@ -105,8 +105,9 @@ class StoryboardService:
     }
 
     NON_REALISTIC_NEGATIVE = (
-        "photorealistic, hyper realistic, ultra realistic, realistic skin texture, skin pores, DSLR, RAW photo, "
-        "cinematic photography, 3d render, octane render, unreal engine, glossy, beauty lighting, final movie frame"
+        "photograph, photorealistic, hyperreal, hyper realistic, ultra realistic, realistic face, realistic skin, "
+        "natural skin texture, detailed skin, DSLR, RAW photo, cinematic still, cinematic photography, movie frame, "
+        "final frame, final movie frame, concept art render, 3d render, octane render, unreal engine, glossy"
     )
 
     def build_storyboard_visual_style_prompt(self, style_preset: str) -> dict[str, str]:
@@ -128,7 +129,7 @@ class StoryboardService:
             normalized = "hand_drawn_storyboard"
 
         style_prompts = {
-            "hand_drawn_storyboard": "hand-drawn cinematic storyboard, rough pencil sketch, professional storyboard artist style, black and white, monochrome line art, expressive loose strokes, director storyboard panel, film blocking sketch, cinematic composition, camera framing notes, previsualization drawing, clean readable silhouettes, shot planning sketch",
+            "hand_drawn_storyboard": "rough hand drawn storyboard, pencil line art, unfinished production sketch, loose construction lines, storyboard thumbnails, black and white, monochrome, no color, director blocking sketch, rough pencil sketch, expressive loose strokes, previsualization drawing",
             "rough_pencil_storyboard": "rough pencil storyboard drawing, hand-sketched cinematic panel, monochrome graphite lines, production storyboard rough pass, gesture-driven linework",
             "ink_storyboard": "ink storyboard line art, strong black contours, monochrome storyboard frame, cinematic blocking illustration, clean directional hatching",
             "charcoal_storyboard": "charcoal storyboard concept frame, expressive dark tonal sketch, cinematic silhouette planning, monochrome textured strokes",

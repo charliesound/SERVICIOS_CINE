@@ -26,8 +26,8 @@ def test_hand_drawn_storyboard_style_prompt_contains_drawing_terms() -> None:
     service = StoryboardService()
     style = service.build_storyboard_visual_style_prompt("hand_drawn_storyboard")
     positive = style["positive_style_prompt"].lower()
-    assert "hand-drawn" in positive
-    assert "pencil" in positive
+    assert "pencil line art" in positive
+    assert "unfinished production sketch" in positive
     assert "storyboard" in positive
 
 
@@ -35,9 +35,9 @@ def test_hand_drawn_storyboard_negative_prompt_blocks_photorealism() -> None:
     service = StoryboardService()
     style = service.build_storyboard_visual_style_prompt("hand_drawn_storyboard")
     negative = style["negative_style_prompt"].lower()
-    assert "photorealistic" in negative
-    assert "raw photo" in negative
-    assert "dslr" in negative
+    assert "photograph" in negative
+    assert "realistic skin" in negative
+    assert "cinematic still" in negative
 
 
 def test_hand_drawn_storyboard_render_payload_not_using_realistic_preset() -> None:

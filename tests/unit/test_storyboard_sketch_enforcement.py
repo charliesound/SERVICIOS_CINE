@@ -41,3 +41,5 @@ def test_apply_sketch_postprocess_on_existing_image(tmp_path: Path) -> None:
     Image.new("RGB", (32, 32), color=(120, 80, 60)).save(image_path)
     assert _apply_storyboard_sketch_postprocess(image_path) is True
     assert image_path.exists()
+    with Image.open(image_path) as processed:
+        assert processed.mode == "L"

@@ -612,16 +612,14 @@ export default function ProjectDetailPage() {
     try {
       const result = await storyboardApi.uploadProjectScript(projectId, file)
       setUploadResult(result)
-      const scriptSource = result.extracted_text || result.script_text
-      if (scriptSource) {
-        setScriptText(scriptSource)
-      }
       const updated = await projectsApi.get(projectId)
       setProject(updated)
-      if (scriptSource) {
+      const refreshedText = updated.script_text || ''
+      if (refreshedText) {
+        setScriptText(refreshedText)
         showSuccess('Guion cargado correctamente')
       } else {
-        showSuccess('Guion subido y convertido correctamente. Pulsa Analizar guion para regenerar el análisis.')
+        showSuccess('Guion subido correctamente. Recarga el proyecto para ver el texto convertido.')
       }
     } catch (err) {
       const msg = parseApiError('No se pudo cargar el archivo de guion')(err)

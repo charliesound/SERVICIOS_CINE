@@ -364,6 +364,8 @@ export interface ScriptUploadResult {
   character_count: number
   warnings: string[]
   ready_for_analysis: boolean
+  extracted_text?: string | null
+  script_text?: string | null
 }
 
 export interface StoryboardCreditEstimate {

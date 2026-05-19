@@ -14,7 +14,7 @@ import {
 import { JobProgress } from '@/components/JobProgress'
 import { ActionProgressPanel, type ActionProgressState } from '@/components/ActionProgressPanel'
 import { StoryboardSequenceSelectorModal, type StoryboardSelectionValue } from '@/components/storyboard/StoryboardSequenceSelectorModal'
-import type { StoryboardSceneCandidate, StoryboardSequence, StoryboardShot } from '@/types/storyboard'
+import type { ScriptUploadResult, StoryboardSceneCandidate, StoryboardSequence, StoryboardShot } from '@/types/storyboard'
 import ConceptArtDryRunPanel from '@/components/concept-art/ConceptArtDryRunPanel'
 
 type Tab = 'script' | 'analysis' | 'storyboard' | 'concept-art' | 'history'
@@ -199,6 +199,7 @@ export default function ProjectDetailPage() {
   const [isLoadingStoryboardCandidates, setIsLoadingStoryboardCandidates] = useState(false)
   const [storyboardCandidateError, setStoryboardCandidateError] = useState<string | null>(null)
   const [selectedScriptFileName, setSelectedScriptFileName] = useState('')
+  const [uploadResult, setUploadResult] = useState<ScriptUploadResult | null>(null)
   const [showAllScenes, setShowAllScenes] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -587,27 +588,45 @@ export default function ProjectDetailPage() {
     const file = event.target.files?.[0]
     if (!projectId || !file) return
 
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    if (ext === 'doc') {
+      setError('El formato .doc clásico no está soportado. Convierte a .docx, PDF, TXT o MD.')
+      setSelectedScriptFileName('')
+      setUploadResult(null)
+      event.target.value = ''
+      return
+    }
+    if (!['pdf', 'docx', 'txt', 'md'].includes(ext)) {
+      setError('Formato no soportado. Usa .pdf, .docx, .txt o .md.')
+      setSelectedScriptFileName('')
+      setUploadResult(null)
+      event.target.value = ''
+      return
+    }
+
     setIsUploadingScript(true)
     setError('')
     setSuccessMsg('')
     setSelectedScriptFileName(file.name)
+    setUploadResult(null)
     try {
-      const extension = file.name.split('.').pop()?.toLowerCase() || ''
-      if (!['txt', 'md', 'pdf', 'docx'].includes(extension)) {
-        throw new Error('Formato no soportado. Usa .txt, .md, .pdf o .docx.')
-      }
-      const document = await projectsApi.uploadScriptDocument(projectId, file)
-      if (document.extracted_text) {
-        await projectsApi.intakeScript(projectId, { script_text: document.extracted_text })
-        setScriptText(document.extracted_text)
-      } else {
-        throw new Error(document.error_message || 'No se pudo extraer texto del documento')
+      const result = await storyboardApi.uploadProjectScript(projectId, file)
+      setUploadResult(result)
+      const scriptSource = result.extracted_text || result.script_text
+      if (scriptSource) {
+        setScriptText(scriptSource)
       }
       const updated = await projectsApi.get(projectId)
       setProject(updated)
-      showSuccess('Guion cargado correctamente')
+      if (scriptSource) {
+        showSuccess('Guion cargado correctamente')
+      } else {
+        showSuccess('Guion subido y convertido correctamente. Pulsa Analizar guion para regenerar el análisis.')
+      }
     } catch (err) {
-      setError(parseApiError('No se pudo cargar el archivo de guion')(err))
+      const msg = parseApiError('No se pudo cargar el archivo de guion')(err)
+      setError(msg)
+      setUploadResult(null)
     } finally {
       event.target.value = ''
       setIsUploadingScript(false)
@@ -1098,7 +1117,7 @@ export default function ProjectDetailPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".txt,.md,.pdf,.doc,.docx,.rtf"
+                  accept=".pdf,.docx,.txt,.md"
                   onChange={handleScriptFileChange}
                   className="hidden"
                 />
@@ -1129,9 +1148,46 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            {selectedScriptFileName && (
+            {selectedScriptFileName && !uploadResult && (
               <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-gray-400">
                 Archivo seleccionado: <span className="text-white">{selectedScriptFileName}</span>
+              </div>
+            )}
+
+            {uploadResult && (
+              <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Guion subido correctamente
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-slate-500">Formato fuente</p>
+                    <p className="text-white font-medium">{uploadResult.format}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Palabras</p>
+                    <p className="text-white font-medium">{uploadResult.word_count.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Caracteres</p>
+                    <p className="text-white font-medium">{uploadResult.character_count.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Listo para análisis</p>
+                    <p className={uploadResult.ready_for_analysis ? 'text-emerald-400 font-medium' : 'text-amber-400 font-medium'}>
+                      {uploadResult.ready_for_analysis ? 'Sí' : 'No'}
+                    </p>
+                  </div>
+                </div>
+                {uploadResult.warnings.length > 0 && (
+                  <div className="flex items-start gap-2 text-xs text-amber-300/80 bg-amber-500/5 rounded-lg p-2">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <ul className="list-disc list-inside">
+                      {uploadResult.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
 

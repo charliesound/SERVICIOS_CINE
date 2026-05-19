@@ -99,3 +99,97 @@ async def test_service_mentions_sequence_ids_when_scope_is_requested(monkeypatch
         sequence_ids=["seq_02"],
     )
     assert "seq_02" in result["overall_diagnosis"]
+
+
+@pytest.mark.asyncio
+async def test_sequence_alias_seq_001_matches_seq_01_and_filters_scenes(monkeypatch: pytest.MonkeyPatch) -> None:
+    project = SimpleNamespace(id="proj-1", organization_id="org-1", script_text="Escenas")
+    breakdown = SimpleNamespace(
+        breakdown_json='{"scenes": [{"scene_number": 1, "action_blocks": ["conflicto"]}, {"scene_number": 2}, {"scene_number": 3, "action_blocks": ["corre"]}, {"scene_number": 4}], "sequences": [{"sequence_id": "seq_001", "included_scenes": [1, 2]}, {"sequence_id": "seq_002", "included_scenes": [3, 4]}]}'
+    )
+    fake_db = _FakeDb(project, breakdown)
+    service = CIDScriptIntelligenceService()
+
+    async def fake_context(*, topics=None):
+        return {"summary": "", "sources": [{"title": "McKee"}], "fallback_used": False}
+
+    monkeypatch.setattr(
+        "services.cid_script_intelligence_service.cid_screenwriting_theory_service.fetch_theory_context",
+        fake_context,
+    )
+
+    result = await service.analyze_project(
+        fake_db,
+        project_id="proj-1",
+        organization_id="org-1",
+        sequence_ids=["seq_01"],
+    )
+
+    assert "Escenas analizadas: 2" in result["overall_diagnosis"]
+    assert "[1, 2]" in result["overall_diagnosis"]
+
+
+@pytest.mark.asyncio
+async def test_nonexistent_sequence_returns_zero_analysis_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    project = SimpleNamespace(id="proj-1", organization_id="org-1", script_text="Escenas")
+    breakdown = SimpleNamespace(
+        breakdown_json='{"scenes": [{"scene_number": 1}, {"scene_number": 2}], "sequences": [{"sequence_id": "seq_01", "included_scenes": [1, 2]}]}'
+    )
+    fake_db = _FakeDb(project, breakdown)
+    service = CIDScriptIntelligenceService()
+
+    async def fake_context(*, topics=None):
+        return {"summary": "", "sources": [], "fallback_used": True}
+
+    monkeypatch.setattr(
+        "services.cid_script_intelligence_service.cid_screenwriting_theory_service.fetch_theory_context",
+        fake_context,
+    )
+
+    result = await service.analyze_project(
+        fake_db,
+        project_id="proj-1",
+        organization_id="org-1",
+        sequence_ids=["seq_03"],
+    )
+
+    assert "Escenas analizadas: 0" in result["overall_diagnosis"]
+    assert result["scores"]["conflict_strength"] == 0
+    assert any("No hay material analizable" in item for item in result["storyboard_actionables"])
+
+
+@pytest.mark.asyncio
+async def test_different_sequences_produce_different_filtered_counts(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_context(*, topics=None):
+        return {"summary": "", "sources": [], "fallback_used": True}
+
+    monkeypatch.setattr(
+        "services.cid_script_intelligence_service.cid_screenwriting_theory_service.fetch_theory_context",
+        fake_context,
+    )
+
+    project_a = SimpleNamespace(id="proj-1", organization_id="org-1", script_text="texto")
+    breakdown_a = SimpleNamespace(
+        breakdown_json='{"scenes": [{"scene_number": 1}, {"scene_number": 2}, {"scene_number": 3}], "sequences": [{"sequence_id": "seq_01", "included_scenes": [1, 2]}, {"sequence_id": "seq_02", "included_scenes": [3]}]}'
+    )
+    service = CIDScriptIntelligenceService()
+    result_a = await service.analyze_project(
+        _FakeDb(project_a, breakdown_a),
+        project_id="proj-1",
+        organization_id="org-1",
+        sequence_ids=["seq_01"],
+    )
+
+    project_b = SimpleNamespace(id="proj-1", organization_id="org-1", script_text="texto")
+    breakdown_b = SimpleNamespace(
+        breakdown_json='{"scenes": [{"scene_number": 1}, {"scene_number": 2}, {"scene_number": 3}], "sequences": [{"sequence_id": "seq_01", "included_scenes": [1, 2]}, {"sequence_id": "seq_02", "included_scenes": [3]}]}'
+    )
+    result_b = await service.analyze_project(
+        _FakeDb(project_b, breakdown_b),
+        project_id="proj-1",
+        organization_id="org-1",
+        sequence_ids=["seq_02"],
+    )
+
+    assert "Escenas analizadas: 2" in result_a["overall_diagnosis"]
+    assert "Escenas analizadas: 1" in result_b["overall_diagnosis"]

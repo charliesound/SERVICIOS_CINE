@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from sqlalchemy import select
@@ -67,6 +68,104 @@ class CIDScriptIntelligenceService:
             "characters": sorted(character_names),
         }
 
+    def _sequence_aliases(self, sequence_id: Any) -> set[str]:
+        raw = str(sequence_id or "").strip().lower()
+        if not raw:
+            return set()
+        aliases = {raw}
+        match = re.search(r"(\d+)$", raw)
+        if not match:
+            return aliases
+        number = int(match.group(1))
+        aliases.update(
+            {
+                str(number),
+                f"seq_{number}",
+                f"seq_{number:02d}",
+                f"seq_{number:03d}",
+                f"sequence_{number}",
+                f"sequence_{number:02d}",
+                f"sequence_{number:03d}",
+            }
+        )
+        return aliases
+
+    def _scene_number(self, scene: dict[str, Any], fallback_index: int) -> int:
+        value = scene.get("scene_number")
+        try:
+            if value is not None:
+                return int(value)
+        except Exception:
+            pass
+        return fallback_index + 1
+
+    def _filter_sequences_and_scenes(
+        self,
+        *,
+        scenes: list[dict[str, Any]],
+        sequences: list[dict[str, Any]],
+        sequence_ids: list[str] | None,
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[int], list[str]]:
+        if not sequence_ids:
+            scene_numbers = [self._scene_number(scene, idx) for idx, scene in enumerate(scenes)]
+            sequence_list = [str(seq.get("sequence_id") or "") for seq in sequences if seq.get("sequence_id")]
+            return scenes, sequences, scene_numbers, sequence_list
+
+        requested_aliases: set[str] = set()
+        for seq in sequence_ids:
+            requested_aliases.update(self._sequence_aliases(seq))
+
+        matched_sequences = []
+        matched_sequence_ids: list[str] = []
+        included_scene_numbers: set[int] = set()
+        for seq in sequences:
+            seq_id = str(seq.get("sequence_id") or "")
+            aliases = self._sequence_aliases(seq_id)
+            if aliases.intersection(requested_aliases):
+                matched_sequences.append(seq)
+                if seq_id:
+                    matched_sequence_ids.append(seq_id)
+                for number in seq.get("included_scenes") or []:
+                    try:
+                        included_scene_numbers.add(int(number))
+                    except Exception:
+                        continue
+
+        if included_scene_numbers:
+            filtered_scenes = [
+                scene for idx, scene in enumerate(scenes)
+                if self._scene_number(scene, idx) in included_scene_numbers
+            ]
+            ordered_numbers = sorted(included_scene_numbers)
+            return filtered_scenes, matched_sequences, ordered_numbers, matched_sequence_ids
+
+        # Fallback when there is no explicit scene mapping in breakdown.
+        if matched_sequences and scenes:
+            sorted_scenes = sorted(
+                [dict(scene, _scene_number=self._scene_number(scene, idx)) for idx, scene in enumerate(scenes)],
+                key=lambda s: int(s.get("_scene_number") or 0),
+            )
+            chunk_size = max(1, len(sorted_scenes) // max(1, len(sequences) or 1))
+            scoped: list[dict[str, Any]] = []
+            scoped_numbers: list[int] = []
+            for seq in matched_sequences:
+                seq_id = str(seq.get("sequence_id") or "")
+                aliases = self._sequence_aliases(seq_id)
+                number_match = [a for a in aliases if a.isdigit()]
+                if not number_match:
+                    continue
+                seq_number = int(sorted(number_match, key=len)[0])
+                start = max(0, (seq_number - 1) * chunk_size)
+                end = min(len(sorted_scenes), start + chunk_size)
+                if start >= len(sorted_scenes):
+                    continue
+                for scene in sorted_scenes[start:end]:
+                    scoped.append({k: v for k, v in scene.items() if k != "_scene_number"})
+                    scoped_numbers.append(int(scene.get("_scene_number") or 0))
+            return scoped, matched_sequences, sorted(set(scoped_numbers)), matched_sequence_ids
+
+        return [], [], [], []
+
     def _infer_act_stage(self, sequence_count: int, scenes_count: int) -> str:
         if sequence_count <= 1 or scenes_count <= 3:
             return "planteamiento"
@@ -106,31 +205,49 @@ class CIDScriptIntelligenceService:
         scenes = breakdown_data.get("scenes") or []
         sequences = breakdown_data.get("sequences") or []
 
-        if sequence_ids:
-            selected = set(str(item) for item in sequence_ids)
-            sequences = [seq for seq in sequences if str(seq.get("sequence_id")) in selected]
+        scoped_scenes, scoped_sequences, scoped_scene_numbers, scoped_sequence_ids = self._filter_sequences_and_scenes(
+            scenes=scenes,
+            sequences=sequences,
+            sequence_ids=sequence_ids,
+        )
 
         theory_context = await cid_screenwriting_theory_service.fetch_theory_context(topics=theory_focus)
         fallback_used = bool(theory_context.get("fallback_used"))
-        scores = self._build_heuristic_scores(script_text, len(scenes), len(sequences))
-        signals = self._collect_scene_signals(scenes)
-        act_stage = self._infer_act_stage(len(sequences), len(scenes))
+        scores = self._build_heuristic_scores(script_text, len(scoped_scenes), len(scoped_sequences))
+        signals = self._collect_scene_signals(scoped_scenes)
+        act_stage = self._infer_act_stage(len(scoped_sequences), len(scoped_scenes))
 
-        seq_hint = ", ".join(str(seq.get("sequence_id")) for seq in sequences[:4]) if sequences else "n/a"
+        if sequence_ids and not scoped_scenes:
+            scores = {
+                "dramatic_clarity": 10,
+                "conflict_strength": 0,
+                "character_drive": 10,
+                "structure_strength": 0,
+                "pacing": 0,
+                "cinematic_potential": 5,
+            }
+
+        seq_hint = ", ".join(str(seq.get("sequence_id")) for seq in scoped_sequences[:4]) if scoped_sequences else "n/a"
         sequence_scope = f"secuencias solicitadas {', '.join(sequence_ids)}" if sequence_ids else "todo el proyecto"
         overview = (
             f"Diagnóstico estructural basado en guion y teoría contextual. "
-            f"Ámbito: {sequence_scope}. Escenas detectadas: {len(scenes)}. "
-            f"Secuencias consideradas: {len(sequences)} ({seq_hint})."
+            f"Ámbito: {sequence_scope}. Escenas analizadas: {len(scoped_scenes)} {scoped_scene_numbers[:8] if scoped_scene_numbers else []}. "
+            f"Secuencias consideradas: {len(scoped_sequences)} ({', '.join(scoped_sequence_ids) if scoped_sequence_ids else seq_hint})."
         )
 
         storyboard_actionables: list[str] = []
         if include_storyboard_actionables:
-            storyboard_actionables = [
-                f"Priorizar objetivo dramático explícito en aperturas de secuencia ({len(sequences)} secuencias).",
-                f"Diseñar escalada visual de conflicto en al menos {max(1, signals['conflict_hits'])} escenas clave.",
-                f"Ajustar ritmo con beats de acción visibles ({signals['action_hits']} escenas con acción detectada).",
-            ]
+            if sequence_ids and not scoped_scenes:
+                storyboard_actionables = [
+                    "No hay material analizable para la secuencia solicitada; verifica sequence_id y reintenta.",
+                    "Confirma que el mapa de secuencias del proyecto incluya escenas para esa secuencia.",
+                ]
+            else:
+                storyboard_actionables = [
+                    f"Priorizar objetivo dramático explícito en aperturas de secuencia ({len(scoped_sequences)} secuencias).",
+                    f"Diseñar escalada visual de conflicto en al menos {max(1, signals['conflict_hits'])} escenas clave.",
+                    f"Ajustar ritmo con beats de acción visibles ({signals['action_hits']} escenas con acción detectada).",
+                ]
 
         key_characters = ", ".join(signals["characters"][:4]) if signals["characters"] else "sin personajes destacados"
         conflict_matrix = (
@@ -141,16 +258,16 @@ class CIDScriptIntelligenceService:
             "project_id": project_id,
             "overall_diagnosis": overview,
             "syd_field": {
-                "act_structure": f"Con {len(scenes)} escenas y {len(sequences)} secuencias, el tramo actual encaja mejor como {act_stage}.",
+                "act_structure": f"Con {len(scoped_scenes)} escenas y {len(scoped_sequences)} secuencias, el tramo actual encaja mejor como {act_stage}.",
                 "plot_point_1": f"Hipótesis: ubicar primer punto de giro al cerrar la primera secuencia útil ({seq_hint.split(',')[0] if seq_hint != 'n/a' else 'sin secuencia clara'}).",
-                "midpoint": f"Hipótesis: midpoint alrededor de la escena {max(1, len(scenes)//2)} con cambio de estrategia o riesgo.",
-                "plot_point_2": f"Hipótesis: segundo giro en la última secuencia analizada para empujar al clímax ({len(sequences)} secuencias).",
+                "midpoint": f"Hipótesis: midpoint alrededor de la escena {max(1, len(scoped_scenes)//2)} con cambio de estrategia o riesgo.",
+                "plot_point_2": f"Hipótesis: segundo giro en la última secuencia analizada para empujar al clímax ({len(scoped_sequences)} secuencias).",
                 "resolution": "La resolución debe cerrar la pregunta dramática principal y costo del protagonista.",
-                "issues": [] if len(sequences) >= 2 else ["Posible baja segmentación estructural por secuencias."],
+                "issues": [] if len(scoped_sequences) >= 2 else ["Posible baja segmentación estructural por secuencias."],
                 "recommendations": ["Definir objetivo y obstáculo por secuencia para clarificar progresión de actos."],
             },
             "comparato": {
-                "idea": f"La idea matriz debe sostener {len(scenes)} escenas sin perder causalidad dramática.",
+                "idea": f"La idea matriz debe sostener {len(scoped_scenes)} escenas sin perder causalidad dramática.",
                 "conflict_matrix": conflict_matrix,
                 "dramatic_action": f"Acción dramática visible en {signals['action_hits']} escenas; reforzar decisión-consecuencia en cada bloque.",
                 "character_function": f"Funciones dramáticas detectables: {key_characters}.",
@@ -159,11 +276,11 @@ class CIDScriptIntelligenceService:
             },
             "mckee": {
                 "scene_value_shifts": [
-                    f"Escena 1->{min(2, len(scenes))}: pasar de expectativa a presión.",
-                    f"Bloque medio (escena {max(1, len(scenes)//2)}): giro de valor hacia riesgo/urgencia.",
-                ] if scenes else ["Sin escenas suficientes para inferir cambios de valor."],
+                    f"Escena 1->{min(2, len(scoped_scenes))}: pasar de expectativa a presión.",
+                    f"Bloque medio (escena {max(1, len(scoped_scenes)//2)}): giro de valor hacia riesgo/urgencia.",
+                ] if scoped_scenes else ["Sin escenas suficientes para inferir cambios de valor."],
                 "conflict_levels": ["interno", "interpersonal", "social"],
-                "crisis_climax_resolution": f"Escalonar crisis->clímax->resolución sobre {len(sequences)} secuencias, evitando resolución abrupta.",
+                "crisis_climax_resolution": f"Escalonar crisis->clímax->resolución sobre {len(scoped_sequences)} secuencias, evitando resolución abrupta.",
                 "subtext_notes": [
                     "En confrontaciones clave, sustituir explicación explícita por intención contradictoria en diálogo y acción.",
                     f"Priorizar subtexto en escenas con mayor fricción (detectadas: {signals['conflict_hits']}).",

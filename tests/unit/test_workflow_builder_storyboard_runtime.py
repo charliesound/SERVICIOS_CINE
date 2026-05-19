@@ -30,6 +30,7 @@ def test_hand_drawn_storyboard_uses_sketch_checkpoint_not_realistic_vision() -> 
     assert isinstance(runtime, dict)
     checkpoint = runtime["1"]["inputs"]["ckpt_name"]
     assert checkpoint != "Realistic_Vision_V2.0.safetensors"
+    assert checkpoint == STORYBOARD_RUNTIME_PRESETS["storyboard_sketch"]["checkpoint"]
 
 
 def test_cinematic_realistic_keeps_realistic_vision_runtime_checkpoint() -> None:

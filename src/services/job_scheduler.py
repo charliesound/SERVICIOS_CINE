@@ -2,6 +2,8 @@ import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
+import json
+from pathlib import Path
 from typing import Dict, Callable, Awaitable, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +17,66 @@ from database import AsyncSessionLocal
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+NON_REALISTIC_STORYBOARD_STYLES = {
+    "hand_drawn_storyboard",
+    "rough_pencil_storyboard",
+    "ink_storyboard",
+    "charcoal_storyboard",
+    "graphic_novel_storyboard",
+}
+
+
+def _should_force_sketch(style_preset: Optional[str]) -> bool:
+    normalized = (style_preset or "").strip().lower()
+    return normalized in NON_REALISTIC_STORYBOARD_STYLES
+
+
+def _extract_image_asset_path(asset: object) -> Optional[Path]:
+    path_value = getattr(asset, "canonical_path", None)
+    if isinstance(path_value, str) and path_value.strip():
+        return Path(path_value)
+    metadata_raw = getattr(asset, "metadata_json", None)
+    metadata: dict = {}
+    if isinstance(metadata_raw, str):
+        try:
+            parsed = json.loads(metadata_raw)
+            if isinstance(parsed, dict):
+                metadata = parsed
+        except Exception:
+            metadata = {}
+    elif isinstance(metadata_raw, dict):
+        metadata = metadata_raw
+    storage_path = metadata.get("storage_path")
+    if isinstance(storage_path, str) and storage_path.strip():
+        return Path(storage_path)
+    return None
+
+
+def _apply_storyboard_sketch_postprocess(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    try:
+        from PIL import Image, ImageFilter, ImageEnhance, ImageOps
+    except Exception:
+        logger.warning("Pillow unavailable; skipping sketch postprocess for %s", path)
+        return False
+
+    try:
+        with Image.open(path) as img:
+            gray = ImageOps.grayscale(img)
+            edges = gray.filter(ImageFilter.FIND_EDGES)
+            edges = ImageOps.invert(edges)
+            edges = ImageEnhance.Contrast(edges).enhance(1.8)
+            base = gray.quantize(colors=16).convert("L")
+            blended = Image.blend(base, edges, alpha=0.55)
+            final = ImageEnhance.Contrast(blended).enhance(1.35)
+            final = ImageOps.autocontrast(final)
+            final.convert("RGB").save(path)
+        return True
+    except Exception as exc:
+        logger.warning("Sketch postprocess failed for %s: %s", path, exc)
+        return False
 
 SCHEDULER_POLL_INTERVAL = int(os.getenv("SCHEDULER_POLL_INTERVAL", "5"))
 SCHEDULER_JOB_TIMEOUT = int(os.getenv("SCHEDULER_JOB_TIMEOUT", "3600"))
@@ -147,6 +209,12 @@ class JobScheduler:
             prompt_inputs.get("style_preset"),
             prompt_inputs.get("preset_key"),
             final_checkpoint,
+        )
+        logger.info(
+            "Storyboard prompt payload job_id=%s positive=%s negative=%s",
+            item.job_id,
+            str(prompt_inputs.get("prompt") or "")[:240],
+            str(prompt_inputs.get("negative_prompt") or "")[:240],
         )
 
         queue_service.mark_running(item.job_id)
@@ -303,6 +371,18 @@ class JobScheduler:
                 shot = await session.get(StoryboardShot, storyboard_shot_id)
                 if shot is not None:
                     shot.asset_id = str(image_asset.id)
+            style_preset = (item.prompt or {}).get("style_preset")
+            if image_asset is not None and _should_force_sketch(style_preset):
+                image_path = _extract_image_asset_path(image_asset)
+                if image_path is not None:
+                    applied = _apply_storyboard_sketch_postprocess(image_path)
+                    logger.info(
+                        "Storyboard sketch postprocess job_id=%s style_preset=%s applied=%s path=%s",
+                        item.job_id,
+                        style_preset,
+                        applied,
+                        str(image_path),
+                    )
             await session.commit()
 
     async def _check_timeouts(self):

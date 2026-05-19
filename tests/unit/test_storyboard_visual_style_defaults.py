@@ -72,3 +72,10 @@ def test_legacy_request_cinematic_realistic_still_supported() -> None:
     style = service.build_storyboard_visual_style_prompt("cinematic_realistic")
     assert style["normalized_style_preset"] == "cinematic_realistic"
     assert style["preset_key"] == "storyboard_realistic"
+
+
+def test_regeneration_default_style_does_not_inherit_cinematic_realistic() -> None:
+    service = StoryboardService()
+    style = service.build_storyboard_visual_style_prompt("")
+    assert style["normalized_style_preset"] == "hand_drawn_storyboard"
+    assert style["preset_key"] == "storyboard_sketch"

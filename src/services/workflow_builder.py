@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 STORYBOARD_RUNTIME_PRESETS = {
     "storyboard_sketch": {
-        "checkpoint": "sd_xl_base_1.0.safetensors",
+        "checkpoint": "AAM_XL_Anime_Mix.safetensors",
         "settings": {
             "width": 1024,
             "height": 576,

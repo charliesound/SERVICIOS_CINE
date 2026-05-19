@@ -696,6 +696,9 @@ async def export_sequence_storyboard_zip(
         exported_at=exported_at,
         shots=manifest_shots,
     )
+    filmstrip_png = storyboard_pdf_export_service.build_storyboard_filmstrip_image(
+        shots=manifest_shots,
+    )
 
     with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zip_file:
         zip_file.writestr(
@@ -703,6 +706,7 @@ async def export_sequence_storyboard_zip(
             json.dumps(manifest_payload, ensure_ascii=False, indent=2, default=str),
         )
         zip_file.writestr("storyboard_contact_sheet.pdf", pdf_bytes)
+        zip_file.writestr("storyboard_filmstrip.png", filmstrip_png)
 
     zip_buffer.seek(0)
     zip_bytes = zip_buffer.getvalue()

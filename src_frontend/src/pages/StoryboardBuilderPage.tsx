@@ -852,21 +852,21 @@ export default function StoryboardBuilderPage() {
                   </div>
 
                   {cinematicViewMode === 'filmstrip' ? (
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto rounded-xl border border-white/10 bg-[#050505] p-3">
                       <div className="flex gap-3 min-w-max pb-2">
                         {orderedCinematicShots.map((shot) => {
                           const metadata = (shot.metadata_json || {}) as Record<string, unknown>
                           const validationScore = metadata.validation_score ?? (metadata.validation_result as Record<string, unknown> | undefined)?.overall_match_score
                           return (
-                            <div key={`filmstrip-${shot.id}`} className="w-56 rounded-lg border border-white/10 bg-dark-300/60 overflow-hidden">
-                              <div className="aspect-video bg-black/30">
+                            <div key={`filmstrip-${shot.id}`} className="w-56 rounded-lg border border-white/10 bg-black overflow-hidden">
+                              <div className="aspect-video bg-black/40">
                                 {shot.thumbnail_url ? (
                                   <img src={shot.thumbnail_url} alt={shot.asset_file_name || `shot-${shot.sequence_order}`} className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">Sin miniatura</div>
                                 )}
                               </div>
-                              <div className="p-2 space-y-1 text-xs text-slate-300">
+                              <div className="p-2 space-y-1 text-xs text-slate-300 border-t border-white/10">
                                 <p><span className="text-slate-500">Secuencia:</span> {shot.sequence_id || 'n/a'}</p>
                                 <p><span className="text-slate-500">Escena:</span> {shot.scene_number ?? 'n/a'}</p>
                                 <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
@@ -906,7 +906,9 @@ export default function StoryboardBuilderPage() {
                   )}
                 </section>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <details>
+                  <summary className="cursor-pointer text-sm text-slate-300 mb-3">Detalles de planos</summary>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredShots.map((shot) => (
                     <div key={shot.id} className="space-y-1">
                       <ShotCard shot={shot} onUpdate={handleUpdateShot} onDelete={handleDeleteShot}
@@ -966,7 +968,8 @@ export default function StoryboardBuilderPage() {
                       )}
                     </div>
                   ))}
-                </div>
+                  </div>
+                </details>
               </div>
             )}
           </>

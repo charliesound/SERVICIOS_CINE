@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from PIL import Image, ImageDraw, ImageFont
 from weasyprint import HTML
 
 
@@ -103,6 +104,67 @@ class StoryboardPdfExportService:
             ]
         )
         return HTML(string=html).write_pdf()
+
+    def build_storyboard_filmstrip_image(self, *, shots: list[dict[str, Any]]) -> bytes:
+        ordered = sorted(
+            list(shots),
+            key=lambda item: (
+                int(item.get("sequence_order") or 0),
+                int(item.get("scene_number") or 0),
+                str(item.get("shot_id") or ""),
+            ),
+        )
+        frame_width = 300
+        frame_height = 170
+        label_height = 58
+        tile_width = frame_width + 16
+        tile_height = frame_height + label_height + 18
+        strip_width = max(tile_width * max(1, len(ordered)) + 24, 360)
+        strip_height = tile_height + 40
+
+        canvas = Image.new("RGB", (strip_width, strip_height), color=(8, 8, 8))
+        draw = ImageDraw.Draw(canvas)
+        font = ImageFont.load_default()
+
+        for x in range(0, strip_width, 32):
+            draw.rectangle((x + 8, 10, x + 22, 20), fill=(230, 230, 230))
+            draw.rectangle((x + 8, strip_height - 20, x + 22, strip_height - 10), fill=(230, 230, 230))
+
+        x_cursor = 16
+        for shot in ordered:
+            draw.rectangle((x_cursor, 24, x_cursor + tile_width - 6, strip_height - 24), fill=(18, 18, 18), outline=(55, 55, 55), width=1)
+            img_box = (x_cursor + 8, 32, x_cursor + 8 + frame_width, 32 + frame_height)
+            file_path = shot.get("file_path")
+            pasted = False
+            if isinstance(file_path, str):
+                path = Path(file_path)
+                if path.is_file():
+                    try:
+                        with Image.open(path) as frame_img:
+                            frame = frame_img.convert("RGB")
+                            frame.thumbnail((frame_width, frame_height))
+                            bg = Image.new("RGB", (frame_width, frame_height), (28, 28, 28))
+                            off_x = (frame_width - frame.width) // 2
+                            off_y = (frame_height - frame.height) // 2
+                            bg.paste(frame, (off_x, off_y))
+                            canvas.paste(bg, (img_box[0], img_box[1]))
+                            pasted = True
+                    except Exception:
+                        pasted = False
+            if not pasted:
+                draw.rectangle(img_box, fill=(34, 34, 34))
+                draw.text((img_box[0] + 74, img_box[1] + 72), "No image", fill=(190, 190, 190), font=font)
+
+            meta_y = img_box[3] + 8
+            draw.text((x_cursor + 10, meta_y), f"Plano {shot.get('sequence_order', 'n/a')}  Escena {shot.get('scene_number', 'n/a')}", fill=(240, 240, 240), font=font)
+            draw.text((x_cursor + 10, meta_y + 14), f"Seq {shot.get('sequence_id', 'n/a')}  {shot.get('render_status', 'unknown')}", fill=(180, 180, 180), font=font)
+            x_cursor += tile_width
+
+        output = Path("/tmp") / f"storyboard_filmstrip_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}.png"
+        canvas.save(output, format="PNG")
+        data = output.read_bytes()
+        output.unlink(missing_ok=True)
+        return data
 
 
 storyboard_pdf_export_service = StoryboardPdfExportService()

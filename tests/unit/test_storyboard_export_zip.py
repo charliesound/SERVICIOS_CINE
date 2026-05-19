@@ -73,6 +73,7 @@ async def test_storyboard_zip_includes_manifest_and_pdf(tmp_path: Path, monkeypa
     names = set(archive.namelist())
     assert "storyboard_manifest.json" in names
     assert "storyboard_contact_sheet.pdf" in names
+    assert "storyboard_filmstrip.png" in names
 
     manifest = json.loads(archive.read("storyboard_manifest.json").decode("utf-8"))
     assert manifest["sequence_id"] == "seq_01"
@@ -100,3 +101,20 @@ def test_pdf_generates_when_image_is_missing() -> None:
     )
     assert isinstance(pdf, bytes)
     assert len(pdf) > 100
+
+
+def test_filmstrip_generates_when_image_is_missing() -> None:
+    png = storyboard_pdf_export_service.build_storyboard_filmstrip_image(
+        shots=[
+            {
+                "shot_id": "shot-1",
+                "sequence_order": 1,
+                "scene_number": 1,
+                "sequence_id": "seq_01",
+                "render_status": "missing_file",
+                "file_path": "/path/does/not/exist.png",
+            }
+        ]
+    )
+    assert isinstance(png, bytes)
+    assert png.startswith(b"\x89PNG")

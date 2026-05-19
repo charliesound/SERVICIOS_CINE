@@ -37,6 +37,28 @@ class StoryboardGenerateRequest(BaseModel):
     validate_prompts: bool = False
 
 
+class StoryboardCreditEstimateRequest(BaseModel):
+    mode: str = "SEQUENCE"
+    sequence_ids: list[str] = Field(default_factory=list)
+    scene_start: Optional[int] = None
+    scene_end: Optional[int] = None
+    shots_per_scene: int = 3
+    include_coverage_shots: bool = True
+    style_preset: str = "hand_drawn_storyboard"
+
+
+class StoryboardCreditEstimateResponse(BaseModel):
+    project_id: str
+    mode: str
+    estimated_scenes: int
+    base_shots: int
+    coverage_shots: int
+    total_estimated_shots: int
+    credits: dict[str, int] = Field(default_factory=dict)
+    plan_warning: Optional[str] = None
+    notes: list[str] = Field(default_factory=list)
+
+
 class StoryboardSequencePlanRequest(BaseModel):
     style_preset: str = "hand_drawn_storyboard"
     shots_per_scene: int = 5

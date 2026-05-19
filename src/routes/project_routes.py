@@ -6,7 +6,7 @@ from io import BytesIO
 from typing import Any, Optional
 from pydantic import BaseModel, Field
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +20,7 @@ from services.document_service import document_service
 from services.job_tracking_service import job_tracking_service
 from services.plan_limits_service import plan_limits_service
 from services.production_advisor_reference_service import load_production_advisor_reference
+from services.script_file_normalization_service import script_file_normalization_service
 from services.script_intake_service import analysis_service
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
@@ -45,6 +46,15 @@ class CreateProjectPayload(BaseModel):
 
 class UpdateScriptPayload(BaseModel):
     script_text: str
+
+
+class ProjectScriptUploadResponse(BaseModel):
+    project_id: str
+    source_format: str
+    word_count: int
+    character_count: int
+    warnings: list[str] = Field(default_factory=list)
+    ready_for_analysis: bool
 
 
 class ScriptAnalysisResponse(BaseModel):
@@ -697,6 +707,44 @@ async def update_project_script(
     await db.refresh(project)
 
     return _project_dict(project)
+
+
+@router.post("/{project_id}/script/upload", response_model=ProjectScriptUploadResponse)
+async def upload_project_script(
+    project_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+    _module_access: TenantContext = Depends(require_module_access("script_analysis")),
+):
+    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded script file is empty")
+
+    try:
+        normalized = script_file_normalization_service.normalize_script_file(
+            file_bytes=file_bytes,
+            filename=file.filename or "script.txt",
+            content_type=file.content_type,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail="Could not normalize uploaded script") from exc
+
+    project.script_text = normalized["script_text"] or None
+    await db.commit()
+    await db.refresh(project)
+
+    return ProjectScriptUploadResponse(
+        project_id=str(project.id),
+        source_format=str(normalized["source_format"]),
+        word_count=int(normalized["word_count"]),
+        character_count=int(normalized["character_count"]),
+        warnings=[str(item) for item in normalized.get("warnings", [])],
+        ready_for_analysis=bool(normalized["script_text"].strip()),
+    )
 
 
 async def _parse_storyboard(script_text: str) -> StoryboardResponse:

@@ -11,6 +11,8 @@ from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.shot_schema import StoryboardShotListResponse, StoryboardShotResponse
 from schemas.storyboard_schema import (
+    StoryboardCreditEstimateRequest,
+    StoryboardCreditEstimateResponse,
     StoryboardFailedRegenerateRequest,
     StoryboardGenerateRequest,
     StoryboardGenerationAuditResponse,
@@ -43,6 +45,7 @@ from services.cid_script_to_prompt_pipeline_service import (
 from services.cid_script_scene_parser_service import cid_script_scene_parser_service
 from services.script_sequence_mapping_service import script_sequence_mapping_service
 from services.storyboard_service import storyboard_service, StoryboardGenerationMode
+from services.storyboard_credit_estimator_service import storyboard_credit_estimator_service
 from services.storyboard_pdf_export_service import storyboard_pdf_export_service
 
 
@@ -123,6 +126,68 @@ async def generate_storyboard(
         validate_prompts=payload.validate_prompts,
     )
     return StoryboardJobResponse(**{k: result[k] for k in StoryboardJobResponse.model_fields.keys()})
+
+
+@router.post("/{project_id}/storyboard/estimate-credits", response_model=StoryboardCreditEstimateResponse)
+async def estimate_storyboard_credits(
+    project_id: str,
+    payload: StoryboardCreditEstimateRequest,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> StoryboardCreditEstimateResponse:
+    project = await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+    analysis_data = await storyboard_service._get_analysis_payload(db, project)
+    scenes = analysis_data.get("scenes") or []
+    sequence_blocks = storyboard_service._sequence_blocks_from_analysis(analysis_data)
+
+    mode = (payload.mode or StoryboardGenerationMode.SEQUENCE).upper()
+    estimated_scenes = 0
+    notes: list[str] = []
+
+    if payload.sequence_ids:
+        selected_scene_numbers: set[int] = set()
+        missing_sequence_ids: list[str] = []
+        seen_sequence_ids: set[str] = set()
+        for requested_id in payload.sequence_ids:
+            block = storyboard_service._resolve_sequence_block(sequence_blocks, requested_id)
+            if block is None:
+                missing_sequence_ids.append(str(requested_id))
+                continue
+            if block.sequence_id in seen_sequence_ids:
+                continue
+            seen_sequence_ids.add(block.sequence_id)
+            selected_scene_numbers.update(int(item) for item in block.included_scenes)
+        estimated_scenes = len(selected_scene_numbers)
+        if missing_sequence_ids:
+            notes.append('Secuencias no encontradas: ' + ', '.join(missing_sequence_ids))
+    elif mode == StoryboardGenerationMode.SCENE_RANGE and payload.scene_start is not None and payload.scene_end is not None:
+        estimated_scenes = len([scene for scene in scenes if payload.scene_start <= storyboard_service._scene_number(scene) <= payload.scene_end])
+    elif mode == StoryboardGenerationMode.SINGLE_SCENE and payload.scene_start is not None:
+        estimated_scenes = len([scene for scene in scenes if storyboard_service._scene_number(scene) == payload.scene_start])
+    else:
+        estimated_scenes = len(scenes)
+
+    estimate = storyboard_credit_estimator_service.estimate_credits(
+        mode=mode,
+        estimated_scenes=estimated_scenes,
+        shots_per_scene=max(1, min(payload.shots_per_scene, 8)),
+        include_coverage_shots=payload.include_coverage_shots,
+        sequence_ids=payload.sequence_ids,
+        scene_start=payload.scene_start,
+        scene_end=payload.scene_end,
+    )
+    merged_notes = list(estimate.get("notes") or []) + notes
+    return StoryboardCreditEstimateResponse(
+        project_id=project_id,
+        mode=str(estimate["mode"]),
+        estimated_scenes=int(estimate["estimated_scenes"]),
+        base_shots=int(estimate["base_shots"]),
+        coverage_shots=int(estimate["coverage_shots"]),
+        total_estimated_shots=int(estimate["total_estimated_shots"]),
+        credits={k: int(v) for k, v in dict(estimate["credits"]).items()},
+        plan_warning=estimate.get("plan_warning"),
+        notes=[str(item) for item in merged_notes],
+    )
 
 
 @router.post("/{project_id}/storyboard/sequences/{sequence_id}/plan", response_model=SequenceStoryboardPlan)

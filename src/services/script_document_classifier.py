@@ -5,7 +5,7 @@ import re
 
 
 SCENE_HEADING_RE = re.compile(
-    r"^\s*(?:\d{1,4}[\.:\)-]?\s+)?(?:INT\.?|INTERIOR|EXT\.?|EXTERIOR|INT/EXT\.?|I/E\.?)\s+.+$",
+    r"^\s*(?:\d{1,4}\s*[\.:\)-]?\s+)?(?:INT\.?\s*/\s*EXT\.?|EXT\.?\s*/\s*INT\.?|INT\.?|INTERIOR|EXT\.?|EXTERIOR|I/E\.?)\s+.+$",
     re.IGNORECASE,
 )
 CHARACTER_CUE_RE = re.compile(

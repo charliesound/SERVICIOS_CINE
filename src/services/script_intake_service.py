@@ -19,7 +19,7 @@ from services.script_document_classifier import SCENE_HEADING_RE
 class ScriptIntakeService:
     _TIME_OF_DAY = (
         "DAY", "NIGHT", "MORNING", "EVENING", "AFTERNOON", "DAWN", "DUSK",
-        "CONTINUOUS", "LATER", "MOMENTS LATER", "DIA", "NOCHE", "MANANA", "MAÑANA", "TARDE",
+        "CONTINUOUS", "LATER", "MOMENTS LATER", "DIA", "DÍA", "NOCHE", "MANANA", "MAÑANA", "TARDE",
     )
     _PROPS_KEYWORDS = {
         "arma": ["pistola", "revólver", "cuchillo", "arma"],
@@ -92,7 +92,7 @@ class ScriptIntakeService:
             return None
 
         match = re.match(
-            r"^\s*(?:(?P<number>\d{1,4})[\.:\)-]?\s+)?(?P<int_ext>INT\.?|INTERIOR|EXT\.?|EXTERIOR|INT/EXT\.?|I/E\.?)\s+(?P<body>.+?)\s*$",
+            r"^\s*(?:(?P<number>\d{1,4})\s*[\.:\)-]?\s+)?(?P<int_ext>INT\.?\s*/\s*EXT\.?|EXT\.?\s*/\s*INT\.?|INT\.?|INTERIOR|EXT\.?|EXTERIOR|I/E\.?)\s+(?P<body>.+?)\s*$",
             line,
             re.IGNORECASE,
         )
@@ -107,7 +107,7 @@ class ScriptIntakeService:
             except ValueError:
                 scene_number = 0
 
-        int_ext_raw = (match.group("int_ext") or "INT").upper().rstrip(".")
+        int_ext_raw = (match.group("int_ext") or "INT").upper().replace(" ", "").rstrip(".")
         body = (match.group("body") or "").strip()
 
         location = body.rstrip(" .-")
@@ -127,7 +127,7 @@ class ScriptIntakeService:
         return {
             "scene_number": scene_number or 0,
             "heading": line,
-            "int_ext": "INT/EXT" if "INT/EXT" in int_ext_raw or "I/E" in int_ext_raw else int_ext_raw,
+            "int_ext": "INT/EXT" if ("INT/EXT" in int_ext_raw or "EXT/INT" in int_ext_raw or "I/E" in int_ext_raw) else int_ext_raw,
             "location": location,
             "time_of_day": time_of_day,
         }

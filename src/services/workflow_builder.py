@@ -1,11 +1,27 @@
 from typing import Dict, List, Optional, Any
 from copy import deepcopy
 import random
+import logging
 
 from .workflow_registry import workflow_registry, WorkflowTemplate, TaskCategory
 
 
+logger = logging.getLogger(__name__)
+
+
 STORYBOARD_RUNTIME_PRESETS = {
+    "storyboard_sketch": {
+        "checkpoint": "sd_xl_base_1.0.safetensors",
+        "settings": {
+            "width": 1024,
+            "height": 576,
+            "steps": 24,
+            "cfg": 6.0,
+            "sampler_name": "euler",
+            "scheduler": "normal",
+            "denoise": 1.0,
+        },
+    },
     "storyboard_realistic": {
         "checkpoint": "Realistic_Vision_V2.0.safetensors",
         "settings": {
@@ -215,7 +231,14 @@ class WorkflowBuilder:
 
     def _build_still_storyboard_prompt(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         preset_key = str(inputs.get("preset_key") or "storyboard_realistic")
-        preset = STORYBOARD_RUNTIME_PRESETS.get(preset_key) or STORYBOARD_RUNTIME_PRESETS["storyboard_realistic"]
+        preset = STORYBOARD_RUNTIME_PRESETS.get(preset_key)
+        if preset is None:
+            logger.warning(
+                "Unknown storyboard preset_key '%s', falling back to storyboard_sketch",
+                preset_key,
+            )
+            preset_key = "storyboard_sketch"
+            preset = STORYBOARD_RUNTIME_PRESETS["storyboard_sketch"]
         settings = preset.get("settings", {})
         return self._build_basic_text_to_image_prompt(
             inputs,

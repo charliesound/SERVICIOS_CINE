@@ -133,6 +133,22 @@ class JobScheduler:
             )
             return False, error
 
+        final_checkpoint = (
+            runtime_prompt.get("1", {})
+            .get("inputs", {})
+            .get("ckpt_name")
+            if isinstance(runtime_prompt, dict)
+            else None
+        )
+        logger.info(
+            "Storyboard runtime mapping job_id=%s workflow_key=%s style_preset=%s preset_key=%s checkpoint=%s",
+            item.job_id,
+            item.workflow_key,
+            prompt_inputs.get("style_preset"),
+            prompt_inputs.get("preset_key"),
+            final_checkpoint,
+        )
+
         queue_service.mark_running(item.job_id)
         # Update progress: scheduled -> running (15%)
         async with AsyncSessionLocal() as _db:

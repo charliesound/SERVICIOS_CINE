@@ -6,14 +6,16 @@ import math
 import os
 import re
 from collections import Counter
-from datetime import datetime, timezone
 from typing import Any
+
+import httpx
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.document import DocumentChunk, ProjectDocument
 from services.logging_service import logger
+from services.qdrant_service import qdrant_service
 
 
 class ProjectDocumentRagService:
@@ -22,6 +24,10 @@ class ProjectDocumentRagService:
         self.chunk_overlap_chars = int(os.getenv("PROJECT_DOCUMENT_CHUNK_OVERLAP", "150"))
         self.embedding_dimensions = int(os.getenv("PROJECT_DOCUMENT_EMBEDDING_DIMENSIONS", "96"))
         self.embedding_provider = os.getenv("PROJECT_DOCUMENT_EMBEDDING_PROVIDER", "local_hash").strip() or "local_hash"
+        self.ollama_embed_model = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text").strip() or "nomic-embed-text"
+        self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
+        self.qdrant_enabled = (os.getenv("PROJECT_DOCUMENT_RAG_USE_QDRANT", "false").lower() in {"1", "true", "yes", "on"})
+        self.qdrant_collection = os.getenv("PROJECT_DOCUMENT_QDRANT_COLLECTION", "project_document_chunks").strip() or "project_document_chunks"
 
     def _normalize_text(self, value: str) -> str:
         compact = re.sub(r"\s+", " ", (value or "").strip())
@@ -72,6 +78,31 @@ class ProjectDocumentRagService:
             return vector
         return [item / magnitude for item in vector]
 
+    async def _embed_texts_with_ollama(self, texts: list[str]) -> list[list[float]]:
+        vectors: list[list[float]] = []
+        timeout = float(os.getenv("OLLAMA_EMBED_TIMEOUT_SECONDS", "30"))
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            for text in texts:
+                response = await client.post(
+                    f"{self.ollama_base_url}/api/embeddings",
+                    json={"model": self.ollama_embed_model, "prompt": text},
+                )
+                response.raise_for_status()
+                payload = response.json()
+                raw = payload.get("embedding")
+                if not isinstance(raw, list):
+                    raise RuntimeError("ollama_embedding_missing")
+                vectors.append([float(item) for item in raw])
+        return vectors
+
+    async def _embed_texts(self, texts: list[str]) -> tuple[list[list[float]], str]:
+        if not texts:
+            return [], self.embedding_provider
+        if self.embedding_provider != "local_hash":
+            vectors = await self._embed_texts_with_ollama(texts)
+            return vectors, self.embedding_provider
+        return [self._embed_text(text) for text in texts], "local_hash"
+
     def _log_embedding_usage(self, *, texts: int, tokens: int) -> None:
         logger.info(
             "ProjectDocumentRAG embedding usage provider=%s texts=%s tokens=%s estimated_cost=0",
@@ -115,25 +146,64 @@ class ProjectDocumentRagService:
             texts=len(chunks),
             tokens=sum(self._estimate_tokens(chunk) for chunk in chunks),
         )
+        vectors, provider_used = await self._embed_texts(chunks)
+        if vectors and len(vectors[0]) > 0:
+            self.embedding_dimensions = len(vectors[0])
         metadata = {
             "document_type": document.document_type,
             "file_name": document.file_name,
             "checksum": document.checksum,
             "visibility_scope": document.visibility_scope,
         }
+        pending_chunks: list[DocumentChunk] = []
         for index, chunk_text in enumerate(chunks):
-            db.add(
-                DocumentChunk(
-                    document_id=str(document.id),
-                    project_id=str(document.project_id),
-                    organization_id=str(document.organization_id),
-                    chunk_index=index,
-                    chunk_text=chunk_text,
-                    chunk_tokens_estimate=self._estimate_tokens(chunk_text),
-                    embedding_payload=self._serialize_embedding(self._embed_text(chunk_text)),
-                    metadata_json=json.dumps(metadata, ensure_ascii=True),
-                )
+            vector = vectors[index] if index < len(vectors) else self._embed_text(chunk_text)
+            chunk = DocumentChunk(
+                document_id=str(document.id),
+                project_id=str(document.project_id),
+                organization_id=str(document.organization_id),
+                chunk_index=index,
+                chunk_text=chunk_text,
+                chunk_tokens_estimate=self._estimate_tokens(chunk_text),
+                embedding_payload=self._serialize_embedding(vector),
+                metadata_json=json.dumps(metadata, ensure_ascii=True),
             )
+            db.add(chunk)
+            pending_chunks.append(chunk)
+
+        await db.flush()
+
+        if self.qdrant_enabled and pending_chunks:
+            collection_ok = await qdrant_service.create_collection(
+                name=self.qdrant_collection,
+                vector_size=len(vectors[0]) if vectors else self.embedding_dimensions,
+                distance="Cosine",
+            )
+            if collection_ok:
+                points: list[dict[str, Any]] = []
+                for chunk in pending_chunks:
+                    points.append(
+                        {
+                            "id": str(chunk.id),
+                            "vector": self._deserialize_embedding(chunk.embedding_payload),
+                            "payload": {
+                                "chunk_id": str(chunk.id),
+                                "document_id": str(document.id),
+                                "project_id": str(document.project_id),
+                                "organization_id": str(document.organization_id),
+                                "chunk_index": int(chunk.chunk_index),
+                                "chunk_text": str(chunk.chunk_text),
+                                "file_name": str(document.file_name),
+                                "document_type": str(document.document_type),
+                                "embedding_provider": provider_used,
+                            },
+                        }
+                    )
+                upsert_ok = await qdrant_service.upsert_points(collection=self.qdrant_collection, points=points)
+                if not upsert_ok:
+                    logger.warning("ProjectDocumentRAG qdrant upsert failed; using DB fallback only")
+            else:
+                logger.warning("ProjectDocumentRAG qdrant collection unavailable; using DB fallback only")
         return len(chunks)
 
     async def index_project(
@@ -196,8 +266,49 @@ class ProjectDocumentRagService:
         query_text: str,
         top_k: int,
     ) -> dict[str, Any]:
-        query_embedding = self._embed_text(query_text)
+        query_vectors, _provider = await self._embed_texts([query_text])
+        query_embedding = query_vectors[0] if query_vectors else self._embed_text(query_text)
         self._log_embedding_usage(texts=1, tokens=self._estimate_tokens(query_text))
+
+        if self.qdrant_enabled:
+            qdrant_hits = await qdrant_service.semantic_search(
+                collection=self.qdrant_collection,
+                query_vector=query_embedding,
+                limit=top_k,
+                filter_payload={
+                    "must": [
+                        {"key": "project_id", "match": {"value": project_id}},
+                        {"key": "organization_id", "match": {"value": organization_id}},
+                    ]
+                },
+            )
+            if qdrant_hits:
+                selected = []
+                for hit in qdrant_hits:
+                    payload = hit.get("payload") if isinstance(hit, dict) else {}
+                    if not isinstance(payload, dict):
+                        payload = {}
+                    selected.append(
+                        {
+                            "chunk_id": str(payload.get("chunk_id") or hit.get("id") or ""),
+                            "document_id": str(payload.get("document_id") or ""),
+                            "file_name": str(payload.get("file_name") or ""),
+                            "document_type": str(payload.get("document_type") or ""),
+                            "chunk_index": int(payload.get("chunk_index") or 0),
+                            "score": float(hit.get("score") or 0.0),
+                            "chunk_text": str(payload.get("chunk_text") or ""),
+                            "metadata_json": payload,
+                        }
+                    )
+                grounded_summary = " ".join(item["chunk_text"] for item in selected[:3])[:1200] if selected else None
+                return {
+                    "query": query_text,
+                    "top_k": top_k,
+                    "retrieved_chunks": selected,
+                    "grounded_summary": grounded_summary,
+                    "embedding_provider": self.embedding_provider,
+                }
+
         result = await db.execute(
             select(DocumentChunk, ProjectDocument)
             .join(ProjectDocument, ProjectDocument.id == DocumentChunk.document_id)

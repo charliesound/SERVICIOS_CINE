@@ -38,6 +38,42 @@ class CIDScriptIntelligenceService:
         except Exception:
             return {}
 
+    def _sanitize_text(self, value: Any, *, max_len: int = 180) -> str:
+        text = " ".join(str(value or "").split())
+        if len(text) > max_len:
+            return text[: max_len - 3].rstrip() + "..."
+        return text
+
+    def _collect_scene_signals(self, scenes: list[dict[str, Any]]) -> dict[str, Any]:
+        conflict_terms = ("conflicto", "pelea", "discute", "amenaza", "crisis", "riesgo", "tension", "tensión")
+        action_terms = ("corre", "entra", "sale", "dispara", "persigue", "golpea", "escapa", "confronta")
+        conflict_hits = 0
+        action_hits = 0
+        character_names: set[str] = set()
+        for scene in scenes:
+            text = " ".join(str(item) for item in (scene.get("action_blocks") or []))
+            lower = text.lower()
+            if any(term in lower for term in conflict_terms):
+                conflict_hits += 1
+            if any(term in lower for term in action_terms):
+                action_hits += 1
+            for name in scene.get("characters_detected") or []:
+                value = self._sanitize_text(name, max_len=40)
+                if value:
+                    character_names.add(value)
+        return {
+            "conflict_hits": conflict_hits,
+            "action_hits": action_hits,
+            "characters": sorted(character_names),
+        }
+
+    def _infer_act_stage(self, sequence_count: int, scenes_count: int) -> str:
+        if sequence_count <= 1 or scenes_count <= 3:
+            return "planteamiento"
+        if sequence_count <= 3 or scenes_count <= 10:
+            return "confrontación"
+        return "resolución"
+
     async def analyze_project(
         self,
         db: AsyncSession,
@@ -77,49 +113,63 @@ class CIDScriptIntelligenceService:
         theory_context = await cid_screenwriting_theory_service.fetch_theory_context(topics=theory_focus)
         fallback_used = bool(theory_context.get("fallback_used"))
         scores = self._build_heuristic_scores(script_text, len(scenes), len(sequences))
+        signals = self._collect_scene_signals(scenes)
+        act_stage = self._infer_act_stage(len(sequences), len(scenes))
 
         seq_hint = ", ".join(str(seq.get("sequence_id")) for seq in sequences[:4]) if sequences else "n/a"
+        sequence_scope = f"secuencias solicitadas {', '.join(sequence_ids)}" if sequence_ids else "todo el proyecto"
         overview = (
             f"Diagnóstico estructural basado en guion y teoría contextual. "
-            f"Escenas detectadas: {len(scenes)}. Secuencias consideradas: {len(sequences)} ({seq_hint})."
+            f"Ámbito: {sequence_scope}. Escenas detectadas: {len(scenes)}. "
+            f"Secuencias consideradas: {len(sequences)} ({seq_hint})."
         )
 
         storyboard_actionables: list[str] = []
         if include_storyboard_actionables:
             storyboard_actionables = [
-                "Asegurar que cada secuencia tenga objetivo dramático explícito en los primeros planos.",
-                "Refinar transiciones de plot points con planos de reacción y contraste de valor.",
-                "Agregar beats visuales de conflicto progresivo antes de midpoint y clímax.",
+                f"Priorizar objetivo dramático explícito en aperturas de secuencia ({len(sequences)} secuencias).",
+                f"Diseñar escalada visual de conflicto en al menos {max(1, signals['conflict_hits'])} escenas clave.",
+                f"Ajustar ritmo con beats de acción visibles ({signals['action_hits']} escenas con acción detectada).",
             ]
 
-        theory_snippet = str(theory_context.get("summary") or "")[:320]
+        key_characters = ", ".join(signals["characters"][:4]) if signals["characters"] else "sin personajes destacados"
+        conflict_matrix = (
+            f"Conflicto matriz estimado: {max(1, signals['conflict_hits'])} escenas con fricción dramática, "
+            f"{signals['action_hits']} con acción visible; personajes foco: {key_characters}."
+        )
         return {
             "project_id": project_id,
             "overall_diagnosis": overview,
             "syd_field": {
-                "act_structure": f"Estructura en tres actos inferida con {len(sequences)} secuencias relevantes.",
-                "plot_point_1": "Revisar disparador del Acto I al II y su impacto causal.",
-                "midpoint": "Verificar punto medio con giro claro de estrategia dramática.",
-                "plot_point_2": "Comprobar escalada previa al clímax con consecuencia irreversible.",
-                "resolution": "Ajustar resolución para cerrar premisa y arco principal.",
+                "act_structure": f"Con {len(scenes)} escenas y {len(sequences)} secuencias, el tramo actual encaja mejor como {act_stage}.",
+                "plot_point_1": f"Hipótesis: ubicar primer punto de giro al cerrar la primera secuencia útil ({seq_hint.split(',')[0] if seq_hint != 'n/a' else 'sin secuencia clara'}).",
+                "midpoint": f"Hipótesis: midpoint alrededor de la escena {max(1, len(scenes)//2)} con cambio de estrategia o riesgo.",
+                "plot_point_2": f"Hipótesis: segundo giro en la última secuencia analizada para empujar al clímax ({len(sequences)} secuencias).",
+                "resolution": "La resolución debe cerrar la pregunta dramática principal y costo del protagonista.",
                 "issues": [] if len(sequences) >= 2 else ["Posible baja segmentación estructural por secuencias."],
-                "recommendations": ["Reforzar hitos de estructura clásica por bloque secuencial."],
+                "recommendations": ["Definir objetivo y obstáculo por secuencia para clarificar progresión de actos."],
             },
             "comparato": {
-                "idea": "Validar claridad de idea matriz y su ejecución progresiva.",
-                "conflict_matrix": "Mapear conflicto central en niveles interpersonal, interno y contextual.",
-                "dramatic_action": "Alinear acciones visibles con el objetivo dramático de cada secuencia.",
-                "character_function": "Comprobar función dramática diferenciada por personaje clave.",
+                "idea": f"La idea matriz debe sostener {len(scenes)} escenas sin perder causalidad dramática.",
+                "conflict_matrix": conflict_matrix,
+                "dramatic_action": f"Acción dramática visible en {signals['action_hits']} escenas; reforzar decisión-consecuencia en cada bloque.",
+                "character_function": f"Funciones dramáticas detectables: {key_characters}.",
                 "issues": [] if scores["conflict_strength"] >= 45 else ["Conflicto podría ser insuficiente en desarrollo actual."],
-                "recommendations": ["Incrementar oposición activa en secuencias intermedias."],
+                "recommendations": ["Aumentar oposición activa en secuencias intermedias y elevar costo de decisión."],
             },
             "mckee": {
-                "scene_value_shifts": ["Evaluar cambios de valor neto al final de cada escena."],
+                "scene_value_shifts": [
+                    f"Escena 1->{min(2, len(scenes))}: pasar de expectativa a presión.",
+                    f"Bloque medio (escena {max(1, len(scenes)//2)}): giro de valor hacia riesgo/urgencia.",
+                ] if scenes else ["Sin escenas suficientes para inferir cambios de valor."],
                 "conflict_levels": ["interno", "interpersonal", "social"],
-                "crisis_climax_resolution": "Revisar progresión crisis->clímax->resolución sin atajos expositivos.",
-                "subtext_notes": ["Potenciar subtexto en confrontaciones clave.", theory_snippet] if theory_snippet else ["Potenciar subtexto en confrontaciones clave."],
+                "crisis_climax_resolution": f"Escalonar crisis->clímax->resolución sobre {len(sequences)} secuencias, evitando resolución abrupta.",
+                "subtext_notes": [
+                    "En confrontaciones clave, sustituir explicación explícita por intención contradictoria en diálogo y acción.",
+                    f"Priorizar subtexto en escenas con mayor fricción (detectadas: {signals['conflict_hits']}).",
+                ],
                 "issues": [] if scores["dramatic_clarity"] >= 50 else ["Clarity dramática mejorable en la articulación de beats."],
-                "recommendations": ["Ajustar ritmo entre revelaciones y decisiones de alto costo."],
+                "recommendations": ["Ajustar ritmo entre revelaciones y decisiones de alto costo en escenas puente."],
             },
             "scores": scores,
             "storyboard_actionables": storyboard_actionables,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -33,6 +34,7 @@ from schemas.cid_director_feedback_schema import (
     StoryboardRevisionPlan,
     StoryboardRevisionResult,
 )
+from core.config import get_settings
 from services.cinematic_intent_service import cinematic_intent_service
 from services.cinematography_prompt_reference_service import cinematography_prompt_reference_service
 from services.continuity_memory_service import continuity_memory_service
@@ -48,6 +50,9 @@ from services.script_intake_service import script_intake_service
 from services.semantic_prompt_validation_service import semantic_prompt_validation_service
 from services.storyboard_image_script_validation_service import storyboard_image_script_validation_service
 from services.storyboard_prompt_reference_service import storyboard_prompt_reference_service
+
+
+logger = logging.getLogger(__name__)
 
 
 class StoryboardGenerationMode:
@@ -347,6 +352,25 @@ class StoryboardService:
         sequence_id = self._canonical_sequence_id(sequences, sequence_id)
         sequence_ids = self._canonical_sequence_ids(sequences, sequence_ids or [])
 
+        settings = get_settings()
+        visual_bible_data: dict[str, Any] | None = None
+        if settings.visual_bible_storyboard_enrichment_enabled:
+            try:
+                from services.project_visual_bible_service import get_or_create_visual_bible
+                vb = await get_or_create_visual_bible(db, project_id, tenant)
+                if vb.is_active:
+                    visual_bible_data = {
+                        "id": vb.id,
+                        "active_preset_id": vb.active_preset_id,
+                        "custom_prompt_tags_json": vb.custom_prompt_tags_json or [],
+                        "selected_elements_json": vb.selected_elements_json or {},
+                        "prompt_mode": vb.prompt_mode or "tag_soup",
+                        "target_model": vb.target_model or "SDXL",
+                        "is_active": vb.is_active if vb.is_active is not None else True,
+                    }
+            except Exception:
+                logger.warning("Failed to load Visual Bible for enrichment", exc_info=True)
+
         if use_cinematic_intelligence and director_lens_id:
             try:
                 director_lens_service.get_profile(director_lens_id)
@@ -494,6 +518,29 @@ class StoryboardService:
                 )
                 for index, shot in enumerate(shot_payloads)
             ]
+            if visual_bible_data:
+                for shot in shot_payloads:
+                    base_prompt = (
+                        shot.get("positive_prompt")
+                        or shot.get("narrative_text")
+                        or shot.get("description")
+                        or ""
+                    )
+                    existing_meta = shot.get("metadata_json") or {}
+                    if isinstance(existing_meta, str):
+                        try:
+                            existing_meta = json.loads(existing_meta)
+                        except Exception:
+                            existing_meta = {}
+                    enriched, updated_meta = self._apply_visual_bible_enrichment_to_shot_prompt(
+                        base_prompt=base_prompt,
+                        existing_metadata=existing_meta,
+                        visual_bible_data=visual_bible_data,
+                        settings=settings,
+                    )
+                    shot["positive_prompt"] = enriched
+                    shot["narrative_text"] = enriched[:500]
+                    shot["metadata_json"] = updated_meta
             generated_scenes_payload.append(
                 {
                     "scene_number": scene_number,
@@ -2277,6 +2324,142 @@ class StoryboardService:
         else:
             parts.append("Revision de prompt preparada. Prompt original preservado en metadata.")
         return " ".join(parts)
+
+    def _apply_visual_bible_enrichment_to_shot_prompt(
+        self,
+        base_prompt: str,
+        existing_metadata: dict[str, Any],
+        visual_bible_data: dict[str, Any] | None,
+        settings: Any,
+    ) -> tuple[str, dict[str, Any]]:
+        if not settings.visual_bible_storyboard_enrichment_enabled:
+            enriched_meta = dict(existing_metadata)
+            enriched_meta.setdefault("visual_bible", {})
+            enriched_meta["visual_bible"].update({
+                "enabled": False,
+                "applied": False,
+                "reason": "feature_flag_disabled",
+                "base_prompt": base_prompt,
+                "warnings": [],
+            })
+            return base_prompt, enriched_meta
+
+        if not visual_bible_data:
+            enriched_meta = dict(existing_metadata)
+            enriched_meta.setdefault("visual_bible", {})
+            enriched_meta["visual_bible"].update({
+                "enabled": False,
+                "applied": False,
+                "reason": "no_visual_bible",
+                "base_prompt": base_prompt,
+                "warnings": [],
+            })
+            return base_prompt, enriched_meta
+
+        vb_id = visual_bible_data.get("id")
+        active_preset_id = visual_bible_data.get("active_preset_id")
+        custom_tags = visual_bible_data.get("custom_prompt_tags_json") or []
+        is_active = visual_bible_data.get("is_active", True)
+
+        if not is_active or not active_preset_id:
+            enriched_meta = dict(existing_metadata)
+            enriched_meta.setdefault("visual_bible", {})
+            enriched_meta["visual_bible"].update({
+                "enabled": True,
+                "applied": False,
+                "reason": "no_active_rules",
+                "visual_bible_id": vb_id,
+                "active_preset_id": active_preset_id,
+                "prompt_mode": visual_bible_data.get("prompt_mode"),
+                "target_model": visual_bible_data.get("target_model"),
+                "base_prompt": base_prompt,
+                "warnings": [],
+            })
+            return base_prompt, enriched_meta
+
+        from schemas.cinematic_taxonomy_schema import AppliedTag
+        from services.cinematic_taxonomy_service import (
+            CinematicTaxonomyError,
+            CinematicTaxonomyService,
+            PresetNotFoundError,
+        )
+
+        cts = CinematicTaxonomyService()
+        warnings: list[str] = []
+
+        try:
+            import copy
+            dedup_seen: set[str] = set()
+            base_lower = base_prompt.lower()
+            filtered_tags = [t for t in custom_tags if t.lower() not in base_lower and not (t.lower() in dedup_seen or dedup_seen.add(t.lower()))]
+
+            result = cts.enrich_prompt(
+                base_prompt=base_prompt,
+                preset_id=active_preset_id,
+                selected_tags=filtered_tags if filtered_tags else None,
+            )
+
+            enriched_prompt = result.enriched_prompt or base_prompt
+            negative = result.negative_prompt or ""
+
+            enriched_len = len(enriched_prompt)
+            if enriched_len > 350:
+                warnings.append(
+                    "enriched_prompt_length_exceeds_recommended_sdxl_attention_zone"
+                )
+
+            applied_tags = []
+            for tag in result.applied_tags or []:
+                if hasattr(tag, "model_dump"):
+                    applied_tags.append(tag.model_dump())
+                elif isinstance(tag, dict):
+                    applied_tags.append(tag)
+
+            enriched_meta = dict(existing_metadata)
+            enriched_meta.setdefault("visual_bible", {})
+            enriched_meta["visual_bible"].update({
+                "enabled": True,
+                "applied": True,
+                "visual_bible_id": vb_id,
+                "active_preset_id": active_preset_id,
+                "prompt_mode": visual_bible_data.get("prompt_mode"),
+                "target_model": visual_bible_data.get("target_model"),
+                "base_prompt": base_prompt,
+                "enriched_prompt": enriched_prompt,
+                "negative_prompt": negative,
+                "applied_tags": applied_tags,
+                "warnings": warnings + (result.warnings or []),
+            })
+
+            return enriched_prompt, enriched_meta
+
+        except (PresetNotFoundError, CinematicTaxonomyError) as exc:
+            logger.warning("Visual Bible enrichment failed: %s", exc)
+            enriched_meta = dict(existing_metadata)
+            enriched_meta.setdefault("visual_bible", {})
+            enriched_meta["visual_bible"].update({
+                "enabled": True,
+                "applied": False,
+                "reason": "enrichment_failed",
+                "visual_bible_id": vb_id,
+                "active_preset_id": active_preset_id,
+                "base_prompt": base_prompt,
+                "warnings": [f"enrichment_error: {exc}"],
+            })
+            return base_prompt, enriched_meta
+        except Exception as exc:
+            logger.warning("Unexpected Visual Bible enrichment error: %s", exc)
+            enriched_meta = dict(existing_metadata)
+            enriched_meta.setdefault("visual_bible", {})
+            enriched_meta["visual_bible"].update({
+                "enabled": True,
+                "applied": False,
+                "reason": "enrichment_failed",
+                "visual_bible_id": vb_id,
+                "base_prompt": base_prompt,
+                "warnings": [f"enrichment_error: {exc}"],
+            })
+            return base_prompt, enriched_meta
 
 
 storyboard_service = StoryboardService()

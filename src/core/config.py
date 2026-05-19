@@ -75,6 +75,7 @@ class Settings(BaseSettings):
     feature_admin: bool = True
     feature_experimental: bool = False
     feature_postproduction: bool = False
+    visual_bible_storyboard_enrichment_enabled: bool = False
     queue_persistence_mode: Literal["memory", "database"] = "database"
 
     # ── Demo ─────────────────────────────────────────────────────────────

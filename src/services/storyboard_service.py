@@ -812,7 +812,11 @@ class StoryboardService:
                 StoryboardSequenceBlock(
                     sequence_id=f"seq_{sequence_number:03d}",
                     sequence_number=sequence_number,
-                    title=f"Secuencia {sequence_number} — Escenas {min(included_scenes)}-{max(included_scenes)}" if included_scenes else title,
+                    title=(
+                        f"Secuencia {sequence_number} — Escenas {', '.join(str(n) for n in included_scenes)}"
+                        if included_scenes and len(included_scenes) <= 4
+                        else (f"Secuencia {sequence_number} — Escenas {min(included_scenes)}-{max(included_scenes)}" if included_scenes else title)
+                    ),
                     summary=summary,
                     included_scenes=included_scenes,
                     characters=characters,

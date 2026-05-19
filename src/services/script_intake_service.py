@@ -29,6 +29,67 @@ class ScriptIntakeService:
     }
     _LOCATION_KEYWORDS = ["casa", "oficina", "calle", "restaurante", "bar", "hotel", "hospital", "escuela", "aeropuerto"]
 
+    def _normalize_location(self, value: str | None) -> str:
+        raw = (value or "").lower()
+        raw = re.sub(r"[^a-z0-9áéíóúñ/\s]", " ", raw)
+        raw = re.sub(r"\s+", " ", raw).strip()
+        return raw
+
+    def _scene_markers(self, scene: dict[str, Any]) -> dict[str, Any]:
+        action_text = " ".join(scene.get("action_blocks", [])).lower()
+        objective = str(scene.get("dramatic_objective") or "").lower()
+        conflict_markers = [
+            marker
+            for marker in ("conflicto", "discute", "amenaza", "crisis", "negocia", "tension", "tensión")
+            if marker in action_text or marker in objective
+        ]
+        action_markers = [
+            marker
+            for marker in ("corre", "entra", "sale", "persigue", "escapa", "confronta", "golpea")
+            if marker in action_text
+        ]
+        temporal_marker = str(scene.get("time_of_day") or "").strip().lower() or "unspecified"
+        location_normalized = self._normalize_location(scene.get("location"))
+        return {
+            "location_normalized": location_normalized,
+            "dramatic_objective": str(scene.get("dramatic_objective") or "").strip() or "advance_story_information",
+            "conflict_markers": conflict_markers,
+            "action_markers": action_markers,
+            "temporal_marker": temporal_marker,
+            "characters_detected": list(scene.get("characters_detected") or []),
+        }
+
+    def _sequence_affinity(self, scene: dict[str, Any], sequence_scenes: list[dict[str, Any]]) -> int:
+        candidate = self._scene_markers(scene)
+        last = self._scene_markers(sequence_scenes[-1])
+        score = 0
+        candidate_number = self._coerce_scene_number(scene)
+        last_number = self._coerce_scene_number(sequence_scenes[-1])
+        if candidate["location_normalized"] and candidate["location_normalized"] == last["location_normalized"]:
+            score += 3
+        same_characters = set(candidate["characters_detected"]).intersection(last["characters_detected"])
+        if same_characters:
+            score += 2
+        if candidate["temporal_marker"] == last["temporal_marker"]:
+            score += 1
+        if candidate["dramatic_objective"].lower() == str(last["dramatic_objective"]).lower():
+            score += 3
+        if set(candidate["conflict_markers"]).intersection(last["conflict_markers"]):
+            score += 2
+        if set(candidate["action_markers"]).intersection(last["action_markers"]):
+            score += 1
+        if candidate_number and last_number and abs(candidate_number - last_number) == 1:
+            score += 2
+
+        objective_changed = bool(candidate["dramatic_objective"] and last["dramatic_objective"] and candidate["dramatic_objective"].lower() != str(last["dramatic_objective"]).lower())
+        if objective_changed and not same_characters:
+            score -= 4
+        if candidate["temporal_marker"] != last["temporal_marker"] and candidate["temporal_marker"] not in {"continuous", "continuo"}:
+            score -= 2
+        if objective_changed and not same_characters and not set(candidate["conflict_markers"]).intersection(last["conflict_markers"]):
+            score -= 2
+        return score
+
     def parse_script(self, script_text: str) -> list[dict[str, Any]]:
         if not script_text:
             return []
@@ -267,10 +328,29 @@ class ScriptIntakeService:
         if not scenes:
             return []
 
+        working_scenes = sorted(
+            list(scenes),
+            key=lambda s: self._coerce_scene_number(s),
+        )
+        groups: list[list[dict[str, Any]]] = []
+        for scene in working_scenes:
+            if not groups:
+                groups.append([scene])
+                continue
+            best_index = -1
+            best_score = -10
+            for idx, group in enumerate(groups):
+                affinity = self._sequence_affinity(scene, group)
+                if affinity > best_score:
+                    best_score = affinity
+                    best_index = idx
+            if best_index >= 0 and best_score >= 3:
+                groups[best_index].append(scene)
+            else:
+                groups.append([scene])
+
         sequence_blocks: list[dict[str, Any]] = []
-        block_size = 3
-        for index in range(0, len(scenes), block_size):
-            chunk = scenes[index:index + block_size]
+        for chunk in groups:
             sequence_number = len(sequence_blocks) + 1
             included_scene_numbers = [self._coerce_scene_number(scene) for scene in chunk]
             scene_start = min(included_scene_numbers) if included_scene_numbers else 0
@@ -292,10 +372,22 @@ class ScriptIntakeService:
                 for scene in chunk
             )[:220]
             sequence_id = f"seq_{sequence_number:03d}"
+            location_groups = sorted({self._normalize_location(scene.get("location")) for scene in chunk if self._normalize_location(scene.get("location"))})
+            continuity_groups = sorted({f"{self._normalize_location(scene.get('location'))}__{str(scene.get('time_of_day') or '').lower()}" for scene in chunk if self._normalize_location(scene.get("location"))})
+            conflict_summary = ", ".join(sorted({marker for scene in chunk for marker in self._scene_markers(scene)["conflict_markers"]}))
             for scene in chunk:
+                markers = self._scene_markers(scene)
                 scene["sequence_id"] = sequence_id
                 scene["sequence_order"] = sequence_number
                 scene["sequence_display_name"] = display_name
+                scene["location_normalized"] = markers["location_normalized"]
+                scene["dramatic_objective"] = markers["dramatic_objective"]
+                scene["conflict_markers"] = markers["conflict_markers"]
+                scene["action_markers"] = markers["action_markers"]
+                scene["temporal_marker"] = markers["temporal_marker"]
+                scene["location_group"] = markers["location_normalized"]
+                scene["continuity_group"] = f"{markers['location_normalized']}__{markers['temporal_marker']}"
+                scene["related_scene_numbers"] = [number for number in included_scene_numbers if number != self._coerce_scene_number(scene)]
             estimated_shots = max(1, sum(max(1, len(scene.get("action_blocks", [])[:3])) for scene in chunk))
             sequence_blocks.append(
                 {
@@ -311,6 +403,10 @@ class ScriptIntakeService:
                     "source_scene_end": scene_end,
                     "display_name": display_name,
                     "characters": characters,
+                    "location_groups": location_groups,
+                    "continuity_groups": continuity_groups,
+                    "dramatic_purpose": str(first_scene.get("dramatic_objective") or "advance_story_information"),
+                    "conflict_summary": conflict_summary,
                     "location": first_scene.get("location"),
                     "emotional_arc": self._sequence_arc(chunk),
                     "estimated_duration": len(chunk) * 60,

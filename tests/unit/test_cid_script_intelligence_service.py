@@ -193,3 +193,30 @@ async def test_different_sequences_produce_different_filtered_counts(monkeypatch
 
     assert "Escenas analizadas: 2" in result_a["overall_diagnosis"]
     assert "Escenas analizadas: 1" in result_b["overall_diagnosis"]
+
+
+@pytest.mark.asyncio
+async def test_script_intelligence_handles_nonconsecutive_scene_numbers_in_sequence(monkeypatch: pytest.MonkeyPatch) -> None:
+    project = SimpleNamespace(id="proj-1", organization_id="org-1", script_text="texto")
+    breakdown = SimpleNamespace(
+        breakdown_json='{"scenes": [{"scene_number": 59, "action_blocks": ["amenaza"]}, {"scene_number": 60, "action_blocks": ["calma"]}, {"scene_number": 62, "action_blocks": ["confronta"]}], "sequences": [{"sequence_id": "seq_001", "display_name": "Secuencia 1 — Parking/Coche — Escenas 59, 62", "scene_numbers": [59, 62]}, {"sequence_id": "seq_002", "scene_numbers": [60]}]}'
+    )
+    service = CIDScriptIntelligenceService()
+
+    async def fake_context(*, topics=None):
+        return {"summary": "", "sources": [], "fallback_used": True}
+
+    monkeypatch.setattr(
+        "services.cid_script_intelligence_service.cid_screenwriting_theory_service.fetch_theory_context",
+        fake_context,
+    )
+
+    result = await service.analyze_project(
+        _FakeDb(project, breakdown),
+        project_id="proj-1",
+        organization_id="org-1",
+        sequence_ids=["1"],
+    )
+    assert "Escenas analizadas: 2" in result["overall_diagnosis"]
+    assert "[59, 62]" in result["overall_diagnosis"]
+    assert "Parking/Coche" in result["overall_diagnosis"]

@@ -62,6 +62,10 @@ class ScriptSequenceMapEntry(BaseModel):
     scene_numbers: list[int] = Field(default_factory=list)
     scene_count: int = 0
     display_name: str | None = None
+    location_groups: list[str] = Field(default_factory=list)
+    continuity_groups: list[str] = Field(default_factory=list)
+    conflict_summary: str | None = None
+    causal_links: list[str] = Field(default_factory=list)
 
 
 class ScriptSequenceMap(BaseModel):

@@ -136,6 +136,12 @@ class ScriptSequenceMappingService:
         source_scene_end = max(scene_numbers) if scene_numbers else 0
         source_sequence_label = f"Secuencia {seq_number}"
         display_name = f"Secuencia {seq_number} — Escenas {source_scene_start}-{source_scene_end}"
+        location_groups = sorted({(s.location or "").strip().lower() for s in group if (s.location or "").strip()})
+        continuity_groups = sorted({f"{(s.location or '').strip().lower()}__{(s.time_of_day or '').strip().lower()}" for s in group if (s.location or '').strip()})
+        conflict_summary = ", ".join(sorted({(s.conflict or "").strip().lower() for s in group if (s.conflict or "").strip()}))
+        causal_links: list[str] = []
+        for idx in range(len(group) - 1):
+            causal_links.append(f"scene_{group[idx].scene_number}->scene_{group[idx + 1].scene_number}")
 
         raw_texts = [s.raw_text for s in group if s.raw_text]
         script_excerpt = "\n\n".join(raw_texts)
@@ -204,6 +210,10 @@ class ScriptSequenceMappingService:
             scene_numbers=scene_numbers,
             scene_count=len(scene_numbers),
             display_name=display_name,
+            location_groups=location_groups,
+            continuity_groups=continuity_groups,
+            conflict_summary=conflict_summary or None,
+            causal_links=causal_links,
         )
 
     def _continuity_group(self, group: list[ScriptScene]) -> str:

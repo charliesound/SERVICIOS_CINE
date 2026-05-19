@@ -24,4 +24,4 @@ def test_storyboard_sequence_display_name_uses_real_scene_range() -> None:
     assert len(seqs) == 1
     assert seqs[0].sequence_id == "seq_001"
     assert seqs[0].included_scenes == [59, 60, 61]
-    assert seqs[0].title == "Secuencia 1 — Escenas 59-61"
+    assert seqs[0].title == "Secuencia 1 — Escenas 59, 60, 61"

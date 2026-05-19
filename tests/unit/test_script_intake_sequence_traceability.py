@@ -33,3 +33,68 @@ def test_sequence_traceability_preserves_real_scene_numbers() -> None:
         assert scene["sequence_id"] == "seq_001"
         assert scene["sequence_order"] == 1
         assert scene["sequence_display_name"] == "Secuencia 1 — Escenas 59-61"
+
+
+def test_nonconsecutive_scenes_can_share_sequence_by_dramatic_continuity() -> None:
+    service = ScriptIntakeService()
+    scenes = [
+        {
+            "scene_number": 59,
+            "heading": "59 EXT. PARKING. DÍA.",
+            "location": "PARKING/COCHE",
+            "time_of_day": "DÍA",
+            "dramatic_objective": "capture_escape",
+            "action_blocks": ["amenaza y persecución"],
+            "characters_detected": ["ANA", "LUIS"],
+        },
+        {
+            "scene_number": 60,
+            "heading": "60 INT. HOTEL. DÍA.",
+            "location": "HABITACIÓN HOTEL",
+            "time_of_day": "DÍA",
+            "dramatic_objective": "cover_story",
+            "action_blocks": ["calma táctica"],
+            "characters_detected": ["MARTA"],
+        },
+        {
+            "scene_number": 62,
+            "heading": "62 EXT. PARKING. DÍA.",
+            "location": "PARKING/COCHE",
+            "time_of_day": "DÍA",
+            "dramatic_objective": "capture_escape",
+            "action_blocks": ["persigue y confronta"],
+            "characters_detected": ["ANA", "LUIS"],
+        },
+    ]
+
+    sequences = service.build_sequence_blocks(scenes)
+    assert len(sequences) >= 2
+    parking_sequence = next(seq for seq in sequences if 59 in seq["scene_numbers"])
+    assert 62 in parking_sequence["scene_numbers"]
+    assert parking_sequence["scene_numbers"] == [59, 62]
+
+
+def test_consecutive_scenes_split_when_objective_conflict_changes() -> None:
+    service = ScriptIntakeService()
+    scenes = [
+        {
+            "scene_number": 10,
+            "heading": "10 INT. OFICINA. NOCHE.",
+            "location": "OFICINA",
+            "time_of_day": "NOCHE",
+            "dramatic_objective": "negotiate_contract",
+            "action_blocks": ["negocia bajo tensión"],
+            "characters_detected": ["ANA", "PEDRO"],
+        },
+        {
+            "scene_number": 11,
+            "heading": "11 INT. OFICINA. NOCHE.",
+            "location": "OFICINA",
+            "time_of_day": "NOCHE",
+            "dramatic_objective": "hide_evidence",
+            "action_blocks": ["oculta pruebas en silencio"],
+            "characters_detected": ["MARTA"],
+        },
+    ]
+    sequences = service.build_sequence_blocks(scenes)
+    assert len(sequences) == 2

@@ -43,6 +43,7 @@ from services.cid_script_to_prompt_pipeline_service import (
 from services.cid_script_scene_parser_service import cid_script_scene_parser_service
 from services.script_sequence_mapping_service import script_sequence_mapping_service
 from services.storyboard_service import storyboard_service, StoryboardGenerationMode
+from services.storyboard_pdf_export_service import storyboard_pdf_export_service
 
 
 router = APIRouter(
@@ -519,6 +520,8 @@ async def export_sequence_storyboard_zip(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> Response:
+    import json
+    from datetime import datetime, timezone
     sequence, shots = await storyboard_service.get_sequence_storyboard(
         db,
         project_id=project_id,
@@ -536,20 +539,55 @@ async def export_sequence_storyboard_zip(
     import io
     import zipfile
     from pathlib import Path
+    
+    try:
+        project = await storyboard_service._get_project_for_tenant(
+            db,
+            project_id=project_id,
+            tenant=tenant,
+        )
+    except Exception:
+        project = None
+
+    sorted_shots = sorted(
+        list(shots),
+        key=lambda s: (
+            int(getattr(s, "sequence_order", 0) or 0),
+            int(getattr(s, "scene_number", 0) or 0),
+            str(getattr(s, "id", "")),
+        ),
+    )
 
     zip_buffer = io.BytesIO()
+    exported_at = datetime.now(timezone.utc).isoformat()
+    manifest_shots: list[dict[str, Any]] = []
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         added_filenames = set()
-        for shot in shots:
-            if not shot.asset_id:
+        for shot in sorted_shots:
+            if not getattr(shot, "asset_id", None):
+                manifest_shots.append(
+                    {
+                        "shot_id": str(getattr(shot, "id", "")),
+                        "sequence_order": int(getattr(shot, "sequence_order", 0) or 0),
+                        "scene_number": getattr(shot, "scene_number", None),
+                        "asset_id": None,
+                        "image_filename": None,
+                        "render_status": "no_asset",
+                        "validation_score": None,
+                        "style_preset": str(getattr(shot, "visual_mode", "") or ""),
+                        "prompt_brief": str(getattr(shot, "narrative_text", "") or "")[:180],
+                        "sequence_id": str(getattr(shot, "sequence_id", sequence_id) or sequence_id),
+                        "file_path": None,
+                    }
+                )
                 continue
 
             try:
                 payload = await presentation_service.get_asset_preview_payload(
                     db,
                     project_id=project_id,
-                    asset_id=shot.asset_id,
+                    asset_id=getattr(shot, "asset_id", None),
                     tenant=tenant,
                 )
             except Exception:
@@ -564,6 +602,21 @@ async def export_sequence_storyboard_zip(
 
             file_path = Path(file_path_str)
             if not file_path.is_file():
+                manifest_shots.append(
+                    {
+                        "shot_id": str(getattr(shot, "id", "")),
+                        "sequence_order": int(getattr(shot, "sequence_order", 0) or 0),
+                        "scene_number": getattr(shot, "scene_number", None),
+                        "asset_id": str(getattr(shot, "asset_id", "")),
+                        "image_filename": None,
+                        "render_status": "missing_file",
+                        "validation_score": None,
+                        "style_preset": str(getattr(shot, "visual_mode", "") or ""),
+                        "prompt_brief": str(getattr(shot, "narrative_text", "") or "")[:180],
+                        "sequence_id": str(getattr(shot, "sequence_id", sequence_id) or sequence_id),
+                        "file_path": None,
+                    }
+                )
                 continue
 
             file_bytes = file_path.read_bytes()
@@ -581,12 +634,75 @@ async def export_sequence_storyboard_zip(
 
             added_filenames.add(zip_filename)
             zip_file.writestr(zip_filename, file_bytes)
+            metadata = getattr(shot, "metadata_json", None)
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except Exception:
+                    metadata = {}
+            if not isinstance(metadata, dict):
+                metadata = {}
+            validation_score = metadata.get("validation_score")
+            if validation_score is None and isinstance(metadata.get("validation_result"), dict):
+                validation_score = metadata.get("validation_result", {}).get("overall_match_score")
+            manifest_shots.append(
+                {
+                    "shot_id": str(getattr(shot, "id", "")),
+                    "sequence_order": int(getattr(shot, "sequence_order", 0) or 0),
+                    "scene_number": getattr(shot, "scene_number", None),
+                    "asset_id": str(getattr(shot, "asset_id", "")),
+                    "image_filename": zip_filename,
+                    "render_status": "completed",
+                    "validation_score": validation_score,
+                    "style_preset": str(getattr(shot, "visual_mode", None) or metadata.get("normalized_style_preset") or ""),
+                    "prompt_brief": str(getattr(shot, "narrative_text", "") or "")[:180],
+                    "sequence_id": str(getattr(shot, "sequence_id", sequence_id) or sequence_id),
+                    "file_path": str(file_path),
+                }
+            )
 
     if not added_filenames:
         raise HTTPException(
             status_code=404,
             detail="No physical render assets found to export for this sequence."
         )
+
+    manifest_shots = sorted(
+        manifest_shots,
+        key=lambda item: (
+            int(item.get("sequence_order") or 0),
+            int(item.get("scene_number") or 0),
+            str(item.get("shot_id") or ""),
+        ),
+    )
+
+    manifest_payload = storyboard_pdf_export_service.build_manifest(
+        project_id=project_id,
+        sequence_id=str(sequence.get("sequence_id") or sequence_id),
+        exported_at=exported_at,
+        shots=[
+            {
+                key: value
+                for key, value in item.items()
+                if key != "file_path"
+            }
+            for item in manifest_shots
+        ],
+    )
+
+    pdf_bytes = storyboard_pdf_export_service.render_contact_sheet_pdf(
+        project_name=str(getattr(project, "name", "Project")),
+        sequence_id=str(sequence.get("sequence_id") or sequence_id),
+        exported_at=exported_at,
+        shots=manifest_shots,
+    )
+
+    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr(
+            "storyboard_manifest.json",
+            json.dumps(manifest_payload, ensure_ascii=False, indent=2, default=str),
+        )
+        zip_file.writestr("storyboard_contact_sheet.pdf", pdf_bytes)
 
     zip_buffer.seek(0)
     zip_bytes = zip_buffer.getvalue()

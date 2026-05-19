@@ -79,6 +79,7 @@ export default function StoryboardBuilderPage() {
   const [isPlanning, setIsPlanning] = useState(false)
   const [activeTab, setActiveTab] = useState<'analyze' | 'sequences' | 'shots'>('analyze')
   const [regenerationProgress, setRegenerationProgress] = useState<ActionProgressState | null>(null)
+  const [cinematicViewMode, setCinematicViewMode] = useState<'filmstrip' | 'contact_sheet'>('filmstrip')
 
   const fetchSequences = useCallback(async () => {
     if (!projectId) return
@@ -121,6 +122,24 @@ export default function StoryboardBuilderPage() {
     }
     return shots
   }, [shots, selectedMode, selectedSequenceId])
+
+  const orderedCinematicShots = useMemo(() => {
+    const safe = [...filteredShots]
+    safe.sort((a, b) => {
+      const sequenceA = (a.sequence_id || '').toLowerCase()
+      const sequenceB = (b.sequence_id || '').toLowerCase()
+      if (sequenceA < sequenceB) return -1
+      if (sequenceA > sequenceB) return 1
+      const orderA = Number(a.sequence_order || 0)
+      const orderB = Number(b.sequence_order || 0)
+      if (orderA !== orderB) return orderA - orderB
+      const sceneA = Number(a.scene_number || 0)
+      const sceneB = Number(b.scene_number || 0)
+      if (sceneA !== sceneB) return sceneA - sceneB
+      return a.id.localeCompare(b.id)
+    })
+    return safe
+  }, [filteredShots])
 
   const handleAnalyzeFullScript = async () => {
     if (!projectId) return
@@ -812,66 +831,142 @@ export default function StoryboardBuilderPage() {
                 <p className="text-gray-400 mb-6">Selecciona una secuencia y genera su storyboard.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredShots.map((shot) => (
-                  <div key={shot.id} className="space-y-1">
-                    <ShotCard shot={shot} onUpdate={handleUpdateShot} onDelete={handleDeleteShot}
-                      onOpenPicker={handleOpenPicker} isSaving={isSaving} />
-                    <div className="flex gap-1">
-                      <button onClick={() => setExpandedFeedback(expandedFeedback === shot.id ? null : shot.id)}
-                        className="flex items-center gap-1.5 flex-1 px-3 py-1.5 text-xs text-cyan-400/70 hover:text-cyan-300 bg-dark-300/40 border border-white/5 rounded-lg transition-colors">
-                        <MessageSquare className="w-3 h-3" />
-                        {expandedFeedback === shot.id ? 'Cerrar notas' : 'Notas del director'}
+              <div className="space-y-6">
+                <section className="card bg-dark-200/80 border border-white/5 p-4">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <h3 className="text-white font-semibold">Storyboard cinematográfico</h3>
+                    <div className="flex gap-2 text-xs">
+                      <button
+                        onClick={() => setCinematicViewMode('filmstrip')}
+                        className={`px-3 py-1.5 rounded-lg border ${cinematicViewMode === 'filmstrip' ? 'border-amber-400 text-amber-300 bg-amber-500/10' : 'border-white/10 text-slate-300 bg-white/5'}`}
+                      >
+                        Filmstrip horizontal
                       </button>
-                      {shot.metadata_json && (
-                        <button onClick={() => setExpandedMetadata(expandedMetadata === shot.id ? null : shot.id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-400/70 hover:text-amber-300 bg-dark-300/40 border border-white/5 rounded-lg transition-colors">
-                          <Eye className="w-3 h-3" />
-                          {expandedMetadata === shot.id ? 'Ocultar' : 'Metadatos'}
+                      <button
+                        onClick={() => setCinematicViewMode('contact_sheet')}
+                        className={`px-3 py-1.5 rounded-lg border ${cinematicViewMode === 'contact_sheet' ? 'border-amber-400 text-amber-300 bg-amber-500/10' : 'border-white/10 text-slate-300 bg-white/5'}`}
+                      >
+                        Contact sheet grid
+                      </button>
+                    </div>
+                  </div>
+
+                  {cinematicViewMode === 'filmstrip' ? (
+                    <div className="overflow-x-auto">
+                      <div className="flex gap-3 min-w-max pb-2">
+                        {orderedCinematicShots.map((shot) => {
+                          const metadata = (shot.metadata_json || {}) as Record<string, unknown>
+                          const validationScore = metadata.validation_score ?? (metadata.validation_result as Record<string, unknown> | undefined)?.overall_match_score
+                          return (
+                            <div key={`filmstrip-${shot.id}`} className="w-56 rounded-lg border border-white/10 bg-dark-300/60 overflow-hidden">
+                              <div className="aspect-video bg-black/30">
+                                {shot.thumbnail_url ? (
+                                  <img src={shot.thumbnail_url} alt={shot.asset_file_name || `shot-${shot.sequence_order}`} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">Sin miniatura</div>
+                                )}
+                              </div>
+                              <div className="p-2 space-y-1 text-xs text-slate-300">
+                                <p><span className="text-slate-500">Secuencia:</span> {shot.sequence_id || 'n/a'}</p>
+                                <p><span className="text-slate-500">Escena:</span> {shot.scene_number ?? 'n/a'}</p>
+                                <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
+                                <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
+                                <p><span className="text-slate-500">Validación:</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {orderedCinematicShots.map((shot) => {
+                        const metadata = (shot.metadata_json || {}) as Record<string, unknown>
+                        const validationScore = metadata.validation_score ?? (metadata.validation_result as Record<string, unknown> | undefined)?.overall_match_score
+                        return (
+                          <div key={`grid-${shot.id}`} className="rounded-lg border border-white/10 bg-dark-300/60 overflow-hidden">
+                            <div className="aspect-video bg-black/30">
+                              {shot.thumbnail_url ? (
+                                <img src={shot.thumbnail_url} alt={shot.asset_file_name || `shot-${shot.sequence_order}`} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">Sin miniatura</div>
+                              )}
+                            </div>
+                            <div className="p-2 space-y-1 text-xs text-slate-300">
+                              <p><span className="text-slate-500">Secuencia:</span> {shot.sequence_id || 'n/a'}</p>
+                              <p><span className="text-slate-500">Escena:</span> {shot.scene_number ?? 'n/a'}</p>
+                              <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
+                              <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
+                              <p><span className="text-slate-500">Validación:</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </section>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredShots.map((shot) => (
+                    <div key={shot.id} className="space-y-1">
+                      <ShotCard shot={shot} onUpdate={handleUpdateShot} onDelete={handleDeleteShot}
+                        onOpenPicker={handleOpenPicker} isSaving={isSaving} />
+                      <div className="flex gap-1">
+                        <button onClick={() => setExpandedFeedback(expandedFeedback === shot.id ? null : shot.id)}
+                          className="flex items-center gap-1.5 flex-1 px-3 py-1.5 text-xs text-cyan-400/70 hover:text-cyan-300 bg-dark-300/40 border border-white/5 rounded-lg transition-colors">
+                          <MessageSquare className="w-3 h-3" />
+                          {expandedFeedback === shot.id ? 'Cerrar notas' : 'Notas del director'}
                         </button>
+                        {shot.metadata_json && (
+                          <button onClick={() => setExpandedMetadata(expandedMetadata === shot.id ? null : shot.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-400/70 hover:text-amber-300 bg-dark-300/40 border border-white/5 rounded-lg transition-colors">
+                            <Eye className="w-3 h-3" />
+                            {expandedMetadata === shot.id ? 'Ocultar' : 'Metadatos'}
+                          </button>
+                        )}
+                      </div>
+                      {expandedFeedback === shot.id && projectId && (
+                        <DirectorFeedbackPanel shot={shot} projectId={projectId} />
+                      )}
+                      {expandedMetadata === shot.id && (
+                        <div className="p-3 bg-dark-300/60 border border-amber-500/20 rounded-lg text-xs text-slate-300 space-y-1.5 max-h-64 overflow-y-auto">
+                          {(() => {
+                            const meta = shot.metadata_json as CinematicShotMetadata
+                            return (
+                              <>
+                                {meta.source_scope && <p><span className="text-amber-400">Scope:</span> {meta.source_scope}</p>}
+                                {meta.sequence_title && <p><span className="text-amber-400">Secuencia:</span> {meta.sequence_title}</p>}
+                                {meta.shot_plan_reason && <p><span className="text-amber-400">Razón:</span> {meta.shot_plan_reason}</p>}
+                                {meta.director_lens_id && <p><span className="text-amber-400">Lente:</span> {meta.director_lens_id}</p>}
+                                {meta.cinematic_intent_id && <p><span className="text-amber-400">Intent ID:</span> {meta.cinematic_intent_id}</p>}
+                                {meta.shot_editorial_purpose && (
+                                  <>
+                                    <p><span className="text-amber-400">Propósito:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).purpose || '')}</p>
+                                    <p><span className="text-amber-400">Corte:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).cut_reason || '')}</p>
+                                  </>
+                                )}
+                                {meta.montage_intent && (
+                                  <p><span className="text-amber-400">Montaje:</span> {String((meta.montage_intent as Record<string, unknown>).editorial_function || '')}</p>
+                                )}
+                                {meta.directorial_intent && (
+                                  <p><span className="text-amber-400">Dirección:</span> {String((meta.directorial_intent as Record<string, unknown>).mise_en_scene || '').substring(0, 120)}</p>
+                                )}
+                                {meta.validation && (
+                                  <p className={Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'text-green-400' : 'text-red-400'}>
+                                    Validación: {Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'Válido' : 'Inválido'} (score: {String((meta.validation as Record<string, unknown>).score)})
+                                  </p>
+                                )}
+                                {meta.script_visual_alignment && (
+                                  <p><span className="text-cyan-400">Alignment:</span> {String((meta.script_visual_alignment as Record<string, unknown>).alignment_score || '')}</p>
+                                )}
+                              </>
+                            )
+                          })()}
+                        </div>
                       )}
                     </div>
-                    {expandedFeedback === shot.id && projectId && (
-                      <DirectorFeedbackPanel shot={shot} projectId={projectId} />
-                    )}
-                    {expandedMetadata === shot.id && (
-                      <div className="p-3 bg-dark-300/60 border border-amber-500/20 rounded-lg text-xs text-slate-300 space-y-1.5 max-h-64 overflow-y-auto">
-                        {(() => {
-                          const meta = shot.metadata_json as CinematicShotMetadata
-                          return (
-                            <>
-                              {meta.source_scope && <p><span className="text-amber-400">Scope:</span> {meta.source_scope}</p>}
-                              {meta.sequence_title && <p><span className="text-amber-400">Secuencia:</span> {meta.sequence_title}</p>}
-                              {meta.shot_plan_reason && <p><span className="text-amber-400">Razón:</span> {meta.shot_plan_reason}</p>}
-                              {meta.director_lens_id && <p><span className="text-amber-400">Lente:</span> {meta.director_lens_id}</p>}
-                              {meta.cinematic_intent_id && <p><span className="text-amber-400">Intent ID:</span> {meta.cinematic_intent_id}</p>}
-                              {meta.shot_editorial_purpose && (
-                                <>
-                                  <p><span className="text-amber-400">Propósito:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).purpose || '')}</p>
-                                  <p><span className="text-amber-400">Corte:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).cut_reason || '')}</p>
-                                </>
-                              )}
-                              {meta.montage_intent && (
-                                <p><span className="text-amber-400">Montaje:</span> {String((meta.montage_intent as Record<string, unknown>).editorial_function || '')}</p>
-                              )}
-                              {meta.directorial_intent && (
-                                <p><span className="text-amber-400">Dirección:</span> {String((meta.directorial_intent as Record<string, unknown>).mise_en_scene || '').substring(0, 120)}</p>
-                              )}
-                              {meta.validation && (
-                                <p className={Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'text-green-400' : 'text-red-400'}>
-                                  Validación: {Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'Válido' : 'Inválido'} (score: {String((meta.validation as Record<string, unknown>).score)})
-                                </p>
-                              )}
-                              {meta.script_visual_alignment && (
-                                <p><span className="text-cyan-400">Alignment:</span> {String((meta.script_visual_alignment as Record<string, unknown>).alignment_score || '')}</p>
-                              )}
-                            </>
-                          )
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </>

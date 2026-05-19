@@ -95,3 +95,6 @@ AGENTS.md
 
 # Runtime generated render outputs
 /data/output/
+
+# Local screenwriting theory PDFs
+/data/theory/

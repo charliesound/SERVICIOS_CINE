@@ -1,8 +1,10 @@
 import api from './client'
 import type {
   FullScriptAnalysisResult,
+  ScriptUploadResult,
   SequenceStoryboardPlan,
   ShotFeedbackRequest,
+  StoryboardCreditEstimate,
   StoryboardRevisionResult,
   StoryboardShot,
   StoryboardShotListResponse,
@@ -167,6 +169,20 @@ export const storyboardApi = {
     const { data } = await api.get(`/projects/${projectId}/storyboard/sequences/${sequenceId}/export/zip`, {
       responseType: 'blob',
     })
+    return data
+  },
+
+  uploadProjectScript: async (projectId: string, file: File): Promise<ScriptUploadResult> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const { data } = await api.post<ScriptUploadResult>(`/projects/${projectId}/script/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data
+  },
+
+  estimateStoryboardCredits: async (projectId: string, payload: Record<string, unknown> = {}): Promise<StoryboardCreditEstimate> => {
+    const { data } = await api.post<StoryboardCreditEstimate>(`/projects/${projectId}/storyboard/estimate-credits`, payload)
     return data
   },
 }

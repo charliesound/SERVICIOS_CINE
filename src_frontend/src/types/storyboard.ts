@@ -356,3 +356,22 @@ export interface ShotFeedbackRequest {
   created_by_role: 'director' | 'producer' | 'cinematographer' | 'operator'
   preserve_original_logic: boolean
 }
+
+export interface ScriptUploadResult {
+  file_name: string
+  format: string
+  word_count: number
+  character_count: number
+  warnings: string[]
+  ready_for_analysis: boolean
+}
+
+export interface StoryboardCreditEstimate {
+  estimated_scenes: number
+  base_shots: number
+  coverage_shots: number
+  total_images: number
+  total_credits: number
+  warnings: string[]
+  notes: string[]
+}

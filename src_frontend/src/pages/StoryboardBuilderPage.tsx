@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check } from 'lucide-react'
+import { Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check, Upload, X } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import { ShotCard } from '@/components/storyboard/ShotCard'
 import { AssetPickerModal } from '@/components/storyboard/AssetPickerModal'
@@ -12,7 +12,9 @@ import type {
   DirtyShot,
   FullScriptAnalysisResult,
   ScriptSequenceMapEntry,
+  ScriptUploadResult,
   SequenceStoryboardPlan,
+  StoryboardCreditEstimate,
   StoryboardGeneratePayload,
   StoryboardSelectionMode,
   StoryboardSequence,
@@ -81,6 +83,16 @@ export default function StoryboardBuilderPage() {
   const [regenerationProgress, setRegenerationProgress] = useState<ActionProgressState | null>(null)
   const [cinematicViewMode, setCinematicViewMode] = useState<'filmstrip' | 'contact_sheet'>('filmstrip')
 
+  const scriptFileInputRef = useRef<HTMLInputElement | null>(null)
+  const [selectedScriptFile, setSelectedScriptFile] = useState<File | null>(null)
+  const [isUploadingScript, setIsUploadingScript] = useState(false)
+  const [scriptUploadResult, setScriptUploadResult] = useState<ScriptUploadResult | null>(null)
+  const [scriptUploadError, setScriptUploadError] = useState<string | null>(null)
+  const [creditEstimate, setCreditEstimate] = useState<StoryboardCreditEstimate | null>(null)
+  const [isEstimatingCredits, setIsEstimatingCredits] = useState(false)
+  const [showCreditModal, setShowCreditModal] = useState(false)
+  const [pendingGenerateAction, setPendingGenerateAction] = useState<(() => Promise<void>) | null>(null)
+
   const fetchSequences = useCallback(async () => {
     if (!projectId) return
     try {
@@ -140,6 +152,69 @@ export default function StoryboardBuilderPage() {
     })
     return safe
   }, [filteredShots])
+
+  const handleScriptFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null
+    if (!file) return
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'doc') {
+      setScriptUploadError('Formato .doc no soportado. Usa .docx (Word moderno).')
+      setSelectedScriptFile(null)
+      event.target.value = ''
+      return
+    }
+    setScriptUploadError(null)
+    setScriptUploadResult(null)
+    setSelectedScriptFile(file)
+  }
+
+  const handleUploadScript = async () => {
+    if (!projectId || !selectedScriptFile) return
+    setIsUploadingScript(true)
+    setScriptUploadError(null)
+    setScriptUploadResult(null)
+    try {
+      const result = await storyboardApi.uploadProjectScript(projectId, selectedScriptFile)
+      setScriptUploadResult(result)
+    } catch (err: any) {
+      setScriptUploadError(err?.response?.data?.detail || err?.message || 'Error al subir el guion')
+    } finally {
+      setIsUploadingScript(false)
+    }
+  }
+
+  const handleGenerateWithEstimate = async (generateFn: () => Promise<void>) => {
+    if (!projectId) return
+    setError(null)
+    setIsEstimatingCredits(true)
+    try {
+      const estimate = await storyboardApi.estimateStoryboardCredits(projectId, {})
+      setCreditEstimate(estimate)
+      setPendingGenerateAction(() => generateFn)
+      setShowCreditModal(true)
+    } catch (err: any) {
+      // If estimation endpoint is unavailable, proceed directly
+      console.warn('Credit estimation unavailable, proceeding directly:', err)
+      await generateFn()
+    } finally {
+      setIsEstimatingCredits(false)
+    }
+  }
+
+  const handleConfirmGenerate = async () => {
+    setShowCreditModal(false)
+    setCreditEstimate(null)
+    if (pendingGenerateAction) {
+      await pendingGenerateAction()
+      setPendingGenerateAction(null)
+    }
+  }
+
+  const handleCancelGenerate = () => {
+    setShowCreditModal(false)
+    setCreditEstimate(null)
+    setPendingGenerateAction(null)
+  }
 
   const handleAnalyzeFullScript = async () => {
     if (!projectId) return
@@ -448,6 +523,83 @@ export default function StoryboardBuilderPage() {
         {/* TAB 1: Analyze Full Script */}
         {activeTab === 'analyze' && (
           <div className="space-y-6">
+            {/* Script Upload Section */}
+            <section className="card bg-dark-200/80 border border-white/5 p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-white">Subir guion</h2>
+              <p className="text-sm text-slate-400">
+                Sube un archivo de guion en formato PDF, DOCX, TXT o MD.
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  ref={scriptFileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.txt,.md"
+                  onChange={handleScriptFileSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => scriptFileInputRef.current?.click()}
+                  disabled={isUploadingScript}
+                  className="flex items-center gap-2 px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors disabled:opacity-40"
+                >
+                  <Upload className="w-4 h-4" />
+                  {isUploadingScript ? 'Subiendo...' : 'Seleccionar archivo'}
+                </button>
+                {selectedScriptFile && (
+                  <span className="text-sm text-slate-300 truncate max-w-[300px]">{selectedScriptFile.name}</span>
+                )}
+              </div>
+              {selectedScriptFile && !scriptUploadResult && (
+                <button onClick={handleUploadScript} disabled={isUploadingScript}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40 text-sm">
+                  {isUploadingScript ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {isUploadingScript ? 'Subiendo guion...' : 'Subir guion'}
+                </button>
+              )}
+              {scriptUploadResult && (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+                    <Check className="w-4 h-4" />
+                    Guion subido correctamente
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-slate-500">Formato</p>
+                      <p className="text-white font-medium">{scriptUploadResult.format}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Palabras</p>
+                      <p className="text-white font-medium">{scriptUploadResult.word_count.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Caracteres</p>
+                      <p className="text-white font-medium">{scriptUploadResult.character_count.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Listo para análisis</p>
+                      <p className={scriptUploadResult.ready_for_analysis ? 'text-emerald-400 font-medium' : 'text-amber-400 font-medium'}>
+                        {scriptUploadResult.ready_for_analysis ? 'Sí' : 'No'}
+                      </p>
+                    </div>
+                  </div>
+                  {scriptUploadResult.warnings.length > 0 && (
+                    <div className="flex items-start gap-2 text-xs text-amber-300/80 bg-amber-500/5 rounded-lg p-2">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <ul className="list-disc list-inside">
+                        {scriptUploadResult.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+              {scriptUploadError && (
+                <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  {scriptUploadError}
+                </div>
+              )}
+            </section>
+
             <section className="card bg-dark-200/80 border border-white/5 p-6 space-y-4">
               <h2 className="text-lg font-semibold text-white">Análisis del guion completo</h2>
               <p className="text-sm text-slate-400">
@@ -572,11 +724,11 @@ export default function StoryboardBuilderPage() {
                       ))}
                     </div>
                     <div className="flex gap-3">
-                      <button onClick={() => selectedSequenceEntry && handleGenerateSequence(selectedSequenceEntry.sequence_id)}
-                        disabled={isGenerating}
+                      <button onClick={() => selectedSequenceEntry && handleGenerateWithEstimate(() => handleGenerateSequence(selectedSequenceEntry.sequence_id!))}
+                        disabled={isGenerating || isEstimatingCredits}
                         className="flex items-center gap-2 px-6 py-3 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40">
-                        {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                        {isGenerating ? 'Generando storyboard...' : 'Generar storyboard de esta secuencia'}
+                        {isGenerating || isEstimatingCredits ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                        {isGenerating ? 'Generando storyboard...' : isEstimatingCredits ? 'Estimando créditos...' : 'Generar storyboard de esta secuencia'}
                       </button>
                     </div>
                   </section>
@@ -704,10 +856,10 @@ export default function StoryboardBuilderPage() {
                           {isPlanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
                           {isPlanning ? 'Planificando...' : 'Planificar storyboard'}
                         </button>
-                        <button onClick={() => handleGenerateSequence(selectedSeq.sequence_id)} disabled={isGenerating}
+                        <button onClick={() => handleGenerateWithEstimate(() => handleGenerateSequence(selectedSeq.sequence_id))} disabled={isGenerating || isEstimatingCredits}
                           className="flex items-center gap-2 px-6 py-3 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40">
-                          {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                          {isGenerating ? 'Generando storyboard...' : 'Generar storyboard de esta secuencia'}
+                          {isGenerating || isEstimatingCredits ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                          {isGenerating ? 'Generando storyboard...' : isEstimatingCredits ? 'Estimando créditos...' : 'Generar storyboard de esta secuencia'}
                         </button>
                         <button onClick={() => handleGenerate(true)} disabled={isGenerating}
                           className="flex items-center gap-2 px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white font-medium hover:bg-white/20 transition-all disabled:opacity-40">
@@ -761,11 +913,11 @@ export default function StoryboardBuilderPage() {
                       ))}
                     </div>
                     <div className="flex gap-3">
-                      <button onClick={() => selectedSequenceId && handleGenerateSequence(selectedSequenceId)}
-                        disabled={isGenerating}
+                      <button onClick={() => selectedSequenceId && handleGenerateWithEstimate(() => handleGenerateSequence(selectedSequenceId))}
+                        disabled={isGenerating || isEstimatingCredits}
                         className="flex items-center gap-2 px-6 py-3 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40">
-                        {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                        {isGenerating ? 'Generando storyboard...' : 'Generar storyboard de esta secuencia'}
+                        {isGenerating || isEstimatingCredits ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                        {isGenerating ? 'Generando storyboard...' : isEstimatingCredits ? 'Estimando créditos...' : 'Generar storyboard de esta secuencia'}
                       </button>
                     </div>
                   </section>
@@ -978,6 +1130,70 @@ export default function StoryboardBuilderPage() {
         {error && (
           <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
+          </div>
+        )}
+
+        {/* Credit Estimation Modal */}
+        {showCreditModal && creditEstimate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="w-full max-w-lg mx-4 rounded-2xl border border-white/10 bg-dark-200 p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">Estimación de créditos</h3>
+                <button onClick={handleCancelGenerate} className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-white/5 p-3">
+                  <p className="text-xs text-slate-400">Escenas estimadas</p>
+                  <p className="text-xl font-bold text-white">{creditEstimate.estimated_scenes}</p>
+                </div>
+                <div className="rounded-xl bg-white/5 p-3">
+                  <p className="text-xs text-slate-400">Planos base</p>
+                  <p className="text-xl font-bold text-white">{creditEstimate.base_shots}</p>
+                </div>
+                <div className="rounded-xl bg-white/5 p-3">
+                  <p className="text-xs text-slate-400">Planos cobertura</p>
+                  <p className="text-xl font-bold text-white">{creditEstimate.coverage_shots}</p>
+                </div>
+                <div className="rounded-xl bg-white/5 p-3">
+                  <p className="text-xs text-slate-400">Total imágenes</p>
+                  <p className="text-xl font-bold text-amber-400">{creditEstimate.total_images}</p>
+                </div>
+              </div>
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-amber-300">Créditos total</p>
+                  <p className="text-2xl font-bold text-amber-400">{creditEstimate.total_credits}</p>
+                </div>
+              </div>
+              {creditEstimate.warnings.length > 0 && (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
+                  <p className="text-xs font-medium text-amber-400">Advertencias</p>
+                  {creditEstimate.warnings.map((w, i) => (
+                    <p key={i} className="text-xs text-amber-300/70">{w}</p>
+                  ))}
+                </div>
+              )}
+              {creditEstimate.notes.length > 0 && (
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-1">
+                  <p className="text-xs font-medium text-slate-400">Notas</p>
+                  {creditEstimate.notes.map((n, i) => (
+                    <p key={i} className="text-xs text-slate-300">{n}</p>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-3 pt-2">
+                <button onClick={handleCancelGenerate}
+                  className="flex-1 px-4 py-2.5 border border-white/10 text-slate-300 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium">
+                  Cancelar
+                </button>
+                <button onClick={handleConfirmGenerate}
+                  className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-medium transition-colors text-sm">
+                  Confirmar generación
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

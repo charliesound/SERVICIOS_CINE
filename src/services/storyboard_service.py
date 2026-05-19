@@ -685,6 +685,14 @@ class StoryboardService:
                     shot_id=request["shot_id"],
                     scene_number=request["scene_number"],
                 )
+                shot_metadata = request.get("shot_payload", {}).get("metadata_json") or {}
+                if isinstance(shot_metadata, str):
+                    try:
+                        shot_metadata = json.loads(shot_metadata)
+                    except Exception:
+                        shot_metadata = {}
+                vb_meta = shot_metadata.get("visual_bible", {}) if isinstance(shot_metadata, dict) else {}
+
                 response, queue_item = await render_job_service.submit_job(
                     tenant=tenant,
                     task_type="still",
@@ -701,6 +709,10 @@ class StoryboardService:
                         "scene_number": request["scene_number"],
                         "shot_type": request["shot_type"],
                         "prompt_summary": request["prompt_summary"],
+                        "visual_bible_enabled": vb_meta.get("enabled", False),
+                        "visual_bible_applied": vb_meta.get("applied", False),
+                        "visual_bible_id": vb_meta.get("visual_bible_id"),
+                        "visual_bible_preset": vb_meta.get("active_preset_id"),
                     },
                 )
                 if response.status.value == "queued" and queue_item is not None:

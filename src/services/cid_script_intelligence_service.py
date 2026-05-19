@@ -250,10 +250,14 @@ class CIDScriptIntelligenceService:
                     "Confirma que el mapa de secuencias del proyecto incluya escenas para esa secuencia.",
                 ]
             else:
+                lead_character = signals["characters"][0] if signals["characters"] else "protagonista"
                 storyboard_actionables = [
                     f"Priorizar objetivo dramático explícito en aperturas de secuencia ({len(scoped_sequences)} secuencias).",
                     f"Diseñar escalada visual de conflicto en al menos {max(1, signals['conflict_hits'])} escenas clave.",
                     f"Ajustar ritmo con beats de acción visibles ({signals['action_hits']} escenas con acción detectada).",
+                    f"Añadir plano de reacción de {lead_character} tras el beat de mayor tensión.",
+                    "Insert legible del objeto o documento que dispara el conflicto principal.",
+                    "Plano de mirada fuera de campo antes del corte de transición para sostener continuidad emocional.",
                 ]
 
         key_characters = ", ".join(signals["characters"][:4]) if signals["characters"] else "sin personajes destacados"

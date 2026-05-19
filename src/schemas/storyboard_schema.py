@@ -32,6 +32,7 @@ class StoryboardGenerateRequest(BaseModel):
     director_lens_id: Optional[str] = None
     montage_profile_id: Optional[str] = None
     use_cinematic_intelligence: bool = False
+    include_coverage_shots: bool = True
     use_montage_intelligence: bool = False
     validate_prompts: bool = False
 

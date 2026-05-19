@@ -118,6 +118,7 @@ async def generate_storyboard(
         director_lens_id=payload.director_lens_id,
         montage_profile_id=payload.montage_profile_id,
         use_cinematic_intelligence=payload.use_cinematic_intelligence,
+        include_coverage_shots=payload.include_coverage_shots,
         use_montage_intelligence=payload.use_montage_intelligence,
         validate_prompts=payload.validate_prompts,
     )
@@ -186,6 +187,7 @@ async def generate_sequence_storyboard(
         director_lens_id=payload.director_lens_id,
         montage_profile_id=payload.montage_profile_id,
         use_cinematic_intelligence=payload.use_cinematic_intelligence,
+        include_coverage_shots=payload.include_coverage_shots,
         use_montage_intelligence=payload.use_montage_intelligence,
         validate_prompts=payload.validate_prompts,
     )
@@ -324,6 +326,7 @@ async def regenerate_storyboard_sequence(
         style_preset=payload.style_preset,
         shots_per_scene=max(1, min(payload.shots_per_scene, 8)),
         overwrite=True,
+        include_coverage_shots=payload.include_coverage_shots,
     )
     return StoryboardGenerationAuditResponse(
         job_id=result["job_id"],

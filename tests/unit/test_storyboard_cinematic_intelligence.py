@@ -278,6 +278,7 @@ class TestStoryboardGenerateRequestSchema:
         assert req.director_lens_id is None
         assert req.montage_profile_id is None
         assert req.use_cinematic_intelligence is False
+        assert req.include_coverage_shots is True
         assert req.use_montage_intelligence is False
         assert req.validate_prompts is False
 
@@ -288,14 +289,94 @@ class TestStoryboardGenerateRequestSchema:
             director_lens_id="adaptive_auteur_fusion",
             montage_profile_id="adaptive_montage",
             use_cinematic_intelligence=True,
+            include_coverage_shots=False,
             use_montage_intelligence=True,
             validate_prompts=True,
         )
         assert req.director_lens_id == "adaptive_auteur_fusion"
         assert req.montage_profile_id == "adaptive_montage"
         assert req.use_cinematic_intelligence is True
+        assert req.include_coverage_shots is False
         assert req.use_montage_intelligence is True
         assert req.validate_prompts is True
+
+
+class TestCoveragePlan:
+    def test_dialogue_scene_generates_reaction_and_look_coverage(self) -> None:
+        service = StoryboardService()
+        shots = service.build_cinematic_coverage_plan(
+            scene=SAMPLE_SCENE,
+            sequence_context=None,
+            style_preset="hand_drawn_storyboard",
+        )
+        roles = {shot.get("metadata_json", {}).get("shot_role") for shot in shots}
+        assert "reaction" in roles
+        assert "look" in roles
+
+    def test_object_scene_generates_insert_shot(self) -> None:
+        service = StoryboardService()
+        scene = dict(SAMPLE_SCENE)
+        scene["action_blocks"] = ["Abre la carpeta y muestra el documento firmado."]
+        shots = service.build_cinematic_coverage_plan(
+            scene=scene,
+            sequence_context=None,
+            style_preset="hand_drawn_storyboard",
+        )
+        roles = {shot.get("metadata_json", {}).get("shot_role") for shot in shots}
+        assert "insert" in roles
+
+    def test_transition_scene_generates_transition_shot(self) -> None:
+        service = StoryboardService()
+        scene = {
+            "scene_number": 4,
+            "heading": "INT. PASILLO - DÍA",
+            "location": "PASILLO",
+            "action_blocks": ["Entra corriendo y sale hacia la puerta."],
+        }
+        shots = service.build_cinematic_coverage_plan(
+            scene=scene,
+            sequence_context=None,
+            style_preset="hand_drawn_storyboard",
+        )
+        roles = {shot.get("metadata_json", {}).get("shot_role") for shot in shots}
+        assert "transition" in roles
+
+    def test_every_coverage_shot_has_narrative_reason(self) -> None:
+        service = StoryboardService()
+        shots = service.build_cinematic_coverage_plan(
+            scene=SAMPLE_SCENE,
+            sequence_context=None,
+            style_preset="hand_drawn_storyboard",
+        )
+        assert shots
+        for shot in shots:
+            meta = shot.get("metadata_json") or {}
+            assert meta.get("narrative_reason")
+            assert meta.get("is_coverage_shot") is True
+            assert meta.get("shot_role")
+
+    def test_prompts_keep_hand_drawn_non_photoreal_language(self) -> None:
+        service = StoryboardService()
+        shots = service.build_cinematic_coverage_plan(
+            scene=SAMPLE_SCENE,
+            sequence_context=None,
+            style_preset="hand_drawn_storyboard",
+        )
+        assert shots
+        for shot in shots:
+            positive = str(shot.get("positive_prompt") or "").lower()
+            negative = str(shot.get("negative_prompt") or "").lower()
+            assert "hand-drawn" in positive or "monochrome" in positive
+            assert "photograph" in negative or "realistic skin" in negative
+
+    def test_no_generic_coverage_when_scene_has_no_narrative_signal(self) -> None:
+        service = StoryboardService()
+        shots = service.build_cinematic_coverage_plan(
+            scene={"scene_number": 8, "heading": "INT. VACIO"},
+            sequence_context=None,
+            style_preset="hand_drawn_storyboard",
+        )
+        assert shots == []
 
 
 class TestStoryboardShotMetadata:

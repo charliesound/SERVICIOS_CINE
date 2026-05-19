@@ -335,6 +335,7 @@ class StoryboardService:
         director_lens_id: Optional[str] = None,
         montage_profile_id: Optional[str] = None,
         use_cinematic_intelligence: bool = False,
+        include_coverage_shots: bool = False,
         use_montage_intelligence: bool = False,
         validate_prompts: bool = False,
         visual_reference_profile_id: str | None = None,
@@ -475,6 +476,14 @@ class StoryboardService:
                     if llm_shot_bundle and llm_shot_bundle.shots
                     else self._build_scene_shots(scene, shots_per_scene=shots_per_scene, style_preset=style_preset)
                 )
+            if include_coverage_shots:
+                coverage_payloads = self.build_cinematic_coverage_plan(
+                    scene=scene,
+                    sequence_context=sequence_for_scene,
+                    style_preset=style_preset,
+                )
+                if coverage_payloads:
+                    shot_payloads = shot_payloads + coverage_payloads
             shot_payloads = [
                 self._enrich_storyboard_shot_payload(
                     scene=scene,
@@ -1058,6 +1067,144 @@ class StoryboardService:
             )
         return shots
 
+    def build_cinematic_coverage_plan(
+        self,
+        *,
+        scene: dict[str, Any],
+        sequence_context: Optional[StoryboardSequenceBlock],
+        style_preset: str,
+    ) -> list[dict[str, Any]]:
+        action_text = " ".join(str(x) for x in (scene.get("action_blocks") or []))
+        dialogue_lines = self._dialogue_lines(scene)
+        characters = self._normalize_text_list(list(scene.get("characters_detected") or []) + list(scene.get("characters") or []))
+        main_character = characters[0] if characters else "subject"
+        heading = str(scene.get("heading") or "ESCENA")
+        scene_number = self._scene_number(scene)
+        location = str(scene.get("location") or "")
+        lower_action = action_text.lower()
+
+        candidates: list[dict[str, Any]] = []
+
+        if dialogue_lines or "discute" in lower_action or "confront" in lower_action or len(characters) >= 2:
+            candidates.append(
+                {
+                    "shot_role": "reaction",
+                    "coverage_type": "reaction",
+                    "narrative_reason": "Mostrar la respuesta emocional inmediata tras una línea de diálogo o confrontación.",
+                    "related_scene_number": scene_number,
+                    "related_character": main_character,
+                    "visual_subject": f"reaction shot of {main_character}",
+                    "camera_suggestion": "close-up reaction shot",
+                    "lens_suggestion": "85mm portrait",
+                    "prompt_addon": f"reaction shot, close-up, subtle emotional shift on {main_character}",
+                    "priority": "high",
+                }
+            )
+            candidates.append(
+                {
+                    "shot_role": "look",
+                    "coverage_type": "look",
+                    "narrative_reason": "Registrar mirada sostenida o fuera de campo para sostener tensión dramática.",
+                    "related_scene_number": scene_number,
+                    "related_character": main_character,
+                    "visual_subject": f"eye-line look from {main_character}",
+                    "camera_suggestion": "over-shoulder look shot",
+                    "lens_suggestion": "50mm prime",
+                    "prompt_addon": "look shot, eye-line tension, silence beat",
+                    "priority": "medium",
+                }
+            )
+
+        object_terms = ("documento", "nota", "llave", "arma", "telefono", "teléfono", "vaso", "puerta", "carpeta")
+        matched_object = next((term for term in object_terms if term in lower_action), None)
+        if matched_object:
+            candidates.append(
+                {
+                    "shot_role": "insert",
+                    "coverage_type": "insert",
+                    "narrative_reason": "El objeto activa o modifica el conflicto; requiere legibilidad narrativa.",
+                    "related_scene_number": scene_number,
+                    "related_character": main_character,
+                    "visual_subject": f"insert of {matched_object}",
+                    "camera_suggestion": "insert detail shot",
+                    "lens_suggestion": "100mm macro",
+                    "prompt_addon": f"insert shot, detail of {matched_object}, storyboard prop emphasis",
+                    "priority": "high",
+                }
+            )
+
+        movement_terms = ("entra", "sale", "camina", "corre", "persigue", "sube", "baja")
+        has_movement = any(term in lower_action for term in movement_terms)
+        if has_movement:
+            candidates.append(
+                {
+                    "shot_role": "transition",
+                    "coverage_type": "transition",
+                    "narrative_reason": "Conectar desplazamiento espacial para continuidad causal entre bloques.",
+                    "related_scene_number": scene_number,
+                    "related_character": main_character,
+                    "visual_subject": f"transition through {location or heading}",
+                    "camera_suggestion": "tracking transition shot",
+                    "lens_suggestion": "35mm wide",
+                    "prompt_addon": "transition shot, movement continuity, cinematic bridge",
+                    "priority": "medium",
+                }
+            )
+
+        if "decide" in lower_action or "duda" in lower_action or "silencio" in lower_action:
+            candidates.append(
+                {
+                    "shot_role": "silence",
+                    "coverage_type": "silence",
+                    "narrative_reason": "Subrayar pausa visual antes o después de decisión emocional.",
+                    "related_scene_number": scene_number,
+                    "related_character": main_character,
+                    "visual_subject": f"silent beat on {main_character}",
+                    "camera_suggestion": "locked close-up",
+                    "lens_suggestion": "65mm",
+                    "prompt_addon": "silent emotional beat, no dialogue, held frame",
+                    "priority": "medium",
+                }
+            )
+
+        # Keep coverage bounded: simple scenes max 1, dialogue/tension scenes up to 3.
+        has_strong_signal = bool(dialogue_lines or matched_object or "tension" in lower_action or "amenaza" in lower_action)
+        limit = 3 if has_strong_signal else 1
+        selected = candidates[:limit]
+
+        payloads: list[dict[str, Any]] = []
+        for idx, item in enumerate(selected, start=1):
+            role = item["shot_role"]
+            shot_type = "CU" if role in {"reaction", "detail", "insert", "silence", "look"} else "MS"
+            payloads.append(
+                {
+                    "shot_number": idx,
+                    "shot_type": shot_type,
+                    "description": f"{item['visual_subject']} ({style_preset})",
+                    "narrative_text": item["visual_subject"],
+                    "positive_prompt": f"{item['prompt_addon']}, hand-drawn storyboard, monochrome, no color",
+                    "negative_prompt": self._build_enriched_negative_prompt("photograph, realistic skin, cinematic still, glossy"),
+                    "lens": item.get("lens_suggestion"),
+                    "metadata_json": {
+                        "shot_role": role,
+                        "coverage_type": item["coverage_type"],
+                        "narrative_reason": item["narrative_reason"],
+                        "related_scene_number": item["related_scene_number"],
+                        "related_character": item["related_character"],
+                        "visual_subject": item["visual_subject"],
+                        "camera_suggestion": item["camera_suggestion"],
+                        "lens_suggestion": item.get("lens_suggestion"),
+                        "priority": item["priority"],
+                        "source_sequence_id": sequence_context.sequence_id if sequence_context else None,
+                        "source_sequence_display_name": sequence_context.title if sequence_context else None,
+                        "is_coverage_shot": True,
+                    },
+                    "shot_plan_reason": item["narrative_reason"],
+                    "script_excerpt_used": self._scene_script_excerpt(scene),
+                }
+            )
+        return payloads
+
     def _normalize_text_list(self, values: list[Any]) -> list[str]:
         cleaned: list[str] = []
         seen: set[str] = set()
@@ -1139,6 +1286,8 @@ class StoryboardService:
                 metadata_payload = {}
         elif not isinstance(metadata_payload, dict):
             metadata_payload = {}
+        metadata_payload["is_coverage_shot"] = bool(metadata_payload.get("is_coverage_shot", False))
+        metadata_payload["shot_role"] = str(metadata_payload.get("shot_role") or "master")
 
         script_scene = self._scene_dict_to_script_scene(scene)
         continuity_anchors = continuity_memory_service.build_continuity_anchors(script_scene)
@@ -1264,6 +1413,8 @@ class StoryboardService:
         metadata_payload["visual_continuity"]["continuity_phrase"] = continuity_phrase
         metadata_payload["visual_continuity"]["anchors"] = visual_elements
         metadata_payload["shot_order"] = shot_order
+        metadata_payload["sequence_display_name"] = sequence_for_scene.title if sequence_for_scene else None
+        metadata_payload["source_scene_number"] = self._scene_number(scene)
         metadata_payload["cinematography_reference_sources"] = cinematography_sources
         metadata_payload["shot_type"] = shot_guidance["shot_type"]
         metadata_payload["framing"] = shot_guidance["framing"]

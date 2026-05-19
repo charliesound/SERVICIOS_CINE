@@ -289,6 +289,10 @@ def _register_routers(app: FastAPI, settings) -> None:
     app.include_router(script_intelligence_router, tags=["script-intelligence"])
     app.include_router(cinematic_taxonomy_router, tags=["cinematic-taxonomy"])
 
+    from routes.project_visual_bible_routes import router as project_visual_bible_router
+
+    app.include_router(project_visual_bible_router, tags=["project-visual-bible"])
+
     # ── ComfySearch / Solutions / Dubbing / App Registry ─────────────────
     from routes.comfysearch_routes import router as comfysearch_router
     from routes.solutions_routes import router as solutions_router

@@ -77,6 +77,7 @@ from models.crm import (
     TASK_STATUS,
     TASK_PRIORITIES,
 )
+from models.project_visual_bible import ProjectVisualBible
 from models.change_governance import (
     ProjectChangeRequest,
     ProjectApproval,
@@ -158,6 +159,7 @@ __all__ = [
     "ScriptVersion",
     "ScriptChangeReport",
     "ProjectModuleStatus",
+    "ProjectVisualBible",
     "ProjectMember",
     "PROFESSIONAL_ROLES",
     "PROJECT_PERMISSIONS",

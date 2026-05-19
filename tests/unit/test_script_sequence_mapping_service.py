@@ -47,6 +47,11 @@ La acción continúa con tensión y persecución.
 DÍAS DESPUÉS, presentan resultados y cambia el objetivo.
 """
 
+THREE_SCENE_FRAGMENT = """59 EXT/INT. PARKING/COCHE. DÍA.
+60 INT. PASILLO HOTEL. DÍA.
+61 INT. HABITACIÓN HOTEL. DÍA.
+"""
+
 
 def _parse_scenes():
     _, scenes, _ = cid_script_scene_parser_service.parse_script(SCRIPT_TEXT)
@@ -124,3 +129,21 @@ def test_sequence_entry_has_optional_narrative_metadata() -> None:
     assert entry.sequence_title is not None
     assert entry.dramatic_purpose is not None
     assert entry.continuity_group is not None
+
+
+def test_parser_detects_three_numbered_slugline_scenes_with_ext_int_and_slashes() -> None:
+    _sequences, scenes, warnings = cid_script_scene_parser_service.parse_script(THREE_SCENE_FRAGMENT)
+    assert not warnings or "regex_scene_detection_failed_using_fallback" not in warnings
+    assert len(scenes) == 3
+    numbers = [scene.scene_number for scene in scenes]
+    assert numbers == [59, 60, 61]
+
+
+def test_sequence_mapping_never_loses_detected_scenes_for_three_scene_fragment() -> None:
+    _sequences, scenes, _warnings = cid_script_scene_parser_service.parse_script(THREE_SCENE_FRAGMENT)
+    result = script_sequence_mapping_service.build_sequence_map(scenes, THREE_SCENE_FRAGMENT)
+    assert len(scenes) == 3
+    merged = "\n".join(entry.script_excerpt for entry in result.sequences).upper()
+    assert "59 EXT/INT" in merged
+    assert "60 INT." in merged
+    assert "61 INT." in merged

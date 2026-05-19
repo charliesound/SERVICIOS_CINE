@@ -9,7 +9,7 @@ from services.script_intake_service import script_intake_service
 
 
 SCENE_HEADING_RE = re.compile(
-    r"^\s*(?:(?P<number>\d{1,4})[\.:\)-]?\s+)?(?P<int_ext>INT\.?/EXT\.?|EXT\.?/INT\.?|INT\.?|EXT\.?|INTERIOR|EXTERIOR)\s+(?P<body>.+?)\s*$",
+    r"^\s*(?:(?P<number>\d{1,4})\s*[\.:\)-]?\s+)?(?P<int_ext>INT\.?\s*/\s*EXT\.?|EXT\.?\s*/\s*INT\.?|INT\.?|EXT\.?|INTERIOR|EXTERIOR)\s+(?P<body>.+?)\s*$",
     re.IGNORECASE,
 )
 CHARACTER_CUE_RE = re.compile(r"^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\.'\-]{1,40}$")
@@ -25,6 +25,7 @@ TIME_OF_DAY_CUES = [
     "CONTINUOUS",
     "NOCHE",
     "DIA",
+    "DÍA",
     "MANANA",
     "MAÑANA",
     "TARDE",

@@ -63,6 +63,18 @@ class CIDScriptSceneParserService:
     but this first implementation stays pure and DB-free.
     """
 
+    STRONG_TRANSITION_MARKERS = (
+        "CORTE A",
+        "FUNDIDO",
+        "MONTAJE",
+        "DÍAS DESPUÉS",
+        "DIAS DESPUES",
+        "SEMANAS DESPUÉS",
+        "SEMANAS DESPUES",
+        "MESES DESPUÉS",
+        "MESES DESPUES",
+    )
+
     def parse_script(self, script_text: str) -> tuple[list[ScriptSequence], list[ScriptScene], list[str]]:
         warnings: list[str] = []
         normalized_text = (script_text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
@@ -350,9 +362,25 @@ class CIDScriptSceneParserService:
 
     def _build_sequences(self, scenes: list[ScriptScene]) -> list[ScriptSequence]:
         sequences: list[ScriptSequence] = []
-        chunk_size = 3
-        for index in range(0, len(scenes), chunk_size):
-            chunk = scenes[index:index + chunk_size]
+        groups: list[list[ScriptScene]] = []
+        current: list[ScriptScene] = []
+        previous: ScriptScene | None = None
+
+        for scene in scenes:
+            if not current:
+                current = [scene]
+                previous = scene
+                continue
+            if self._starts_new_sequence(previous, scene, current):
+                groups.append(current)
+                current = [scene]
+            else:
+                current.append(scene)
+            previous = scene
+        if current:
+            groups.append(current)
+
+        for chunk in groups:
             first = chunk[0]
             sequence_number = len(sequences) + 1
             sequences.append(
@@ -368,6 +396,31 @@ class CIDScriptSceneParserService:
                 )
             )
         return sequences
+
+    def _starts_new_sequence(
+        self,
+        previous: ScriptScene | None,
+        current: ScriptScene,
+        current_group: list[ScriptScene],
+    ) -> bool:
+        if previous is None:
+            return False
+        if len(current_group) >= 5:
+            return True
+        heading = (current.heading or "").upper()
+        raw = (current.raw_text or "").upper()
+        if any(marker in heading or marker in raw for marker in self.STRONG_TRANSITION_MARKERS):
+            return True
+        prev_loc = (previous.location or "").strip().lower()
+        curr_loc = (current.location or "").strip().lower()
+        prev_goal = (previous.dramatic_objective or "").strip().lower()
+        curr_goal = (current.dramatic_objective or "").strip().lower()
+        prev_time = (previous.time_of_day or "").strip().lower()
+        curr_time = (current.time_of_day or "").strip().lower()
+        location_changed = bool(prev_loc and curr_loc and prev_loc != curr_loc)
+        objective_changed = bool(prev_goal and curr_goal and prev_goal != curr_goal)
+        time_jump = bool(prev_time and curr_time and prev_time != curr_time and curr_time not in {"continuous", "continuo"})
+        return (location_changed and objective_changed) or (time_jump and objective_changed)
 
     def _build_sequence_arc(self, scenes: list[ScriptScene]) -> str:
         tones = [scene.emotional_tone for scene in scenes if scene.emotional_tone]

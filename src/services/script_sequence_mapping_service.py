@@ -25,6 +25,18 @@ DRAMATIC_FUNCTION_KEY_MOMENTS: set[str] = {
 
 class ScriptSequenceMappingService:
     SEQUENCE_CHUNK_SIZE = 3
+    MAX_SEQUENCE_SCENES = 5
+    STRONG_TRANSITION_MARKERS = (
+        "CORTE A",
+        "FUNDIDO",
+        "MONTAJE",
+        "DÍAS DESPUÉS",
+        "DIAS DESPUES",
+        "SEMANAS DESPUÉS",
+        "SEMANAS DESPUES",
+        "MESES DESPUÉS",
+        "MESES DESPUES",
+    )
 
     def build_sequence_map(
         self,
@@ -52,10 +64,64 @@ class ScriptSequenceMappingService:
     def _group_into_sequences(
         self, scenes: list[ScriptScene]
     ) -> list[list[ScriptScene]]:
-        return [
-            scenes[i : i + self.SEQUENCE_CHUNK_SIZE]
-            for i in range(0, len(scenes), self.SEQUENCE_CHUNK_SIZE)
-        ]
+        if not scenes:
+            return []
+        groups: list[list[ScriptScene]] = []
+        current: list[ScriptScene] = []
+        prev: ScriptScene | None = None
+        for scene in scenes:
+            if not current:
+                current = [scene]
+                prev = scene
+                continue
+            if self._starts_new_sequence(prev, scene, current):
+                groups.append(current)
+                current = [scene]
+            else:
+                current.append(scene)
+            prev = scene
+        if current:
+            groups.append(current)
+        return groups
+
+    def _starts_new_sequence(
+        self,
+        previous: ScriptScene | None,
+        current: ScriptScene,
+        current_group: list[ScriptScene],
+    ) -> bool:
+        if previous is None:
+            return False
+        if len(current_group) >= self.MAX_SEQUENCE_SCENES:
+            return True
+
+        heading = (current.heading or "").upper()
+        raw = (current.raw_text or "").upper()
+        if any(marker in heading or marker in raw for marker in self.STRONG_TRANSITION_MARKERS):
+            return True
+
+        prev_loc = (previous.location or "").strip().lower()
+        curr_loc = (current.location or "").strip().lower()
+        prev_time = (previous.time_of_day or "").strip().lower()
+        curr_time = (current.time_of_day or "").strip().lower()
+
+        location_changed = bool(prev_loc and curr_loc and prev_loc != curr_loc)
+        time_jump = bool(prev_time and curr_time and prev_time != curr_time and curr_time not in {"continuous", "continuo"})
+
+        prev_goal = (previous.dramatic_objective or "").strip().lower()
+        curr_goal = (current.dramatic_objective or "").strip().lower()
+        objective_changed = bool(prev_goal and curr_goal and prev_goal != curr_goal)
+
+        prev_tone = (previous.emotional_tone or "").strip().lower()
+        curr_tone = (current.emotional_tone or "").strip().lower()
+        tone_changed = bool(prev_tone and curr_tone and prev_tone != curr_tone)
+
+        strong_narrative_break = (location_changed and objective_changed) or (time_jump and objective_changed)
+        if strong_narrative_break:
+            return True
+        if location_changed and tone_changed and len(current_group) >= 2:
+            return True
+        return False
 
     def _build_entry(
         self,
@@ -124,7 +190,16 @@ class ScriptSequenceMappingService:
             recommended_for_storyboard=recommended,
             suggested_shot_count=suggested_shot_count,
             technical_notes=technical_notes,
+            sequence_title=title,
+            dramatic_purpose=dramatic_function,
+            continuity_group=self._continuity_group(group),
         )
+
+    def _continuity_group(self, group: list[ScriptScene]) -> str:
+        first = group[0]
+        loc = (first.location or "unknown").strip().lower().replace(" ", "_")
+        tod = (first.time_of_day or "any").strip().lower().replace(" ", "_")
+        return f"{loc}__{tod}"
 
     def _infer_dramatic_function(
         self,

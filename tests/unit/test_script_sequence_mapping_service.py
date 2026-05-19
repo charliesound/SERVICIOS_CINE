@@ -31,6 +31,22 @@ Discuten los cortes.
 Reunión final.
 El director aprueba el montaje."""
 
+MULTI_BLOCK_SCRIPT = """1 INT. OFICINA - NOCHE
+Equipo revisa evidencias y define plan inicial.
+
+2 INT. OFICINA - NOCHE
+La discusión sigue sobre el mismo objetivo inmediato.
+
+3 EXT. ALMACEN - MADRUGADA
+CORTE A: operativo en nueva localización con riesgo alto.
+
+4 EXT. ALMACEN - MADRUGADA
+La acción continúa con tensión y persecución.
+
+5 INT. TRIBUNAL - DIA
+DÍAS DESPUÉS, presentan resultados y cambia el objetivo.
+"""
+
 
 def _parse_scenes():
     _, scenes, _ = cid_script_scene_parser_service.parse_script(SCRIPT_TEXT)
@@ -76,3 +92,35 @@ def test_empty_scenes_returns_empty_map() -> None:
     result = script_sequence_mapping_service.build_sequence_map([])
     assert isinstance(result, ScriptSequenceMap)
     assert len(result.sequences) == 0
+
+
+def test_multi_block_script_generates_multiple_sequences() -> None:
+    _, scenes, _ = cid_script_scene_parser_service.parse_script(MULTI_BLOCK_SCRIPT)
+    result = script_sequence_mapping_service.build_sequence_map(scenes, MULTI_BLOCK_SCRIPT)
+    assert len(result.sequences) >= 3
+
+
+def test_consecutive_coherent_scenes_are_grouped_together() -> None:
+    _, scenes, _ = cid_script_scene_parser_service.parse_script(MULTI_BLOCK_SCRIPT)
+    result = script_sequence_mapping_service.build_sequence_map(scenes, MULTI_BLOCK_SCRIPT)
+    first = result.sequences[0]
+    excerpt = first.script_excerpt.upper()
+    assert "REVISA EVIDENCIAS" in excerpt
+    assert "DISCUSIÓN SIGUE" in excerpt or "DISCUSION SIGUE" in excerpt
+
+
+def test_strong_narrative_transition_creates_new_sequence() -> None:
+    _, scenes, _ = cid_script_scene_parser_service.parse_script(MULTI_BLOCK_SCRIPT)
+    result = script_sequence_mapping_service.build_sequence_map(scenes, MULTI_BLOCK_SCRIPT)
+    excerpts = [entry.script_excerpt.upper() for entry in result.sequences]
+    assert any("CORTE A" in excerpt for excerpt in excerpts)
+    assert any("DÍAS DESPUÉS" in excerpt or "DIAS DESPUES" in excerpt for excerpt in excerpts)
+
+
+def test_sequence_entry_has_optional_narrative_metadata() -> None:
+    _, scenes, _ = cid_script_scene_parser_service.parse_script(MULTI_BLOCK_SCRIPT)
+    result = script_sequence_mapping_service.build_sequence_map(scenes, MULTI_BLOCK_SCRIPT)
+    entry = result.sequences[0]
+    assert entry.sequence_title is not None
+    assert entry.dramatic_purpose is not None
+    assert entry.continuity_group is not None

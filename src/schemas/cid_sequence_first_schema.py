@@ -53,6 +53,9 @@ class ScriptSequenceMapEntry(BaseModel):
     recommended_for_storyboard: bool = False
     suggested_shot_count: int = 0
     technical_notes: list[str] = Field(default_factory=list)
+    sequence_title: str | None = None
+    dramatic_purpose: str | None = None
+    continuity_group: str | None = None
 
 
 class ScriptSequenceMap(BaseModel):

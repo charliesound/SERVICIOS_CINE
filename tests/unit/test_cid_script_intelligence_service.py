@@ -159,6 +159,31 @@ async def test_nonexistent_sequence_returns_zero_analysis_scope(monkeypatch: pyt
 
 
 @pytest.mark.asyncio
+async def test_existing_sequence_map_does_not_fallback_to_global_for_seq02_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    project = SimpleNamespace(id="proj-1", organization_id="org-1", script_text="Escenas")
+    breakdown = SimpleNamespace(
+        breakdown_json='{"scenes": [{"scene_number": 41}, {"scene_number": 42}, {"scene_number": 59}], "sequences": [{"sequence_id": "seq_001", "scene_numbers": [41, 42, 59]}]}'
+    )
+    service = CIDScriptIntelligenceService()
+
+    async def fake_context(*, topics=None):
+        return {"summary": "", "sources": [], "fallback_used": True}
+
+    monkeypatch.setattr(
+        "services.cid_script_intelligence_service.cid_screenwriting_theory_service.fetch_theory_context",
+        fake_context,
+    )
+
+    result = await service.analyze_project(
+        _FakeDb(project, breakdown),
+        project_id="proj-1",
+        organization_id="org-1",
+        sequence_ids=["seq_02"],
+    )
+    assert "Escenas analizadas: 0" in result["overall_diagnosis"]
+
+
+@pytest.mark.asyncio
 async def test_different_sequences_produce_different_filtered_counts(monkeypatch: pytest.MonkeyPatch) -> None:
     async def fake_context(*, topics=None):
         return {"summary": "", "sources": [], "fallback_used": True}

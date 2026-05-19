@@ -67,6 +67,8 @@ class ScriptIntakeService:
         last_number = self._coerce_scene_number(sequence_scenes[-1])
         if candidate["location_normalized"] and candidate["location_normalized"] == last["location_normalized"]:
             score += 3
+        elif candidate["location_normalized"] and last["location_normalized"] and candidate["location_normalized"] != last["location_normalized"]:
+            score -= 2
         same_characters = set(candidate["characters_detected"]).intersection(last["characters_detected"])
         if same_characters:
             score += 2
@@ -89,6 +91,34 @@ class ScriptIntakeService:
         if objective_changed and not same_characters and not set(candidate["conflict_markers"]).intersection(last["conflict_markers"]):
             score -= 2
         return score
+
+    def _has_strong_location_break(self, scene: dict[str, Any], sequence_scenes: list[dict[str, Any]]) -> bool:
+        candidate = self._scene_markers(scene)
+        last = self._scene_markers(sequence_scenes[-1])
+        if not candidate["location_normalized"] or not last["location_normalized"]:
+            return False
+        if candidate["location_normalized"] == last["location_normalized"]:
+            return False
+        if candidate["temporal_marker"] != last["temporal_marker"]:
+            return True
+        # Hard cinematic cut between restaurant and parking-like chase blocks.
+        pair = {candidate["location_normalized"], last["location_normalized"]}
+        if any("restaurante" in loc for loc in pair) and any("parking" in loc or "coche" in loc for loc in pair):
+            return True
+        return False
+
+    def _format_sequence_display_name(self, sequence_number: int, scene_numbers: list[int], location_hint: str | None) -> str:
+        if not scene_numbers:
+            return f"Secuencia {sequence_number}"
+        sorted_numbers = sorted(scene_numbers)
+        consecutive = all((b - a) == 1 for a, b in zip(sorted_numbers, sorted_numbers[1:]))
+        if consecutive:
+            scene_part = f"Escenas {sorted_numbers[0]}-{sorted_numbers[-1]}"
+        else:
+            scene_part = f"Escenas {', '.join(str(n) for n in sorted_numbers)}"
+        if location_hint:
+            return f"Secuencia {sequence_number} — {location_hint} — {scene_part}"
+        return f"Secuencia {sequence_number} — {scene_part}"
 
     def parse_script(self, script_text: str) -> list[dict[str, Any]]:
         if not script_text:
@@ -344,8 +374,35 @@ class ScriptIntakeService:
                 if affinity > best_score:
                     best_score = affinity
                     best_index = idx
-            if best_index >= 0 and best_score >= 3:
-                groups[best_index].append(scene)
+            if best_index >= 0 and best_score >= 3 and not self._has_strong_location_break(scene, groups[best_index]):
+                # prevent overly broad mixed-location groups unless links are explicit
+                existing_locations = {
+                    self._scene_markers(existing).get("location_normalized")
+                    for existing in groups[best_index]
+                    if self._scene_markers(existing).get("location_normalized")
+                }
+                incoming_location = self._scene_markers(scene).get("location_normalized")
+                projected = set(existing_locations)
+                if incoming_location:
+                    projected.add(incoming_location)
+                markers_incoming = self._scene_markers(scene)
+                markers_last = self._scene_markers(groups[best_index][-1])
+                has_causal_continuity = (
+                    markers_incoming.get("dramatic_objective")
+                    and markers_incoming.get("dramatic_objective") == markers_last.get("dramatic_objective")
+                    and markers_incoming.get("temporal_marker") == markers_last.get("temporal_marker")
+                    and bool(set(markers_incoming.get("characters_detected") or []).intersection(markers_last.get("characters_detected") or []))
+                )
+                incoming_number = self._coerce_scene_number(scene)
+                last_number = self._coerce_scene_number(groups[best_index][-1])
+                has_linear_continuity = (
+                    incoming_number and last_number and abs(incoming_number - last_number) == 1
+                    and markers_incoming.get("temporal_marker") == markers_last.get("temporal_marker")
+                )
+                if len(projected) <= 2 or (len(projected) <= 3 and (has_causal_continuity or has_linear_continuity)):
+                    groups[best_index].append(scene)
+                else:
+                    groups.append([scene])
             else:
                 groups.append([scene])
 
@@ -365,8 +422,9 @@ class ScriptIntakeService:
             )
             first_scene = chunk[0]
             source_label = f"Secuencia {sequence_number}"
-            display_name = f"Secuencia {sequence_number} — Escenas {scene_start}-{scene_end}" if scene_start and scene_end else source_label
-            title = first_scene.get("location") or first_scene.get("heading") or display_name
+            location_hint = str(first_scene.get("location") or "").strip() or None
+            display_name = self._format_sequence_display_name(sequence_number, included_scene_numbers, location_hint)
+            title = display_name
             summary = "; ".join(
                 scene.get("heading") or f"Scene {self._coerce_scene_number(scene)}"
                 for scene in chunk

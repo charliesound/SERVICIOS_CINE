@@ -27,12 +27,12 @@ def test_sequence_traceability_preserves_real_scene_numbers() -> None:
     assert first["scene_numbers"] == [59, 60, 61]
     assert first["source_scene_start"] == 59
     assert first["source_scene_end"] == 61
-    assert first["display_name"] == "Secuencia 1 — Escenas 59-61"
+    assert first["display_name"] == "Secuencia 1 — PARKING/COCHE — Escenas 59-61"
     assert first["sequence_id"] == "seq_001"
     for scene in scenes:
         assert scene["sequence_id"] == "seq_001"
         assert scene["sequence_order"] == 1
-        assert scene["sequence_display_name"] == "Secuencia 1 — Escenas 59-61"
+        assert scene["sequence_display_name"] == "Secuencia 1 — PARKING/COCHE — Escenas 59-61"
 
 
 def test_nonconsecutive_scenes_can_share_sequence_by_dramatic_continuity() -> None:
@@ -95,6 +95,33 @@ def test_consecutive_scenes_split_when_objective_conflict_changes() -> None:
             "action_blocks": ["oculta pruebas en silencio"],
             "characters_detected": ["MARTA"],
         },
+    ]
+    sequences = service.build_sequence_blocks(scenes)
+    assert len(sequences) == 2
+
+
+def test_mixed_blocks_not_collapsed_into_single_sequence_for_prueba1_pattern() -> None:
+    service = ScriptIntakeService()
+    scenes = [
+        {"scene_number": 41, "heading": "41 INT. HABITACIÓN HOTEL. NOCHE.", "location": "HABITACIÓN HOTEL", "time_of_day": "NOCHE", "dramatic_objective": "hide_evidence", "action_blocks": ["oculta documento"], "characters_detected": ["ANA"]},
+        {"scene_number": 42, "heading": "42 INT. HABITACIÓN HOTEL. NOCHE.", "location": "HABITACIÓN HOTEL", "time_of_day": "NOCHE", "dramatic_objective": "hide_evidence", "action_blocks": ["revisa evidencia"], "characters_detected": ["ANA"]},
+        {"scene_number": 58, "heading": "58 INT. RESTAURANTE. DÍA.", "location": "RESTAURANTE", "time_of_day": "DÍA", "dramatic_objective": "negotiate_deal", "action_blocks": ["negocia bajo presión"], "characters_detected": ["ANA", "PEDRO"]},
+        {"scene_number": 59, "heading": "59 EXT/INT. PARKING/COCHE. DÍA.", "location": "PARKING/COCHE", "time_of_day": "DÍA", "dramatic_objective": "capture_escape", "action_blocks": ["amenaza y persecución"], "characters_detected": ["ANA", "LUIS"]},
+        {"scene_number": 60, "heading": "60 INT. PASILLO HOTEL. DÍA.", "location": "PASILLO HOTEL", "time_of_day": "DÍA", "dramatic_objective": "capture_escape", "action_blocks": ["confronta en pasillo"], "characters_detected": ["ANA", "LUIS"]},
+        {"scene_number": 61, "heading": "61 INT. HABITACIÓN HOTEL. DÍA.", "location": "HABITACIÓN HOTEL", "time_of_day": "DÍA", "dramatic_objective": "capture_escape", "action_blocks": ["detiene sospechoso"], "characters_detected": ["ANA", "LUIS"]},
+    ]
+    sequences = service.build_sequence_blocks(scenes)
+    assert len(sequences) >= 3
+    all_numbers = sorted(n for seq in sequences for n in seq["scene_numbers"])
+    assert all_numbers == [41, 42, 58, 59, 60, 61]
+    assert not any(seq["scene_numbers"] == [41, 42, 58, 59, 60, 61] for seq in sequences)
+
+
+def test_restaurant_to_parking_forces_sequence_cut() -> None:
+    service = ScriptIntakeService()
+    scenes = [
+        {"scene_number": 58, "heading": "58 INT. RESTAURANTE. DÍA.", "location": "RESTAURANTE", "time_of_day": "DÍA", "dramatic_objective": "negotiate_deal", "action_blocks": ["negocia"], "characters_detected": ["ANA"]},
+        {"scene_number": 59, "heading": "59 EXT/INT. PARKING/COCHE. DÍA.", "location": "PARKING/COCHE", "time_of_day": "DÍA", "dramatic_objective": "capture_escape", "action_blocks": ["persigue"], "characters_detected": ["ANA", "LUIS"]},
     ]
     sequences = service.build_sequence_blocks(scenes)
     assert len(sequences) == 2

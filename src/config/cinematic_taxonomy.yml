@@ -1,0 +1,628 @@
+# ── Cinematic Taxonomy & Visual Bible ──────────────────────────────────────
+# Fase 1 — data layer for CID storyboard prompt enrichment.
+# Each element belongs to exactly one category and carries:
+#   id, name, category, description, prompt_tags (list),
+#   negative_prompt_tags (list), use_cases (list).
+
+shot_types:
+  - id: ecu
+    name: Extreme Close-Up
+    category: shot_types
+    description: Extreme close-up framing a detail (eyes, mouth, object). Maximum emotional intensity.
+    prompt_tags: [extreme close-up shot, macro detail, intimate framing, shallow depth of field]
+    negative_prompt_tags: [wide shot, full body, deep focus, environmental context]
+    use_cases: [emotional climax, reveal critical detail, horror tension, character reaction]
+
+  - id: cu
+    name: Close-Up
+    category: shot_types
+    description: Close framing of face or object. Captures subtle expression and nuance.
+    prompt_tags: [close-up shot, facial detail, intimate, soft background, medium shot alternative]
+    negative_prompt_tags: [wide angle, full figure, expansive background]
+    use_cases: [dialogue reaction, emotional beat, product detail, dramatic emphasis]
+
+  - id: mcu
+    name: Medium Close-Up
+    category: shot_types
+    description: From chest up. Balances expression with context. Standard dialogue coverage.
+    prompt_tags: [medium close-up shot, chest up framing, dialogue ready, balanced composition]
+    negative_prompt_tags: [extreme close-up, full body, wide establishing]
+    use_cases: [dialogue scenes, interview framing, news anchor, YouTube talking head]
+
+  - id: ms
+    name: Medium Shot
+    category: shot_types
+    description: Waist up. Body language visible. Workhorse of narrative filmmaking.
+    prompt_tags: [medium shot, waist up, body language visible, narrative framing]
+    negative_prompt_tags: [close-up, extreme wide, macro]
+    use_cases: [dialogue with gesture, walk and talk, standard coverage, sitcom framing]
+
+  - id: mws
+    name: Medium Wide Shot
+    category: shot_types
+    description: Knee up. Balances character and environment. Often used as a master.
+    prompt_tags: [medium wide shot, knee up, character and environment balanced, master shot alternative]
+    negative_prompt_tags: [close-up, extreme wide, intimate framing]
+    use_cases: [scene master, group dialogue, action setup, establishing character in space]
+
+  - id: ws
+    name: Wide Shot
+    category: shot_types
+    description: Full body in environment. Establishes spatial relationships.
+    prompt_tags: [wide shot, full body, environmental context, spatial relationships]
+    negative_prompt_tags: [close framing, shallow depth of field, portrait]
+    use_cases: [establishing scene, action choreography, landscape reveal, group staging]
+
+  - id: ews
+    name: Extreme Wide Shot
+    category: shot_types
+    description: Vast landscape or crowd. Character is small or absent. Pure geography.
+    prompt_tags: [extreme wide shot, vast landscape, bird eye view, geographic context, epic scale]
+    negative_prompt_tags: [character detail, intimate, close-up, medium framing]
+    use_cases: [epic establishing, location reveal, crowd scale, natural vista]
+
+  - id: ots
+    name: Over the Shoulder
+    category: shot_types
+    description: Looking past a character's shoulder at the subject. Dialogue standard.
+    prompt_tags: [over the shoulder shot, perspective from behind, dialogue composition, depth layering]
+    negative_prompt_tags: [single character framing, profile shot, direct address]
+    use_cases: [dialogue coverage, interrogation scene, conversation reverse shot]
+
+  - id: pov
+    name: Point of View
+    category: shot_types
+    description: Sees what the character sees. Subjective immersion.
+    prompt_tags: [point of view shot, subjective camera, first person perspective, immersive]
+    negative_prompt_tags: [third person, objective framing, omniscient, surveillance]
+    use_cases: [horror reveal, action POV, character discovery, immersive sequence]
+
+  - id: dutch
+    name: Dutch Angle
+    category: shot_types
+    description: Tilted horizon. Disorientation, tension, psychological unease.
+    prompt_tags: [dutch angle shot, tilted horizon, canted frame, disorienting composition, tension]
+    negative_prompt_tags: [level horizon, stable composition, balanced framing]
+    use_cases: [psychological thriller, disorientation scene, character breakdown, heist tension]
+
+  - id: aerial
+    name: Aerial Shot
+    category: shot_types
+    description: From above, drone or crane. God's eye perspective.
+    prompt_tags: [aerial shot, bird eye view, top down, drone perspective, god view]
+    negative_prompt_tags: [ground level, eye level, low angle]
+    use_cases: [epic establishing, chase sequence, landscape reveal, crowd choreography]
+
+composition:
+  - id: rule_of_thirds
+    name: Rule of Thirds
+    category: composition
+    description: Subject placed at intersection of imaginary 3x3 grid. Classic balanced framing.
+    prompt_tags: [rule of thirds composition, balanced framing, classic cinematography]
+    negative_prompt_tags: [center framing, symmetric composition, off-balance]
+    use_cases: [standard dialogue, portrait framing, general narrative]
+
+  - id: center_framing
+    name: Center Framing
+    category: composition
+    description: Subject dead center. Authoritative, confrontational, or formal.
+    prompt_tags: [center framing, symmetrical focus, direct address, formal composition]
+    negative_prompt_tags: [rule of thirds, off-center, unbalanced, dynamic angle]
+    use_cases: [authority figure, direct address to camera, formal portrait, Wes Anderson style]
+
+  - id: leading_lines
+    name: Leading Lines
+    category: composition
+    description: Lines in the frame guide the eye to the subject.
+    prompt_tags: [leading lines composition, depth guide, visual flow, directional framing]
+    negative_prompt_tags: [flat composition, no depth, cluttered, chaotic lines]
+    use_cases: [journey sequence, corridor walk, road movie, architectural reveal]
+
+  - id: symmetry
+    name: Symmetry
+    category: composition
+    description: Mirror-like balance. Order, formality, or obsession.
+    prompt_tags: [symmetrical composition, mirror framing, balanced reflection, formal order]
+    negative_prompt_tags: [asymmetrical, rule of thirds, dynamic imbalance]
+    use_cases: [Kubrick style, formal ceremony, architectural beauty, obsessive character]
+
+  - id: frame_in_frame
+    name: Frame Within a Frame
+    category: composition
+    description: Subject framed by doorways, windows, arches. Depth and voyeurism.
+    prompt_tags: [frame within frame composition, natural framing, depth layering, voyeuristic]
+    negative_prompt_tags: [open frame, flat composition, direct address, no depth]
+    use_cases: [voyeuristic moment, character trapped, discovery through window, architectural depth]
+
+  - id: shallow_depth
+    name: Shallow Depth of Field
+    category: composition
+    description: Subject sharp, background blurred. Focus and isolation.
+    prompt_tags: [shallow depth of field, blurred background, subject isolation, bokeh, creamy background]
+    negative_prompt_tags: [deep focus, everything sharp, wide depth, deep depth of field]
+    use_cases: [romantic close-up, dramatic focus, product hero shot, character isolation]
+
+  - id: deep_focus
+    name: Deep Focus
+    category: composition
+    description: Everything in frame is sharp. Information density, realism.
+    prompt_tags: [deep focus, everything sharp, wide depth of field, information rich frame, cinematic realism]
+    negative_prompt_tags: [shallow depth of field, bokeh, blurred background, selective focus]
+    use_cases: [realist drama, ensemble staging, complex action, wide landscape]
+
+camera_movements:
+  - id: pan
+    name: Pan
+    category: camera_movements
+    description: Horizontal rotation on tripod. Reveals space laterally.
+    prompt_tags: [panning camera movement, horizontal rotation, lateral reveal, tripod pan]
+    negative_prompt_tags: [static camera, tracking movement, vertical movement]
+    use_cases: [landscape reveal, following horizontal action, room scan]
+
+  - id: tilt
+    name: Tilt
+    category: camera_movements
+    description: Vertical rotation on tripod. Reveals height or scale.
+    prompt_tags: [tilting camera movement, vertical rotation, height reveal, upward tilt, downward tilt]
+    negative_prompt_tags: [static camera, horizontal movement, panning]
+    use_cases: [tall building reveal, character look up/down, scale emphasis]
+
+  - id: dolly
+    name: Dolly
+    category: camera_movements
+    description: Camera moves toward or away from subject on track. Emotional push/pull.
+    prompt_tags: [dolly camera movement, tracking forward, push in, pull out, track movement]
+    negative_prompt_tags: [static camera, handheld, zoom, pan]
+    use_cases: [dramatic reveal, emotional emphasis, horror approach, discovery pull back]
+
+  - id: tracking
+    name: Tracking Shot
+    category: camera_movements
+    description: Camera moves parallel to subject. Follows movement smoothly.
+    prompt_tags: [tracking shot, lateral movement, parallel follow, smooth camera movement]
+    negative_prompt_tags: [static camera, whip pan, handheld shake, zoom]
+    use_cases: [walk and talk, chase sequence, parade, journey montage]
+
+  - id: crane
+    name: Crane Shot
+    category: camera_movements
+    description: Camera rises or falls on a crane. Grand scale reveal or descent.
+    prompt_tags: [crane shot, elevating camera, descending camera, aerial rise, grand reveal]
+    negative_prompt_tags: [ground level, handheld, shoulder mount, static]
+    use_cases: [epic establishing, grand entrance, scale reveal, triumphant moment]
+
+  - id: steadicam
+    name: Steadicam Shot
+    category: camera_movements
+    description: Smooth moving camera, operator walking. Fluid, immersive, continuous.
+    prompt_tags: [steadicam shot, smooth walking camera, fluid movement, immersive continuous shot]
+    negative_prompt_tags: [static tripod, shaky handheld, dolly track visible, jerky]
+    use_cases: [continuous sequence shot, corridor follow, party weave, backstage pass]
+
+  - id: handheld
+    name: Handheld
+    category: camera_movements
+    description: Camera held by operator. Raw, urgent, documentary realism.
+    prompt_tags: [handheld camera, documentary style, raw movement, urgent feel, cinéma vérité]
+    negative_prompt_tags: [smooth steadicam, tripod stable, crane smooth, dolly track]
+    use_cases: [action urgency, documentary realism, horror chase, war zone, found footage]
+
+  - id: whip_pan
+    name: Whip Pan
+    category: camera_movements
+    description: Fast horizontal rotation. Energetic transition or disorientation.
+    prompt_tags: [whip pan, fast camera rotation, rapid movement, dynamic transition, swish pan]
+    negative_prompt_tags: [smooth pan, slow reveal, static, gentle camera]
+    use_cases: [action transition, fight scene impact, energetic cut, disorientation]
+
+  - id: zoom
+    name: Zoom
+    category: camera_movements
+    description: Focal length change. Push in or pull out optically. Hitchcockian.
+    prompt_tags: [zoom shot, focal length change, optical push, dolly zoom effect, vertigo effect]
+    negative_prompt_tags: [dolly movement, tracking, physical camera move, prime lens]
+    use_cases: [sudden reveal, vertigo effect, dramatic emphasis, Hitchcock homage]
+
+visual_styles:
+  - id: hand_drawn_storyboard
+    name: Hand-Drawn Storyboard
+    category: visual_styles
+    description: Traditional pencil or ink storyboard sketch. Pre-visualization standard.
+    prompt_tags: [hand drawn storyboard, storyboard sketch, pencil drawing, rough storyboard, previsualization]
+    negative_prompt_tags: [photorealistic, 3d render, digital art, painting, oil paint]
+    use_cases: [early previs, director pitch, shot planning, blocking exploration]
+
+  - id: rough_pencil_storyboard
+    name: Rough Pencil Storyboard
+    category: visual_styles
+    description: Quick loose pencil sketches. Fast ideation, capturing composition only.
+    prompt_tags: [rough pencil sketch, loose storyboard, quick previs, compositional thumbnail]
+    negative_prompt_tags: [detailed rendering, inked lines, color, shading, finished art]
+    use_cases: [rapid ideation, first pass blocking, shot list thumbnail, early pitch]
+
+  - id: ink_storyboard
+    name: Ink Storyboard
+    category: visual_styles
+    description: Clean ink line art. High contrast, graphic, comic book aesthetic.
+    prompt_tags: [ink storyboard, line art, comic style, high contrast, ink drawing, bold lines]
+    negative_prompt_tags: [pencil sketch, watercolor, photorealistic, pastel, color wash]
+    use_cases: [comic adaptation, graphic novel previs, high contrast scene, action storyboard]
+
+  - id: charcoal_storyboard
+    name: Charcoal Storyboard
+    category: visual_styles
+    description: Charcoal or pastel. Moody, textured, dramatic lighting emphasis.
+    prompt_tags: [charcoal drawing, pastel storyboard, moody texture, dramatic lighting sketch, dark previs]
+    negative_prompt_tags: [clean line art, digital crisp, bright colors, photorealistic]
+    use_cases: [film noir previs, horror storyboard, dramatic lighting study, mood exploration]
+
+  - id: graphic_novel_storyboard
+    name: Graphic Novel Storyboard
+    category: visual_styles
+    description: Color comic panel style. Vibrant, dramatic, editorial.
+    prompt_tags: [graphic novel style, comic panel, vibrant colors, dramatic shading, cel shaded]
+    negative_prompt_tags: [pencil sketch, realistic photo, oil painting, watercolor, pastel]
+    use_cases: [graphic novel adaptation, vibrant action, superhero genre, color script]
+
+  - id: cinematic_realistic
+    name: Cinematic Realistic
+    category: visual_styles
+    description: Photorealistic previs. Actual look and feel of final frame.
+    prompt_tags: [cinematic photorealistic, film quality render, realistic previs, final frame quality]
+    negative_prompt_tags: [sketch, drawing, cartoon, illustration, line art, storyboard rough]
+    use_cases: [final previs, client presentation, VFX previz, lighting reference]
+
+modern_cameras:
+  - id: arri_alexa_35
+    name: ARRI ALEXA 35
+    category: modern_cameras
+    description: ARRI's latest digital camera. Superior highlight handling, natural skin tones, cinematic standard.
+    prompt_tags: [arri alexa 35, alexa look, arri color science, cinematic digital camera, natural skin tones]
+    negative_prompt_tags: [consumer camera, DSLR look, phone camera, video camcorder]
+    use_cases: [high-end cinema, prestige TV, commercial, cinematic production]
+
+  - id: red_v raptor
+    name: RED V-RAPTOR
+    category: modern_cameras
+    description: RED's flagship. 8K resolution, high frame rate, global shutter.
+    prompt_tags: [red v rapto, 8k resolution, global shutter, high frame rate, red cinema camera]
+    negative_prompt_tags: [consumer camera, phone camera, low resolution, DSLR video]
+    use_cases: [high-end action, VFX plate, high speed, nature documentary]
+
+  - id: sony_venice_2
+    name: SONY VENICE 2
+    category: modern_cameras
+    description: Sony's flagship digital cinema camera. Dual base ISO, 8.6K sensor.
+    prompt_tags: [sony venice 2, dual base iso, 8k digital cinema, sony color, cinematic image]
+    negative_prompt_tags: [consumer sony, DSLR, low dynamic range, phone camera]
+    use_cases: [high-end drama, commercial, streaming content, anamorphic capture]
+
+  - id: panavision_dxl2
+    name: Panavision DXL2
+    category: modern_cameras
+    description: Panavision and RED collaboration. Large format, Panavision lens mount.
+    prompt_tags: [panavision dxl2, large format, panavision lenses, cinematic large format, red weapon]
+    negative_prompt_tags: [small sensor, DSLR, consumer camera, phone]
+    use_cases: [epic feature, large format narrative, Panavision lens package, prestige production]
+
+analog_cameras:
+  - id: arri_416
+    name: ARRIFLEX 416
+    category: analog_cameras
+    description: Super 16mm camera. Lightweight, film grain, documentary intimacy.
+    prompt_tags: [arri 416, super 16mm, 16mm film grain, lightweight film camera, documentary look]
+    negative_prompt_tags: [digital sharp, clean image, 35mm full frame, 8k video]
+    use_cases: [documentary, indie film, music video, period piece 16mm aesthetic]
+
+  - id: panavision_millennium_xl2
+    name: Panavision Millennium XL2
+    category: analog_cameras
+    description: Panavision 35mm flagship. Lightweight, silent, Panavision lens system.
+    prompt_tags: [panavision millennium xl2, 35mm film, panavision lenses, film camera, cinema 35mm]
+    negative_prompt_tags: [digital camera, video, phone camera, dslr]
+    use_cases: [prestige feature film, period drama shot on film, Panavision package, classic cinema]
+
+  - id: arri_235
+    name: ARRIFLEX 235
+    category: analog_cameras
+    description: Ultra lightweight 35mm. Steadicam and handheld workhorse.
+    prompt_tags: [arri 235, lightweight 35mm, steadicam 35mm, handheld 35mm, film grain 35mm]
+    negative_prompt_tags: [digital, heavy camera, studio rig, video assist]
+    use_cases: [steadicam on film, handheld sequence, intimate documentary 35mm, action 35mm]
+
+  - id: bolex_h16
+    name: Bolex H16
+    category: analog_cameras
+    description: Classic spring-wound 16mm. Vintage character, DIY aesthetic.
+    prompt_tags: [bolex h16, spring wound 16mm, vintage camera, classic 16mm, retro film look]
+    negative_prompt_tags: [digital, modern cinema camera, autofocus, high tech]
+    use_cases: [vintage aesthetic, period film prop, archival style, experimental film]
+
+film_stocks:
+  - id: kodak_vision3_50d
+    name: Kodak Vision3 50D 5203
+    category: film_stocks
+    description: Daylight-balanced, ultra fine grain. Bright exterior, vivid color.
+    prompt_tags: [kodak 50d, vision3 5203, daylight film stock, fine grain, vivid exterior, bright color]
+    negative_prompt_tags: [tungsten film, high speed, night scene, underexposed, grainy]
+    use_cases: [bright exterior, beach scene, daylight adventure, period bright, commercial]
+
+  - id: kodak_vision3_250d
+    name: Kodak Vision3 250D 5207
+    category: film_stocks
+    description: Daylight-balanced, medium speed. Versatile all-rounder exterior.
+    prompt_tags: [kodak 250d, vision3 5207, daylight stock, versatile film, medium grain]
+    negative_prompt_tags: [tungsten balance, high speed grain, underexposed, low light]
+    use_cases: [general exterior, day exterior drama, commercial, music video]
+
+  - id: kodak_vision3_500t
+    name: Kodak Vision3 500T 5219
+    category: film_stocks
+    description: Tungsten-balanced, high speed. The industry standard for low light and night.
+    prompt_tags: [kodak 500t, vision3 5219, tungsten film, high speed stock, low light film, night film]
+    negative_prompt_tags: [daylight stock, bright exterior, fine grain, overexposed day]
+    use_cases: [night exterior, interior low light, dramatic shadow, city night, noir]
+
+  - id: kodak_ektachrome_100d
+    name: Kodak Ektachrome 100D 5285
+    category: film_stocks
+    description: Reversal film. Vibrant color, high contrast, retro saturated look.
+    prompt_tags: [ektachrome 100d, reversal film, vibrant color, high contrast stock, retro saturated]
+    negative_prompt_tags: [negative film, muted color, low contrast, desaturated]
+    use_cases: [retro look, music video, fashion film, vibrant commercial, period 70s]
+
+lighting_styles:
+  - id: naturalistic
+    name: Naturalistic Lighting
+    category: lighting_styles
+    description: Mimics natural light sources. Realistic, motivated, subtle.
+    prompt_tags: [naturalistic lighting, motivated light, practical light source, soft natural light, realistic illumination]
+    negative_prompt_tags: [dramatic chiaroscuro, colored gel, hard light, high contrast lighting, stylized]
+    use_cases: [realist drama, documentary, kitchen sink drama, daylight interior]
+
+  - id: high_key
+    name: High Key
+    category: lighting_styles
+    description: Bright, even, low contrast. Cheerful, comedic, commercial.
+    prompt_tags: [high key lighting, bright even light, low contrast, soft fill, cheerful illumination, commercial bright]
+    negative_prompt_tags: [low key, dramatic shadow, chiaroscuro, dark moody, hard light, noir]
+    use_cases: [comedy, commercial, music video, upbeat scene, corporate, interview]
+
+  - id: low_key
+    name: Low Key
+    category: lighting_styles
+    description: High contrast, deep shadows, selective illumination. Dramatic, mysterious.
+    prompt_tags: [low key lighting, dramatic shadow, high contrast, selective illumination, chiaroscuro inspired]
+    negative_prompt_tags: [high key, flat lighting, bright fill, even exposure, soft light everywhere]
+    use_cases: [film noir, thriller, horror, mystery, interrogation, dramatic reveal]
+
+  - id: chiaroscuro
+    name: Chiaroscuro
+    category: lighting_styles
+    description: Strong contrast between light and dark. Rembrandt-inspired. Sculptural.
+    prompt_tags: [chiaroscuro lighting, dramatic contrast, rembrandt light, sculptural illumination, dark background]
+    negative_prompt_tags: [flat lighting, high key, even fill, bright background, soft diffuse]
+    use_cases: [period drama, painterly scene, baroque homage, dramatic portrait, art film]
+
+  - id: practical
+    name: Practical Lighting
+    category: lighting_styles
+    description: Light sources visible in frame. Lamps, neon, windows. Motivated source.
+    prompt_tags: [practical lighting, motivated source, lamp light, neon glow, window light, visible source]
+    negative_prompt_tags: [invisible source, studio flat, overhead only, unmotivated light]
+    use_cases: [night interior, bar scene, bedroom lamp, street neon, period lighting]
+
+  - id: golden_hour
+    name: Golden Hour
+    category: lighting_styles
+    description: Warm low-angle sunlight. Magical, romantic, ephemeral.
+    prompt_tags: [golden hour lighting, warm sunset light, low angle sun, magical glow, romantic illumination]
+    negative_prompt_tags: [midday sun, blue hour, cool light, overhead sun, harsh shadow]
+    use_cases: [romantic scene, sunset chase, magic hour landscape, emotional farewell]
+
+color_grading:
+  - id: teal_orange
+    name: Teal and Orange
+    category: color_grading
+    description: Complementary teal shadows and orange skin tones. Hollywood blockbuster standard.
+    prompt_tags: [teal and orange grade, complementary color, blockbuster look, teal shadows, warm skin]
+    negative_prompt_tags: [monochromatic, desaturated, cold all over, green cast, muted palette]
+    use_cases: [action blockbuster, Hollywood film, commercial, summer tentpole]
+
+  - id: desaturated
+    name: Desaturated / Bleak
+    category: color_grading
+    description: Muted colors, low saturation. Gritty, realistic, melancholy.
+    prompt_tags: [desaturated grade, muted colors, low saturation, gritty look, bleak palette, realistic tone]
+    negative_prompt_tags: [vibrant color, saturated, high contrast color, teal and orange, vivid]
+    use_cases: [post-apocalyptic, war film, gritty drama, documentary realism, period hardship]
+
+  - id: vibrant
+    name: Vibrant / Saturated
+    category: color_grading
+    description: Fully saturated, punchy colors. Energetic, stylized, commercial.
+    prompt_tags: [vibrant grade, saturated color, punchy palette, high chroma, vivid look, pop color]
+    negative_prompt_tags: [desaturated, muted, washed out, monochromatic, bleak]
+    use_cases: [music video, commercial, vibrant comedy, fashion film, animation live action hybrid]
+
+  - id: sepia
+    name: Sepia / Warm Vintage
+    category: color_grading
+    description: Warm brown tones. Historical, nostalgic, aged photograph look.
+    prompt_tags: [sepia grade, warm brown tone, vintage look, old photograph, nostalgic palette]
+    negative_prompt_tags: [cool blue, teal, modern digital, vibrant, saturated color]
+    use_cases: [period film 19th century, flashback, western, historical documentary]
+
+  - id: bleach_bypass
+    name: Bleach Bypass
+    category: color_grading
+    description: Desaturated with high contrast. Silver retention look. Gritty, intense.
+    prompt_tags: [bleach bypass grade, silver retention, desaturated high contrast, gritty intense, film burn]
+    negative_prompt_tags: [soft contrast, pastel, low contrast, warm and fuzzy, romantic soft]
+    use_cases: [war film, dystopian action, intense thriller, gritty crime, Saving Private Ryan look]
+
+narrative_styles:
+  - id: classical
+    name: Classical Narrative
+    category: narrative_styles
+    description: Three-act structure, cause and effect, character-driven. Hollywood standard.
+    prompt_tags: [classical narrative, three act structure, character driven, cause and effect, hollywood storytelling]
+    negative_prompt_tags: [nonlinear, experimental, avant garde, fragmented, episodic]
+    use_cases: [mainstream feature, television drama, commercial narrative, streaming series]
+
+  - id: nonlinear
+    name: Nonlinear Narrative
+    category: narrative_styles
+    description: Fragmented chronology. Flashbacks, flash-forwards, parallel timelines.
+    prompt_tags: [nonlinear narrative, fragmented timeline, flashback structure, parallel stories, complex chronology]
+    negative_prompt_tags: [linear story, chronological, single timeline, straightforward narrative]
+    use_cases: [art film, memory drama, heist planning, mystery reveal, psychological thriller]
+
+  - id: episodic
+    name: Episodic / Anthology
+    category: narrative_styles
+    description: Self-contained episodes or vignettes. Series or anthology format.
+    prompt_tags: [episodic narrative, anthology structure, vignette series, self contained stories, episodic format]
+    negative_prompt_tags: [single narrative, linear feature, three act, continuous plot]
+    use_cases: [TV series, anthology film, web series, documentary series, portmanteau]
+
+  - id: documentary
+    name: Documentary / Observational
+    category: narrative_styles
+    description: Observational, non-fiction style. Cinema verité, fly on the wall.
+    prompt_tags: [documentary style, observational, cinéma vérité, fly on the wall, non fiction aesthetic]
+    negative_prompt_tags: [scripted drama, staged, theatrical, highly produced, narrative fiction]
+    use_cases: [documentary, mockumentary, realistic drama, found footage, backstage access]
+
+# ── Cinematic Presets ───────────────────────────────────────────────────────
+# Each preset combines elements from multiple categories to create a
+# coherent cinematographic look and feel.
+
+cinematic_presets:
+  - id: noir_classic
+    name: Classic Film Noir
+    description: High contrast, shadowy, urban crime aesthetic. Low-key lighting, dutch angles, desaturated.
+    shot_types: [cu, mcu, dutch]
+    composition: [shallow_depth, leading_lines]
+    camera_movements: [dolly, pan]
+    visual_styles: [charcoal_storyboard]
+    modern_cameras: []
+    analog_cameras: [arri_416]
+    film_stocks: [kodak_vision3_500t]
+    lighting_styles: [low_key, chiaroscuro]
+    color_grading: [desaturated]
+    narrative_styles: [classical]
+    prompt_tags: [film noir aesthetic, classic noir, shadowy crime, detective feel, 1940s cinema]
+    negative_prompt_tags: [bright, colorful, high key, romantic comedy, daylight, vibrant]
+
+  - id: epic_blockbuster
+    name: Epic Blockbuster
+    description: Large scale, wide shots, crane moves, teal-orange grade. Maximum cinematic impact.
+    shot_types: [ews, ws, aerial]
+    composition: [rule_of_thirds, leading_lines, deep_focus]
+    camera_movements: [crane, dolly, tracking]
+    visual_styles: [cinematic_realistic]
+    modern_cameras: [arri_alexa_35, panavision_dxl2]
+    analog_cameras: []
+    film_stocks: [kodak_vision3_250d]
+    lighting_styles: [golden_hour, naturalistic]
+    color_grading: [teal_orange, vibrant]
+    narrative_styles: [classical]
+    prompt_tags: [epic scale, blockbuster look, cinematic wide, grand spectacle, hollywood epic]
+    negative_prompt_tags: [intimate, handheld, low budget, documentary style, small scale]
+
+  - id: indie_intimate
+    name: Indie Intimate
+    description: Handheld, natural light, shallow depth. Raw emotional storytelling.
+    shot_types: [cu, mcu, ots]
+    composition: [shallow_depth, rule_of_thirds]
+    camera_movements: [handheld, steadicam]
+    visual_styles: [cinematic_realistic]
+    modern_cameras: [sony_venice_2]
+    analog_cameras: [arri_416]
+    film_stocks: [kodak_vision3_500t]
+    lighting_styles: [naturalistic, practical]
+    color_grading: [desaturated]
+    narrative_styles: [classical, documentary]
+    prompt_tags: [indie film look, intimate drama, natural light, raw emotion, handheld realism]
+    negative_prompt_tags: [polished, studio light, crane shot, epic scale, high key commercial]
+
+  - id: retro_70s_vibrant
+    name: Retro 70s Vibrant
+    description: Saturated colors, zoom lens, Ektachrome stock. Period aesthetic.
+    shot_types: [ms, mws, zoom]
+    composition: [center_framing, symmetry]
+    camera_movements: [zoom, dolly]
+    visual_styles: [graphic_novel_storyboard]
+    modern_cameras: []
+    analog_cameras: [panavision_millennium_xl2, bolex_h16]
+    film_stocks: [kodak_ektachrome_100d]
+    lighting_styles: [high_key, practical]
+    color_grading: [vibrant, sepia]
+    narrative_styles: [episodic, classical]
+    prompt_tags: [1970s film look, retro vibrant, ektachrome color, vintage cinema, period aesthetic]
+    negative_prompt_tags: [desaturated, teal and orange, modern digital, clean, sharp digital]
+
+  - id: horror_tense
+    name: Horror / Tension
+    description: Dutch angles, shallow focus, low key, handheld dread.
+    shot_types: [ecu, cu, dutch, pov]
+    composition: [shallow_depth, frame_in_frame]
+    camera_movements: [handheld, dolly, whip_pan]
+    visual_styles: [charcoal_storyboard, ink_storyboard]
+    modern_cameras: [sony_venice_2]
+    analog_cameras: []
+    film_stocks: [kodak_vision3_500t]
+    lighting_styles: [low_key, chiaroscuro]
+    color_grading: [desaturated, bleach_bypass]
+    narrative_styles: [nonlinear, classical]
+    prompt_tags: [horror aesthetic, tense atmosphere, dread, scary, thriller look, dark suspense]
+    negative_prompt_tags: [bright, cheerful, high key, warm colors, comedy lighting, soft]
+
+  - id: documentary_realism
+    name: Documentary Realism
+    description: Handheld, natural light, deep focus. Truthful, observational.
+    shot_types: [ms, mws, ws]
+    composition: [rule_of_thirds, deep_focus]
+    camera_movements: [handheld, steadicam]
+    visual_styles: [cinematic_realistic]
+    modern_cameras: [sony_venice_2]
+    analog_cameras: [arri_416]
+    film_stocks: [kodak_vision3_250d]
+    lighting_styles: [naturalistic, practical]
+    color_grading: [desaturated]
+    narrative_styles: [documentary]
+    prompt_tags: [documentary realism, vérité style, observational, natural look, unscripted feel]
+    negative_prompt_tags: [staged, theatrical, high key, crane shot, highly produced, cinematic epic]
+
+  - id: music_video_vibrant
+    name: Music Video / Fashion
+    description: High energy, vibrant color, dynamic camera, stylized lighting.
+    shot_types: [cu, ms, aerial, whip_pan]
+    composition: [center_framing, leading_lines, symmetry]
+    camera_movements: [tracking, crane, whip_pan, steadicam]
+    visual_styles: [graphic_novel_storyboard, cinematic_realistic]
+    modern_cameras: [red_v raptor]
+    analog_cameras: [bolex_h16]
+    film_stocks: [kodak_ektachrome_100d]
+    lighting_styles: [high_key, practical, golden_hour]
+    color_grading: [vibrant, teal_orange]
+    narrative_styles: [episodic, nonlinear]
+    prompt_tags: [music video look, fashion aesthetic, vibrant colors, high energy, stylized visual]
+    negative_prompt_tags: [desaturated, flat lighting, documentary, muted, low energy, classical]
+
+  - id: period_drama
+    name: Period Drama
+    description: Classical composition, warm palette, analog camera, natural light.
+    shot_types: [ms, ws, mws, dolly]
+    composition: [rule_of_thirds, symmetry, frame_in_frame]
+    camera_movements: [dolly, pan, tilt]
+    visual_styles: [cinematic_realistic]
+    modern_cameras: [arri_alexa_35]
+    analog_cameras: [panavision_millennium_xl2]
+    film_stocks: [kodak_vision3_500t]
+    lighting_styles: [naturalistic, chiaroscuro, practical]
+    color_grading: [sepia, desaturated]
+    narrative_styles: [classical]
+    prompt_tags: [period drama look, historical film, classical framing, warm palette, heritage cinema]
+    negative_prompt_tags: [modern digital, neon, vibrant color, contemporary, handheld documentary]

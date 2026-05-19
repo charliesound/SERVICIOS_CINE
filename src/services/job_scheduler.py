@@ -362,6 +362,7 @@ class JobScheduler:
                 prompt_id=prompt_id,
                 backend_base_url=client.base_url,
                 history_entry=history_entry,
+                source_metadata=item.metadata,
             )
             storyboard_shot_id = (item.metadata or {}).get("storyboard_shot_id")
             image_asset = next(

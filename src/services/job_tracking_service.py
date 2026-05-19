@@ -416,6 +416,33 @@ class JobTrackingService:
             query["type"] = output_type
         return f"{backend_base_url.rstrip('/')}/view?{urlencode(query)}"
 
+    @staticmethod
+    def _extract_visual_bible_metadata(source_metadata: Any) -> dict[str, Any]:
+        if not source_metadata:
+            return {}
+        if isinstance(source_metadata, str):
+            try:
+                source_metadata = json.loads(source_metadata)
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        if not isinstance(source_metadata, dict):
+            return {}
+        vb_enabled = source_metadata.get("visual_bible_enabled")
+        vb_applied = source_metadata.get("visual_bible_applied")
+        vb_id = source_metadata.get("visual_bible_id")
+        vb_preset = source_metadata.get("visual_bible_preset")
+        if vb_enabled is None and vb_applied is None and vb_id is None and vb_preset is None:
+            return {}
+        return {
+            "visual_bible": {
+                "enabled": bool(vb_enabled) if vb_enabled is not None else False,
+                "applied": bool(vb_applied) if vb_applied is not None else False,
+                "visual_bible_id": vb_id,
+                "visual_bible_preset": vb_preset,
+                "source": "render_job_metadata",
+            }
+        }
+
     async def persist_scheduler_success_assets(
         self,
         db: AsyncSession,
@@ -424,6 +451,7 @@ class JobTrackingService:
         prompt_id: str,
         backend_base_url: str,
         history_entry: Any,
+        source_metadata: Optional[dict] = None,
     ) -> list[MediaAsset]:
         if not isinstance(history_entry, dict):
             return []
@@ -492,6 +520,22 @@ class JobTrackingService:
                     ) or {}
                     content_ref = f"file://{stored_path}"
 
+                    metadata_json: dict[str, Any] = {
+                        "prompt_id": prompt_id,
+                        "node_id": str(node_id),
+                        "output_kind": output_kind,
+                        "backend_base_url": backend_base_url,
+                        "backend_content_ref": backend_content_ref,
+                        "storage_path": str(stored_path),
+                        "canonical_path": str(stored_path),
+                        "relative_path": relative_path,
+                        "output": entry,
+                        **thumbnail_metadata,
+                    }
+                    vb_meta = self._extract_visual_bible_metadata(source_metadata)
+                    if vb_meta:
+                        metadata_json.update(vb_meta)
+
                     asset = await self.upsert_job_asset(
                         db,
                         organization_id=str(job.organization_id),
@@ -500,18 +544,7 @@ class JobTrackingService:
                         file_name=normalized_filename,
                         content_ref=content_ref,
                         asset_source=f"queue_{output_kind}_{node_id}_{index}",
-                        metadata_json={
-                            "prompt_id": prompt_id,
-                            "node_id": str(node_id),
-                            "output_kind": output_kind,
-                            "backend_base_url": backend_base_url,
-                            "backend_content_ref": backend_content_ref,
-                            "storage_path": str(stored_path),
-                            "canonical_path": str(stored_path),
-                            "relative_path": relative_path,
-                            "output": entry,
-                            **thumbnail_metadata,
-                        },
+                        metadata_json=metadata_json,
                         created_by=job.created_by,
                         asset_type=asset_type,
                         status=MediaAssetStatus.INDEXED,

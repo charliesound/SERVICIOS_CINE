@@ -125,7 +125,8 @@ class CIDScriptIntelligenceService:
                 matched_sequences.append(seq)
                 if seq_id:
                     matched_sequence_ids.append(seq_id)
-                for number in seq.get("included_scenes") or []:
+                scene_number_payload = seq.get("scene_numbers") or seq.get("included_scenes") or []
+                for number in scene_number_payload:
                     try:
                         included_scene_numbers.add(int(number))
                     except Exception:
@@ -228,11 +229,17 @@ class CIDScriptIntelligenceService:
             }
 
         seq_hint = ", ".join(str(seq.get("sequence_id")) for seq in scoped_sequences[:4]) if scoped_sequences else "n/a"
+        seq_display = ", ".join(
+            str(seq.get("display_name") or seq.get("title") or seq.get("sequence_id") or "")
+            for seq in scoped_sequences[:3]
+            if str(seq.get("display_name") or seq.get("title") or seq.get("sequence_id") or "").strip()
+        )
         sequence_scope = f"secuencias solicitadas {', '.join(sequence_ids)}" if sequence_ids else "todo el proyecto"
         overview = (
             f"Diagnóstico estructural basado en guion y teoría contextual. "
             f"Ámbito: {sequence_scope}. Escenas analizadas: {len(scoped_scenes)} {scoped_scene_numbers[:8] if scoped_scene_numbers else []}. "
-            f"Secuencias consideradas: {len(scoped_sequences)} ({', '.join(scoped_sequence_ids) if scoped_sequence_ids else seq_hint})."
+            f"Secuencias consideradas: {len(scoped_sequences)} ({', '.join(scoped_sequence_ids) if scoped_sequence_ids else seq_hint}). "
+            f"Referencia visible: {seq_display or 'n/a'}."
         )
 
         storyboard_actionables: list[str] = []

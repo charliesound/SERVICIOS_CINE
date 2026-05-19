@@ -56,6 +56,12 @@ class ScriptSequenceMapEntry(BaseModel):
     sequence_title: str | None = None
     dramatic_purpose: str | None = None
     continuity_group: str | None = None
+    source_sequence_label: str | None = None
+    source_scene_start: int | None = None
+    source_scene_end: int | None = None
+    scene_numbers: list[int] = Field(default_factory=list)
+    scene_count: int = 0
+    display_name: str | None = None
 
 
 class ScriptSequenceMap(BaseModel):

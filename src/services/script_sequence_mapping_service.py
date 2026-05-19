@@ -131,6 +131,11 @@ class ScriptSequenceMappingService:
     ) -> ScriptSequenceMapEntry:
         first = group[0]
         sequence_id = f"seq_{seq_number:03d}"
+        scene_numbers = [int(s.scene_number) for s in group]
+        source_scene_start = min(scene_numbers) if scene_numbers else 0
+        source_scene_end = max(scene_numbers) if scene_numbers else 0
+        source_sequence_label = f"Secuencia {seq_number}"
+        display_name = f"Secuencia {seq_number} — Escenas {source_scene_start}-{source_scene_end}"
 
         raw_texts = [s.raw_text for s in group if s.raw_text]
         script_excerpt = "\n\n".join(raw_texts)
@@ -193,6 +198,12 @@ class ScriptSequenceMappingService:
             sequence_title=title,
             dramatic_purpose=dramatic_function,
             continuity_group=self._continuity_group(group),
+            source_sequence_label=source_sequence_label,
+            source_scene_start=source_scene_start,
+            source_scene_end=source_scene_end,
+            scene_numbers=scene_numbers,
+            scene_count=len(scene_numbers),
+            display_name=display_name,
         )
 
     def _continuity_group(self, group: list[ScriptScene]) -> str:

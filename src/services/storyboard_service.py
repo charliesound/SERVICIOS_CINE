@@ -810,9 +810,9 @@ class StoryboardService:
             )[:220]
             sequences.append(
                 StoryboardSequenceBlock(
-                    sequence_id=f"seq_{sequence_number:02d}",
+                    sequence_id=f"seq_{sequence_number:03d}",
                     sequence_number=sequence_number,
-                    title=title,
+                    title=f"Secuencia {sequence_number} — Escenas {min(included_scenes)}-{max(included_scenes)}" if included_scenes else title,
                     summary=summary,
                     included_scenes=included_scenes,
                     characters=characters,

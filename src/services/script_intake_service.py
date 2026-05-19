@@ -273,6 +273,8 @@ class ScriptIntakeService:
             chunk = scenes[index:index + block_size]
             sequence_number = len(sequence_blocks) + 1
             included_scene_numbers = [self._coerce_scene_number(scene) for scene in chunk]
+            scene_start = min(included_scene_numbers) if included_scene_numbers else 0
+            scene_end = max(included_scene_numbers) if included_scene_numbers else 0
             characters = sorted(
                 {
                     character
@@ -282,19 +284,32 @@ class ScriptIntakeService:
                 }
             )
             first_scene = chunk[0]
-            title = first_scene.get("location") or first_scene.get("heading") or f"Sequence {sequence_number}"
+            source_label = f"Secuencia {sequence_number}"
+            display_name = f"Secuencia {sequence_number} — Escenas {scene_start}-{scene_end}" if scene_start and scene_end else source_label
+            title = first_scene.get("location") or first_scene.get("heading") or display_name
             summary = "; ".join(
                 scene.get("heading") or f"Scene {self._coerce_scene_number(scene)}"
                 for scene in chunk
             )[:220]
+            sequence_id = f"seq_{sequence_number:03d}"
+            for scene in chunk:
+                scene["sequence_id"] = sequence_id
+                scene["sequence_order"] = sequence_number
+                scene["sequence_display_name"] = display_name
             estimated_shots = max(1, sum(max(1, len(scene.get("action_blocks", [])[:3])) for scene in chunk))
             sequence_blocks.append(
                 {
-                    "sequence_id": f"seq_{sequence_number:02d}",
+                    "sequence_id": sequence_id,
                     "sequence_number": sequence_number,
-                    "title": title,
+                    "title": display_name,
                     "summary": summary,
                     "included_scenes": included_scene_numbers,
+                    "scene_numbers": included_scene_numbers,
+                    "scene_count": len(included_scene_numbers),
+                    "source_sequence_label": source_label,
+                    "source_scene_start": scene_start,
+                    "source_scene_end": scene_end,
+                    "display_name": display_name,
                     "characters": characters,
                     "location": first_scene.get("location"),
                     "emotional_arc": self._sequence_arc(chunk),

@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     auth_disabled: bool = False
 
     # ── Database ─────────────────────────────────────────────────────────
-    database_url: str = ""
+    database_url: str = "sqlite+aiosqlite:///./ailinkcinema_s2.db"
     database_runtime_schema_sync: bool = True
     database_sqlite_legacy_bootstrap: bool = True
     database_use_alembic: bool = False

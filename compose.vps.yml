@@ -22,7 +22,7 @@ services:
       COMFYUI_DUBBING: ${COMFYUI_DUBBING_BASE_URL:-http://100.x.x.x:8190}
       COMFYUI_LAB: ${COMFYUI_LAB_BASE_URL:-http://100.x.x.x:8191}
       # VPS-specific settings
-      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./ailinkcinema.db}
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./ailinkcinema_s2.db}
       BACKEND_HOST: 0.0.0.0
       PUBLIC_HOST: ${PUBLIC_HOST:-ailinkcinema.example.com}
       PUBLIC_PROTOCOL: ${PUBLIC_PROTOCOL:-https}

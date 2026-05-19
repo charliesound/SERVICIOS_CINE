@@ -22,7 +22,7 @@ services:
       COMFYUI_VIDEO: ${COMFYUI_VIDEO_BASE_URL:-http://host.docker.internal:8189}
       COMFYUI_DUBBING: ${COMFYUI_DUBBING_BASE_URL:-http://host.docker.internal:8190}
       COMFYUI_LAB: ${COMFYUI_LAB_BASE_URL:-http://host.docker.internal:8191}
-      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./ailinkcinema.db}
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./ailinkcinema_s2.db}
       BACKEND_HOST: 0.0.0.0
 
   frontend:

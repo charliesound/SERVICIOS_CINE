@@ -68,3 +68,23 @@ def test_builder_can_build_profile_template_with_safety_net() -> None:
     assert workflow_key == "storyboard_safe"
     assert executed_profile == "storyboard_safe"
     assert fallback_report is None
+
+
+def test_realistic_client_review_prompt_enrichment_in_runtime_builder() -> None:
+    runtime = builder.build_runtime_prompt(
+        "still_storyboard_frame",
+        {
+            "preset_key": "storyboard_realistic",
+            "style_preset": "realistic_client_review",
+            "prompt": "A founder presents a pitch deck to the client",
+            "negative_prompt": "blurry",
+        },
+    )
+
+    prompt = runtime["2"]["inputs"]["text"].lower()
+    negative = runtime["3"]["inputs"]["text"].lower()
+    assert "client-facing commercial or film pitch" in prompt
+    assert "clean professional visual style" in prompt
+    assert "consistent characters" in prompt
+    assert "messy composition" in negative
+    assert "distorted faces" in negative

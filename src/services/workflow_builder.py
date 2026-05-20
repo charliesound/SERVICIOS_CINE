@@ -6,6 +6,7 @@ import logging
 from .workflow_registry import workflow_registry, WorkflowTemplate, TaskCategory
 from schemas.comfyui_workflow_schema import WorkflowFallbackReport
 from services.comfyui_workflow_selector_service import select_workflow as _selector_select_workflow
+from services.storyboard_style_preset_service import storyboard_style_preset_service
 
 
 logger = logging.getLogger(__name__)
@@ -254,18 +255,32 @@ class WorkflowBuilder:
             preset_key = "storyboard_sketch"
             preset = STORYBOARD_RUNTIME_PRESETS["storyboard_sketch"]
         settings = preset.get("settings", {})
+        storyboard_inputs = dict(inputs)
+        style_preset = str(storyboard_inputs.get("style_preset") or "").strip().lower()
+        if style_preset:
+            base_prompt = str(storyboard_inputs.get("prompt") or storyboard_inputs.get("text") or "").strip()
+            storyboard_inputs["prompt"] = storyboard_style_preset_service.enrich_prompt_with_storyboard_style(
+                base_prompt,
+                style_preset,
+            )
+            style_negative = storyboard_style_preset_service.get_negative_prompt_for_storyboard_style(style_preset)
+            if style_negative:
+                base_negative = str(storyboard_inputs.get("negative_prompt") or DEFAULT_STORYBOARD_NEGATIVE).strip()
+                storyboard_inputs["negative_prompt"] = ", ".join(
+                    part for part in [base_negative, style_negative] if part
+                )
         return self._build_basic_text_to_image_prompt(
-            inputs,
-            checkpoint=str(inputs.get("checkpoint") or preset.get("checkpoint") or "Realistic_Vision_V2.0.safetensors"),
-            filename_prefix=str(inputs.get("filename_prefix") or "storyboard"),
-            width=int(inputs.get("width") or settings.get("width") or 1024),
-            height=int(inputs.get("height") or settings.get("height") or 576),
-            steps=int(inputs.get("steps") or settings.get("steps") or 20),
-            cfg=float(inputs.get("cfg") or settings.get("cfg") or 7.0),
-            sampler_name=str(inputs.get("sampler_name") or settings.get("sampler_name") or "euler"),
-            scheduler=str(inputs.get("scheduler") or settings.get("scheduler") or "normal"),
-            denoise=float(inputs.get("denoise") or settings.get("denoise") or 1.0),
-            negative_prompt=str(inputs.get("negative_prompt") or DEFAULT_STORYBOARD_NEGATIVE),
+            storyboard_inputs,
+            checkpoint=str(storyboard_inputs.get("checkpoint") or preset.get("checkpoint") or "Realistic_Vision_V2.0.safetensors"),
+            filename_prefix=str(storyboard_inputs.get("filename_prefix") or "storyboard"),
+            width=int(storyboard_inputs.get("width") or settings.get("width") or 1024),
+            height=int(storyboard_inputs.get("height") or settings.get("height") or 576),
+            steps=int(storyboard_inputs.get("steps") or settings.get("steps") or 20),
+            cfg=float(storyboard_inputs.get("cfg") or settings.get("cfg") or 7.0),
+            sampler_name=str(storyboard_inputs.get("sampler_name") or settings.get("sampler_name") or "euler"),
+            scheduler=str(storyboard_inputs.get("scheduler") or settings.get("scheduler") or "normal"),
+            denoise=float(storyboard_inputs.get("denoise") or settings.get("denoise") or 1.0),
+            negative_prompt=str(storyboard_inputs.get("negative_prompt") or DEFAULT_STORYBOARD_NEGATIVE),
         )
 
     def _build_basic_text_to_image_prompt(

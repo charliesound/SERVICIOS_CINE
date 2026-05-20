@@ -83,3 +83,17 @@ def test_caption_wrapping_and_numbering_do_not_crash(tmp_path: Path) -> None:
         StoryboardLayoutConfig(layout=StoryboardLayoutName.grid_2x2, preset=StoryboardSheetPreset.production_sheet, title="Wrap Test"),
     )
     assert pages[0].size == (1920, 1080)
+
+
+def test_layout_engine_realistic_client_review_preset(tmp_path: Path) -> None:
+    frame = _make_frame(tmp_path, 1)
+    pages = storyboard_layout_engine.render_pages(
+        [frame],
+        StoryboardLayoutConfig(
+            layout=StoryboardLayoutName.grid_2x2,
+            preset=StoryboardSheetPreset.realistic_client_review,
+            title="Client Review",
+        ),
+    )
+    assert len(pages) == 1
+    assert pages[0].size == (1920, 1080)

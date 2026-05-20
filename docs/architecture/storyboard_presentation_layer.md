@@ -65,3 +65,36 @@ Tambien se preserva metadata relevante por frame:
 2. presets visuales personalizables
 3. export PDF avanzado / DOCX
 4. integracion con pitch deck y presentacion comercial
+
+## Realistic Client Review Preset
+
+`realistic_client_review` orienta la presentacion hacia un storyboard comercial listo para revision de cliente.
+
+Objetivo visual:
+
+- frames realistas o semi-realistas
+- composicion limpia
+- accion facil de leer
+- personajes consistentes
+- look de pitch / review profesional
+
+Uso recomendado:
+
+- pitching comercial
+- revision con cliente
+- direction treatment
+- materiales base para video promocional
+
+Campos de hoja pensados para este preset:
+
+- Frame #
+- Scene
+- Shot size
+- Camera angle
+- Movement
+- Action / Description
+- Dialogue
+- Notes
+- Status
+
+Este preset no copia interfaces ni identidad visual de herramientas externas. Solo adopta el patron funcional de storyboard comercial limpio y legible.

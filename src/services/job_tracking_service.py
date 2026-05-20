@@ -453,6 +453,7 @@ class JobTrackingService:
         available_node_count = source_metadata.get("available_node_count")
         missing_nodes = source_metadata.get("missing_nodes")
         workflow_key = source_metadata.get("workflow_key")
+        storyboard_style_preset = source_metadata.get("storyboard_style_preset")
         if requested is None and executed is None:
             return {}
         meta: dict[str, Any] = {}
@@ -461,6 +462,8 @@ class JobTrackingService:
                 "requested": str(requested) if requested is not None else "",
                 "executed": str(executed) if executed is not None else "",
             }
+            if storyboard_style_preset is not None:
+                meta["workflow_profile"]["style_preset"] = str(storyboard_style_preset)
         if available_node_count is not None:
             meta["available_node_count"] = int(available_node_count)
         if isinstance(missing_nodes, list):

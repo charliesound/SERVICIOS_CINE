@@ -49,23 +49,38 @@ def main() -> None:
     for index in range(1, 7):
         frames.append(_make_dummy_frame(smoke_dir / f"dummy_{index:02d}.png", index))
 
-    config = StoryboardLayoutConfig(
-        layout=StoryboardLayoutName.grid_2x3,
-        preset=StoryboardSheetPreset.clean_corporate,
-        title="Smoke Storyboard Sheet",
-    )
-    pages = storyboard_layout_engine.render_pages(frames, config)
-    png_result = storyboard_export_service.export_png(project_id="smoke", pages=pages, base_name="storyboard_sheet_smoke")
-    pdf_result = storyboard_export_service.export_pdf(project_id="smoke", pages=pages, base_name="storyboard_sheet_smoke")
+    configs = [
+        (
+            StoryboardLayoutConfig(
+                layout=StoryboardLayoutName.grid_2x3,
+                preset=StoryboardSheetPreset.clean_corporate,
+                title="Smoke Storyboard Sheet",
+            ),
+            "storyboard_sheet_smoke",
+        ),
+        (
+            StoryboardLayoutConfig(
+                layout=StoryboardLayoutName.grid_2x3,
+                preset=StoryboardSheetPreset.realistic_client_review,
+                title="Realistic Client Review Storyboard Sheet",
+            ),
+            "storyboard_sheet_realistic_client_review",
+        ),
+    ]
 
-    print("PNG:")
-    for path in png_result["page_paths"]:
-        p = Path(path)
-        print(f"- {p} ({p.stat().st_size} bytes)")
+    for config, base_name in configs:
+        pages = storyboard_layout_engine.render_pages(frames, config)
+        png_result = storyboard_export_service.export_png(project_id="smoke", pages=pages, base_name=base_name)
+        pdf_result = storyboard_export_service.export_pdf(project_id="smoke", pages=pages, base_name=base_name)
 
-    print("PDF:")
-    pdf_path = Path(pdf_result["artifact_path"])
-    print(f"- {pdf_path} ({pdf_path.stat().st_size} bytes)")
+        print(f"PNG ({config.preset.value}):")
+        for path in png_result["page_paths"]:
+            p = Path(path)
+            print(f"- {p} ({p.stat().st_size} bytes)")
+
+        print(f"PDF ({config.preset.value}):")
+        pdf_path = Path(pdf_result["artifact_path"])
+        print(f"- {pdf_path} ({pdf_path.stat().st_size} bytes)")
 
 
 if __name__ == "__main__":

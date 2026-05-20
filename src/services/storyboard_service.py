@@ -50,6 +50,7 @@ from services.script_intake_service import script_intake_service
 from services.semantic_prompt_validation_service import semantic_prompt_validation_service
 from services.storyboard_image_script_validation_service import storyboard_image_script_validation_service
 from services.storyboard_prompt_reference_service import storyboard_prompt_reference_service
+from services.storyboard_style_preset_service import storyboard_style_preset_service
 
 
 logger = logging.getLogger(__name__)
@@ -116,40 +117,13 @@ class StoryboardService:
     )
 
     def build_storyboard_visual_style_prompt(self, style_preset: str) -> dict[str, str]:
-        preset = (style_preset or "hand_drawn_storyboard").strip().lower()
-        aliases = {
-            "graphic_novel": "graphic_novel_storyboard",
-        }
-        normalized = aliases.get(preset, preset)
-        if normalized not in {
-            "hand_drawn_storyboard",
-            "rough_pencil_storyboard",
-            "ink_storyboard",
-            "charcoal_storyboard",
-            "graphic_novel_storyboard",
-            "cinematic_realistic",
-            "moody_noir",
-            "commercial_pitch",
-        }:
-            normalized = "hand_drawn_storyboard"
-
-        style_prompts = {
-            "hand_drawn_storyboard": "rough hand drawn storyboard, pencil line art, unfinished production sketch, loose construction lines, storyboard thumbnails, black and white, monochrome, no color, director blocking sketch, rough pencil sketch, expressive loose strokes, previsualization drawing",
-            "rough_pencil_storyboard": "rough pencil storyboard drawing, hand-sketched cinematic panel, monochrome graphite lines, production storyboard rough pass, gesture-driven linework",
-            "ink_storyboard": "ink storyboard line art, strong black contours, monochrome storyboard frame, cinematic blocking illustration, clean directional hatching",
-            "charcoal_storyboard": "charcoal storyboard concept frame, expressive dark tonal sketch, cinematic silhouette planning, monochrome textured strokes",
-            "graphic_novel_storyboard": "graphic novel storyboard panel, dramatic line art, stylized monochrome shading, cinematic framing and action readability",
-            "cinematic_realistic": "cinematic realistic storyboard frame",
-            "moody_noir": "moody noir storyboard frame",
-            "commercial_pitch": "commercial pitch storyboard frame",
-        }
-        legacy_realistic = normalized in {"cinematic_realistic", "moody_noir", "commercial_pitch"}
+        preset_payload = storyboard_style_preset_service.get_storyboard_style_preset(style_preset)
         return {
-            "positive_style_prompt": style_prompts[normalized],
-            "negative_style_prompt": "" if legacy_realistic else self.NON_REALISTIC_NEGATIVE,
-            "normalized_style_preset": normalized,
-            "preset_key": "storyboard_realistic" if legacy_realistic else "storyboard_sketch",
-            "checkpoint": "Realistic_Vision_V2.0.safetensors" if legacy_realistic else "",
+            "positive_style_prompt": str(preset_payload["positive_style_prompt"]),
+            "negative_style_prompt": str(preset_payload["negative_style_prompt"]),
+            "normalized_style_preset": str(preset_payload["normalized_style_preset"]),
+            "preset_key": str(preset_payload["preset_key"]),
+            "checkpoint": str(preset_payload["checkpoint"]),
         }
 
     async def _run_llm_storyboard_prompts_or_none(
@@ -713,6 +687,7 @@ class StoryboardService:
                         "visual_bible_applied": vb_meta.get("applied", False),
                         "visual_bible_id": vb_meta.get("visual_bible_id"),
                         "visual_bible_preset": vb_meta.get("active_preset_id"),
+                        "storyboard_style_preset": style_preset,
                         "workflow_profile_requested": "storyboard_safe",
                         "workflow_profile_executed": "storyboard_safe",
                         "workflow_fallback_report": {
@@ -1747,7 +1722,6 @@ class StoryboardService:
             or scene_heading
         )
         prompt_parts = [
-            style_cfg["positive_style_prompt"],
             tone,
             f"{shot_type} shot",
             primary_prompt,
@@ -1770,6 +1744,10 @@ class StoryboardService:
             prompt_parts.append(f"Script excerpt: {metadata_payload['script_excerpt_used']}")
         if project_context:
             prompt_parts.append(f"Project context: {project_context}")
+        positive_prompt = storyboard_style_preset_service.enrich_prompt_with_storyboard_style(
+            ", ".join(part for part in prompt_parts if part),
+            style_preset,
+        )
         base_negative = (
             metadata_payload.get("negative_prompt")
             or shot_payload.get("negative_prompt")
@@ -1779,7 +1757,7 @@ class StoryboardService:
         negative = ", ".join(part for part in [base_negative, style_negative] if part)
         return {
             "preset_key": style_cfg.get("preset_key") or "storyboard_realistic",
-            "prompt": ", ".join(part for part in prompt_parts if part),
+            "prompt": positive_prompt,
             "negative_prompt": negative,
             "checkpoint": style_cfg.get("checkpoint") or "",
             "width": 1024,
@@ -2266,6 +2244,7 @@ class StoryboardService:
                 "storyboard_regen_job_id": regen_job_id,
                 "source_shot_id": str(source_shot.id),
                 "sequence_id": source_shot.sequence_id,
+                "storyboard_style_preset": source_shot.visual_mode or "hand_drawn_storyboard",
                 "workflow_profile_requested": "storyboard_safe",
                 "workflow_profile_executed": "storyboard_safe",
                 "workflow_fallback_report": {

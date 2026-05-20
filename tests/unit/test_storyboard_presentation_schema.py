@@ -36,6 +36,18 @@ def test_preset_valid() -> None:
     assert cfg.preset == StoryboardSheetPreset.realistic_client_review
 
 
+def test_storyboard_presentation_schema_accepts_realistic_client_review() -> None:
+    req = StoryboardSheetRequest(
+        project_id="proj-1",
+        layout=StoryboardLayoutConfig(
+            layout=StoryboardLayoutName.grid_2x3,
+            preset=StoryboardSheetPreset.realistic_client_review,
+        ),
+        output_format="pdf",
+    )
+    assert req.layout.preset == StoryboardSheetPreset.realistic_client_review
+
+
 def test_output_format_valid() -> None:
     req = StoryboardSheetRequest(
         project_id="proj-1",

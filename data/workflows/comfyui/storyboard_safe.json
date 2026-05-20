@@ -1,0 +1,82 @@
+{
+  "workflow_key": "storyboard_safe",
+  "profile": "storyboard_safe",
+  "description": "Defensive storyboard workflow using only core ComfyUI nodes and current 8188-safe defaults.",
+  "node_classes": [
+    "CheckpointLoaderSimple",
+    "CLIPTextEncode",
+    "EmptyLatentImage",
+    "KSampler",
+    "VAEDecode",
+    "SaveImage"
+  ],
+  "parameters": {
+    "checkpoint": {"node": "1", "input": "ckpt_name"},
+    "positive_prompt": {"node": "2", "input": "text"},
+    "negative_prompt": {"node": "3", "input": "text"},
+    "width": {"node": "4", "input": "width"},
+    "height": {"node": "4", "input": "height"},
+    "steps": {"node": "5", "input": "steps"},
+    "cfg": {"node": "5", "input": "cfg"},
+    "sampler_name": {"node": "5", "input": "sampler_name"},
+    "scheduler": {"node": "5", "input": "scheduler"},
+    "seed": {"node": "5", "input": "seed"},
+    "denoise": {"node": "5", "input": "denoise"},
+    "output_prefix": {"node": "7", "input": "filename_prefix"}
+  },
+  "defaults": {
+    "checkpoint": "Realistic_Vision_V2.0.safetensors",
+    "positive_prompt": "",
+    "negative_prompt": "blurry, low quality, bad anatomy, deformed hands, extra fingers, duplicate, cropped, watermark, text, logo, oversaturated, cartoon, anime, plastic skin",
+    "width": 1024,
+    "height": 576,
+    "steps": 20,
+    "cfg": 7.0,
+    "sampler_name": "euler",
+    "scheduler": "normal",
+    "seed": 0,
+    "denoise": 1.0,
+    "output_prefix": "storyboard_safe"
+  },
+  "prompt_template": {
+    "1": {
+      "class_type": "CheckpointLoaderSimple",
+      "inputs": {"ckpt_name": "Realistic_Vision_V2.0.safetensors"}
+    },
+    "2": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {"text": "", "clip": ["1", 1]}
+    },
+    "3": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {"text": "", "clip": ["1", 1]}
+    },
+    "4": {
+      "class_type": "EmptyLatentImage",
+      "inputs": {"width": 1024, "height": 576, "batch_size": 1}
+    },
+    "5": {
+      "class_type": "KSampler",
+      "inputs": {
+        "seed": 0,
+        "steps": 20,
+        "cfg": 7.0,
+        "sampler_name": "euler",
+        "scheduler": "normal",
+        "denoise": 1.0,
+        "model": ["1", 0],
+        "positive": ["2", 0],
+        "negative": ["3", 0],
+        "latent_image": ["4", 0]
+      }
+    },
+    "6": {
+      "class_type": "VAEDecode",
+      "inputs": {"samples": ["5", 0], "vae": ["1", 2]}
+    },
+    "7": {
+      "class_type": "SaveImage",
+      "inputs": {"filename_prefix": "storyboard_safe", "images": ["6", 0]}
+    }
+  }
+}

@@ -35,8 +35,15 @@ def _reset_taxonomy_service():
 
 
 @pytest_asyncio.fixture
-async def db_session():
-    engine = create_async_engine("sqlite+aiosqlite:////tmp/ailinkcinema.db")
+async def db_session(tmp_path):
+    from models.core import Project
+    from models.project_visual_bible import ProjectVisualBible
+
+    db_path = tmp_path / "ailinkcinema_visual_bible_test.db"
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
+    async with engine.begin() as conn:
+        await conn.run_sync(Project.__table__.create)
+        await conn.run_sync(ProjectVisualBible.__table__.create)
     session_local = async_sessionmaker(
         bind=engine, class_=AsyncSession, expire_on_commit=False
     )

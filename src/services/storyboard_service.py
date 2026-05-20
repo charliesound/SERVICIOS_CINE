@@ -713,6 +713,18 @@ class StoryboardService:
                         "visual_bible_applied": vb_meta.get("applied", False),
                         "visual_bible_id": vb_meta.get("visual_bible_id"),
                         "visual_bible_preset": vb_meta.get("active_preset_id"),
+                        "workflow_profile_requested": "storyboard_safe",
+                        "workflow_profile_executed": "storyboard_safe",
+                        "workflow_fallback_report": {
+                            "requested_profile": "storyboard_safe",
+                            "executed_profile": "storyboard_safe",
+                            "fallback_applied": False,
+                            "reason": "none",
+                            "missing_nodes": [],
+                            "missing_models": [],
+                        },
+                        "missing_nodes": [],
+                        "workflow_key": "still_storyboard_frame",
                     },
                 )
                 if response.status.value == "queued" and queue_item is not None:
@@ -2254,6 +2266,18 @@ class StoryboardService:
                 "storyboard_regen_job_id": regen_job_id,
                 "source_shot_id": str(source_shot.id),
                 "sequence_id": source_shot.sequence_id,
+                "workflow_profile_requested": "storyboard_safe",
+                "workflow_profile_executed": "storyboard_safe",
+                "workflow_fallback_report": {
+                    "requested_profile": "storyboard_safe",
+                    "executed_profile": "storyboard_safe",
+                    "fallback_applied": False,
+                    "reason": "none",
+                    "missing_nodes": [],
+                    "missing_models": [],
+                },
+                "missing_nodes": [],
+                "workflow_key": "still_storyboard_frame",
             },
         )
         render_job_id = response.job_id if queue_item is not None else None

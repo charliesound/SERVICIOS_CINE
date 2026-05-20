@@ -13,6 +13,8 @@ from .instance_registry import registry
 from .comfyui_client_factory import factory, ComfyUIClient
 from .workflow_builder import builder as workflow_builder
 from .job_tracking_service import job_tracking_service
+from .comfyui_node_capability_service import get_instance_capability_snapshot
+from .comfyui_workflow_selector_service import build_metadata_workflow_profile
 from database import AsyncSessionLocal
 
 logging.basicConfig(level=logging.INFO)
@@ -180,9 +182,26 @@ class JobScheduler:
             )
             return False, error
 
-        runtime_prompt = workflow_builder.build_runtime_prompt(
-            item.workflow_key,
-            prompt_inputs,
+        capability_snapshot = get_instance_capability_snapshot(
+            item.backend,
+            client.base_url,
+            fetch_live=item.backend == "still",
+        )
+        available_nodes = set(capability_snapshot.available_nodes) if capability_snapshot.available_nodes else None
+        requested_profile = str(
+            prompt_inputs.get("workflow_profile_requested")
+            or (item.metadata or {}).get("workflow_profile_requested")
+            or "storyboard_safe"
+        )
+
+        runtime_prompt, executed_workflow_key, fallback_report, executed_profile = (
+            workflow_builder.build_runtime_prompt_with_profile(
+                item.workflow_key,
+                prompt_inputs,
+                requested_profile=requested_profile,
+                available_nodes=available_nodes,
+                skip_node_validation=available_nodes is None,
+            )
         )
         if not runtime_prompt:
             error = f"Missing render payload: runtime prompt builder not found for workflow_key={item.workflow_key}"
@@ -195,6 +214,21 @@ class JobScheduler:
                 sorted(prompt_inputs.keys()),
             )
             return False, error
+
+        item.workflow_key = executed_workflow_key or item.workflow_key
+        item.metadata = {
+            **(item.metadata or {}),
+            **build_metadata_workflow_profile(
+                requested_profile=requested_profile,
+                executed_profile=executed_profile,
+                fallback_report=fallback_report,
+                available_node_count=capability_snapshot.total_nodes,
+            ),
+            "workflow_key": item.workflow_key,
+            "object_info_snapshot_at": capability_snapshot.object_info_snapshot_at,
+            "backend": capability_snapshot.backend,
+            "backend_base_url": capability_snapshot.base_url,
+        }
 
         final_checkpoint = (
             runtime_prompt.get("1", {})

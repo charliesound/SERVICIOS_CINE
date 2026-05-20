@@ -4,6 +4,8 @@ import random
 import logging
 
 from .workflow_registry import workflow_registry, WorkflowTemplate, TaskCategory
+from schemas.comfyui_workflow_schema import WorkflowFallbackReport
+from services.comfyui_workflow_selector_service import select_workflow as _selector_select_workflow
 
 
 logger = logging.getLogger(__name__)
@@ -211,6 +213,18 @@ class WorkflowBuilder:
         if self._looks_like_comfyui_prompt(inputs):
             return inputs
 
+        requested_profile = inputs.get("workflow_profile_requested") or inputs.get("workflow_profile")
+        if isinstance(requested_profile, str) and requested_profile.strip() and workflow_key != "still_storyboard_frame":
+            prompt, _exec_key, _fallback_report, _exec_profile = self.build_runtime_prompt_with_profile(
+                workflow_key,
+                inputs,
+                requested_profile=requested_profile,
+                available_nodes=None,
+                skip_node_validation=True,
+            )
+            if prompt:
+                return prompt
+
         if workflow_key == "still_storyboard_frame":
             return self._build_still_storyboard_prompt(inputs)
         if workflow_key == "still_text_to_image_pro":
@@ -322,6 +336,55 @@ class WorkflowBuilder:
                 "inputs": {"filename_prefix": filename_prefix, "images": ["6", 0]},
             },
         }
+
+
+    def build_runtime_prompt_with_profile(
+        self,
+        workflow_key: str,
+        inputs: Dict[str, Any],
+        requested_profile: str = "storyboard_safe",
+        available_nodes: Optional[set[str]] = None,
+        *,
+        skip_node_validation: bool = False,
+    ) -> tuple[Optional[Dict[str, Any]], str, Optional[WorkflowFallbackReport], str]:
+        if self._looks_like_comfyui_prompt(inputs):
+            return inputs, workflow_key, None, requested_profile
+
+        if workflow_key == "still_storyboard_frame":
+            prompt = self._build_still_storyboard_prompt(inputs)
+            return prompt, workflow_key, None, requested_profile
+
+        prompt, exec_key, fallback_report, exec_profile = _selector_select_workflow(
+            workflow_key=workflow_key,
+            requested_profile=requested_profile,
+            inputs=inputs,
+            available_nodes=available_nodes,
+            skip_node_validation=skip_node_validation,
+        )
+        if prompt is not None:
+            return prompt, exec_key, fallback_report, exec_profile
+
+        if workflow_key in {"still_text_to_image_pro", "storyboard_safe", "smoke_light"}:
+            fallback_prompt = self._build_basic_text_to_image_prompt(
+                inputs,
+                checkpoint=str(inputs.get("checkpoint") or "Realistic_Vision_V2.0.safetensors"),
+                filename_prefix=str(
+                    inputs.get("output_prefix")
+                    or inputs.get("filename_prefix")
+                    or workflow_key
+                ),
+                width=int(inputs.get("width") or 1024),
+                height=int(inputs.get("height") or 1024),
+                steps=int(inputs.get("steps") or 20),
+                cfg=float(inputs.get("cfg") or 7.0),
+                sampler_name=str(inputs.get("sampler_name") or inputs.get("sampler") or "euler"),
+                scheduler=str(inputs.get("scheduler") or "normal"),
+                denoise=float(inputs.get("denoise") or 1.0),
+                negative_prompt=str(inputs.get("negative_prompt") or "blurry, low quality, distorted"),
+            )
+            return fallback_prompt, workflow_key, fallback_report, "hardcoded_safety_net"
+
+        return None, "", fallback_report, "none"
 
 
 builder = WorkflowBuilder()

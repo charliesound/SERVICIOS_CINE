@@ -443,6 +443,40 @@ class JobTrackingService:
             }
         }
 
+    @staticmethod
+    def _extract_workflow_profile_metadata(source_metadata: Any) -> dict[str, Any]:
+        if not source_metadata or not isinstance(source_metadata, dict):
+            return {}
+        requested = source_metadata.get("workflow_profile_requested")
+        executed = source_metadata.get("workflow_profile_executed")
+        fallback_str = source_metadata.get("workflow_fallback_report")
+        available_node_count = source_metadata.get("available_node_count")
+        missing_nodes = source_metadata.get("missing_nodes")
+        workflow_key = source_metadata.get("workflow_key")
+        if requested is None and executed is None:
+            return {}
+        meta: dict[str, Any] = {}
+        if requested is not None or executed is not None:
+            meta["workflow_profile"] = {
+                "requested": str(requested) if requested is not None else "",
+                "executed": str(executed) if executed is not None else "",
+            }
+        if available_node_count is not None:
+            meta["available_node_count"] = int(available_node_count)
+        if isinstance(missing_nodes, list):
+            meta["missing_nodes"] = [str(node) for node in missing_nodes]
+        if workflow_key is not None:
+            meta["workflow_key"] = str(workflow_key)
+        if fallback_str is not None:
+            if isinstance(fallback_str, str):
+                try:
+                    fallback_str = json.loads(fallback_str)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            if isinstance(fallback_str, dict):
+                meta["workflow_fallback_report"] = fallback_str
+        return meta
+
     async def persist_scheduler_success_assets(
         self,
         db: AsyncSession,
@@ -535,6 +569,9 @@ class JobTrackingService:
                     vb_meta = self._extract_visual_bible_metadata(source_metadata)
                     if vb_meta:
                         metadata_json.update(vb_meta)
+                    wp_meta = self._extract_workflow_profile_metadata(source_metadata)
+                    if wp_meta:
+                        metadata_json.update(wp_meta)
 
                     asset = await self.upsert_job_asset(
                         db,

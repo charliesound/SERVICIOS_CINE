@@ -18,6 +18,8 @@ services:
       COMFYUI_RESTORATION_BASE_URL: ${COMFYUI_RESTORATION_BASE_URL:-http://host.docker.internal:8191}
       COMFYUI_LAB_BASE_URL: ${COMFYUI_LAB_BASE_URL:-http://host.docker.internal:8191}
       COMFYUI_3D_BASE_URL: ${COMFYUI_3D_BASE_URL:-http://host.docker.internal:8192}
+      COMFYUI_HTTP_TIMEOUT: ${COMFYUI_HTTP_TIMEOUT:-300}
+      COMFYUI_TIMEOUT_SECONDS: ${COMFYUI_TIMEOUT_SECONDS:-300}
       COMFYUI_STILL: ${COMFYUI_STILL_BASE_URL:-http://host.docker.internal:8188}
       COMFYUI_VIDEO: ${COMFYUI_VIDEO_BASE_URL:-http://host.docker.internal:8189}
       COMFYUI_DUBBING: ${COMFYUI_DUBBING_BASE_URL:-http://host.docker.internal:8190}

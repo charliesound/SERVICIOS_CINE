@@ -336,12 +336,17 @@ class JobScheduler:
                 await asyncio.sleep(poll_interval)
                 elapsed += poll_interval
             except Exception as e:
-                logger.error(f"Error checking job status: {e}")
-                break
+                logger.warning(
+                    "ComfyUI history polling failed for job_id=%s: %s; will retry until timeout",
+                    item.job_id, e,
+                )
+                await asyncio.sleep(poll_interval)
+                elapsed += poll_interval
+                continue
 
         # On timeout, leave progress where it was
         queue_service.mark_timeout(item.job_id)
-        logger.warning(f"Job {item.job_id} timed out")
+        logger.warning(f"Job {item.job_id} timed out after {elapsed}s")
 
     async def _persist_success_assets(
         self,

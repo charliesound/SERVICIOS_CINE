@@ -212,4 +212,82 @@ La cadena de metadata funciona correctamente desde Visual Bible hasta el RenderJ
 
 ---
 
-*Documento generado como parte de la validación real Fase 2C.3*
+## 9. Phase 2C.3 Final GO — CID Pipeline Smoke Passed
+
+### 9.1 Configuración de la validación final
+
+| Parámetro | Valor |
+|-----------|-------|
+| **Fecha** | 2026-05-20 |
+| **Commit base** | `5a8f2ae` (chore: configure ComfyUI WSL as local backend) |
+| **Backend** | `ailinkcinema_backend` (Docker, `0.0.0.0:8000` interno) |
+| **ComfyUI** | WSL 8188 (`172.24.174.31:8188`, v0.19.3, post-fix) |
+| **Usuario** | `smoke@test.com` (role=admin) |
+| **PROJECT_ID** | `aef10e1a30174351b29088306647f01d` |
+| **Modo storyboard** | `SINGLE_SCENE` (scene 1, preset `cinematic_realistic`) |
+| **Render Job ID** | `67616477` |
+| **Workflow** | `still_storyboard_frame` |
+| **Status** | `succeeded` |
+| **ComfyUI render time** | ~35s |
+| **Total wall time** | ~35s |
+
+### 9.2 Asset final generado
+
+```json
+{
+  "id": "d45d5868-9c4a-41c4-a5cb-000f63a7065f",
+  "file_name": "storyboard_aef10e1a_001_45b70a99_00001_.png",
+  "file_extension": "png",
+  "asset_type": "image",
+  "asset_source": "queue_images_7_0",
+  "content_ref": "file:///data/output/renders/60cee19db7b4440093258c4db02a3494/aef10e1a30174351b29088306647f01d/67616477/7_00_storyboard_aef10e1a_001_45b70a99_00001.png"
+}
+```
+
+### 9.3 Metadata Visual Bible en asset final
+
+```json
+"visual_bible": {
+  "enabled": true,
+  "applied": true,
+  "visual_bible_id": "17931ded43944057927c834f9dfc3073",
+  "visual_bible_preset": null,
+  "source": "render_job_metadata"
+}
+```
+
+### 9.4 ComfyUI history
+
+- **2 prompts ejecutados** (keys: `8269b5d4...`, `104e3210...`)
+- **Node 7 output**: imagen generada correctamente
+- **No TypeError**: la ejecución completó sin errores
+- **No timeout**: render completado en ~35s
+
+### 9.5 Root cause confirmada y resuelta
+
+**CASO C — custom node API incompatibility.**
+
+- `comfyui-lora-manager/metadata_hook.py:206` no reenvía el parámetro `ui_outputs` introducido en ComfyUI v0.19.3
+- La cadena de hooks `comfyui_image_metadata_extension → comfyui-enhancement-utils → comfyui-deploy → comfyui-lora-manager` propaga el TypeError
+- Fix aplicado: 4 custom nodes movidos fuera de `custom_nodes/` a `custom_nodes_BACKUP_CRASHFIX/`
+
+### 9.6 Conclusión: **GO**
+
+| Criterio | Estado | Evidencia |
+|----------|--------|-----------|
+| 1. Proyecto creado | ✅ | `POST /api/projects` → HTTP 200 |
+| 2. Guion subido | ✅ | `PUT /api/projects/{pid}/script` → HTTP 200 |
+| 3. Análisis completado | ✅ | `POST /api/projects/{pid}/analyze` → HTTP 200 |
+| 4. Storyboard generado | ✅ | `POST /api/projects/{pid}/storyboard/generate` → HTTP 200 |
+| 5. Render job creado | ✅ | `project_jobs` con `job_type=render:still`, `workflow_key=still_storyboard_frame` |
+| 6. ComfyUI procesó prompt | ✅ | ComfyUI queue_running=1 → 0; history con node 7 output |
+| 7. Asset imagen creado | ✅ | `media_assets` con `asset_type=image`, PNG válido |
+| 8. Visual Bible metadata propagada | ✅ | `metadata_json.visual_bible.applied=true`, `visual_bible_id` presente |
+| 9. No TypeError | ✅ | Render completado sin errores |
+| 10. Sin timeout | ✅ | ~35s, dentro del límite de 3600s |
+
+**Fase 2C.3 validada. Pipeline completo operativo.**
+
+---
+
+*Documento generado como parte de la validación real Fase 2C.3 — Final GO 2026-05-20*

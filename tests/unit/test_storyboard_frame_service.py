@@ -66,6 +66,126 @@ def _make_shot(asset_id: str, *, sequence_order: int, scene_number: int, shot_ty
     )
 
 
+def _make_path_only_asset(
+    *,
+    canonical_path: str = "",
+    content_ref: str | None = None,
+    relative_path: str = "",
+):
+    return SimpleNamespace(
+        id="asset-path",
+        canonical_path=canonical_path,
+        content_ref=content_ref,
+        relative_path=relative_path,
+    )
+
+
+@pytest.fixture
+def docker_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
+    docker_data_root = tmp_path / "docker" / "data"
+    docker_output_root = docker_data_root / "output"
+    host_data_prefix = "/opt/SERVICIOS_CINE/data/"
+    host_output_prefix = "/opt/SERVICIOS_CINE/data/output/"
+
+    monkeypatch.setattr(storyboard_frame_service, "_DOCKER_DATA_ROOT", docker_data_root)
+    monkeypatch.setattr(storyboard_frame_service, "_DOCKER_OUTPUT_ROOT", docker_output_root)
+    monkeypatch.setattr(storyboard_frame_service, "_HOST_DATA_PREFIX", host_data_prefix)
+    monkeypatch.setattr(storyboard_frame_service, "_HOST_OUTPUT_PREFIX", host_output_prefix)
+
+    return {
+        "docker_data_root": docker_data_root,
+        "docker_output_root": docker_output_root,
+    }
+
+
+def test_resolve_image_path_uses_valid_canonical_path(tmp_path: Path) -> None:
+    image_path = tmp_path / "canonical.png"
+    image_path.write_bytes(b"ok")
+    asset = _make_path_only_asset(canonical_path=str(image_path))
+
+    resolved_path, attempted = storyboard_frame_service._resolve_image_path(asset, {})
+
+    assert resolved_path == str(image_path)
+    assert attempted == [str(image_path)]
+
+
+def test_resolve_image_path_converts_host_canonical_to_docker(docker_roots: dict[str, Path]) -> None:
+    relative_path = "storyboards/scene_01/frame_01.png"
+    docker_file = docker_roots["docker_output_root"] / relative_path
+    docker_file.parent.mkdir(parents=True, exist_ok=True)
+    docker_file.write_bytes(b"ok")
+
+    host_canonical = f"/opt/SERVICIOS_CINE/data/output/{relative_path}"
+    asset = _make_path_only_asset(canonical_path=host_canonical)
+
+    resolved_path, attempted = storyboard_frame_service._resolve_image_path(asset, {})
+
+    assert resolved_path == str(docker_file)
+    assert attempted[0].replace("\\", "/") == host_canonical
+
+
+def test_resolve_image_path_converts_metadata_storage_path_to_docker(docker_roots: dict[str, Path]) -> None:
+    relative_path = "storyboards/scene_02/frame_03.png"
+    docker_file = docker_roots["docker_output_root"] / relative_path
+    docker_file.parent.mkdir(parents=True, exist_ok=True)
+    docker_file.write_bytes(b"ok")
+
+    metadata = {"storage_path": f"/opt/SERVICIOS_CINE/data/output/{relative_path}"}
+    asset = _make_path_only_asset(canonical_path="")
+
+    resolved_path, _attempted = storyboard_frame_service._resolve_image_path(asset, metadata)
+
+    assert resolved_path == str(docker_file)
+
+
+def test_resolve_image_path_converts_content_ref_file_uri_to_local_path(tmp_path: Path) -> None:
+    image_path = tmp_path / "from_content_ref.png"
+    image_path.write_bytes(b"ok")
+    content_ref = f"file:///{image_path.as_posix()}"
+    asset = _make_path_only_asset(canonical_path="", content_ref=content_ref)
+
+    resolved_path, attempted = storyboard_frame_service._resolve_image_path(asset, {})
+
+    assert resolved_path == str(image_path)
+    attempted_normalized = [item.replace("\\", "/") for item in attempted]
+    assert image_path.as_posix() in attempted_normalized
+
+
+def test_resolve_image_path_converts_content_ref_host_file_uri_to_docker(docker_roots: dict[str, Path]) -> None:
+    relative_path = "storyboards/scene_04/frame_09.png"
+    docker_file = docker_roots["docker_output_root"] / relative_path
+    docker_file.parent.mkdir(parents=True, exist_ok=True)
+    docker_file.write_bytes(b"ok")
+
+    content_ref = f"file:///opt/SERVICIOS_CINE/data/output/{relative_path}"
+    asset = _make_path_only_asset(canonical_path="", content_ref=content_ref)
+
+    resolved_path, _attempted = storyboard_frame_service._resolve_image_path(asset, {})
+
+    assert resolved_path == str(docker_file)
+
+
+def test_resolve_image_path_uses_relative_path_under_docker_output(docker_roots: dict[str, Path]) -> None:
+    relative_path = "storyboards/scene_03/frame_07.png"
+    docker_file = docker_roots["docker_output_root"] / relative_path
+    docker_file.parent.mkdir(parents=True, exist_ok=True)
+    docker_file.write_bytes(b"ok")
+    asset = _make_path_only_asset(canonical_path="", relative_path=relative_path)
+
+    resolved_path, _attempted = storyboard_frame_service._resolve_image_path(asset, {})
+
+    assert resolved_path == str(docker_file)
+
+
+def test_resolve_image_path_returns_none_when_no_candidate_exists(docker_roots: dict[str, Path]) -> None:
+    asset = _make_path_only_asset(canonical_path="/opt/SERVICIOS_CINE/data/output/storyboards/missing.png")
+
+    resolved_path, attempted = storyboard_frame_service._resolve_image_path(asset, {})
+
+    assert resolved_path is None
+    assert attempted
+
+
 @pytest.mark.asyncio
 async def test_collect_by_asset_ids_orders_frames(tmp_path: Path) -> None:
     assets = [

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote, urlparse
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +19,11 @@ from schemas.storyboard_presentation_schema import (
 
 
 class StoryboardFrameService:
+    _HOST_OUTPUT_PREFIX = "/opt/SERVICIOS_CINE/data/output/"
+    _HOST_DATA_PREFIX = "/opt/SERVICIOS_CINE/data/"
+    _DOCKER_OUTPUT_ROOT = Path("/app/data/output")
+    _DOCKER_DATA_ROOT = Path("/app/data")
+
     async def collect_by_project(
         self,
         db: AsyncSession,
@@ -113,8 +120,17 @@ class StoryboardFrameService:
         frames: list[tuple[tuple[int, int, str], StoryboardFrame]] = []
         for index, asset in enumerate(assets, start=1):
             asset_meta = self._decode_json(getattr(asset, "metadata_json", None))
-            image_path = self._resolve_image_path(asset, asset_meta)
-            if image_path is None or not Path(image_path).is_file():
+            image_path, attempted_paths = self._resolve_image_path(asset, asset_meta)
+            if image_path is None:
+                logger.debug(
+                    "Skipping storyboard frame asset %s: no existing image file found across candidates",
+                    getattr(asset, "id", ""),
+                    extra={
+                        "asset_id": str(getattr(asset, "id", "") or ""),
+                        "job_id": str(getattr(asset, "job_id", "") or ""),
+                        "attempted_paths": attempted_paths,
+                    },
+                )
                 continue
 
             shot = shot_map.get(str(asset.id)) or shot_map.get(str(getattr(asset, "job_id", "") or ""))
@@ -220,19 +236,137 @@ class StoryboardFrameService:
             metadata=metadata,
         )
 
-    def _resolve_image_path(self, asset: MediaAsset, metadata: dict[str, Any]) -> str | None:
-        canonical_path = getattr(asset, "canonical_path", None)
-        if isinstance(canonical_path, str) and canonical_path.strip():
-            return canonical_path.strip()
+    def _resolve_image_path(self, asset: MediaAsset, metadata: dict[str, Any]) -> tuple[str | None, list[str]]:
+        raw_candidates = self._raw_path_candidates(asset, metadata)
+        relative_candidates = self._relative_path_candidates(asset, metadata, raw_candidates)
 
-        storage_path = metadata.get("storage_path")
-        if isinstance(storage_path, str) and storage_path.strip():
-            return storage_path.strip()
+        candidate_paths: list[str] = []
+        for raw_path in raw_candidates:
+            candidate_paths.append(raw_path)
+            converted_path = self._map_host_path_to_docker(raw_path)
+            if converted_path is not None:
+                candidate_paths.append(converted_path)
 
-        content_ref = getattr(asset, "content_ref", None)
-        if isinstance(content_ref, str) and content_ref.startswith("file://"):
-            return content_ref.removeprefix("file://")
+        for relative_path in relative_candidates:
+            output_relative = relative_path.removeprefix("output/")
+            candidate_paths.append(str(self._DOCKER_OUTPUT_ROOT / output_relative))
+            candidate_paths.append(str(self._DOCKER_DATA_ROOT / relative_path))
+
+        attempted_paths: list[str] = []
+        for candidate in self._dedupe_paths(candidate_paths):
+            candidate_path = Path(candidate)
+            attempted_paths.append(candidate)
+            if candidate_path.is_file():
+                return str(candidate_path), attempted_paths
+
+        return None, attempted_paths
+
+    def _raw_path_candidates(self, asset: MediaAsset, metadata: dict[str, Any]) -> list[str]:
+        raw_values = [
+            getattr(asset, "canonical_path", None),
+            metadata.get("storage_path"),
+            getattr(asset, "content_ref", None),
+        ]
+
+        candidates: list[str] = []
+        for raw in raw_values:
+            parsed_path = self._parse_candidate_path(raw)
+            if parsed_path is not None:
+                candidates.append(parsed_path)
+        return self._dedupe_paths(candidates)
+
+    def _relative_path_candidates(self, asset: MediaAsset, metadata: dict[str, Any], raw_candidates: list[str]) -> list[str]:
+        candidates: list[str] = []
+
+        asset_relative_path = self._normalize_relative_path(getattr(asset, "relative_path", None))
+        if asset_relative_path is not None:
+            candidates.append(asset_relative_path)
+
+        metadata_relative_path = self._normalize_relative_path(metadata.get("relative_path"))
+        if metadata_relative_path is not None:
+            candidates.append(metadata_relative_path)
+
+        for raw_path in raw_candidates:
+            extracted = self._extract_relative_path(raw_path)
+            if extracted is not None:
+                candidates.append(extracted)
+
+        return self._dedupe_paths(candidates)
+
+    def _parse_candidate_path(self, raw_value: Any) -> str | None:
+        if not isinstance(raw_value, str) or not raw_value.strip():
+            return None
+
+        value = raw_value.strip()
+        if value.startswith("file://"):
+            parsed = urlparse(value)
+            if parsed.scheme != "file":
+                return None
+
+            path_value = parsed.path or ""
+            if parsed.netloc not in ("", "localhost"):
+                if path_value:
+                    if parsed.netloc.endswith(":"):
+                        path_value = f"{parsed.netloc}{path_value}"
+                    else:
+                        path_value = f"//{parsed.netloc}{path_value}"
+                else:
+                    path_value = parsed.netloc
+
+            file_path = unquote(path_value)
+            if parsed.netloc == "" and file_path.startswith("//"):
+                file_path = f"/{file_path.lstrip('/')}"
+            if file_path.startswith("/") and len(file_path) > 2 and file_path[2] == ":":
+                file_path = file_path[1:]
+            return file_path or None
+
+        return value
+
+    def _map_host_path_to_docker(self, path_value: str) -> str | None:
+        if path_value.startswith(self._HOST_OUTPUT_PREFIX):
+            suffix = path_value[len(self._HOST_OUTPUT_PREFIX) :].lstrip("/")
+            return str(self._DOCKER_OUTPUT_ROOT / suffix)
+        if path_value.startswith(self._HOST_DATA_PREFIX):
+            suffix = path_value[len(self._HOST_DATA_PREFIX) :].lstrip("/")
+            return str(self._DOCKER_DATA_ROOT / suffix)
         return None
+
+    def _extract_relative_path(self, path_value: str) -> str | None:
+        prefixes = (
+            self._HOST_OUTPUT_PREFIX,
+            f"{self._DOCKER_OUTPUT_ROOT.as_posix().rstrip('/')}/",
+            self._HOST_DATA_PREFIX,
+            f"{self._DOCKER_DATA_ROOT.as_posix().rstrip('/')}/",
+        )
+        for prefix in prefixes:
+            if path_value.startswith(prefix):
+                suffix = path_value[len(prefix) :]
+                normalized = self._normalize_relative_path(suffix)
+                if normalized is not None:
+                    return normalized
+        return None
+
+    def _normalize_relative_path(self, raw_value: Any) -> str | None:
+        if not isinstance(raw_value, str) or not raw_value.strip():
+            return None
+
+        normalized = raw_value.strip().replace("\\", "/").lstrip("/")
+        if not normalized or normalized in (".", ".."):
+            return None
+        if ".." in normalized.split("/"):
+            return None
+        return normalized
+
+    def _dedupe_paths(self, values: list[str]) -> list[str]:
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for value in values:
+            cleaned = value.strip()
+            if not cleaned or cleaned in seen:
+                continue
+            seen.add(cleaned)
+            deduped.append(cleaned)
+        return deduped
 
     def _decode_json(self, payload: Any) -> dict[str, Any]:
         if isinstance(payload, dict):
@@ -254,3 +388,6 @@ class StoryboardFrameService:
 
 
 storyboard_frame_service = StoryboardFrameService()
+
+
+logger = logging.getLogger(__name__)

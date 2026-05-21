@@ -18,6 +18,7 @@ export interface StoryboardShot {
   asset_file_name?: string
   asset_mime_type?: string
   thumbnail_url?: string
+  image_url?: string
   preview_url?: string
   render_job_id?: string
   render_status?: string

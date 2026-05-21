@@ -116,6 +116,27 @@ class StoryboardService:
         "natural skin texture, detailed skin, DSLR, RAW photo, cinematic still, cinematic photography, movie frame, "
         "final frame, final movie frame, concept art render, 3d render, octane render, unreal engine, glossy"
     )
+    UI_TECHNICAL_TOKENS = (
+        "cinematic storyboard frame",
+        "model family",
+        "positive prompt",
+        "negative prompt",
+        "prompt:",
+        "comfyui",
+        "workflow",
+        "stable identity",
+        "no watermark",
+        "no text",
+    )
+    SHOT_TYPE_LABELS = {
+        "WS": {"es": "plano general", "en": "wide shot"},
+        "MS": {"es": "plano medio", "en": "medium shot"},
+        "CU": {"es": "primer plano", "en": "close-up"},
+        "ECU": {"es": "primerísimo primer plano", "en": "extreme close-up"},
+        "OTS": {"es": "plano sobre hombro", "en": "over-the-shoulder shot"},
+        "TRACKING": {"es": "plano en seguimiento", "en": "tracking shot"},
+        "POV": {"es": "plano subjetivo", "en": "point-of-view shot"},
+    }
 
     def build_storyboard_visual_style_prompt(self, style_preset: str) -> dict[str, str]:
         preset_payload = storyboard_style_preset_service.get_storyboard_style_preset(style_preset)
@@ -252,12 +273,9 @@ class StoryboardService:
                 asset = assets_map[shot.asset_id]
                 shot.asset_file_name = asset.file_name  # type: ignore[attr-defined]
                 shot.asset_mime_type = asset.mime_type  # type: ignore[attr-defined]
-                shot.thumbnail_url = f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/thumbnail"  # type: ignore[attr-defined]
-                content_ref = asset.content_ref
-                if content_ref and content_ref.startswith("file://"):
-                    shot.preview_url = f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/preview"  # type: ignore[attr-defined]
-                else:
-                    shot.preview_url = content_ref or f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/preview"  # type: ignore[attr-defined]
+                shot.thumbnail_url = f"/api/projects/{project_id}/storyboard/shots/{shot.id}/thumbnail"  # type: ignore[attr-defined]
+                shot.image_url = f"/api/projects/{project_id}/storyboard/shots/{shot.id}/image"  # type: ignore[attr-defined]
+                shot.preview_url = shot.image_url  # type: ignore[attr-defined]
                 shot.render_status = "completed"  # type: ignore[attr-defined]
             elif render_job_id:
                 shot.render_job_id = render_job_id  # type: ignore[attr-defined]
@@ -1346,6 +1364,76 @@ class StoryboardService:
         )
         return ", ".join(tokens)
 
+    def _sanitize_visible_storyboard_text(self, text: str | None) -> str:
+        cleaned = str(text or "").strip()
+        if not cleaned:
+            return ""
+        lowered = cleaned.lower()
+        if any(token in lowered for token in self.UI_TECHNICAL_TOKENS):
+            return ""
+        return re.sub(r"\s+", " ", cleaned).strip()
+
+    def _detect_storyboard_text_locale(self, *samples: str | None) -> str:
+        text = " ".join(str(sample or "") for sample in samples).lower()
+        if not text:
+            return "es"
+        spanish_markers = (" el ", " la ", " los ", " las ", " un ", " una ", " con ", " mientras ", " desde ", " hacia ", " entra ", " mira ", " noche", " miedo", " tension", " oscuridad")
+        english_markers = (" the ", " a ", " an ", " with ", " while ", " from ", " into ", " enters ", " looks ", " fear", " tension", " darkness")
+        spanish_score = sum(1 for marker in spanish_markers if marker in f" {text} ")
+        english_score = sum(1 for marker in english_markers if marker in f" {text} ")
+        return "en" if english_score > spanish_score else "es"
+
+    def _build_storyboard_display_descriptions(
+        self,
+        *,
+        scene_heading: str,
+        action_line: str,
+        shot_objective: str,
+        emotional_intent: str,
+        shot_type: str,
+        script_excerpt: str,
+    ) -> dict[str, str]:
+        primary_source = self._sanitize_visible_storyboard_text(script_excerpt) or self._sanitize_visible_storyboard_text(action_line) or self._sanitize_visible_storyboard_text(scene_heading)
+        dramatic_intent = self._sanitize_visible_storyboard_text(emotional_intent) or "la tensión dramática"
+        objective_text = self._sanitize_visible_storyboard_text(shot_objective) or primary_source or scene_heading
+        locale = self._detect_storyboard_text_locale(scene_heading, primary_source, objective_text)
+        shot_type_es = self.SHOT_TYPE_LABELS.get(shot_type, {}).get("es", "plano")
+        shot_type_en = self.SHOT_TYPE_LABELS.get(shot_type, {}).get("en", "shot")
+
+        if locale == "en":
+            display_en = self._sanitize_visible_storyboard_text(
+                f"{primary_source}. This {shot_type_en} is meant to convey {dramatic_intent} and reinforce {objective_text}."
+            ) or "Shot description pending."
+            directorial_en = self._sanitize_visible_storyboard_text(
+                f"The shot should make the audience feel {dramatic_intent} while clarifying {objective_text}."
+            ) or "Directorial intent pending."
+            display_es = self._sanitize_visible_storyboard_text(
+                f"{primary_source}. Este {shot_type_es} busca transmitir {dramatic_intent} y reforzar {objective_text}."
+            ) or display_en
+            directorial_es = self._sanitize_visible_storyboard_text(
+                f"El plano debe hacer sentir {dramatic_intent} al espectador mientras refuerza {objective_text}."
+            ) or directorial_en
+        else:
+            display_es = self._sanitize_visible_storyboard_text(
+                f"{primary_source}. Este {shot_type_es} busca transmitir {dramatic_intent} y reforzar {objective_text}."
+            ) or "Descripción del plano pendiente."
+            directorial_es = self._sanitize_visible_storyboard_text(
+                f"El plano debe hacer sentir {dramatic_intent} al espectador mientras refuerza {objective_text}."
+            ) or "Intención dramática pendiente."
+            display_en = self._sanitize_visible_storyboard_text(
+                f"{primary_source}. This {shot_type_en} is meant to convey {dramatic_intent} and reinforce {objective_text}."
+            ) or display_es
+            directorial_en = self._sanitize_visible_storyboard_text(
+                f"The shot should make the audience feel {dramatic_intent} while clarifying {objective_text}."
+            ) or directorial_es
+
+        return {
+            "display_description_es": display_es,
+            "display_description_en": display_en,
+            "directorial_intent_es": directorial_es,
+            "directorial_intent_en": directorial_en,
+        }
+
     def _enrich_storyboard_shot_payload(
         self,
         *,
@@ -1486,6 +1574,14 @@ class StoryboardService:
         ]
         enriched_positive = prompt_package["positive_prompt"]
         enriched_negative = prompt_package["negative_prompt"]
+        display_descriptions = self._build_storyboard_display_descriptions(
+            scene_heading=scene_heading,
+            action_line=action_line,
+            shot_objective=shot_objective,
+            emotional_intent=emotional_intent,
+            shot_type=shot_type,
+            script_excerpt=script_excerpt,
+        )
         metadata_payload.update(prompt_package["metadata"])
         metadata_payload["location_continuity"]["sequence_id"] = sequence_for_scene.sequence_id if sequence_for_scene else None
         metadata_payload["visual_continuity"]["continuity_phrase"] = continuity_phrase
@@ -1507,6 +1603,12 @@ class StoryboardService:
         metadata_payload["visual_constraints"] = visual_constraints
         metadata_payload["model_prompt_family"] = model_guidance["model_prompt_family"]
         metadata_payload["model_specific_guidance"] = model_guidance
+        metadata_payload["display_description_es"] = display_descriptions["display_description_es"]
+        metadata_payload["display_description_en"] = display_descriptions["display_description_en"]
+        metadata_payload["directorial_intent_es"] = display_descriptions["directorial_intent_es"]
+        metadata_payload["directorial_intent_en"] = display_descriptions["directorial_intent_en"]
+        metadata_payload["shot_objective_es"] = display_descriptions["display_description_es"]
+        metadata_payload["shot_objective_en"] = display_descriptions["display_description_en"]
 
         validation_payload = storyboard_image_script_validation_service.build_validation_payload(
             script_excerpt_used=script_excerpt,
@@ -1527,8 +1629,12 @@ class StoryboardService:
         metadata_payload["validation_failures"] = validation_result["missing_elements"] + validation_result["incorrect_elements"]
         metadata_payload["suggested_regeneration_prompt"] = validation_result["suggested_regeneration_prompt"]
 
-        payload["description"] = action_line[:180]
-        payload["narrative_text"] = enriched_positive[:500]
+        payload["description"] = display_descriptions["display_description_es"][:180]
+        payload["narrative_text"] = (
+            display_descriptions["display_description_en"]
+            if self._detect_storyboard_text_locale(scene_heading, action_line, script_excerpt) == "en"
+            else display_descriptions["display_description_es"]
+        )[:500]
         payload["positive_prompt"] = enriched_positive
         payload["negative_prompt"] = enriched_negative
         payload["metadata_json"] = metadata_payload

@@ -30,12 +30,12 @@ async def _serialize_shot(
         result = await db.execute(select(MediaAsset).where(MediaAsset.id == shot.asset_id))
         asset = result.scalar_one_or_none()
     thumbnail_url = (
-        f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/thumbnail"
+        f"/api/projects/{project_id}/storyboard/shots/{shot.id}/thumbnail"
         if shot.asset_id and asset is not None
         else None
     )
-    preview_url = (
-        f"/api/projects/{project_id}/presentation/assets/{shot.asset_id}/preview"
+    image_url = (
+        f"/api/projects/{project_id}/storyboard/shots/{shot.id}/image"
         if shot.asset_id and asset is not None
         else None
     )
@@ -59,7 +59,8 @@ async def _serialize_shot(
         asset_file_name=getattr(asset, "file_name", None),
         asset_mime_type=getattr(asset, "mime_type", None),
         thumbnail_url=thumbnail_url,
-        preview_url=preview_url,
+        image_url=image_url,
+        preview_url=image_url,
         created_at=shot.created_at,
         updated_at=shot.updated_at,
     )

@@ -637,6 +637,10 @@ def test_generate_storyboard_injects_workflow_profile_metadata(monkeypatch) -> N
     assert metadata["render_quality"] == "production"
     assert metadata["model_family"] == "flux"
     assert metadata["motion_ready"] is True
+    assert metadata["display_description_es"]
+    assert "positive prompt" not in metadata["display_description_es"].lower()
+    assert "cinematic storyboard frame" not in metadata["display_description_es"].lower()
+    assert "workflow" not in metadata["display_description_es"].lower()
     assert prompt_payload["workflow_profile_requested"] == "storyboard_cinematic_pitch"
     assert prompt_payload["render_quality"] == "production"
     assert prompt_payload["model_family"] == "flux"

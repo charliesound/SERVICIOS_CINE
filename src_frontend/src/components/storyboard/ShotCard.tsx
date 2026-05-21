@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Trash2, Image, Clock, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react'
+import { AuthenticatedStoryboardShotImage } from '@/components/storyboard/AuthenticatedStoryboardShotImage'
 import type { DirtyShot } from '@/types/storyboard'
+import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/storyboardText'
 
 interface ShotCardProps {
   shot: DirtyShot
@@ -17,10 +19,11 @@ const RENDER_STATUS_CONFIG: Record<string, { label: string; color: string; icon:
 }
 
 export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: ShotCardProps) {
-  const [localText, setLocalText] = useState(shot.narrative_text || '')
+  const [localText, setLocalText] = useState(shot.narrative_text || getStoryboardShotDisplayText(shot, getStoryboardUiLocale()))
   const renderStatus = shot.render_status || 'no_asset'
   const statusCfg = RENDER_STATUS_CONFIG[renderStatus] || RENDER_STATUS_CONFIG.no_asset
   const StatusIcon = statusCfg.icon
+  const hasImage = Boolean(shot.thumbnail_url || shot.image_url || shot.preview_url)
 
   const handleTextBlur = () => {
     if (localText !== shot.narrative_text) {
@@ -31,12 +34,14 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
   return (
     <div className="bg-dark-200/80 border border-white/10 rounded-xl overflow-hidden hover:border-amber-500/20 transition-colors">
       <div className="aspect-video bg-dark-300 relative group">
-        {shot.thumbnail_url ? (
+        {hasImage ? (
           <>
-            <img
-              src={shot.thumbnail_url}
+            <AuthenticatedStoryboardShotImage
+              projectId={shot.project_id}
+              shotId={shot.id}
               alt={shot.asset_file_name || 'Shot preview'}
               className="w-full h-full object-cover"
+              fallbackLabel="Sin miniatura"
             />
             <button
               onClick={() => onOpenPicker(shot.id)}

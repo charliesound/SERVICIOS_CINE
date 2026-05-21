@@ -91,6 +91,9 @@ def docker_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, P
     monkeypatch.setattr(storyboard_frame_service, "_DOCKER_OUTPUT_ROOT", docker_output_root)
     monkeypatch.setattr(storyboard_frame_service, "_HOST_DATA_PREFIX", host_data_prefix)
     monkeypatch.setattr(storyboard_frame_service, "_HOST_OUTPUT_PREFIX", host_output_prefix)
+    monkeypatch.setattr(
+        storyboard_frame_service, "_ALLOWED_DATA_ROOTS", (docker_data_root,)
+    )
 
     return {
         "docker_data_root": docker_data_root,
@@ -184,6 +187,33 @@ def test_resolve_image_path_returns_none_when_no_candidate_exists(docker_roots: 
 
     assert resolved_path is None
     assert attempted
+
+
+def test_resolve_asset_thumbnail_path_uses_thumbnail_metadata(docker_roots: dict[str, Path]) -> None:
+    thumbnail_path = docker_roots["docker_output_root"] / "thumbs" / "frame_01.webp"
+    thumbnail_path.parent.mkdir(parents=True, exist_ok=True)
+    thumbnail_path.write_bytes(b"ok")
+    asset = _make_path_only_asset(canonical_path="")
+
+    resolved_path = storyboard_frame_service.resolve_asset_thumbnail_path(
+        asset,
+        {
+            "thumbnail_path": f"/opt/SERVICIOS_CINE/data/output/thumbs/frame_01.webp",
+            "thumbnail_relative_path": "thumbs/frame_01.webp",
+        },
+    )
+
+    assert resolved_path == str(thumbnail_path)
+
+
+def test_is_allowed_media_path_rejects_outside_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    allowed_root = tmp_path / "allowed"
+    allowed_root.mkdir(parents=True, exist_ok=True)
+    outside_file = tmp_path / "outside.png"
+    outside_file.write_bytes(b"ok")
+    monkeypatch.setattr(storyboard_frame_service, "_ALLOWED_DATA_ROOTS", (allowed_root,))
+
+    assert storyboard_frame_service.is_allowed_media_path(outside_file) is False
 
 
 @pytest.mark.asyncio

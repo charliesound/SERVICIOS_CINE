@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from urllib.parse import unquote, urlparse
 
@@ -23,6 +24,7 @@ class StoryboardFrameService:
     _HOST_DATA_PREFIX = "/opt/SERVICIOS_CINE/data/"
     _DOCKER_OUTPUT_ROOT = Path("/app/data/output")
     _DOCKER_DATA_ROOT = Path("/app/data")
+    _ALLOWED_DATA_ROOTS = (Path("/app/data"), Path("/opt/SERVICIOS_CINE/data"))
 
     async def collect_by_project(
         self,
@@ -273,6 +275,45 @@ class StoryboardFrameService:
                 return str(candidate_path), attempted_paths
 
         return None, attempted_paths
+
+    def resolve_asset_image_path(self, asset: MediaAsset, metadata: dict[str, Any] | None = None) -> str | None:
+        resolved_path, _attempted = self._resolve_image_path(asset, metadata or self._decode_json(getattr(asset, "metadata_json", None)))
+        return resolved_path if resolved_path and self.is_allowed_media_path(resolved_path) else None
+
+    def resolve_asset_thumbnail_path(self, asset: MediaAsset, metadata: dict[str, Any] | None = None) -> str | None:
+        asset_metadata = metadata or self._decode_json(getattr(asset, "metadata_json", None))
+        thumbnail_asset = SimpleNamespace(
+            canonical_path=asset_metadata.get("thumbnail_path") or asset_metadata.get("thumbnail_storage_path") or "",
+            content_ref=asset_metadata.get("thumbnail_content_ref"),
+            relative_path=asset_metadata.get("thumbnail_relative_path") or "",
+        )
+        resolved_path, _attempted = self._resolve_image_path(
+            thumbnail_asset,
+            {
+                "storage_path": asset_metadata.get("thumbnail_path") or asset_metadata.get("thumbnail_storage_path"),
+                "relative_path": asset_metadata.get("thumbnail_relative_path"),
+            },
+        )
+        return resolved_path if resolved_path and self.is_allowed_media_path(resolved_path) else None
+
+    def is_allowed_media_path(self, path_value: str | Path) -> bool:
+        try:
+            resolved = Path(path_value).resolve(strict=True)
+        except OSError:
+            return False
+
+        for root in self._ALLOWED_DATA_ROOTS:
+            root_path = Path(root)
+            try:
+                resolved_root = root_path.resolve(strict=False)
+            except OSError:
+                continue
+            if resolved == resolved_root or resolved_root in resolved.parents:
+                return True
+        return False
+
+    def decode_metadata(self, payload: Any) -> dict[str, Any]:
+        return self._decode_json(payload)
 
     def _raw_path_candidates(self, asset: MediaAsset, metadata: dict[str, Any]) -> list[str]:
         raw_values = [

@@ -192,4 +192,15 @@ export const storyboardApi = {
     const { data } = await api.post<StoryboardSheetResponse>(`/projects/${projectId}/storyboard/sheet`, payload)
     return data
   },
+
+  fetchStoryboardShotImageBlob: async (
+    projectId: string,
+    shotId: string,
+    type: 'image' | 'thumbnail' = 'thumbnail'
+  ): Promise<Blob> => {
+    const { data } = await api.get(`/projects/${projectId}/storyboard/shots/${shotId}/${type}`, {
+      responseType: 'blob',
+    })
+    return data
+  },
 }

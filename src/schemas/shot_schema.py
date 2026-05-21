@@ -53,6 +53,7 @@ class StoryboardShotResponse(BaseModel):
     asset_file_name: Optional[str] = None
     asset_mime_type: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    image_url: Optional[str] = None
     preview_url: Optional[str] = None
     render_job_id: Optional[str] = None
     render_status: str = 'no_asset'
@@ -76,4 +77,3 @@ class StoryboardShotResponse(BaseModel):
 
 class StoryboardShotListResponse(BaseModel):
     shots: list[StoryboardShotResponse] = Field(default_factory=list)
-

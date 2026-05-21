@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import mimetypes
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import FileResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
+from models.storage import MediaAsset
+from models.storyboard import StoryboardShot
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.shot_schema import StoryboardShotListResponse, StoryboardShotResponse
@@ -46,6 +52,7 @@ from services.cid_script_scene_parser_service import cid_script_scene_parser_ser
 from services.script_sequence_mapping_service import script_sequence_mapping_service
 from services.storyboard_service import storyboard_service, StoryboardGenerationMode
 from services.storyboard_credit_estimator_service import storyboard_credit_estimator_service
+from services.storyboard_frame_service import storyboard_frame_service
 from services.storyboard_pdf_export_service import storyboard_pdf_export_service
 
 
@@ -54,6 +61,51 @@ router = APIRouter(
     tags=["storyboard"],
     dependencies=[Depends(require_module_access("storyboard_ai"))],
 )
+
+
+async def _get_storyboard_shot_and_asset(
+    db: AsyncSession,
+    *,
+    project_id: str,
+    shot_id: str,
+    tenant: TenantContext,
+) -> tuple[StoryboardShot, MediaAsset]:
+    await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+    shot_result = await db.execute(
+        select(StoryboardShot).where(
+            StoryboardShot.id == shot_id,
+            StoryboardShot.project_id == project_id,
+            StoryboardShot.organization_id == tenant.organization_id,
+            StoryboardShot.is_active.is_(True),
+        )
+    )
+    shot = shot_result.scalar_one_or_none()
+    if shot is None:
+        raise HTTPException(status_code=404, detail="Storyboard shot not found")
+    if not getattr(shot, "asset_id", None):
+        raise HTTPException(status_code=404, detail="Storyboard shot has no image asset")
+
+    asset_result = await db.execute(
+        select(MediaAsset).where(
+            MediaAsset.id == shot.asset_id,
+            MediaAsset.project_id == project_id,
+            MediaAsset.organization_id == tenant.organization_id,
+        )
+    )
+    asset = asset_result.scalar_one_or_none()
+    if asset is None:
+        raise HTTPException(status_code=404, detail="Storyboard asset not found")
+    return shot, asset
+
+
+def _file_response_for_storyboard_media(path_value: str, media_type: str | None, filename: str) -> FileResponse:
+    resolved_media_type = media_type or mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return FileResponse(
+        path=path_value,
+        media_type=resolved_media_type,
+        filename=filename,
+        content_disposition_type="inline",
+    )
 
 
 @router.get("/{project_id}/storyboard/options", response_model=StoryboardOptionsResponse)
@@ -358,6 +410,56 @@ async def get_storyboard(
         scene_number=scene_number,
         version=version,
         shots=[StoryboardShotResponse.model_validate(shot, from_attributes=True) for shot in shots],
+    )
+
+
+@router.get("/{project_id}/storyboard/shots/{shot_id}/image")
+async def get_storyboard_shot_image(
+    project_id: str,
+    shot_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+):
+    shot, asset = await _get_storyboard_shot_and_asset(
+        db,
+        project_id=project_id,
+        shot_id=shot_id,
+        tenant=tenant,
+    )
+    metadata = storyboard_frame_service.decode_metadata(getattr(asset, "metadata_json", None))
+    image_path = storyboard_frame_service.resolve_asset_image_path(asset, metadata)
+    if image_path is None:
+        raise HTTPException(status_code=404, detail="Storyboard image not found")
+    return _file_response_for_storyboard_media(
+        image_path,
+        getattr(asset, "mime_type", None),
+        getattr(asset, "file_name", None) or f"storyboard-shot-{shot.id}",
+    )
+
+
+@router.get("/{project_id}/storyboard/shots/{shot_id}/thumbnail")
+async def get_storyboard_shot_thumbnail(
+    project_id: str,
+    shot_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+):
+    shot, asset = await _get_storyboard_shot_and_asset(
+        db,
+        project_id=project_id,
+        shot_id=shot_id,
+        tenant=tenant,
+    )
+    metadata = storyboard_frame_service.decode_metadata(getattr(asset, "metadata_json", None))
+    thumbnail_path = storyboard_frame_service.resolve_asset_thumbnail_path(asset, metadata)
+    if thumbnail_path is None:
+        thumbnail_path = storyboard_frame_service.resolve_asset_image_path(asset, metadata)
+    if thumbnail_path is None:
+        raise HTTPException(status_code=404, detail="Storyboard thumbnail not found")
+    return _file_response_for_storyboard_media(
+        thumbnail_path,
+        mimetypes.guess_type(thumbnail_path)[0] or getattr(asset, "mime_type", None),
+        Path(thumbnail_path).name,
     )
 
 

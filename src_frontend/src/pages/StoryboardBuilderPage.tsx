@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check, Upload, X } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
+import { AuthenticatedStoryboardShotImage } from '@/components/storyboard/AuthenticatedStoryboardShotImage'
 import { ShotCard } from '@/components/storyboard/ShotCard'
 import { AssetPickerModal } from '@/components/storyboard/AssetPickerModal'
 import DirectorFeedbackPanel from '@/components/storyboard/DirectorFeedbackPanel'
@@ -21,6 +22,7 @@ import type {
   StoryboardSequence,
   StoryboardShot,
 } from '@/types/storyboard'
+import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/storyboardText'
 
 function toDirtyShot(shot: StoryboardShot): DirtyShot {
   return { ...shot, isDirty: false }
@@ -55,6 +57,7 @@ function resolveSequenceAlias(sequenceId: string, sequences: StoryboardSequence[
 
 export default function StoryboardBuilderPage() {
   const { projectId } = useParams<{ projectId: string }>()
+  const storyboardLocale = getStoryboardUiLocale()
   const [shots, setShots] = useState<DirtyShot[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -1012,20 +1015,24 @@ export default function StoryboardBuilderPage() {
                         {orderedCinematicShots.map((shot) => {
                           const metadata = (shot.metadata_json || {}) as Record<string, unknown>
                           const validationScore = metadata.validation_score ?? (metadata.validation_result as Record<string, unknown> | undefined)?.overall_match_score
+                          const displayText = getStoryboardShotDisplayText(shot, storyboardLocale)
                           return (
                             <div key={`filmstrip-${shot.id}`} className="w-56 rounded-lg border border-white/10 bg-black overflow-hidden">
                               <div className="aspect-video bg-black/40">
-                                {shot.thumbnail_url ? (
-                                  <img src={shot.thumbnail_url} alt={shot.asset_file_name || `shot-${shot.sequence_order}`} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">Sin miniatura</div>
-                                )}
+                                <AuthenticatedStoryboardShotImage
+                                  projectId={projectId || shot.project_id}
+                                  shotId={shot.id}
+                                  alt={shot.asset_file_name || `shot-${shot.sequence_order}`}
+                                  className="w-full h-full object-cover"
+                                  fallbackLabel="Sin miniatura"
+                                />
                               </div>
                               <div className="p-2 space-y-1 text-xs text-slate-300 border-t border-white/10">
                                 <p><span className="text-slate-500">Secuencia:</span> {shot.sequence_id || 'n/a'}</p>
                                 <p><span className="text-slate-500">Escena:</span> {shot.scene_number ?? 'n/a'}</p>
                                 <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
                                 <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
+                                <p className="text-slate-200 line-clamp-3">{displayText}</p>
                                 <p><span className="text-slate-500">Validación:</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
                               </div>
                             </div>
@@ -1038,20 +1045,24 @@ export default function StoryboardBuilderPage() {
                       {orderedCinematicShots.map((shot) => {
                         const metadata = (shot.metadata_json || {}) as Record<string, unknown>
                         const validationScore = metadata.validation_score ?? (metadata.validation_result as Record<string, unknown> | undefined)?.overall_match_score
+                        const displayText = getStoryboardShotDisplayText(shot, storyboardLocale)
                         return (
                           <div key={`grid-${shot.id}`} className="rounded-lg border border-white/10 bg-dark-300/60 overflow-hidden">
                             <div className="aspect-video bg-black/30">
-                              {shot.thumbnail_url ? (
-                                <img src={shot.thumbnail_url} alt={shot.asset_file_name || `shot-${shot.sequence_order}`} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">Sin miniatura</div>
-                              )}
+                              <AuthenticatedStoryboardShotImage
+                                projectId={projectId || shot.project_id}
+                                shotId={shot.id}
+                                alt={shot.asset_file_name || `shot-${shot.sequence_order}`}
+                                className="w-full h-full object-cover"
+                                fallbackLabel="Sin miniatura"
+                              />
                             </div>
                             <div className="p-2 space-y-1 text-xs text-slate-300">
                               <p><span className="text-slate-500">Secuencia:</span> {shot.sequence_id || 'n/a'}</p>
                               <p><span className="text-slate-500">Escena:</span> {shot.scene_number ?? 'n/a'}</p>
                               <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
                               <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
+                              <p className="text-slate-200 line-clamp-3">{displayText}</p>
                               <p><span className="text-slate-500">Validación:</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
                             </div>
                           </div>

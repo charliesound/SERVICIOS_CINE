@@ -13,10 +13,12 @@ import {
 } from 'lucide-react'
 import { JobProgress } from '@/components/JobProgress'
 import { ActionProgressPanel, type ActionProgressState } from '@/components/ActionProgressPanel'
+import { AuthenticatedStoryboardShotImage } from '@/components/storyboard/AuthenticatedStoryboardShotImage'
 import { StoryboardSheetExportPanel } from '@/components/storyboard/StoryboardSheetExportPanel'
 import { StoryboardSequenceSelectorModal, type StoryboardSelectionValue } from '@/components/storyboard/StoryboardSequenceSelectorModal'
 import type { ScriptUploadResult, StoryboardSceneCandidate, StoryboardSequence, StoryboardShot } from '@/types/storyboard'
 import ConceptArtDryRunPanel from '@/components/concept-art/ConceptArtDryRunPanel'
+import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/storyboardText'
 
 type Tab = 'script' | 'analysis' | 'storyboard' | 'concept-art' | 'history'
 
@@ -36,13 +38,16 @@ interface AnalysisResult {
 }
 
 interface Shot {
+  shot_id: string
   shot_number: number
   shot_type: string
   description: string
   asset_id?: string | null
+  image_url?: string | null
   thumbnail_url?: string | null
   preview_url?: string | null
   asset_file_name?: string | null
+  metadata_json?: Record<string, unknown> | null
 }
 
 interface Scene {
@@ -209,6 +214,7 @@ export default function ProjectDetailPage() {
   const [uploadResult, setUploadResult] = useState<ScriptUploadResult | null>(null)
   const [showAllScenes, setShowAllScenes] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const storyboardLocale = getStoryboardUiLocale()
 
   // Group assets by sequence from metadata_json
   const assetsBySequence = assets.reduce((acc, asset) => {
@@ -260,15 +266,30 @@ export default function ProjectDetailPage() {
     window.setTimeout(() => setSuccessMsg(''), 2500)
   }
 
-  const resolveShotVisual = (assetId?: string | null) => {
-    if (!assetId || !projectId) return { thumbnail_url: null, preview_url: null, asset_file_name: null }
+  const resolveShotVisual = (assetId?: string | null, shotId?: string | null) => {
+    if (!assetId || !projectId) return { image_url: null, thumbnail_url: null, preview_url: null, asset_file_name: null }
     const asset = assets.find((item) => item.id === assetId)
-    const previewUrl = asset?.content_ref || `/api/projects/${projectId}/presentation/assets/${assetId}/preview`
-    const thumbnailUrl = `/api/projects/${projectId}/presentation/assets/${assetId}/thumbnail`
+    const imageUrl = shotId ? `/api/projects/${projectId}/storyboard/shots/${shotId}/image` : null
+    const thumbnailUrl = shotId ? `/api/projects/${projectId}/storyboard/shots/${shotId}/thumbnail` : null
     return {
+      image_url: imageUrl,
       thumbnail_url: thumbnailUrl,
-      preview_url: previewUrl,
+      preview_url: imageUrl,
       asset_file_name: asset?.file_name || null,
+    }
+  }
+
+  const openStoryboardShotImage = async (shotId?: string | null, preferredType: 'image' | 'thumbnail' = 'image') => {
+    if (!projectId || !shotId) return
+    try {
+      const blob = await storyboardApi.fetchStoryboardShotImageBlob(projectId, shotId, preferredType)
+      const objectUrl = URL.createObjectURL(blob)
+      window.open(objectUrl, '_blank', 'noopener,noreferrer')
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000)
+    } catch {
+      if (preferredType === 'thumbnail') {
+        await openStoryboardShotImage(shotId, 'image')
+      }
     }
   }
 
@@ -314,8 +335,17 @@ export default function ProjectDetailPage() {
       const sceneNumber = Number(scene.scene_number || scene.number || index + 1)
       const sequence = sequenceByScene.get(sceneNumber)
       const relatedShots = storyboardShots.filter((shot) => (shot.scene_number || 0) === sceneNumber)
-      const primaryAssetId = relatedShots.find((shot) => shot.asset_id)?.asset_id || null
-      const visuals = resolveShotVisual(primaryAssetId)
+      const primaryShot = relatedShots.find((shot) => shot.asset_id)
+      const primaryAssetId = primaryShot?.asset_id || null
+      const primaryShotId = primaryShot?.id || null
+      const visuals = primaryShot
+        ? {
+            image_url: primaryShot.image_url || primaryShot.preview_url || null,
+            thumbnail_url: primaryShot.thumbnail_url || null,
+            preview_url: primaryShot.preview_url || primaryShot.image_url || null,
+            asset_file_name: primaryShot.asset_file_name || null,
+          }
+        : resolveShotVisual(primaryAssetId, primaryShotId)
       return {
         scene_number: sceneNumber,
         scene_heading: String(scene.heading || scene.scene_heading || `ESCENA ${sceneNumber}`),
@@ -378,6 +408,7 @@ export default function ProjectDetailPage() {
   }
 
   const mapStoryboardScopeToResult = (projectIdValue: string, shots: Array<{
+    id: string
     scene_number?: number
     scene_heading?: string
     sequence_id?: string
@@ -385,6 +416,11 @@ export default function ProjectDetailPage() {
     shot_type?: string
     narrative_text?: string
     asset_id?: string | null
+    image_url?: string | null
+    thumbnail_url?: string | null
+    preview_url?: string | null
+    asset_file_name?: string | null
+    metadata_json?: Record<string, unknown> | null
   }>): StoryboardResult => {
     const groupedScenes = shots.reduce((acc, shot) => {
       const key = shot.scene_number || 0
@@ -397,15 +433,23 @@ export default function ProjectDetailPage() {
           shots: [],
         }
       }
-      const visuals = resolveShotVisual(shot.asset_id)
+      const visuals = {
+        image_url: shot.image_url || shot.preview_url || null,
+        thumbnail_url: shot.thumbnail_url || null,
+        preview_url: shot.preview_url || shot.image_url || null,
+        asset_file_name: shot.asset_file_name || resolveShotVisual(shot.asset_id, shot.id).asset_file_name,
+      }
       acc[key].shots.push({
+        shot_id: shot.id,
         shot_number: shot.sequence_order,
         shot_type: shot.shot_type || 'MS',
-        description: shot.narrative_text || 'Shot generado',
+        description: getStoryboardShotDisplayText(shot, storyboardLocale),
         asset_id: shot.asset_id,
+        image_url: visuals.image_url,
         thumbnail_url: visuals.thumbnail_url,
         preview_url: visuals.preview_url,
         asset_file_name: visuals.asset_file_name,
+        metadata_json: shot.metadata_json || null,
       })
       return acc
     }, {} as Record<number, Scene>)
@@ -1531,18 +1575,18 @@ export default function ProjectDetailPage() {
                     <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {scene.shots.map((shot) => (
                         <div
-                          key={shot.shot_number}
+                          key={shot.shot_id}
                           className="flex gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/5 hover:border-white/10 transition-colors"
                         >
                           {/* Shot visual placeholder */}
                           <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex flex-col items-center justify-center flex-shrink-0 overflow-hidden relative">
-                            {shot.thumbnail_url || shot.preview_url ? (
-                              <img
-                                src={shot.thumbnail_url || shot.preview_url || undefined}
-                                alt={shot.asset_file_name || `Storyboard ${shot.shot_number}`}
-                                className="absolute inset-0 w-full h-full object-cover"
-                              />
-                            ) : null}
+                            <AuthenticatedStoryboardShotImage
+                              projectId={projectId || ''}
+                              shotId={shot.shot_id}
+                              alt={shot.asset_file_name || `Storyboard ${shot.shot_number}`}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              fallbackLabel="Sin miniatura"
+                            />
                             <div className="relative z-10 bg-black/45 px-1.5 py-1 rounded-md text-center">
                               <span className="text-[10px] font-bold text-gray-200 leading-none block">
                                 {shot.shot_type}
@@ -1558,19 +1602,16 @@ export default function ProjectDetailPage() {
                               <ShotTypeBadge type={shot.shot_type} />
                               <span className="text-gray-500 text-xs">#{shot.shot_number}</span>
                             </div>
-                            <p className="text-gray-300 text-xs leading-relaxed line-clamp-2">
+                            <p className="text-gray-300 text-xs leading-relaxed line-clamp-3">
                               {shot.description}
                             </p>
-                            {(shot.preview_url || shot.thumbnail_url) && (
-                              <a
-                                href={shot.preview_url || shot.thumbnail_url || undefined}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="mt-2 inline-flex text-[11px] text-amber-300 hover:text-amber-200"
-                              >
-                                Ver imagen
-                              </a>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => void openStoryboardShotImage(shot.shot_id, 'image')}
+                              className="mt-2 inline-flex text-[11px] text-amber-300 hover:text-amber-200"
+                            >
+                              Ver imagen
+                            </button>
                           </div>
                         </div>
                       ))}

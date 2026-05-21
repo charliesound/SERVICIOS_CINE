@@ -1,0 +1,1860 @@
+{
+  "8188": {
+    "ComfyMath": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/evanspearman/ComfyMath (fetch)\norigin\thttps://github.com/evanspearman/Comf"
+    },
+    "ComfyUI-AutoCropFaces": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/liusida/ComfyUI-AutoCropFaces (fetch)\norigin\thttps://github.com/liusida/Co"
+    },
+    "ComfyUI-BRIA_AI-RMBG": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/ZHO-ZHO-ZHO/ComfyUI-BRIA_AI-RMBG (fetch)\norigin\thttps://github.com/ZHO-ZHO"
+    },
+    "ComfyUI-CatvtonFluxWrapper": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/lujiazho/ComfyUI-CatvtonFluxWrapper (fetch)\norigin\thttps://github.com/luji"
+    },
+    "ComfyUI-Chat-GPT-Integration": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/vienteck/ComfyUI-Chat-GPT-Integration (fetch)\norigin\thttps://github.com/vi"
+    },
+    "ComfyUI-Copilot": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/AIDC-AI/ComfyUI-Copilot.git (fetch)\norigin\thttps://github.com/AIDC-AI/Comf"
+    },
+    "ComfyUI-DepthAnythingV3": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-Dummy_Node_Pack": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/FuryNocturn/ComfyUI-Dummy_Node_Pack (fetch)\norigin\thttps://github.com/Fury"
+    },
+    "ComfyUI-EsesImageResize": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/quasiblob/ComfyUI-EsesImageResize (fetch)\norigin\thttps://github.com/quasib"
+    },
+    "ComfyUI-ExtendIPAdapterClipVision": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/vahlok-alunmid/ComfyUI-ExtendIPAdapterClipVision (fetch)\norigin\thttps://gi"
+    },
+    "ComfyUI-GGUF": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-HQ-Image-Save": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/spacepxl/ComfyUI-HQ-Image-Save (fetch)\norigin\thttps://github.com/spacepxl/"
+    },
+    "ComfyUI-IPAdapter-Flux": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Shakker-Labs/ComfyUI-IPAdapter-Flux (fetch)\norigin\thttps://github.com/Shak"
+    },
+    "ComfyUI-Image-Filters": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/spacepxl/ComfyUI-Image-Filters (fetch)\norigin\thttps://github.com/spacepxl/"
+    },
+    "ComfyUI-LTXVideo": {
+      "py_files": 31,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Lightricks/ComfyUI-LTXVideo (fetch)\norigin\thttps://github.com/Lightricks/C"
+    },
+    "ComfyUI-Manager": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/ltdrdata/ComfyUI-Manager.git (fetch)\norigin\thttps://github.com/ltdrdata/Co"
+    },
+    "ComfyUI-MingNodes": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/mingsky-ai/ComfyUI-MingNodes (fetch)\norigin\thttps://github.com/mingsky-ai/"
+    },
+    "ComfyUI-QwenImageLoraLoader": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-QwenVL": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-ReActor": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Gourieff/ComfyUI-ReActor (fetch)\norigin\thttps://github.com/Gourieff/ComfyU"
+    },
+    "ComfyUI-RealESRGAN_Upscaler": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/zentrocdot/ComfyUI-RealESRGAN_Upscaler (fetch)\norigin\thttps://github.com/z"
+    },
+    "ComfyUI-ReduxFineTune": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-S3-IO": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/olduvai-jp/ComfyUI-S3-IO (fetch)\norigin\thttps://github.com/olduvai-jp/Comf"
+    },
+    "ComfyUI-TeaCache": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-Vton-Mask": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/karthikg-09/ComfyUI-Vton-Mask.git (fetch)\norigin\thttps://github.com/karthi"
+    },
+    "ComfyUI_AdvancedRefluxControl": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kaibioinfo/ComfyUI_AdvancedRefluxControl (fetch)\norigin\thttps://github.com"
+    },
+    "ComfyUI_Comfyroll_CustomNodes": {
+      "py_files": 4,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes (fetch)\norigin\thttps://github.com/Suz"
+    },
+    "ComfyUI_Florence2SAM2": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI_JPS-Nodes": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/JPS-GER/ComfyUI_JPS-Nodes.git (fetch)\norigin\thttps://github.com/JPS-GER/Co"
+    },
+    "ComfyUI_Mel_Nodes": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI_Swwan": {
+      "py_files": 25,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/aining2022/ComfyUI_Swwan (fetch)\norigin\thttps://github.com/aining2022/Comf"
+    },
+    "ComfyUI_essentials": {
+      "py_files": 11,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/cubiq/ComfyUI_essentials.git (fetch)\norigin\thttps://github.com/cubiq/Comfy"
+    },
+    "Comfyui_Flux_Style_Adjust": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/yichengup/Comfyui_Flux_Style_Adjust (fetch)\norigin\thttps://github.com/yich"
+    },
+    "Comfyui_Redux_Advanced": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/yichengup/Comfyui_Redux_Advanced (fetch)\norigin\thttps://github.com/yicheng"
+    },
+    "Crystools-MonitorOnly": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "__pycache__": {
+      "py_files": 0,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "academiasd": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "batch_image_loader": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/orion4d/batch_image_loader.git (fetch)\norigin\thttps://github.com/orion4d/b"
+    },
+    "cg-use-everywhere": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "civitai_comfy_nodes": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/civitai/civitai_comfy_nodes (fetch)\norigin\thttps://github.com/civitai/civi"
+    },
+    "comfy-mtb": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-advanced-controlnet": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-art-venture": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-automaticcfg": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-catvton": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-crystools": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/crystian/ComfyUI-Crystools.git (fetch)\norigin\thttps://github.com/crystian/"
+    },
+    "comfyui-crystools-save": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-custom-scripts": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-depthanythingv2": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-detail-daemon": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-easy-use": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-florence2": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-griptape": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-impact-pack": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-impact-subpack": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-in-context-lora-utils": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-inpaint-cropandstitch": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-inpaint-nodes": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-kjnodes": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-lama-remover": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-lora-auto-trigger-words": {
+      "py_files": 4,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-lora-optimizer": {
+      "py_files": 4,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-mixlab-nodes": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-prompt-composer": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/florestefano1975/comfyui-prompt-composer (fetch)\norigin\thttps://github.com"
+    },
+    "comfyui-prompt-control": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-realcugan-node": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/elfatherbrown/comfyui-realcugan-node.git (fetch)\norigin\thttps://github.com"
+    },
+    "comfyui-redux-prompt": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-rmbg": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-segment-anything-2": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kijai/ComfyUI-segment-anything-2 (fetch)\norigin\thttps://github.com/kijai/C"
+    },
+    "comfyui-supir": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-tensorops": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/un-seen/comfyui-tensorops (fetch)\norigin\thttps://github.com/un-seen/comfyu"
+    },
+    "comfyui-various": {
+      "py_files": 19,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/jamesWalker55/comfyui-various (fetch)\norigin\thttps://github.com/jamesWalke"
+    },
+    "comfyui-videohelpersuite": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-wd14-tagger": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_caption_this": {
+      "py_files": 7,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_controlnet_aux": {
+      "py_files": 7,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_essentials": {
+      "py_files": 11,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_instantid": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_ipadapter_plus": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_layerstyle": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_ncnn_upscalers": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_patches_ll": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_sunxAI_facetools": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_zenid": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "efficiency-nodes-comfyui": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "facerestore_cf": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/mav-rik/facerestore_cf (fetch)\norigin\thttps://github.com/mav-rik/faceresto"
+    },
+    "gguf": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "masquerade-nodes-comfyui": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/BadCafeCode/masquerade-nodes-comfyui (fetch)\norigin\thttps://github.com/Bad"
+    },
+    "nunchaku_nodes": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/mit-han-lab/ComfyUI-nunchaku (fetch)\norigin\thttps://github.com/mit-han-lab"
+    },
+    "prompt-manager": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "prompt_injection": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/DataCTE/prompt_injection (fetch)\norigin\thttps://github.com/DataCTE/prompt_"
+    },
+    "rgthree-comfy": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "sdxl-adherence": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "sdxl_prompt_styler": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/twri/sdxl_prompt_styler (fetch)\norigin\thttps://github.com/twri/sdxl_prompt"
+    },
+    "seedvr2_videoupscaler": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "was-node-suite-comfyui": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "wlsh_nodes": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/wallish77/wlsh_nodes (fetch)\norigin\thttps://github.com/wallish77/wlsh_node"
+    },
+    "zsq_prompt": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/windfancy/zsq_prompt (fetch)\norigin\thttps://github.com/windfancy/zsq_promp"
+    }
+  },
+  "8189": {
+    "ComfyLiterals": {
+      "py_files": 4,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/M1kep/ComfyLiterals (fetch)\norigin\thttps://github.com/M1kep/ComfyLiterals "
+    },
+    "ComfyMath": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/evanspearman/ComfyMath (fetch)\norigin\thttps://github.com/evanspearman/Comf"
+    },
+    "ComfyUI-AnimateDiff-Evolved": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved (fetch)\norigin\thttps://github.com/"
+    },
+    "ComfyUI-Copilot": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/AIDC-AI/ComfyUI-Copilot.git (fetch)\norigin\thttps://github.com/AIDC-AI/Comf"
+    },
+    "ComfyUI-Frame-Interpolation": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Fannovel16/ComfyUI-Frame-Interpolation (fetch)\norigin\thttps://github.com/F"
+    },
+    "ComfyUI-FramePackWrapper": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kijai/ComfyUI-FramePackWrapper.git (fetch)\norigin\thttps://github.com/kijai"
+    },
+    "ComfyUI-GGUF": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-LTX13B-Blockswap": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Njbx/ComfyUI-LTX13B-Blockswap (fetch)\norigin\thttps://github.com/Njbx/Comfy"
+    },
+    "ComfyUI-LTX2-R2V": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/fangcun010/ComfyUI-LTX2-R2V (fetch)\norigin\thttps://github.com/fangcun010/C"
+    },
+    "ComfyUI-LTX2-Visual-LoRA": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/seanhan19911990-source/ComfyUI-LTX2-Visual-LoRA (fetch)\norigin\thttps://git"
+    },
+    "ComfyUI-LTXVideo": {
+      "py_files": 32,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Lightricks/ComfyUI-LTXVideo (fetch)\norigin\thttps://github.com/Lightricks/C"
+    },
+    "ComfyUI-LTXVideo-Extra": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/domprosys/ComfyUI-LTXVideo-Extra (fetch)\norigin\thttps://github.com/dompros"
+    },
+    "ComfyUI-Manager": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/ltdrdata/ComfyUI-Manager.git (fetch)\norigin\thttps://github.com/ltdrdata/Co"
+    },
+    "ComfyUI-MelBandRoFormer": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-MuseTalk_FSH": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/AIFSH/ComfyUI-MuseTalk_FSH.git (fetch)\norigin\thttps://github.com/AIFSH/Com"
+    },
+    "ComfyUI-PainterLTXV2": {
+      "py_files": 4,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/princepainter/ComfyUI-PainterLTXV2 (fetch)\norigin\thttps://github.com/princ"
+    },
+    "ComfyUI-WanAnimatePreprocess": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-WanVideoWrapper": {
+      "py_files": 10,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI_wav2lip": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/ShmuelRonen/ComfyUI_wav2lip (fetch)\norigin\thttps://github.com/ShmuelRonen/"
+    },
+    "Comfyui_segformer_b2_clothes": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/StartHua/Comfyui_segformer_b2_clothes.git (fetch)\norigin\thttps://github.co"
+    },
+    "Crystools-MonitorOnly": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "RES4LYF": {
+      "py_files": 18,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/ClownsharkBatwing/RES4LYF (fetch)\norigin\thttps://github.com/ClownsharkBatw"
+    },
+    "WAN_NN_Latent_Upscale": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "WanVideoLooper": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "audio-separation-nodes-comfyui": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "cg-use-everywhere": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-cogvideoxwrapper": {
+      "py_files": 13,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kijai/ComfyUI-CogVideoXWrapper (fetch)\norigin\thttps://github.com/kijai/Com"
+    },
+    "comfyui-crystools": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/crystian/ComfyUI-Crystools.git (fetch)\norigin\thttps://github.com/crystian/"
+    },
+    "comfyui-crystools-save": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-depthanythingv2": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-depthcrafter-nodes": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-dynamicrafterwrapper": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kijai/ComfyUI-DynamiCrafterWrapper (fetch)\norigin\thttps://github.com/kijai"
+    },
+    "comfyui-easy-use": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-enhancement-utils": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-florence2": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-fluxtrainer": {
+      "py_files": 13,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-hunyuanvideowrapper": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kijai/ComfyUI-HunyuanVideoWrapper (fetch)\norigin\thttps://github.com/kijai/"
+    },
+    "comfyui-impact-pack": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-liveportrait": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-ltx2-efficient": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kakachiex2/comfyui-ltx2-efficient (fetch)\norigin\thttps://github.com/kakach"
+    },
+    "comfyui-ltxvideo-registry-mattabyte": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-ltxvideolora": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-mimicmotionwrapper": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kijai/ComfyUI-MimicMotionWrapper (fetch)\norigin\thttps://github.com/kijai/C"
+    },
+    "comfyui-mixlab-nodes": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-prompt-control": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-realcugan-node": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/elfatherbrown/comfyui-realcugan-node.git (fetch)\norigin\thttps://github.com"
+    },
+    "comfyui-segment-anything-2": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-tensorops": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/un-seen/comfyui-tensorops (fetch)\norigin\thttps://github.com/un-seen/comfyu"
+    },
+    "comfyui-vace-tools": {
+      "py_files": 6,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-video-resolution": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/hyukudan/comfyui-video-resolution (fetch)\norigin\thttps://github.com/hyukud"
+    },
+    "comfyui-videohelpersuite": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-wan-vace-prep": {
+      "py_files": 12,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-wd14-tagger": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_controlnet_aux": {
+      "py_files": 7,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_essentials": {
+      "py_files": 11,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_ipadapter_plus": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_ncnn_upscalers": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_patches_ll": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "film-grain-ltxv": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "pose-depot": {
+      "py_files": 0,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/a-lgil/pose-depot.git (fetch)\norigin\thttps://github.com/a-lgil/pose-depot."
+    },
+    "rgthree-comfy": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "seedvr2_videoupscaler": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "tiledvaelite": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "tp-omnimattezero": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "wan-studio": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "wan-video-extender": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "wan_vace_auto_joiner": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Rhovanx/wan_vace_auto_joiner (fetch)\norigin\thttps://github.com/Rhovanx/wan"
+    },
+    "wanvaceadvanced": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "was-node-suite-comfyui": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    }
+  },
+  "8190": {
+    "ComfyLiterals": {
+      "py_files": 4,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/M1kep/ComfyLiterals (fetch)\norigin\thttps://github.com/M1kep/ComfyLiterals "
+    },
+    "ComfyMath": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/evanspearman/ComfyMath (fetch)\norigin\thttps://github.com/evanspearman/Comf"
+    },
+    "ComfyUI-Copilot": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/AIDC-AI/ComfyUI-Copilot.git (fetch)\norigin\thttps://github.com/AIDC-AI/Comf"
+    },
+    "ComfyUI-F5-TTS": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/niknah/ComfyUI-F5-TTS.git (fetch)\norigin\thttps://github.com/niknah/ComfyUI"
+    },
+    "ComfyUI-FishAudioS2": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Saganaki22/ComfyUI-FishAudioS2.git (fetch)\norigin\thttps://github.com/Sagan"
+    },
+    "ComfyUI-GGUF": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-MMAudio": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kijai/ComfyUI-MMAudio.git (fetch)\norigin\thttps://github.com/kijai/ComfyUI-"
+    },
+    "ComfyUI-Manager": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/ltdrdata/ComfyUI-Manager.git (fetch)\norigin\thttps://github.com/ltdrdata/Co"
+    },
+    "ComfyUI-MelBandRoFormer": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kijai/ComfyUI-MelBandRoFormer (fetch)\norigin\thttps://github.com/kijai/Comf"
+    },
+    "ComfyUI-OmniVoice-TTS": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Saganaki22/ComfyUI-OmniVoice-TTS.git (fetch)\norigin\thttps://github.com/Sag"
+    },
+    "ComfyUI-Qwen3-TTS": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/wanaigc/ComfyUI-Qwen3-TTS.git (fetch)\norigin\thttps://github.com/wanaigc/Co"
+    },
+    "ComfyUI-RVC_DISABLED": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/AIFSH/ComfyUI-RVC.git (fetch)\norigin\thttps://github.com/AIFSH/ComfyUI-RVC."
+    },
+    "ComfyUI-WanVideoWrapper": {
+      "py_files": 10,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-Whisper": {
+      "py_files": 7,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/yuvraj108c/ComfyUI-Whisper.git (fetch)\norigin\thttps://github.com/yuvraj108"
+    },
+    "ComfyUI-XTTS": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/AIFSH/ComfyUI-XTTS.git (fetch)\norigin\thttps://github.com/AIFSH/ComfyUI-XTT"
+    },
+    "ComfyUI_Comfyroll_CustomNodes": {
+      "py_files": 4,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes (fetch)\norigin\thttps://github.com/Suz"
+    },
+    "ComfyUI_MegaTTS3": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/billwuhao/ComfyUI_MegaTTS3.git (fetch)\norigin\thttps://github.com/billwuhao"
+    },
+    "ComfyUI_StepAudioTTS": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/billwuhao/ComfyUI_StepAudioTTS.git (fetch)\norigin\thttps://github.com/billw"
+    },
+    "Comfyui_segformer_b2_clothes_DISABLED": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/StartHua/Comfyui_segformer_b2_clothes.git (fetch)\norigin\thttps://github.co"
+    },
+    "Crystools-MonitorOnly": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "SegFormer": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/NVlabs/SegFormer.git (fetch)\norigin\thttps://github.com/NVlabs/SegFormer.gi"
+    },
+    "SegformerPlusPlus": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/KieDani/SegformerPlusPlus.git (fetch)\norigin\thttps://github.com/KieDani/Se"
+    },
+    "TTS-Audio-Suite": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/diodiogod/TTS-Audio-Suite (fetch)\norigin\thttps://github.com/diodiogod/TTS-"
+    },
+    "academiasd": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-crystools": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/crystian/ComfyUI-Crystools.git (fetch)\norigin\thttps://github.com/crystian/"
+    },
+    "comfyui-crystools-save": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-enhancement-utils": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-frame-interpolation": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-impact-pack": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-kjnodes": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-videohelpersuite": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-workflow-encrypt": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/jtydhr88/ComfyUI-Workflow-Encrypt (fetch)\norigin\thttps://github.com/jtydhr"
+    },
+    "comfyui_essentials": {
+      "py_files": 11,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_fill-nodes": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_ncnn_upscalers": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_yvann-nodes": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "rgthree-comfy": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    }
+  },
+  "8191": {
+    "ComfyMath": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/evanspearman/ComfyMath (fetch)\norigin\thttps://github.com/evanspearman/Comf"
+    },
+    "ComfyUI-AutoCropFaces": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/liusida/ComfyUI-AutoCropFaces (fetch)\norigin\thttps://github.com/liusida/Co"
+    },
+    "ComfyUI-BRIA_AI-RMBG": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/ZHO-ZHO-ZHO/ComfyUI-BRIA_AI-RMBG (fetch)\norigin\thttps://github.com/ZHO-ZHO"
+    },
+    "ComfyUI-CatvtonFluxWrapper": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/lujiazho/ComfyUI-CatvtonFluxWrapper (fetch)\norigin\thttps://github.com/luji"
+    },
+    "ComfyUI-Chat-GPT-Integration": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/vienteck/ComfyUI-Chat-GPT-Integration (fetch)\norigin\thttps://github.com/vi"
+    },
+    "ComfyUI-Copilot": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/AIDC-AI/ComfyUI-Copilot.git (fetch)\norigin\thttps://github.com/AIDC-AI/Comf"
+    },
+    "ComfyUI-DepthAnythingV3": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-Dummy_Node_Pack": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/FuryNocturn/ComfyUI-Dummy_Node_Pack (fetch)\norigin\thttps://github.com/Fury"
+    },
+    "ComfyUI-EsesImageResize": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/quasiblob/ComfyUI-EsesImageResize (fetch)\norigin\thttps://github.com/quasib"
+    },
+    "ComfyUI-ExtendIPAdapterClipVision": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/vahlok-alunmid/ComfyUI-ExtendIPAdapterClipVision (fetch)\norigin\thttps://gi"
+    },
+    "ComfyUI-GGUF": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-HQ-Image-Save": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/spacepxl/ComfyUI-HQ-Image-Save (fetch)\norigin\thttps://github.com/spacepxl/"
+    },
+    "ComfyUI-IPAdapter-Flux": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Shakker-Labs/ComfyUI-IPAdapter-Flux (fetch)\norigin\thttps://github.com/Shak"
+    },
+    "ComfyUI-Image-Filters": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/spacepxl/ComfyUI-Image-Filters (fetch)\norigin\thttps://github.com/spacepxl/"
+    },
+    "ComfyUI-LTXVideo": {
+      "py_files": 31,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Lightricks/ComfyUI-LTXVideo (fetch)\norigin\thttps://github.com/Lightricks/C"
+    },
+    "ComfyUI-Manager": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/ltdrdata/ComfyUI-Manager.git (fetch)\norigin\thttps://github.com/ltdrdata/Co"
+    },
+    "ComfyUI-MingNodes": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/mingsky-ai/ComfyUI-MingNodes (fetch)\norigin\thttps://github.com/mingsky-ai/"
+    },
+    "ComfyUI-QwenImageLoraLoader": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-QwenVL": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-ReActor": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Gourieff/ComfyUI-ReActor (fetch)\norigin\thttps://github.com/Gourieff/ComfyU"
+    },
+    "ComfyUI-RealESRGAN_Upscaler": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/zentrocdot/ComfyUI-RealESRGAN_Upscaler (fetch)\norigin\thttps://github.com/z"
+    },
+    "ComfyUI-ReduxFineTune": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-S3-IO": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/olduvai-jp/ComfyUI-S3-IO (fetch)\norigin\thttps://github.com/olduvai-jp/Comf"
+    },
+    "ComfyUI-TeaCache": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI-Vton-Mask": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/karthikg-09/ComfyUI-Vton-Mask.git (fetch)\norigin\thttps://github.com/karthi"
+    },
+    "ComfyUI_AdvancedRefluxControl": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kaibioinfo/ComfyUI_AdvancedRefluxControl (fetch)\norigin\thttps://github.com"
+    },
+    "ComfyUI_Comfyroll_CustomNodes": {
+      "py_files": 4,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes (fetch)\norigin\thttps://github.com/Suz"
+    },
+    "ComfyUI_Florence2SAM2": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI_JPS-Nodes": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/JPS-GER/ComfyUI_JPS-Nodes.git (fetch)\norigin\thttps://github.com/JPS-GER/Co"
+    },
+    "ComfyUI_Mel_Nodes": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "ComfyUI_Swwan": {
+      "py_files": 25,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/aining2022/ComfyUI_Swwan (fetch)\norigin\thttps://github.com/aining2022/Comf"
+    },
+    "ComfyUI_essentials": {
+      "py_files": 11,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/cubiq/ComfyUI_essentials.git (fetch)\norigin\thttps://github.com/cubiq/Comfy"
+    },
+    "Comfyui_Flux_Style_Adjust": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/yichengup/Comfyui_Flux_Style_Adjust (fetch)\norigin\thttps://github.com/yich"
+    },
+    "Comfyui_Redux_Advanced": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/yichengup/Comfyui_Redux_Advanced (fetch)\norigin\thttps://github.com/yicheng"
+    },
+    "Crystools-MonitorOnly": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "__pycache__": {
+      "py_files": 0,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "academiasd": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "batch_image_loader": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/orion4d/batch_image_loader.git (fetch)\norigin\thttps://github.com/orion4d/b"
+    },
+    "cg-use-everywhere": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "civitai_comfy_nodes": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/civitai/civitai_comfy_nodes (fetch)\norigin\thttps://github.com/civitai/civi"
+    },
+    "comfy-mtb": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-advanced-controlnet": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-art-venture": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-automaticcfg": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-catvton": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-crystools": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/crystian/ComfyUI-Crystools.git (fetch)\norigin\thttps://github.com/crystian/"
+    },
+    "comfyui-crystools-save": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-custom-scripts": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-deploy": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-depthanythingv2": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-detail-daemon": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-easy-use": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-enhancement-utils": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-florence2": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-griptape": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-impact-pack": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-impact-subpack": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-in-context-lora-utils": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-inpaint-cropandstitch": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-inpaint-nodes": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-kjnodes": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-lama-remover": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-lora-auto-trigger-words": {
+      "py_files": 4,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-lora-manager": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-lora-optimizer": {
+      "py_files": 4,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-mixlab-nodes": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-prompt-composer": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/florestefano1975/comfyui-prompt-composer (fetch)\norigin\thttps://github.com"
+    },
+    "comfyui-prompt-control": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-realcugan-node": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/elfatherbrown/comfyui-realcugan-node.git (fetch)\norigin\thttps://github.com"
+    },
+    "comfyui-redux-prompt": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-rmbg": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-segment-anything-2": {
+      "py_files": 3,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/kijai/ComfyUI-segment-anything-2 (fetch)\norigin\thttps://github.com/kijai/C"
+    },
+    "comfyui-supir": {
+      "py_files": 4,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-tensorops": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/un-seen/comfyui-tensorops (fetch)\norigin\thttps://github.com/un-seen/comfyu"
+    },
+    "comfyui-various": {
+      "py_files": 19,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/jamesWalker55/comfyui-various (fetch)\norigin\thttps://github.com/jamesWalke"
+    },
+    "comfyui-videohelpersuite": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui-wd14-tagger": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_caption_this": {
+      "py_files": 7,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_controlnet_aux": {
+      "py_files": 7,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_essentials": {
+      "py_files": 11,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_image_metadata_extension": {
+      "py_files": 1,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/edelvarden/comfyui_image_metadata_extension (fetch)\norigin\thttps://github."
+    },
+    "comfyui_instantid": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_ipadapter_plus": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_layerstyle": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_ncnn_upscalers": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_patches_ll": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_sunxAI_facetools": {
+      "py_files": 6,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "comfyui_zenid": {
+      "py_files": 5,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "efficiency-nodes-comfyui": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "facerestore_cf": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/mav-rik/facerestore_cf (fetch)\norigin\thttps://github.com/mav-rik/faceresto"
+    },
+    "gguf": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "masquerade-nodes-comfyui": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/BadCafeCode/masquerade-nodes-comfyui (fetch)\norigin\thttps://github.com/Bad"
+    },
+    "nunchaku_nodes": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/mit-han-lab/ComfyUI-nunchaku (fetch)\norigin\thttps://github.com/mit-han-lab"
+    },
+    "prompt-manager": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "prompt_injection": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/DataCTE/prompt_injection (fetch)\norigin\thttps://github.com/DataCTE/prompt_"
+    },
+    "rgthree-comfy": {
+      "py_files": 5,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "sdxl-adherence": {
+      "py_files": 1,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "sdxl_prompt_styler": {
+      "py_files": 2,
+      "has_requirements": false,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/twri/sdxl_prompt_styler (fetch)\norigin\thttps://github.com/twri/sdxl_prompt"
+    },
+    "seedvr2_videoupscaler": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "was-node-suite-comfyui": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": false,
+      "git_remote": ""
+    },
+    "wlsh_nodes": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/wallish77/wlsh_nodes (fetch)\norigin\thttps://github.com/wallish77/wlsh_node"
+    },
+    "zsq_prompt": {
+      "py_files": 2,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/windfancy/zsq_prompt (fetch)\norigin\thttps://github.com/windfancy/zsq_promp"
+    }
+  },
+  "8192": {
+    "ComfyUI-3D-Pack": {
+      "py_files": 3,
+      "has_requirements": true,
+      "has_git": true,
+      "git_remote": "origin\thttps://github.com/MrForExample/ComfyUI-3D-Pack.git (fetch)\norigin\thttps://github.com/MrForEx"
+    },
+    "__pycache__": {
+      "py_files": 0,
+      "has_requirements": false,
+      "has_git": false,
+      "git_remote": ""
+    }
+  }
+}

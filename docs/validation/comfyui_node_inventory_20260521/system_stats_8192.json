@@ -1,0 +1,37 @@
+{
+  "system": {
+    "os": "linux",
+    "ram_total": 58969976832,
+    "ram_free": 48407035904,
+    "comfyui_version": "0.17.0",
+    "required_frontend_version": "1.41.21",
+    "installed_templates_version": "0.9.26",
+    "required_templates_version": "0.9.26",
+    "python_version": "3.12.3 (main, Mar 23 2026, 19:04:32) [GCC 13.3.0]",
+    "pytorch_version": "2.10.0+cu128",
+    "embedded_python": false,
+    "argv": [
+      "main.py",
+      "--listen",
+      "0.0.0.0",
+      "--port",
+      "8192",
+      "--user-directory",
+      "/home/harliesound/ai/ComfyUI_profiles/3d/user",
+      "--listen",
+      "0.0.0.0",
+      "--enable-cors-header"
+    ]
+  },
+  "devices": [
+    {
+      "name": "cuda:0 NVIDIA GeForce RTX 5090 : cudaMallocAsync",
+      "type": "cuda",
+      "index": 0,
+      "vram_total": 34190458880,
+      "vram_free": 32432455680,
+      "torch_vram_total": 0,
+      "torch_vram_free": 0
+    }
+  ]
+}

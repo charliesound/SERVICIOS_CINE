@@ -1,0 +1,43 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/05_Insta-Lo-RAm-Your-Virtual-Influencer-Generator.png",
+  "metadata_keys": [
+    "workflow"
+  ],
+  "class_types": [
+    "CFGNorm",
+    "CLIPLoader",
+    "CLIPTextEncode",
+    "CR Image Grid Panel",
+    "CR Prompt List",
+    "CheckpointLoaderSimple",
+    "GetNode",
+    "ImageListToImageBatch",
+    "ImageScaleBy",
+    "ImageScaleToTotalPixels",
+    "ImageUpscaleWithModel",
+    "KSampler",
+    "LoadImage",
+    "Lora Loader Stack (rgthree)",
+    "ModelPassThrough",
+    "ModelSamplingAuraFlow",
+    "PreviewImage",
+    "SaveImage",
+    "SetNode",
+    "TextEncodeQwenImageEdit",
+    "UNETLoader",
+    "UpscaleModelLoader",
+    "VAEDecode",
+    "VAEEncode",
+    "VAELoader"
+  ],
+  "models": [
+    "1x-ITF-SkinDiffDetail-Lite-v1.pth",
+    "Qwen-Image-Edit_ComfyUI/qwen_image_edit_bf16.safetensors",
+    "Qwen-Image-Lightning-8steps-V1.1.safetensors",
+    "Qwen-Image_ComfyUI/qwen_2.5_vl_7b.safetensors",
+    "Qwen-Image_ComfyUI/qwen_image_vae.safetensors",
+    "epicrealismXL_vxviiCrystalclear.safetensors",
+    "flymy_realism.safetensors"
+  ],
+  "family": "image_still"
+}

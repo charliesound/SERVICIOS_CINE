@@ -1,0 +1,2408 @@
+{
+  "last_node_id": 59,
+  "last_link_id": 70,
+  "nodes": [
+    {
+      "id": 12,
+      "type": "SAMLoader",
+      "pos": [
+        210.6955108642578,
+        -48.51438522338867
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "SAM_MODEL",
+          "type": "SAM_MODEL",
+          "links": [
+            10,
+            13,
+            26,
+            29
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SAMLoader"
+      },
+      "widgets_values": [
+        "sam_vit_b_01ec64.pth",
+        "Prefer GPU"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "GroundingDinoModelLoader (segment anything)",
+      "pos": [
+        554.04638671875,
+        -47.763057708740234
+      ],
+      "size": [
+        361.20001220703125,
+        58
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "GROUNDING_DINO_MODEL",
+          "type": "GROUNDING_DINO_MODEL",
+          "links": [
+            11,
+            14,
+            27,
+            30
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GroundingDinoModelLoader (segment anything)"
+      },
+      "widgets_values": [
+        "GroundingDINO_SwinT_OGC (694MB)"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "MaskPreview+",
+      "pos": [
+        956.037109375,
+        180.86614990234375
+      ],
+      "size": [
+        210,
+        246
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 12
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MaskPreview+"
+      }
+    },
+    {
+      "id": 16,
+      "type": "MaskPreview+",
+      "pos": [
+        1193.8009033203125,
+        171.97608947753906
+      ],
+      "size": [
+        210,
+        246
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 15
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MaskPreview+"
+      }
+    },
+    {
+      "id": 15,
+      "type": "GroundingDinoSAMSegment (segment anything)",
+      "pos": [
+        563.4035034179688,
+        313.4776611328125
+      ],
+      "size": [
+        352.79998779296875,
+        122
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "sam_model",
+          "type": "SAM_MODEL",
+          "link": 13
+        },
+        {
+          "name": "grounding_dino_model",
+          "type": "GROUNDING_DINO_MODEL",
+          "link": 14
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            15,
+            19
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GroundingDinoSAMSegment (segment anything)"
+      },
+      "widgets_values": [
+        "arms",
+        0.3
+      ]
+    },
+    {
+      "id": 21,
+      "type": "SetNode",
+      "pos": [
+        1786.4005126953125,
+        28.135591506958008
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "*",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "title": "Set_render_img",
+      "properties": {
+        "previousName": "render_img"
+      },
+      "widgets_values": [
+        "render_img"
+      ]
+    },
+    {
+      "id": 17,
+      "type": "AddMask",
+      "pos": [
+        977.98486328125,
+        64.43477630615234
+      ],
+      "size": [
+        277.20001220703125,
+        46
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask1",
+          "type": "MASK",
+          "link": 18
+        },
+        {
+          "name": "mask2",
+          "type": "MASK",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            20
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AddMask"
+      }
+    },
+    {
+      "id": 26,
+      "type": "MaskPreview+",
+      "pos": [
+        960.1525268554688,
+        674.7701416015625
+      ],
+      "size": [
+        253.9230194091797,
+        246
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 36
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MaskPreview+"
+      }
+    },
+    {
+      "id": 25,
+      "type": "AddMask",
+      "pos": [
+        952.06591796875,
+        581.7131958007812
+      ],
+      "size": [
+        277.20001220703125,
+        46
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask1",
+          "type": "MASK",
+          "link": 34
+        },
+        {
+          "name": "mask2",
+          "type": "MASK",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            36,
+            41
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AddMask"
+      }
+    },
+    {
+      "id": 22,
+      "type": "GetNode",
+      "pos": [
+        216.34616088867188,
+        585.0623779296875
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            32,
+            33,
+            38
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Get_render_img",
+      "properties": {},
+      "widgets_values": [
+        "render_img"
+      ]
+    },
+    {
+      "id": 33,
+      "type": "CXH_Leffa_Viton_Load",
+      "pos": [
+        610.523681640625,
+        1266.566650390625
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "pipe",
+          "type": "CXH_Leffa_Viton_Load",
+          "links": [
+            43
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CXH_Leffa_Viton_Load"
+      },
+      "widgets_values": [
+        "franciszzj/Leffa",
+        "hd"
+      ]
+    },
+    {
+      "id": 34,
+      "type": "GetNode",
+      "pos": [
+        680.19970703125,
+        1399.4088134765625
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            44
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Get_render_img",
+      "properties": {},
+      "widgets_values": [
+        "render_img"
+      ]
+    },
+    {
+      "id": 36,
+      "type": "SetNode",
+      "pos": [
+        2165.189453125,
+        904.5687866210938
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "link": 46
+        }
+      ],
+      "outputs": [
+        {
+          "name": "*",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "title": "Set_pose_img",
+      "properties": {
+        "previousName": "pose_img"
+      },
+      "widgets_values": [
+        "pose_img"
+      ]
+    },
+    {
+      "id": 37,
+      "type": "GetNode",
+      "pos": [
+        666.19970703125,
+        1522.4088134765625
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            47
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Get_pose_img",
+      "properties": {},
+      "widgets_values": [
+        "pose_img"
+      ]
+    },
+    {
+      "id": 31,
+      "type": "MaskPreview+",
+      "pos": [
+        1596.1796875,
+        580.5674438476562
+      ],
+      "size": [
+        253.9230194091797,
+        246
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 42
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MaskPreview+"
+      }
+    },
+    {
+      "id": 39,
+      "type": "GetNode",
+      "pos": [
+        667.9120483398438,
+        1642.167724609375
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            49
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Get_clothe_mask",
+      "properties": {},
+      "widgets_values": [
+        "clothe_mask"
+      ]
+    },
+    {
+      "id": 23,
+      "type": "GroundingDinoSAMSegment (segment anything)",
+      "pos": [
+        570,
+        568.5640869140625
+      ],
+      "size": [
+        352.79998779296875,
+        122
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "sam_model",
+          "type": "SAM_MODEL",
+          "link": 26
+        },
+        {
+          "name": "grounding_dino_model",
+          "type": "GROUNDING_DINO_MODEL",
+          "link": 27
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 32
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            34
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GroundingDinoSAMSegment (segment anything)"
+      },
+      "widgets_values": [
+        "tshirt",
+        0.3
+      ]
+    },
+    {
+      "id": 24,
+      "type": "GroundingDinoSAMSegment (segment anything)",
+      "pos": [
+        571.4963989257812,
+        727.109130859375
+      ],
+      "size": [
+        352.79998779296875,
+        122
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "sam_model",
+          "type": "SAM_MODEL",
+          "link": 29
+        },
+        {
+          "name": "grounding_dino_model",
+          "type": "GROUNDING_DINO_MODEL",
+          "link": 30
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            35
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GroundingDinoSAMSegment (segment anything)"
+      },
+      "widgets_values": [
+        "arms",
+        0.3
+      ]
+    },
+    {
+      "id": 41,
+      "type": "SetNode",
+      "pos": [
+        2056.77734375,
+        206.56982421875
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 41,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "link": 51
+        }
+      ],
+      "outputs": [
+        {
+          "name": "*",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "title": "Set_cropt_w",
+      "properties": {
+        "previousName": "cropt_w"
+      },
+      "widgets_values": [
+        "cropt_w"
+      ]
+    },
+    {
+      "id": 42,
+      "type": "SetNode",
+      "pos": [
+        2058.477294921875,
+        313.8698425292969
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 42,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "link": 52
+        }
+      ],
+      "outputs": [
+        {
+          "name": "*",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "title": "Set_cropt_h",
+      "properties": {
+        "previousName": "cropt_h"
+      },
+      "widgets_values": [
+        "cropt_h"
+      ]
+    },
+    {
+      "id": 43,
+      "type": "SetNode",
+      "pos": [
+        2063.977294921875,
+        -23.830167770385742
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "link": 53
+        }
+      ],
+      "outputs": [
+        {
+          "name": "*",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "title": "Set_cropt_x",
+      "properties": {
+        "previousName": "cropt_x"
+      },
+      "widgets_values": [
+        "cropt_x"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "MaskBoundingBox+",
+      "pos": [
+        1433.7606201171875,
+        74.40103149414062
+      ],
+      "size": [
+        315,
+        182
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 20
+        },
+        {
+          "name": "image_optional",
+          "type": "IMAGE",
+          "link": 21,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            23
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "x",
+          "type": "INT",
+          "links": [
+            53
+          ],
+          "slot_index": 2
+        },
+        {
+          "name": "y",
+          "type": "INT",
+          "links": [
+            54
+          ],
+          "slot_index": 3
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            51
+          ],
+          "slot_index": 4
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            52
+          ],
+          "slot_index": 5
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MaskBoundingBox+"
+      },
+      "widgets_values": [
+        50,
+        0
+      ]
+    },
+    {
+      "id": 44,
+      "type": "SetNode",
+      "pos": [
+        2063.477294921875,
+        93.36982727050781
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "link": 54
+        }
+      ],
+      "outputs": [
+        {
+          "name": "*",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "title": "Set_cropt_y",
+      "properties": {
+        "previousName": "cropt_y"
+      },
+      "widgets_values": [
+        "cropt_y"
+      ]
+    },
+    {
+      "id": 40,
+      "type": "PreviewImage",
+      "pos": [
+        969.114013671875,
+        1536.4173583984375
+      ],
+      "size": [
+        210,
+        246
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 50
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 47,
+      "type": "GetNode",
+      "pos": [
+        1197.396728515625,
+        1663.088134765625
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            57
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Get_cropt_h",
+      "properties": {},
+      "widgets_values": [
+        "cropt_h"
+      ]
+    },
+    {
+      "id": 48,
+      "type": "PreviewImage",
+      "pos": [
+        1462.7158203125,
+        1614.4095458984375
+      ],
+      "size": [
+        210,
+        246
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 58
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 50,
+      "type": "SetNode",
+      "pos": [
+        215.03146362304688,
+        465.24609375
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "link": 59
+        }
+      ],
+      "outputs": [
+        {
+          "name": "*",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "title": "Set_init_img",
+      "properties": {
+        "previousName": "init_img"
+      },
+      "widgets_values": [
+        "init_img"
+      ]
+    },
+    {
+      "id": 51,
+      "type": "GetNode",
+      "pos": [
+        1678.2734375,
+        1602.2916259765625
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            61
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Get_init_img",
+      "properties": {},
+      "widgets_values": [
+        "init_img"
+      ]
+    },
+    {
+      "id": 46,
+      "type": "GetNode",
+      "pos": [
+        1198.1641845703125,
+        1535.2574462890625
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            56
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Get_cropt_w",
+      "properties": {},
+      "widgets_values": [
+        "cropt_w"
+      ]
+    },
+    {
+      "id": 52,
+      "type": "GetNode",
+      "pos": [
+        1688.3616943359375,
+        1709.64501953125
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            63
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Get_cropt_x",
+      "properties": {},
+      "widgets_values": [
+        "cropt_x"
+      ]
+    },
+    {
+      "id": 53,
+      "type": "GetNode",
+      "pos": [
+        1689.7252197265625,
+        1799.1903076171875
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            64
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Get_cropt_y",
+      "properties": {},
+      "widgets_values": [
+        "cropt_y"
+      ]
+    },
+    {
+      "id": 49,
+      "type": "ImageCompositeMasked",
+      "pos": [
+        1886.7171630859375,
+        1256.9207763671875
+      ],
+      "size": [
+        315,
+        146
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "destination",
+          "type": "IMAGE",
+          "link": 61
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "link": 62
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "x",
+          "type": "INT",
+          "link": 63,
+          "widget": {
+            "name": "x"
+          }
+        },
+        {
+          "name": "y",
+          "type": "INT",
+          "link": 64,
+          "widget": {
+            "name": "y"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            65
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCompositeMasked"
+      },
+      "widgets_values": [
+        0,
+        0,
+        false
+      ]
+    },
+    {
+      "id": 30,
+      "type": "GrowMaskWithBlur",
+      "pos": [
+        1239.317626953125,
+        584.4981079101562
+      ],
+      "size": [
+        315,
+        246
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 41
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [
+            42,
+            48
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "mask_inverted",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GrowMaskWithBlur"
+      },
+      "widgets_values": [
+        10,
+        0,
+        true,
+        false,
+        0,
+        1,
+        1,
+        true
+      ]
+    },
+    {
+      "id": 10,
+      "type": "LoadImage",
+      "pos": [
+        198.6090087890625,
+        84.24215698242188
+      ],
+      "size": [
+        315,
+        314
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            16,
+            17,
+            21,
+            59
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "ComfyUI_01497_.png",
+        "image"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "GroundingDinoSAMSegment (segment anything)",
+      "pos": [
+        557.9020385742188,
+        115.51986694335938
+      ],
+      "size": [
+        352.79998779296875,
+        122
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "sam_model",
+          "type": "SAM_MODEL",
+          "link": 10
+        },
+        {
+          "name": "grounding_dino_model",
+          "type": "GROUNDING_DINO_MODEL",
+          "link": 11
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            12,
+            18
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GroundingDinoSAMSegment (segment anything)"
+      },
+      "widgets_values": [
+        "tshirt",
+        0.45
+      ]
+    },
+    {
+      "id": 19,
+      "type": "PreviewImage",
+      "pos": [
+        1813.6854248046875,
+        162.9882049560547
+      ],
+      "size": [
+        210,
+        246
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 24
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 20,
+      "type": "ImageScaleToMegapixels",
+      "pos": [
+        1435.130859375,
+        310.38763427734375
+      ],
+      "size": [
+        315,
+        78
+      ],
+      "flags": {},
+      "order": 38,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 23
+        },
+        {
+          "name": "upscale_model_opt",
+          "type": "UPSCALE_MODEL",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            24,
+            25,
+            67
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageScaleToMegapixels"
+      },
+      "widgets_values": [
+        1
+      ]
+    },
+    {
+      "id": 56,
+      "type": "PreviewImage",
+      "pos": [
+        2640.398681640625,
+        -9.92355728149414
+      ],
+      "size": [
+        210,
+        246
+      ],
+      "flags": {},
+      "order": 47,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 68
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 55,
+      "type": "easy imageRemBg",
+      "pos": [
+        2300.49853515625,
+        -6.293553829193115
+      ],
+      "size": [
+        315,
+        314
+      ],
+      "flags": {},
+      "order": 46,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 67
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            68,
+            69
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "easy imageRemBg"
+      },
+      "widgets_values": [
+        "RMBG-1.4",
+        "Preview",
+        "ComfyUI",
+        false
+      ]
+    },
+    {
+      "id": 57,
+      "type": "SetNode",
+      "pos": [
+        2416.07763671875,
+        392.06982421875
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 48,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "link": 69
+        }
+      ],
+      "outputs": [
+        {
+          "name": "*",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "title": "Set_rmbg_img",
+      "properties": {
+        "previousName": "rmbg_img"
+      },
+      "widgets_values": [
+        "rmbg_img"
+      ]
+    },
+    {
+      "id": 28,
+      "type": "GetImageSizeAndCount",
+      "pos": [
+        1898.2889404296875,
+        732.5687255859375
+      ],
+      "size": [
+        277.20001220703125,
+        86
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 38
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "865 width",
+          "type": "INT",
+          "links": [
+            66
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "1212 height",
+          "type": "INT",
+          "links": [],
+          "slot_index": 2
+        },
+        {
+          "name": "1 count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetImageSizeAndCount"
+      }
+    },
+    {
+      "id": 38,
+      "type": "SetNode",
+      "pos": [
+        1637.8896484375,
+        894.1687622070312
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "link": 48
+        }
+      ],
+      "outputs": [
+        {
+          "name": "*",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "title": "Set_clothe_mask",
+      "properties": {
+        "previousName": "clothe_mask"
+      },
+      "widgets_values": [
+        "clothe_mask"
+      ]
+    },
+    {
+      "id": 59,
+      "type": "GetNode",
+      "pos": [
+        1614.387939453125,
+        463.9208984375
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            70
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Get_rmbg_img",
+      "properties": {},
+      "widgets_values": [
+        "rmbg_img"
+      ]
+    },
+    {
+      "id": 27,
+      "type": "DensePosePreprocessor",
+      "pos": [
+        1880.7296142578125,
+        564.013427734375
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 70
+        },
+        {
+          "name": "resolution",
+          "type": "INT",
+          "link": 66,
+          "widget": {
+            "name": "resolution"
+          },
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            40,
+            46
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DensePosePreprocessor"
+      },
+      "widgets_values": [
+        "densepose_r50_fpn_dl.torchscript",
+        "Viridis (MagicAnimate)",
+        512
+      ]
+    },
+    {
+      "id": 29,
+      "type": "PreviewImage",
+      "pos": [
+        2247.90087890625,
+        540.2896118164062
+      ],
+      "size": [
+        232.54713439941406,
+        294.3153076171875
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 40
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 45,
+      "type": "ImageResizeKJ",
+      "pos": [
+        1446.1715087890625,
+        1271.9656982421875
+      ],
+      "size": [
+        315,
+        266
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 55
+        },
+        {
+          "name": "get_image_size",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "width_input",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "width_input"
+          },
+          "shape": 7
+        },
+        {
+          "name": "height_input",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "height_input"
+          },
+          "shape": 7
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 56,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 57,
+          "widget": {
+            "name": "height"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            58,
+            62
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageResizeKJ"
+      },
+      "widgets_values": [
+        512,
+        512,
+        "lanczos",
+        false,
+        2,
+        0,
+        0,
+        "disabled"
+      ]
+    },
+    {
+      "id": 32,
+      "type": "CXH_Leffa_Viton_Run",
+      "pos": [
+        975.1246337890625,
+        1274.0794677734375
+      ],
+      "size": [
+        315,
+        210
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pipe",
+          "type": "CXH_Leffa_Viton_Load",
+          "link": 43
+        },
+        {
+          "name": "model",
+          "type": "IMAGE",
+          "link": 44
+        },
+        {
+          "name": "cloth",
+          "type": "IMAGE",
+          "link": 45
+        },
+        {
+          "name": "pose",
+          "type": "IMAGE",
+          "link": 47
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 49
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            50,
+            55
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CXH_Leffa_Viton_Run"
+      },
+      "widgets_values": [
+        20,
+        2.5,
+        656545,
+        "fixed"
+      ]
+    },
+    {
+      "id": 54,
+      "type": "SaveImage",
+      "pos": [
+        2230.439697265625,
+        1248.651123046875
+      ],
+      "size": [
+        448.6723327636719,
+        614.649169921875
+      ],
+      "flags": {},
+      "order": 43,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 65
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "ComfyUI"
+      ]
+    },
+    {
+      "id": 35,
+      "type": "LoadImage",
+      "pos": [
+        243.94869995117188,
+        1255.1788330078125
+      ],
+      "size": [
+        315,
+        314
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            45
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "01449_00.jpg",
+        "image"
+      ]
+    }
+  ],
+  "links": [
+    [
+      10,
+      12,
+      0,
+      11,
+      0,
+      "SAM_MODEL"
+    ],
+    [
+      11,
+      13,
+      0,
+      11,
+      1,
+      "GROUNDING_DINO_MODEL"
+    ],
+    [
+      12,
+      11,
+      1,
+      14,
+      0,
+      "MASK"
+    ],
+    [
+      13,
+      12,
+      0,
+      15,
+      0,
+      "SAM_MODEL"
+    ],
+    [
+      14,
+      13,
+      0,
+      15,
+      1,
+      "GROUNDING_DINO_MODEL"
+    ],
+    [
+      15,
+      15,
+      1,
+      16,
+      0,
+      "MASK"
+    ],
+    [
+      16,
+      10,
+      0,
+      11,
+      2,
+      "IMAGE"
+    ],
+    [
+      17,
+      10,
+      0,
+      15,
+      2,
+      "IMAGE"
+    ],
+    [
+      18,
+      11,
+      1,
+      17,
+      0,
+      "MASK"
+    ],
+    [
+      19,
+      15,
+      1,
+      17,
+      1,
+      "MASK"
+    ],
+    [
+      20,
+      17,
+      0,
+      18,
+      0,
+      "MASK"
+    ],
+    [
+      21,
+      10,
+      0,
+      18,
+      1,
+      "IMAGE"
+    ],
+    [
+      23,
+      18,
+      1,
+      20,
+      0,
+      "IMAGE"
+    ],
+    [
+      24,
+      20,
+      0,
+      19,
+      0,
+      "IMAGE"
+    ],
+    [
+      25,
+      20,
+      0,
+      21,
+      0,
+      "*"
+    ],
+    [
+      26,
+      12,
+      0,
+      23,
+      0,
+      "SAM_MODEL"
+    ],
+    [
+      27,
+      13,
+      0,
+      23,
+      1,
+      "GROUNDING_DINO_MODEL"
+    ],
+    [
+      29,
+      12,
+      0,
+      24,
+      0,
+      "SAM_MODEL"
+    ],
+    [
+      30,
+      13,
+      0,
+      24,
+      1,
+      "GROUNDING_DINO_MODEL"
+    ],
+    [
+      32,
+      22,
+      0,
+      23,
+      2,
+      "IMAGE"
+    ],
+    [
+      33,
+      22,
+      0,
+      24,
+      2,
+      "IMAGE"
+    ],
+    [
+      34,
+      23,
+      1,
+      25,
+      0,
+      "MASK"
+    ],
+    [
+      35,
+      24,
+      1,
+      25,
+      1,
+      "MASK"
+    ],
+    [
+      36,
+      25,
+      0,
+      26,
+      0,
+      "MASK"
+    ],
+    [
+      38,
+      22,
+      0,
+      28,
+      0,
+      "IMAGE"
+    ],
+    [
+      40,
+      27,
+      0,
+      29,
+      0,
+      "IMAGE"
+    ],
+    [
+      41,
+      25,
+      0,
+      30,
+      0,
+      "MASK"
+    ],
+    [
+      42,
+      30,
+      0,
+      31,
+      0,
+      "MASK"
+    ],
+    [
+      43,
+      33,
+      0,
+      32,
+      0,
+      "CXH_Leffa_Viton_Load"
+    ],
+    [
+      44,
+      34,
+      0,
+      32,
+      1,
+      "IMAGE"
+    ],
+    [
+      45,
+      35,
+      0,
+      32,
+      2,
+      "IMAGE"
+    ],
+    [
+      46,
+      27,
+      0,
+      36,
+      0,
+      "*"
+    ],
+    [
+      47,
+      37,
+      0,
+      32,
+      3,
+      "IMAGE"
+    ],
+    [
+      48,
+      30,
+      0,
+      38,
+      0,
+      "*"
+    ],
+    [
+      49,
+      39,
+      0,
+      32,
+      4,
+      "MASK"
+    ],
+    [
+      50,
+      32,
+      0,
+      40,
+      0,
+      "IMAGE"
+    ],
+    [
+      51,
+      18,
+      4,
+      41,
+      0,
+      "*"
+    ],
+    [
+      52,
+      18,
+      5,
+      42,
+      0,
+      "*"
+    ],
+    [
+      53,
+      18,
+      2,
+      43,
+      0,
+      "*"
+    ],
+    [
+      54,
+      18,
+      3,
+      44,
+      0,
+      "*"
+    ],
+    [
+      55,
+      32,
+      0,
+      45,
+      0,
+      "IMAGE"
+    ],
+    [
+      56,
+      46,
+      0,
+      45,
+      4,
+      "INT"
+    ],
+    [
+      57,
+      47,
+      0,
+      45,
+      5,
+      "INT"
+    ],
+    [
+      58,
+      45,
+      0,
+      48,
+      0,
+      "IMAGE"
+    ],
+    [
+      59,
+      10,
+      0,
+      50,
+      0,
+      "*"
+    ],
+    [
+      61,
+      51,
+      0,
+      49,
+      0,
+      "IMAGE"
+    ],
+    [
+      62,
+      45,
+      0,
+      49,
+      1,
+      "IMAGE"
+    ],
+    [
+      63,
+      52,
+      0,
+      49,
+      3,
+      "INT"
+    ],
+    [
+      64,
+      53,
+      0,
+      49,
+      4,
+      "INT"
+    ],
+    [
+      65,
+      49,
+      0,
+      54,
+      0,
+      "IMAGE"
+    ],
+    [
+      66,
+      28,
+      1,
+      27,
+      1,
+      "INT"
+    ],
+    [
+      67,
+      20,
+      0,
+      55,
+      0,
+      "IMAGE"
+    ],
+    [
+      68,
+      55,
+      0,
+      56,
+      0,
+      "IMAGE"
+    ],
+    [
+      69,
+      55,
+      0,
+      57,
+      0,
+      "*"
+    ],
+    [
+      70,
+      59,
+      0,
+      27,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Group",
+      "bounding": [
+        190.3805694580078,
+        -122.11438751220703,
+        2627.36328125,
+        1224.37158203125
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [
+        -98.6090087890625,
+        148.51438522338867
+      ]
+    },
+    "workspace_info": {
+      "id": "i7F03VWwN31pGutD8NtRQ"
+    }
+  },
+  "version": 0.4
+}

@@ -1,0 +1,25 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/official workflow.png",
+  "metadata_keys": [
+    "workflow",
+    "srgb"
+  ],
+  "class_types": [
+    "AddMask",
+    "CXH_Leffa_Viton_Load",
+    "CXH_Leffa_Viton_Run",
+    "DensePosePreprocessor",
+    "GroundingDinoModelLoader (segment anything)",
+    "GroundingDinoSAMSegment (segment anything)",
+    "LayerMask: MaskGrow",
+    "LayerUtility: ImageScaleByAspectRatio V2",
+    "LoadImage",
+    "MaskPreview+",
+    "PreviewImage",
+    "SAMLoader"
+  ],
+  "models": [
+    "sam_vit_b_01ec64.pth"
+  ],
+  "family": "utility"
+}

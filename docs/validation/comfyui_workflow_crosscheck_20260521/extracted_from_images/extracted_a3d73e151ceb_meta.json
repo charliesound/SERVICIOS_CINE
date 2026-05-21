@@ -1,0 +1,32 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/02_FLUX-Byte-Dance-USO-Single-Img2-Img.png",
+  "metadata_keys": [
+    "workflow"
+  ],
+  "class_types": [
+    "805a5f96-6fdd-45a4-a1f3-623234fa734f",
+    "CLIPTextEncode",
+    "CLIPVisionLoader",
+    "CheckpointLoaderSimple",
+    "ConditioningZeroOut",
+    "EasyCache",
+    "EmptySD3LatentImage",
+    "ImageScaleToMaxDimension",
+    "KSampler",
+    "LoadImage",
+    "LoraLoaderModelOnly",
+    "MarkdownNote",
+    "ModelPatchLoader",
+    "SaveImage",
+    "VAEDecode",
+    "VAEEncode"
+  ],
+  "models": [
+    "[tutorial](http://docs.comfy.org/tutorials/flux/flux-1-uso) | [\u00e6\u0095\u0099\u00e7\u00a8\u008b](http://docs.comfy.org/zh-CN/tutorials/flux/flux-1-uso)\n\n**checkpoints**\n\n- [flux1-dev-fp8.safetensors](https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors)\n\n\n\n**loras**\n\n- [uso-flux1-dit-lora-v1.safetensors](https://huggingface.co/Comfy-Org/USO_1.0_Repackaged/resolve/main/split_files/loras/uso-flux1-dit-lora-v1.safetensors)\n\n**model_patches**\n\n- [uso-flux1-projector-v1.safetensors](https://huggingface.co/Comfy-Org/USO_1.0_Repackaged/resolve/main/split_files/model_patches/uso-flux1-projector-v1.safetensors)\n\n**clip_visions**\n- [sigclip_vision_patch14_384.safetensors](https://huggingface.co/Comfy-Org/sigclip_vision_384/resolve/main/sigclip_vision_patch14_384.safetensors)\n\nModel Location\n\n```\n\u00f0\u009f\u0093\u0082 ComfyUI/\n\u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 \u00f0\u009f\u0093\u0082 models/\n\u00e2\u0094\u0082   \u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 \u00f0\u009f\u0093\u0082 checkpoints/\n\u00e2\u0094\u0082   \u00e2\u0094\u0082   \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080 flux1-dev-fp8.safetensors\n\u00e2\u0094\u0082   \u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 \u00f0\u009f\u0093\u0082 loras/\n\u00e2\u0094\u0082   \u00e2\u0094\u0082   \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080 uso-flux1-dit-lora-v1.safetensors\n\u00e2\u0094\u0082   \u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 \u00f0\u009f\u0093\u0082 model_patches/\n\u00e2\u0094\u0082   \u00e2\u0094\u0082   \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080 uso-flux1-projector-v1.safetensors\n\u00e2\u0094\u0082   \u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 \u00f0\u009f\u0093\u0082 clip_visions/\n\u00e2\u0094\u0082   \u00e2\u0094\u0082   \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080 sigclip_vision_patch14_384.safetensors\n```\n",
+    "flux1/flux1-dev-fp8.safetensors",
+    "sigclip_vision_patch14_384.safetensors",
+    "uso-flux1-dit-lora-v1.safetensors",
+    "uso-flux1-projector-v1.safetensors"
+  ],
+  "family": "image_still"
+}

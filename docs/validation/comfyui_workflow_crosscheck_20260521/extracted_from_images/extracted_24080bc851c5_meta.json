@@ -1,0 +1,23 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/2025-01-15 nvidia cosmos workflow.png",
+  "metadata_keys": [
+    "workflow",
+    "srgb"
+  ],
+  "class_types": [
+    "CLIPLoader",
+    "CLIPTextEncode",
+    "EmptyCosmosLatentVideo",
+    "KSampler",
+    "UNETLoader",
+    "VAEDecode",
+    "VAELoader",
+    "VHS_VideoCombine"
+  ],
+  "models": [
+    "Cosmos-1_0-Diffusion-7B-Text2World.safetensors",
+    "cosmos_cv8x8x8_1.0.safetensors",
+    "oldt5_xxl_fp8_e4m3fn_scaled.safetensors"
+  ],
+  "family": "video_cine"
+}

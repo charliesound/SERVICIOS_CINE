@@ -1,0 +1,43 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/Mo-Cha-Replace-Anyone-in-a-Video.png",
+  "metadata_keys": [
+    "workflow"
+  ],
+  "class_types": [
+    "DownloadAndLoadSAM2Model",
+    "GetImageRangeFromBatch",
+    "GetNode",
+    "GrowMaskWithBlur",
+    "ImageConcanate",
+    "ImageResizeKJv2",
+    "LoadImage",
+    "MarkdownNote",
+    "MaskPreview",
+    "MochaEmbeds",
+    "Note",
+    "PointsEditor",
+    "PreviewImage",
+    "Sam2Segmentation",
+    "SetNode",
+    "VHS_LoadVideo",
+    "VHS_VideoCombine",
+    "WanVideoBlockSwap",
+    "WanVideoDecode",
+    "WanVideoLoraSelectMulti",
+    "WanVideoModelLoader",
+    "WanVideoSampler",
+    "WanVideoSetBlockSwap",
+    "WanVideoTextEncodeCached",
+    "WanVideoTorchCompileSettings",
+    "WanVideoVAELoader"
+  ],
+  "models": [
+    "# model links:\n\nVAE, text_encoder:\n\n[https://huggingface.co/Kijai/WanVideo_comfy](https://huggingface.co/Kijai/WanVideo_comfy)\n\nfp8_scaled version:\n\n[https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/blob/main/MoCha/Wan2_1_mocha-14B-preview_fp8_e4m3fn_scaled_KJ.safetensors](https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/blob/main/MoCha/Wan2_1_mocha-14B-preview_fp8_e4m3fn_scaled_KJ.safetensors)",
+    "Lightx2v/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank64_bf16.safetensors",
+    "WanVideo/MoCha/Wan2_1_mocha-14B-preview_fp8_e4m3fn_scaled_KJ.safetensors",
+    "WanVideo/Wan2_1_VAE_bf16.safetensors",
+    "WanVideo/umt5-xxl-enc-bf16.safetensors",
+    "sam2.1_hiera_base_plus.safetensors"
+  ],
+  "family": "video_cine"
+}

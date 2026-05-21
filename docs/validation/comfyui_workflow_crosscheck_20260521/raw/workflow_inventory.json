@@ -1,0 +1,4169 @@
+[
+  {
+    "path": "/opt/SERVICIOS_CINE/data/workflows/comfyui/smoke_light.json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/data/workflows/comfyui/storyboard_safe.json",
+    "format": "unknown",
+    "family": "storyboard",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/video_wan.json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/video_ltx.json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/cinematic_storyboard_sdxl.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/cinematic_still_flux.json",
+    "format": "unknown",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/storyboard_fast_sdxl.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/cinematic_storyboard_sdxl.template.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/upscale_delivery.json",
+    "format": "unknown",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/storyboard_fast_sdxl.template.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/imported_templates/flux_cine_2.template.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/landing_semantic_v4/landing_semantic_prompts_v4.json",
+    "format": "unknown",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/landing_semantic_v3/landing_semantic_prompts_v3_semantic_fix.json",
+    "format": "unknown",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/landing_semantic_v3/landing_semantic_prompts_v3_strict.json",
+    "format": "unknown",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/landing_semantic_v3/landing_semantic_prompts_v3_bright.json",
+    "format": "unknown",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/opt/SERVICIOS_CINE/src/comfyui_workflows/landing_semantic_v3/landing_semantic_prompts_v3.json",
+    "format": "unknown",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/01-faceswap.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/01a_Qwen-Image Distill.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/01a_Qwen-Image Distill\u201cCharacter Bible\u201d.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/01_Qwen-Image (T2I).json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/01_qwen_t2i_subgraphed_Capitulo18.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/02_FLUX_Base realista.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/05-seamless_texture.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/05_Wan2.2 14B FLF2V (First+Last Frame to Video).json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/06-seamless_equilateral.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/10_WF_ComfyUI_IP_Adapter_Plus_Integraci\u00f3n_de_prompts_de_imagen_y.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/11 - Reactor.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/12 - Faceswap_instantID_IpAdapter.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/12a - Faceswap_instantID.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/14 - BGRM_Bria_Remover.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 4,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/14a -.json",
+    "format": "api",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 4,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/15 - workflow1.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 5,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/15a - workflow2.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/16 - Influencer.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 27,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/17 - workflow_flux_standar.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/18 - Florens_i2i.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/18a - workflow_nf4.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/20 - ControlNet_Cany_Depth_HED.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 20,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/21 - 3D_Render_Completo.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/21 - ComfyUI - Render de Stilos.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 28,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/21 - ComfyUI - Render de Stilos__677be3b6.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 28,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/22 - Batch_Prompts_Florence2.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/23 - Inpainting_Upscaler_FLUX.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 26,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/24 - CatVTON_Cambia_Ropa_Modelos.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 10,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/24 - ComfyUI_ CatVTON.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 6,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/25 - ComfyUI FLUX - Composici\u00f3n.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/29 - ComfyUI_FluxUpscaler.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 33,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/32 - ComfyUI Colorize Photos-Final.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/33 - ComfyUI - Flux_Redux_Combine Images.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/34 - ComfyUI - Cambio_otras_FLUX.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 23,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/34 - ComfyUI - Cambio_Ropa_FLUX.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/34 - ComfyUI -FLUX Inpainting.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/35 - ComfyUI - Cambio de Fondo.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 31,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/37b_BODYSWAP 2_2.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/37_BODYSWAP 2_GUFF_2.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 28,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/37_BODYSWAP 2_GUFF_2_desordenado_modificado.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 31,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/3_ComfyUI_tableDiffusion_Standar_2_KSamplers.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/41_ComfyUI_PULID (1 Cara).json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 23,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/41_ComfyUI_PULID (2 caras).json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 26,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/58 - Hiperrealismo-Qwen.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/63relightingQwen.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/63relightingQwen_B.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/65_qwen_image_edit_outfit_transfer_Tecnolitas.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/7a - ComfyUI M\u00e1scaras en Profundidad_RGB.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 12,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/7b - ComfyUI M\u00e1scaras en Profundidad_Cambio_Objetos y mas.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/9 - ComfyUI ControlNet - Procesamiento de im\u00e1genes.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 19,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/AcademiaSD_Z-Image-Turbo_Controlnet.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/AcademiaSD_Z-Image_v05.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/ACADEMIA_SD QWEN-IMAGE TXT2IMG.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/catvton_workflow.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 7,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/change-clothes.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 17,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/comfyui-workflow-for-flux-simple-iuRdGnfzmTbOOzONIiVV-maitruclam-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/comfyui_SRPO-workflow-quantization-with-image-to-image.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 27,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/comfyui_SRPO-workflow-quantization-with-image-to-image__dup1.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 6,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/comfyui_unreal_textures.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/comfyui_workflow_previz_refine.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 5,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Comprobar_LoRAs_Flux.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Conditioning.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Conditioning_2b.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Conditioning_2b__29248acc.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/control-flux-image-visualization.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/cosTrio-Tpose-Factory-v12.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 36,
+    "models_count": 15,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/creacion imagenes FLUX por Promt .json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/crear imagenes con flux 1.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/discover-the-perfect-flux-alternative-for-low-vram-users-.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/enhance-your-ai-art-with-the-flux-prompt-generator.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/example_workflow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/faceswapv2.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 6,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/florence.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/flux-fill-inpaint-example.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/flux-flux-pulid-instantid-realistic-face-swap.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 26,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/flux-inpainting-technique.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/flux-redux-pulid-face-swap-clone-any-portrait-photography.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/flux-simple-iu-maitruclam-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/flux.1-krea-dev-gguf.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/FluxDepth_Capitulo11 (1).json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/FluxInpainting_Capitulo10.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/FluxLORA_Capitulo13.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/FluxOutpainting_Capitulo10.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/FluxRealLoraWorkflowjson.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Flux_Ace++.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 30,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Flux_ClipTextEncodeFlux_Capitulo7.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Flux_Fill_Outpainting.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Flux_Fill_Redux_inpainting.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Flux_Fill_Redux_inpainting_Florence.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Flux_Krea_I2I_multilora_v2.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Flux_Krea_T2I_multilora_v2.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/flux_lora_train_Capitulo14.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 24,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Hacer pelicula - copia.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Hacer_pelicula_decorado_solo_controlnet.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Hacer_pelicula_inpaint_solo.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 7,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Hacer_pelicula_storyboard_solo.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/hidream_e1_Capitulo17.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/hidream_i1_full_Capitulo17.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Hooks_M\u00e1scaras_para_LoRAs.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Hooks_M\u00e1scaras_para_LoRAs_y_para_scheduler_combinado.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/image_qwen_image_instantx_controlnet.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 7,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/image_qwen_image_instantx_controlnet_Capitulo18.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 9,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/image_qwen_image_instantx_inpainting_controlnet.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 24,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/img2img-painting.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/inpaint-outpaint-with-controlnet-union-sdxl.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Inpainting workflow for changing a specific object.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 30,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Inpaiting.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Inpaiting_mascaras_tuto.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Insta-Lo-RAm-Your-Virtual-Influencer-Generator.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 25,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/InstantID_basic.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/InstantID_depth.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/InstantID_IPAdapter.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/instantid_monalisa.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 23,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/InstantID_multi_id.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/InstantID_posed.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/LoRA_Como_Scheduler.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/magical-img2img-render.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Multi_LoRA_Upscaled.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Multi_LoRA_Upscaled__423c17ae.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/NSFW SFW ACE Faceswap V1.0.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 62,
+    "models_count": 11,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/nunchaku-flux.1-dev.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Olivio EASY workflow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Olivio Model Switch workflow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 7,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/one-click-outfit-change-with-catvton-wrapper.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 5,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/prompt-composer-sdxl-turbo-workflow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/prueba cine 2.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Qwen-Image-creador de promt e imagenes.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Realtime Reactor Only.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 3,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/SB_Character_FLUX.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/SB_Character_FLUX__76688531.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/SB_Character_SDXL.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/shermanvv_flux___pulid___in_context_lora__2k_out_per_image_comfyworkflows.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 25,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/SRPO-workflow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Standar_WorkFlow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/sup3rmass1ve_sd3_5_large_with_searge_prompt_enhance_and_lora_and_upscale_comfyworkflows.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/templates-1_click_multiple_character_angles-v1.0.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 6,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/templates-1_click_multiple_scene_angles-v1.0.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 6,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/the_writer_nightmare___4_comfyworkflows.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 23,
+    "models_count": 11,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/using-loras.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/V-1-SD.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 7,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-4x-quick-upscale-fyoo07TxBwG1JLuyKZHA-comfyuistudio-openart.ai.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 4,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-accelerate-the-generation-speed-Cfi0e0ME28jHdXXDILE5-datou-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-comfyui-tutorial-major-update-for-qwen-image-2512-LehKKPn8aBJhwJ641mo7-cgpixel_ai_art-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-comfyui-tutorial-major-update-for-qwen-image-2512-LehKKPn8aBJhwJ641mo7-cgpixel_ai_art-openart.ai__edb98335.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-flux-2-klein-inpaint-segment-edit-for-accurate-image-edit-vo9umAlx9kjGRaijxRmP-cgpixel_ai_art-openart.ai.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 20,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-flux-controlnet-upscale-XsEKTG1cvnRXYdsPsQVc-cychenyue-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 20,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-flux-pulid-face-swap-with-upscale-4NCT0bt7k471EXpTBlLi-chin_buzzing_26-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-flux-your-ootd-flux-D6q01xaUd0AOf6A9OQym-jaylin-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 51,
+    "models_count": 9,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-hidream-full-824ixsLCZZeX4GEidHsz-datou-openart.ai.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 2,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-lesson-6-model-switch-and-masking---comfy-academy-mVvngwUewT8Tfqs727YH-oliviosarikas-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-qwen-image-edit-2509-multiple-perspectives-on-characters-selfless-dedication-i2FDdfiAdOU5g2ANtZaU-north_ai-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 22,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-restore-old-and-damaged-photosflux-kontext-yXttxLAnquPMZ9feVI7g-datou-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 24,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow-simple-clean-fast-nunchaku-kontext-lora-CSUdCgX2qoPsKYI5pz9f-ailab-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow_controlnet_cine_comfyui.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow_mbw.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow_mbw_multi.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow_sd15_8gb_cine_gtx1080.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow_Tiled_Diffusion_Base.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow_xyz_model_clip.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/workflow_xyz_vae.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/YarvixPA - Flux Kontext_V2 (1).json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 22,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/z_image_turbo_Low_vram.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/z_studio_sketch_into_a_real_image_similar_to_the_reference_image__comfyworkflows.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/___2d_3d_comfyworkflows.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 23,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/02-film_interpolation.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/03-animation_builder-condition-lerp.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/04-animation_builder-deforum.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Academia_SD_Self-Forcing_VACE_I2V (1).json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 22,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Animar_imagenes_audio_OK.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 39,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/basic-video-face-swap.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 5,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/ComfyUI workflow animatediff+ipadapter.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/crear personajes prueba.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/easy-logo-animation.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 35,
+    "models_count": 11,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/easy-video-faceswap.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Fast-hunyuan-30-fps-with-hd-upscaler-8K3Gp4BxCCXSsDh2BhKk.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 27,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Generaci\u00f3n_V\u00eddeos_WAN_2.1.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/LatentSync-basic.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/latentsync_comfyui_basic-1-4-1.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/LongCat_TI2V_example_01-1-1.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 27,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/ltxvideo-i2v.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 20,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/make-anyone-say-anything-musetalk-cosyvoice.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/nsfw-prompt-skill-wan22-t2v-GbgACSHB2CYhDFXsEXTx-benjamin-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/PH_FLUXTOOLS_2_COG_v052.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 42,
+    "models_count": 9,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/remove-video-background.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Sonic_sincronizaci\u00f3n_audio-labios.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 7,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/steerable-motion_smooth-n-steady.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 40,
+    "models_count": 11,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/txt_to_img_to_video.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/VIDEO 13 WF.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 99,
+    "models_count": 23,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/WAN22_reference_mask.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/wanvideo_vid2vid_example_01.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/wav2lip fix.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 5,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Wav2Lip.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/wf.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/workflow-free-digital-human-bcculjSnGEcDuGhoNhkd-discus_disastrous_37-openart.ai.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 32,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/workflow-inner-reflections-vid2vid-style-conversion-sd-15---ipadapter-batch-unfold-aHKgex49Qh2kYE2X78Oh-peccary_vivacious_97-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 22,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/workflow-perfect-lip-sync-ai-face-animation-jEIRkxkIGvuC6Nwm69Uz-comfyuiblog-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 44,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/workflow-realistic-video-animatediff-v3-szroMANBgp98pkj6F67h-sergegreen-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 23,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/workflow-remove-mosaic-repair-images-v1-368JqukDF5dwJ9fHOXja-foxinn-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 34,
+    "models_count": 10,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/workflow-simple-prompt-travel-animations.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 55,
+    "models_count": 17,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/workflow-strong-body-impact-super-v2-F9dMZ9JENnBTevO9H97d-sexygirl-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 37,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/1.5/1 - Basic Vid2Vid 1 ControlNet.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 20,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/1.5/2 - Vid2Vid Multi-ControlNet.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/1.5/3 - Basic Txt2Vid.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/1.5/4 - Vid2Vid with Prompt Scheduling.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/1.5/5 - Txt2Vid with Prompt Scheduling.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Json/comfyworkflows_e392cc0b_a776_4958_854f_adf51f785c2a.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Json/comfyworkflows_svd_____.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/liveportrait/appinfo-workflow.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/liveportrait/liveportrait_image_example_01.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/liveportrait/liveportrait_realtime_example_01.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/liveportrait/liveportrait_video_example_02.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/liveportrait/live_workflow.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 5,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/liveportrait/mul-workflow.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 10,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/liveportrait/v2v-workflow.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 5,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/liveportrait/\u5168\u5bb6\u798f\u6a21\u5f0f-workflow.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/workflow-image-to-image-image-to-video-style-transfer-with-flux-2-klein-telestyle-nodes-PhrPTEUAG5x2d1jKqYVB-cgpixel_ai_art-openart.ai.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/workflow-svi-2-pro-automatic-prompt---video-extension-tJnPfu881Sp2HQ4CmtxW-north_ai-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 27,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/workflow-wan22-14b-image-video-hd-version-XC06OMwupt9qC7euN61H-north_ai-openart.ai.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 39,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/workflow-wan22-animate-swap-anythingauto-seg-Jk5WFuRDcpXWIlMLk7Ds-faborohacks-openart.ai.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 45,
+    "models_count": 13,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/workflow-wan2_2-video-clothes-try-onfun-vace-version-cpBoTySGoyLPwSZ9HCzj-faborohacks-openart.ai.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 39,
+    "models_count": 10,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/ComfyUI_CLASSIC_import/image/image_chrono_edit_14B.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 5,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactiveDepth-V30.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactiveVideo-BarsOverlay-V90.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 19,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactiveVideo-Bloom-V86.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 16,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactiveVideo-Chromatic-V76.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 16,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactiveVideo-CSG-V78.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 18,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactiveVideo-CSGB-smooth-V82.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 23,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactiveVideo-CSGB-V80.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 22,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactiveVideo-Glitch-V70.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 16,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactiveVideo-Scrubber-V20.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactiveVideo-Speed-V74.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 16,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/rodaReactiveAudio_v5/Roda-AudioReactive-Pack/Roda-ReactScrub-GIMMSync-V30.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 22,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Curso TAI febrero/04_Wan2.2 14B I2V (Image to Video).json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Curso TAI febrero/05_Wan2.2 14B FLF2V (First+Last Frame to Video).json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Curso TAI febrero/06_LTX-2  Image to Video.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Curso TAI febrero/Flujo_Profesional_ComfyUI.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Curso TAI febrero/SVI 2.0 PRO WORKFLOW.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 27,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Lonecats ZIT All in one ver 6.0.1/Lonecats ZIT All in one Ver 6.0.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 98,
+    "models_count": 14,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Tecnolitas/13 - Image2video.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Tecnolitas/13a - text2video.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Tecnolitas/13_Tuto_2_Tecnolitas.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Tecnolitas/13_Tuto_Tecnolitas.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Tecnolitas/40_LTX_IMG2VID.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Tecnolitas/46_WANvideo-i2v-lines-v20.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Tecnolitas/46_WANvideo-t2v-lines-v10.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Workflow confyui/Tecnolitas/50-Wan2_1_control_tecnolitas.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 34,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/broctor_29b3eccb_685f_48bb_b9fb_8aecf2a91af2_comfyworkflows.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/comfyworkflows_66c20349_b2d9_4456_b12d_1c1e7273c1e8.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/COMPACT Flux Control-Net inpainting with batch.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 125,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/cwkc_merry_xmas_comfyworkflows.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 24,
+    "models_count": 11,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/friedtofu_499d1bbf_c2b6_404c_bc4d_e1eb74e09b8a_comfyworkflows.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/hunyuan_video_text_to_video.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/jon_king_alien_dancer_comfyworkflows.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/LongCat_TI2V_Paris_Girl_Street_Cafe.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 27,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/LTX-2_I2V_Full_wLora.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/LTX-2_ICLoRA_All_Distilled.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/LTX-2_T2V_Full_wLora.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/LTX-2_T2V_MIO.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/LTX-2_V2V_Detailer.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/nsfw-prompt-skill-wan22-t2v-GbgACSHB2CYhDFXsEXTx-benjamin-openart.ai.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/restaurar_cugan.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 5,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/SeedVR2_4K_image_upscale.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/video_hunyuan_video_1.5_720p_t2v.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 23,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/video_kandinsky5_i2v.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 4,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/video_kandinsky5_t2v.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/video_ltx2_t2v.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/video_wan2_2_14B_t2v.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/video_wan2_2_5B_fun_control.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/video_wanmove_480p.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 22,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/wan2.2_14B_IMG2VID_FLF.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/Wan2.2_I2V_14B_Loop_v05.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 24,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/Wan2.2_I2V_14B_Loop_V3.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 24,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/Wan2.2_I2V_14B_V4.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/Wan2.2_I2V_14B_V5_Multilora.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/Wan2.2_I2V_14B_V7_Loop.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 24,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/wan2.2_T2V_14b_FLF_Upscaler.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 22,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/wan2.2_T2V_14b_V7.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/wan2.2_T2V_14b_V8_multilora.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/Wan22Animate_AcademiaSD_v24.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 38,
+    "models_count": 10,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/Wan_FusionX_I2V_AcademiaSD_loops_v3.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 29,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/ACADEMIA_SD/AcademiaSD_Hunyuan1.5_I2V_v03.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/ACADEMIA_SD/AcademiaSD_Wan21_Vace_R2V.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 24,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/ACADEMIA_SD/ACADEMIA_SD WAN 2.2 IMG2VID LOOP VERSION, MULTILORA, SAGEATTENTION 2.2 AND FRAME INTERPOLATION.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 24,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/ACADEMIA_SD/Wan_FusionX_I2V_AcademiaSD_V3.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 21,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/ACADEMIA_SD/Wan_Holocine_AcademiaSD_v14.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/movil revisar/64-z-image-turbo-colorfix.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 29,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/movil revisar/Video_55_T2V_Self-Forcing.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/zImagenTurboImageToImage_v20/IMG-IMG--z-image-turbo-AIO-Upscaled-SeedVR2-workflow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 22,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/restoration/WORKING_restauracion_animacion_GUI.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/restoration/WORKING_restauracion_cine_GUI.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/restoration/ComfyUI_CLASSIC_import/restoration/___2d_3d_comfyworkflows.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 23,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_3D/3d_hunyuan3d-v2.1.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/01_master_clean_api.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 7,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/01_storyboard_fast_flux_schnell_ADAPTADO.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/02_FLUX-Byte-Dance-USO-Single-Img2-Img.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/02_storyboard_character_consistency_flux_ipadapter_ADAPTADO.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/03_FLUX-Krea-Text2-Image.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/8_puntos_de_vista_del_mismo_plano.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 7,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/ACADEMIA FireRed-Image-Edit-3-sources-multilora inpain outpain upscale.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 34,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/change-clothes.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 17,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/creacion de video desde imagen fija.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/flux1_krea_dev.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/generador de loras multiples list prompts.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 25,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/image_flux2_text_to_image.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/image_qwen_Image_2512.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/image_z_image_turbo.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/LTX-2.3_ICLoRA_Motion_Track_Distilled.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 35,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/LTX-2.3_ICLoRA_Union_Control_Distilled.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 38,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/LTX-2.3_T2V_I2V_Single_Stage_Distilled_Full.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 33,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/LTX-2.3_T2V_I2V_Two_Stage_Distilled.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 31,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/Qwen-image-layers_00003_.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 7,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/Unsaved Workflow (2).json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/Unsaved Workflow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/video_wan2_1_infinitetalk_doblaje.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 23,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image/Wan2-2-Ultimate-Text-To-Image-fast-render-cinematic-quality.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_OTROS/1_RESTAU_SUPIR_(API).json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 5,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_OTROS/Compra paquete.json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_OTROS/demo_request.json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_OTROS/Lead intake (diagn\u00f3stico).json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_OTROS/n8n_previz_comfy_davinci.json",
+    "format": "ui",
+    "family": "storyboard",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_OTROS/prompt-composer-base-workflow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 7,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_OTROS/Qwen3-TTS Voice Clone (Reference).json",
+    "format": "ui",
+    "family": "dubbing_audio",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_OTROS/wan-2-2-comfyui-leading-ai-video-generation-2025-comfyui-demo-1253.json",
+    "format": "invalid",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "unparseable"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/01_master_clean_api.json",
+    "format": "api",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 7,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/02_depth_pass_api.json",
+    "format": "api",
+    "family": "three_d",
+    "priority": "HIGH",
+    "class_types_count": 7,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/02_depth_pass_workflow.json",
+    "format": "ui",
+    "family": "three_d",
+    "priority": "HIGH",
+    "class_types_count": 7,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/02_depth_pass_workflow_fixed.json",
+    "format": "ui",
+    "family": "three_d",
+    "priority": "HIGH",
+    "class_types_count": 7,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/03_edges_pass_api.json",
+    "format": "api",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 5,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/03_edges_pass_workflow.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 5,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/04_masks_object_api.json",
+    "format": "api",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 5,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/04_masks_object_workflow.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 5,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/05_cleanplate_inpaint_api.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/06_room_extension_api.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/06_room_extension_workflow.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/19 - Flux_Inpainting.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/workflow_cine_sd15_estilizado_239.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 10,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/workflow_cine_sd15_realista_239.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 10,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/workflow_cine_sdxl_estilizado_239.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 10,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/workflow_cine_sdxl_realista_239.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 10,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_OTROS/InstantID/ControlNetModel_config.json",
+    "format": "unknown",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/01_base de protagonistas (stills \u201ccine\u201d)/comfyui_SRPO-workflow-quantization-with-image-to-image.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 27,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/01_base de protagonistas (stills \u201ccine\u201d)/comfyui_unreal_postgrading.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/01_base de protagonistas (stills \u201ccine\u201d)/comfyui_unreal_storyboard.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/02_poner al protagonista en escenas/35 ComfyUI - Cambio de Fondo_fixed.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 31,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/02_poner al protagonista en escenas/Cambia_Fondos_CreaEscenarios_Flux_ControlNet - copia.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 30,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/02_poner al protagonista en escenas/Cambia_Fondos_CreaEscenarios_Flux_ControlNet_FIXED.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 31,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/02_poner al protagonista en escenas/Cambia_Fondos_CreaEscenarios_Flux_ControlNet_OK_fixed_NORMALIZED.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 31,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/03_Vestuario/Advanced Flux Outfit Changer.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 20,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/03_Vestuario/Cambio_Ropa_FLUX_simple.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/03_Vestuario/catvton_workflow.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 6,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_RODAJE CINE/03_Vestuario/clothingnew2.json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Basico_FluxFP8_Capitulo6/B\u00e1sico_FluxFP8_Capitulo6.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/comfyuiFaceSwap_v10/workflow_faceswap.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 6,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/comfyui_demos_nuevos_nodos/demo_audio_reactivo.json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/comfyui_demos_nuevos_nodos/demo_seedream.json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/comfyui_demos_nuevos_nodos/demo_subgraph_async.json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/comfyui_demos_nuevos_nodos/demo_temporal_score.json",
+    "format": "unknown",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/controlnetJSONs/CreacionDepth_Capitulo11.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/controlnetJSONs/FluxCanny_Capitulo11.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/controlnetJSONs/FluxDepth_Capitulo11 (1).json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/FluxInpainting_Capitulo10/FluxInpainting_Capitulo10.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/FluxLORA_Capitulo13/FluxLORA_Capitulo13.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/FluxOutpainting_Capitulo10/FluxOutpainting_Capitulo10.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Flux_ClipTextEncodeFlux_Capitulo7/Flux_ClipTextEncodeFlux_Capitulo7.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/flux_lora_train_Capitulo14/flux_lora_train_Capitulo14.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 24,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/hidreamjsons/hidream_e1_Capitulo17.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 7,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/hidreamjsons/hidream_i1_fast_Capitulo17.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/hidreamjsons/hidream_i1_full_Capitulo17.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/LatentSync-basic/LatentSync-basic.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/lyraAudioToolsStable_v1Tools/Lyra-v6.json",
+    "format": "ui",
+    "family": "dubbing_audio",
+    "priority": "HIGH",
+    "class_types_count": 14,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/nsfwSFWACEFluxFaceswap_v10/NSFW SFW ACE Faceswap V1.0.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 62,
+    "models_count": 11,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/nsfwUncensoredZImageTurbo_v10/z_image_turbo_Low_vram.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/qwenjsons/01_qwen_t2i_subgraphed_Capitulo18.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/qwenjsons/image_qwen_image_controlnet_patch_Capitulo18.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 18,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/qwenjsons/image_qwen_image_edit_2509_Capitulo18.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 16,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/qwenjsons/image_qwen_image_instantx_controlnet_Capitulo18.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 19,
+    "models_count": 9,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactiveDepth-V30.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactiveVideo-BarsOverlay-V90.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 19,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactiveVideo-Bloom-V86.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 16,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactiveVideo-Chromatic-V76.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 16,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactiveVideo-CSG-V78.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 18,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactiveVideo-CSGB-smooth-V82.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 23,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactiveVideo-CSGB-V80.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 22,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactiveVideo-Glitch-V70.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 16,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactiveVideo-Scrubber-V20.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactiveVideo-Speed-V74.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 16,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/Roda-AudioReactive-Pack/Roda-ReactScrub-GIMMSync-V30.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 22,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/SKIN_FIX_Capitulo16/SKIN_FIX_Capitulo16.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 37,
+    "models_count": 9,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/UE5_ComfyUI_Automation_Kit(1)/n8n_workflow_ue5_comfyui.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 4,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/UE5_ComfyUI_Automation_Kit(1)/storyboard_payload.json",
+    "format": "unknown",
+    "family": "storyboard",
+    "priority": "HIGH",
+    "class_types_count": 0,
+    "models_count": 0,
+    "error": "no nodes detected"
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/UE5_ComfyUI_Previs_Pack/comfyui_previs_wan22.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/UE5_ComfyUI_Previs_Pack/comfyui_storyboard_animado.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/upscaleJSONs/Hiresfix_Capitulo15.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/upscaleJSONs/IMAGE_UPSCALE_SEED_VR2_Capitulo15.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 21,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/upscaleJSONs/Upscaler_Basic_Capitulo15.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 5,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/upscaleJSONs/Upscale_workflow_4x-ESRGAN_Capitulo15.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 4,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/A 1080 a 2k_wan2.2.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/A 1080 a 2k_wan_2.2.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/A_1080_a_2K_wan2.2_graph.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/B 1080 a 2k flux.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/B 1080 a 2k fluxv2.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image_flux2_text_to_image(API).json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/image_z_image_turbo.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/PASO_3_n8n_batch_frames_comfyui.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/PASO_4_ComfyUI_RESTO_core_img2img_upscale.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/PASO_5_n8n_assemble_frames_ffmpeg.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/prueba cine 2.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/prueba cine wan.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/prueba cine.json",
+    "format": "api",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/prueba.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 2,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/restauracion_foto_base.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/restauracion_video_frames_base.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/restore_1.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/ruido, ara\u00f1azos, suavizado, mejora facial, color & upscale.json",
+    "format": "ui",
+    "family": "restoration",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Seedance2.0_First-Last-Frame _to_Video.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/seedance20_094c40ffb14f.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 6,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Seedance_2.0_Reference_to_Video.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/upscale_supir_cine.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/upscale_video_supir_batch.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 3,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/up_to_4K.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/WAN + SDXL + Flux + LUT + Grain + Bloom + Batch.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/WAN 2.2 \u2192 LUT 2383 \u2192 TIFF 2K.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 9,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/Wan Refine Flux.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 42,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/wan2.2 renstauracion fotos.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/wan2.2 renstauracion fotos_V2.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/wan2.2 renstauracion fotos_V2_FIXED.json",
+    "format": "ui",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/wan22_animate_preprocess_MDMZ_071025.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 34,
+    "models_count": 8,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/wanvideo_multitalk_test_02.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 22,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/WAN_RESTO_FOTO_PASO_1.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/WAN_RESTO_VIDEO_PASO_2.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/WAN_SCAIL_workflow.json",
+    "format": "ui",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 36,
+    "models_count": 6,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/workflow.json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 3,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/_4x4 (5).json",
+    "format": "ui",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 23,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/2024-04-07 cascade+controlnet \u5b8c\u7f8e\u653e\u5927\u56fe\u50cf.png",
+    "format": "embedded",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 10,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Kazitorials-avatar-generator.png",
+    "format": "embedded",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 12,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/SRPO-workflow.png",
+    "format": "embedded",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 4,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Tpose-Template.png",
+    "format": "embedded",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 34,
+    "models_count": 13,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Wan2-2-Ultimate-Text-To-Image-fast-render-cinematic-quality.png",
+    "format": "embedded",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 11,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/advanced workflow.png",
+    "format": "embedded",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 20,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/flux_schnell_example.png",
+    "format": "embedded",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 13,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/official workflow.png",
+    "format": "embedded",
+    "family": "utility",
+    "priority": "MEDIUM",
+    "class_types_count": 12,
+    "models_count": 1,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/sdxl-recommended-res-calc_upscale-case.png",
+    "format": "embedded",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 17,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/wave-speed-flux.png",
+    "format": "embedded",
+    "family": "image_still",
+    "priority": "HIGH",
+    "class_types_count": 15,
+    "models_count": 5,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/2025-01-07 latent sync\u5507\u5f62\u62df\u5408.png",
+    "format": "embedded",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 4,
+    "models_count": 0,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/2025-01-15 nvidia cosmos workflow.png",
+    "format": "embedded",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 8,
+    "models_count": 3,
+    "error": null
+  },
+  {
+    "path": "/mnt/g/COMFYUI_HUB/workflows/video_cine/Mo-Cha-Replace-Anyone-in-a-Video.png",
+    "format": "embedded",
+    "family": "video_cine",
+    "priority": "HIGH",
+    "class_types_count": 26,
+    "models_count": 6,
+    "error": null
+  }
+]

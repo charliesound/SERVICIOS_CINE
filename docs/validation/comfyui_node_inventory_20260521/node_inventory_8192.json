@@ -1,0 +1,1562 @@
+{
+  "port": 8192,
+  "instance": "3d",
+  "comfyui_version": "0.17.0",
+  "total_nodes": 654,
+  "family_counts": {
+    "image_still": 299,
+    "video_cine": 90,
+    "audio_dubbing": 26,
+    "restoration": 8,
+    "three_d": 30,
+    "utility_general": 117,
+    "unknown": 84
+  },
+  "family_percentages": {
+    "image_still": 45.7,
+    "video_cine": 13.8,
+    "audio_dubbing": 4.0,
+    "restoration": 1.2,
+    "three_d": 4.6,
+    "utility_general": 17.9,
+    "unknown": 12.8
+  },
+  "top_categories": [
+    [
+      "conditioning/video_models",
+      32
+    ],
+    [
+      "api node/video/Kling",
+      22
+    ],
+    [
+      "loaders",
+      18
+    ],
+    [
+      "api node/image/Recraft",
+      18
+    ],
+    [
+      "conditioning",
+      17
+    ],
+    [
+      "audio",
+      17
+    ],
+    [
+      "image",
+      16
+    ],
+    [
+      "advanced/model_merging/model_specific",
+      15
+    ],
+    [
+      "_for_testing",
+      14
+    ],
+    [
+      "mask",
+      13
+    ],
+    [
+      "sampling/custom_sampling/schedulers",
+      13
+    ],
+    [
+      "sampling/custom_sampling/samplers",
+      13
+    ],
+    [
+      "api node/video/Vidu",
+      13
+    ],
+    [
+      "advanced/conditioning",
+      12
+    ],
+    [
+      "advanced/model_merging",
+      12
+    ],
+    [
+      "dataset/image",
+      12
+    ],
+    [
+      "latent",
+      11
+    ],
+    [
+      "utils/string",
+      11
+    ],
+    [
+      "advanced/model",
+      10
+    ],
+    [
+      "advanced/loaders",
+      8
+    ],
+    [
+      "latent/advanced",
+      8
+    ],
+    [
+      "model_patches/unet",
+      8
+    ],
+    [
+      "dataset",
+      8
+    ],
+    [
+      "dataset/text",
+      8
+    ],
+    [
+      "api node/audio/ElevenLabs",
+      8
+    ],
+    [
+      "api node/3d/Tripo",
+      8
+    ],
+    [
+      "image/batch",
+      7
+    ],
+    [
+      "latent/audio",
+      7
+    ],
+    [
+      "advanced/guidance",
+      7
+    ],
+    [
+      "api node/image/BFL",
+      7
+    ]
+  ],
+  "top_per_family": {
+    "image_still": [
+      {
+        "class_type": "AlignYourStepsScheduler",
+        "category": "sampling/custom_sampling/schedulers",
+        "display_name": null
+      },
+      {
+        "class_type": "AudioEncoderEncode",
+        "category": "conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "BasicGuider",
+        "category": "sampling/custom_sampling/guiders",
+        "display_name": null
+      },
+      {
+        "class_type": "BasicScheduler",
+        "category": "sampling/custom_sampling/schedulers",
+        "display_name": null
+      },
+      {
+        "class_type": "BatchLatentsNode",
+        "category": "latent",
+        "display_name": "Batch Latents"
+      },
+      {
+        "class_type": "BetaSamplingScheduler",
+        "category": "sampling/custom_sampling/schedulers",
+        "display_name": null
+      },
+      {
+        "class_type": "ByteDanceImageToVideoNode",
+        "category": "api node/video/ByteDance",
+        "display_name": "ByteDance Image to Video"
+      },
+      {
+        "class_type": "CLIPAttentionMultiply",
+        "category": "_for_testing/attention_experiments",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPLoader",
+        "category": "advanced/loaders",
+        "display_name": "Load CLIP"
+      },
+      {
+        "class_type": "CLIPMergeAdd",
+        "category": "advanced/model_merging",
+        "display_name": "CLIPMergeAdd"
+      },
+      {
+        "class_type": "CLIPMergeSimple",
+        "category": "advanced/model_merging",
+        "display_name": "CLIPMergeSimple"
+      },
+      {
+        "class_type": "CLIPMergeSubtract",
+        "category": "advanced/model_merging",
+        "display_name": "CLIPMergeSubtract"
+      },
+      {
+        "class_type": "CLIPSave",
+        "category": "advanced/model_merging",
+        "display_name": "CLIPSave"
+      },
+      {
+        "class_type": "CLIPSetLastLayer",
+        "category": "conditioning",
+        "display_name": "CLIP Set Last Layer"
+      },
+      {
+        "class_type": "CLIPTextEncode",
+        "category": "conditioning",
+        "display_name": "CLIP Text Encode (Prompt)"
+      },
+      {
+        "class_type": "CLIPTextEncodeControlnet",
+        "category": "_for_testing/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeFlux",
+        "category": "advanced/conditioning/flux",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeHiDream",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeHunyuanDiT",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeKandinsky5",
+        "category": "advanced/conditioning/kandinsky5",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeLumina2",
+        "category": "conditioning",
+        "display_name": "CLIP Text Encode for Lumina2"
+      },
+      {
+        "class_type": "CLIPTextEncodePixArtAlpha",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeSD3",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeSDXL",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeSDXLRefiner",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPVisionEncode",
+        "category": "conditioning",
+        "display_name": "CLIP Vision Encode"
+      },
+      {
+        "class_type": "CLIPVisionLoader",
+        "category": "loaders",
+        "display_name": "Load CLIP Vision"
+      },
+      {
+        "class_type": "CheckpointLoader",
+        "category": "advanced/loaders",
+        "display_name": "Load Checkpoint With Config (DEPRECATED)"
+      },
+      {
+        "class_type": "CheckpointLoaderSimple",
+        "category": "loaders",
+        "display_name": "Load Checkpoint"
+      },
+      {
+        "class_type": "CheckpointSave",
+        "category": "advanced/model_merging",
+        "display_name": "Save Checkpoint"
+      },
+      {
+        "class_type": "ConditioningAverage",
+        "category": "conditioning",
+        "display_name": "ConditioningAverage"
+      },
+      {
+        "class_type": "ConditioningCombine",
+        "category": "conditioning",
+        "display_name": "Conditioning (Combine)"
+      },
+      {
+        "class_type": "ConditioningConcat",
+        "category": "conditioning",
+        "display_name": "Conditioning (Concat)"
+      },
+      {
+        "class_type": "ConditioningSetArea",
+        "category": "conditioning",
+        "display_name": "Conditioning (Set Area)"
+      },
+      {
+        "class_type": "ConditioningSetAreaPercentage",
+        "category": "conditioning",
+        "display_name": "Conditioning (Set Area with Percentage)"
+      },
+      {
+        "class_type": "ConditioningSetAreaPercentageVideo",
+        "category": "conditioning",
+        "display_name": "ConditioningSetAreaPercentageVideo"
+      },
+      {
+        "class_type": "ConditioningSetAreaStrength",
+        "category": "conditioning",
+        "display_name": "ConditioningSetAreaStrength"
+      },
+      {
+        "class_type": "ConditioningSetDefaultCombine",
+        "category": "advanced/hooks/cond single",
+        "display_name": "Cond Set Default Combine"
+      },
+      {
+        "class_type": "ConditioningSetMask",
+        "category": "conditioning",
+        "display_name": "Conditioning (Set Mask)"
+      },
+      {
+        "class_type": "ConditioningSetProperties",
+        "category": "advanced/hooks/cond single",
+        "display_name": "Cond Set Props"
+      },
+      {
+        "class_type": "ConditioningSetPropertiesAndCombine",
+        "category": "advanced/hooks/cond single",
+        "display_name": "Cond Set Props Combine"
+      },
+      {
+        "class_type": "ConditioningSetTimestepRange",
+        "category": "advanced/conditioning",
+        "display_name": "ConditioningSetTimestepRange"
+      },
+      {
+        "class_type": "ConditioningStableAudio",
+        "category": "conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "ConditioningTimestepsRange",
+        "category": "advanced/hooks",
+        "display_name": "Timesteps Range"
+      },
+      {
+        "class_type": "ConditioningZeroOut",
+        "category": "advanced/conditioning",
+        "display_name": "ConditioningZeroOut"
+      },
+      {
+        "class_type": "ControlNetApply",
+        "category": "conditioning/controlnet",
+        "display_name": "Apply ControlNet (OLD)"
+      },
+      {
+        "class_type": "ControlNetApplyAdvanced",
+        "category": "conditioning/controlnet",
+        "display_name": "Apply ControlNet"
+      },
+      {
+        "class_type": "ControlNetApplySD3",
+        "category": "conditioning/controlnet",
+        "display_name": "Apply Controlnet with VAE"
+      },
+      {
+        "class_type": "ControlNetInpaintingAliMamaApply",
+        "category": "conditioning/controlnet",
+        "display_name": null
+      },
+      {
+        "class_type": "ControlNetLoader",
+        "category": "loaders",
+        "display_name": "Load ControlNet Model"
+      }
+    ],
+    "video_cine": [
+      {
+        "class_type": "BriaRemoveVideoBackground",
+        "category": "api node/video/Bria",
+        "display_name": "Bria Remove Video Background"
+      },
+      {
+        "class_type": "ByteDanceFirstLastFrameNode",
+        "category": "api node/video/ByteDance",
+        "display_name": "ByteDance First-Last-Frame to Video"
+      },
+      {
+        "class_type": "ByteDanceImageReferenceNode",
+        "category": "api node/video/ByteDance",
+        "display_name": "ByteDance Reference Images to Video"
+      },
+      {
+        "class_type": "ByteDanceTextToVideoNode",
+        "category": "api node/video/ByteDance",
+        "display_name": "ByteDance Text to Video"
+      },
+      {
+        "class_type": "CombineHooks2",
+        "category": "advanced/hooks/combine",
+        "display_name": "Combine Hooks [2]"
+      },
+      {
+        "class_type": "CombineHooks4",
+        "category": "advanced/hooks/combine",
+        "display_name": "Combine Hooks [4]"
+      },
+      {
+        "class_type": "CombineHooks8",
+        "category": "advanced/hooks/combine",
+        "display_name": "Combine Hooks [8]"
+      },
+      {
+        "class_type": "CreateHookKeyframe",
+        "category": "advanced/hooks/scheduling",
+        "display_name": "Create Hook Keyframe"
+      },
+      {
+        "class_type": "CreateHookKeyframesFromFloats",
+        "category": "advanced/hooks/scheduling",
+        "display_name": "Create Hook Keyframes From Floats"
+      },
+      {
+        "class_type": "CreateHookKeyframesInterpolated",
+        "category": "advanced/hooks/scheduling",
+        "display_name": "Create Hook Keyframes Interp."
+      },
+      {
+        "class_type": "CreateVideo",
+        "category": "image/video",
+        "display_name": "Create Video"
+      },
+      {
+        "class_type": "GetVideoComponents",
+        "category": "image/video",
+        "display_name": "Get Video Components"
+      },
+      {
+        "class_type": "GrokVideoEditNode",
+        "category": "api node/video/Grok",
+        "display_name": "Grok Video Edit"
+      },
+      {
+        "class_type": "GrokVideoNode",
+        "category": "api node/video/Grok",
+        "display_name": "Grok Video"
+      },
+      {
+        "class_type": "HitPawVideoEnhance",
+        "category": "api node/video/HitPaw",
+        "display_name": "HitPaw Video Enhance"
+      },
+      {
+        "class_type": "HunyuanVideo15SuperResolution",
+        "category": "sd",
+        "display_name": null
+      },
+      {
+        "class_type": "KlingAvatarNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Avatar 2.0"
+      },
+      {
+        "class_type": "KlingCameraControlT2VNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Text to Video (Camera Control)"
+      },
+      {
+        "class_type": "KlingCameraControls",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Camera Controls"
+      },
+      {
+        "class_type": "KlingDualCharacterVideoEffectNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Dual Character Video Effects"
+      },
+      {
+        "class_type": "KlingFirstLastFrameNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling 3.0 First-Last-Frame to Video"
+      },
+      {
+        "class_type": "KlingImage2VideoNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Image(First Frame) to Video"
+      },
+      {
+        "class_type": "KlingImageToVideoWithAudio",
+        "category": "api node/video/Kling",
+        "display_name": "Kling 2.6 Image(First Frame) to Video with Audio"
+      },
+      {
+        "class_type": "KlingLipSyncAudioToVideoNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Lip Sync Video with Audio"
+      },
+      {
+        "class_type": "KlingLipSyncTextToVideoNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Lip Sync Video with Text"
+      },
+      {
+        "class_type": "KlingMotionControl",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Motion Control"
+      },
+      {
+        "class_type": "KlingOmniProEditVideoNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling 3.0 Omni Edit Video"
+      },
+      {
+        "class_type": "KlingOmniProFirstLastFrameNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling 3.0 Omni First-Last-Frame to Video"
+      },
+      {
+        "class_type": "KlingOmniProTextToVideoNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling 3.0 Omni Text to Video"
+      },
+      {
+        "class_type": "KlingOmniProVideoToVideoNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling 3.0 Omni Video to Video"
+      },
+      {
+        "class_type": "KlingSingleImageVideoEffectNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Video Effects"
+      },
+      {
+        "class_type": "KlingStartEndFrameNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Start-End Frame to Video"
+      },
+      {
+        "class_type": "KlingTextToVideoNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Text to Video"
+      },
+      {
+        "class_type": "KlingTextToVideoWithAudio",
+        "category": "api node/video/Kling",
+        "display_name": "Kling 2.6 Text to Video with Audio"
+      },
+      {
+        "class_type": "KlingVideoExtendNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling Video Extend"
+      },
+      {
+        "class_type": "KlingVideoNode",
+        "category": "api node/video/Kling",
+        "display_name": "Kling 3.0 Video"
+      },
+      {
+        "class_type": "LTXVPreprocess",
+        "category": "image",
+        "display_name": null
+      },
+      {
+        "class_type": "Load3D",
+        "category": "3d",
+        "display_name": "Load 3D & Animation"
+      },
+      {
+        "class_type": "LoadVideo",
+        "category": "image/video",
+        "display_name": "Load Video"
+      },
+      {
+        "class_type": "LtxvApiTextToVideo",
+        "category": "api node/video/LTXV",
+        "display_name": "LTXV Text To Video"
+      },
+      {
+        "class_type": "LumaConceptsNode",
+        "category": "api node/video/Luma",
+        "display_name": "Luma Concepts"
+      },
+      {
+        "class_type": "LumaVideoNode",
+        "category": "api node/video/Luma",
+        "display_name": "Luma Text to Video"
+      },
+      {
+        "class_type": "MeshyAnimateModelNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Animate Model"
+      },
+      {
+        "class_type": "MinimaxHailuoVideoNode",
+        "category": "api node/video/MiniMax",
+        "display_name": "MiniMax Hailuo Video"
+      },
+      {
+        "class_type": "MinimaxTextToVideoNode",
+        "category": "api node/video/MiniMax",
+        "display_name": "MiniMax Text to Video"
+      },
+      {
+        "class_type": "ModelMergeAuraflow",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeAuraflow"
+      },
+      {
+        "class_type": "ModelMergeLTXV",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeLTXV"
+      },
+      {
+        "class_type": "ModelMergeWAN2_1",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeWAN2_1"
+      },
+      {
+        "class_type": "ModelSamplingAuraFlow",
+        "category": "advanced/model",
+        "display_name": "ModelSamplingAuraFlow"
+      },
+      {
+        "class_type": "ModelSamplingLTXV",
+        "category": "advanced/model",
+        "display_name": null
+      }
+    ],
+    "audio_dubbing": [
+      {
+        "class_type": "AudioAdjustVolume",
+        "category": "audio",
+        "display_name": "Audio Adjust Volume"
+      },
+      {
+        "class_type": "AudioConcat",
+        "category": "audio",
+        "display_name": "Audio Concat"
+      },
+      {
+        "class_type": "AudioEncoderLoader",
+        "category": "loaders",
+        "display_name": null
+      },
+      {
+        "class_type": "AudioEqualizer3Band",
+        "category": "audio",
+        "display_name": "Audio Equalizer (3-Band)"
+      },
+      {
+        "class_type": "AudioMerge",
+        "category": "audio",
+        "display_name": "Audio Merge"
+      },
+      {
+        "class_type": "ElevenLabsAudioIsolation",
+        "category": "api node/audio/ElevenLabs",
+        "display_name": "ElevenLabs Voice Isolation"
+      },
+      {
+        "class_type": "ElevenLabsInstantVoiceClone",
+        "category": "api node/audio/ElevenLabs",
+        "display_name": "ElevenLabs Instant Voice Clone"
+      },
+      {
+        "class_type": "ElevenLabsSpeechToSpeech",
+        "category": "api node/audio/ElevenLabs",
+        "display_name": "ElevenLabs Speech to Speech"
+      },
+      {
+        "class_type": "ElevenLabsSpeechToText",
+        "category": "api node/audio/ElevenLabs",
+        "display_name": "ElevenLabs Speech to Text"
+      },
+      {
+        "class_type": "ElevenLabsTextToDialogue",
+        "category": "api node/audio/ElevenLabs",
+        "display_name": "ElevenLabs Text to Dialogue"
+      },
+      {
+        "class_type": "ElevenLabsTextToSoundEffects",
+        "category": "api node/audio/ElevenLabs",
+        "display_name": "ElevenLabs Text to Sound Effects"
+      },
+      {
+        "class_type": "ElevenLabsTextToSpeech",
+        "category": "api node/audio/ElevenLabs",
+        "display_name": "ElevenLabs Text to Speech"
+      },
+      {
+        "class_type": "ElevenLabsVoiceSelector",
+        "category": "api node/audio/ElevenLabs",
+        "display_name": "ElevenLabs Voice Selector"
+      },
+      {
+        "class_type": "EmptyAudio",
+        "category": "audio",
+        "display_name": "Empty Audio"
+      },
+      {
+        "class_type": "JoinAudioChannels",
+        "category": "audio",
+        "display_name": "Join Audio Channels"
+      },
+      {
+        "class_type": "LoadAudio",
+        "category": "audio",
+        "display_name": "Load Audio"
+      },
+      {
+        "class_type": "PreviewAudio",
+        "category": "audio",
+        "display_name": "Preview Audio"
+      },
+      {
+        "class_type": "RecordAudio",
+        "category": "audio",
+        "display_name": "Record Audio"
+      },
+      {
+        "class_type": "SaveAudio",
+        "category": "audio",
+        "display_name": "Save Audio (FLAC)"
+      },
+      {
+        "class_type": "SaveAudioMP3",
+        "category": "audio",
+        "display_name": "Save Audio (MP3)"
+      },
+      {
+        "class_type": "SaveAudioOpus",
+        "category": "audio",
+        "display_name": "Save Audio (Opus)"
+      },
+      {
+        "class_type": "SplitAudioChannels",
+        "category": "audio",
+        "display_name": "Split Audio Channels"
+      },
+      {
+        "class_type": "StabilityAudioToAudio",
+        "category": "api node/audio/Stability AI",
+        "display_name": "Stability AI Audio To Audio"
+      },
+      {
+        "class_type": "StabilityTextToAudio",
+        "category": "api node/audio/Stability AI",
+        "display_name": "Stability AI Text To Audio"
+      },
+      {
+        "class_type": "TrimAudioDuration",
+        "category": "audio",
+        "display_name": "Trim Audio Duration"
+      },
+      {
+        "class_type": "WavespeedImageUpscaleNode",
+        "category": "api node/image/WaveSpeed",
+        "display_name": "WaveSpeed Image Upscale"
+      }
+    ],
+    "restoration": [
+      {
+        "class_type": "CenterCropImages",
+        "category": "dataset/image",
+        "display_name": "Center Crop Images"
+      },
+      {
+        "class_type": "CropByBBoxes",
+        "category": "image/preprocessors",
+        "display_name": null
+      },
+      {
+        "class_type": "RandomCropImages",
+        "category": "dataset/image",
+        "display_name": "Random Crop Images"
+      },
+      {
+        "class_type": "ResizeAndPadImage",
+        "category": "image/transform",
+        "display_name": null
+      },
+      {
+        "class_type": "ResizeImageMaskNode",
+        "category": "transform",
+        "display_name": "Resize Image/Mask"
+      },
+      {
+        "class_type": "ResizeImagesByLongerEdge",
+        "category": "dataset/image",
+        "display_name": "Resize Images by Longer Edge"
+      },
+      {
+        "class_type": "ResizeImagesByShorterEdge",
+        "category": "dataset/image",
+        "display_name": "Resize Images by Shorter Edge"
+      },
+      {
+        "class_type": "SplitSigmasDenoise",
+        "category": "sampling/custom_sampling/sigmas",
+        "display_name": null
+      }
+    ],
+    "three_d": [
+      {
+        "class_type": "MeshyRefineNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Refine Draft Model"
+      },
+      {
+        "class_type": "MeshyRigModelNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Rig Model"
+      },
+      {
+        "class_type": "MeshyTextToModelNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Text to Model"
+      },
+      {
+        "class_type": "MeshyTextureNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Texture Model"
+      },
+      {
+        "class_type": "NAGuidance",
+        "category": "advanced/guidance",
+        "display_name": "Normalized Attention Guidance"
+      },
+      {
+        "class_type": "NormalizeImages",
+        "category": "dataset/image",
+        "display_name": "Normalize Images"
+      },
+      {
+        "class_type": "Rodin3D_Detail",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Detail Generate"
+      },
+      {
+        "class_type": "Rodin3D_Gen2",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Gen-2 Generate"
+      },
+      {
+        "class_type": "Rodin3D_Regular",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Regular Generate"
+      },
+      {
+        "class_type": "Rodin3D_Sketch",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Sketch Generate"
+      },
+      {
+        "class_type": "Rodin3D_Smooth",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Smooth Generate"
+      },
+      {
+        "class_type": "SDPoseDrawKeypoints",
+        "category": "image/preprocessors",
+        "display_name": null
+      },
+      {
+        "class_type": "SDPoseFaceBBoxes",
+        "category": "image/preprocessors",
+        "display_name": null
+      },
+      {
+        "class_type": "SDPoseKeypointExtractor",
+        "category": "image/preprocessors",
+        "display_name": null
+      },
+      {
+        "class_type": "SaveGLB",
+        "category": "3d",
+        "display_name": "Save 3D Model"
+      },
+      {
+        "class_type": "Tencent3DPartNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: 3D Part"
+      },
+      {
+        "class_type": "Tencent3DTextureEditNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: 3D Texture Edit"
+      },
+      {
+        "class_type": "TencentImageToModelNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: Image(s) to Model"
+      },
+      {
+        "class_type": "TencentModelTo3DUVNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: Model to UV"
+      },
+      {
+        "class_type": "TencentSmartTopologyNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: Smart Topology"
+      },
+      {
+        "class_type": "TencentTextToModelNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: Text to Model"
+      },
+      {
+        "class_type": "TripoConversionNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Convert model"
+      },
+      {
+        "class_type": "TripoMultiviewToModelNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Multiview to Model"
+      },
+      {
+        "class_type": "TripoRefineNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Refine Draft model"
+      },
+      {
+        "class_type": "TripoRetargetNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Retarget rigged model"
+      },
+      {
+        "class_type": "TripoRigNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Rig model"
+      },
+      {
+        "class_type": "TripoTextToModelNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Text to Model"
+      },
+      {
+        "class_type": "TripoTextureNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Texture model"
+      },
+      {
+        "class_type": "VoxelToMesh",
+        "category": "3d",
+        "display_name": null
+      },
+      {
+        "class_type": "VoxelToMeshBasic",
+        "category": "3d",
+        "display_name": null
+      }
+    ],
+    "utility_general": [
+      {
+        "class_type": "BatchImagesNode",
+        "category": "image",
+        "display_name": "Batch Images"
+      },
+      {
+        "class_type": "BatchMasksNode",
+        "category": "mask",
+        "display_name": "Batch Masks"
+      },
+      {
+        "class_type": "BriaImageEditNode",
+        "category": "api node/image/Bria",
+        "display_name": "Bria FIBO Image Edit"
+      },
+      {
+        "class_type": "BriaRemoveImageBackground",
+        "category": "api node/image/Bria",
+        "display_name": "Bria Remove Image Background"
+      },
+      {
+        "class_type": "ByteDanceImageNode",
+        "category": "api node/image/ByteDance",
+        "display_name": "ByteDance Image"
+      },
+      {
+        "class_type": "ByteDanceSeedreamNode",
+        "category": "api node/image/ByteDance",
+        "display_name": "ByteDance Seedream 4.5 & 5.0"
+      },
+      {
+        "class_type": "CaseConverter",
+        "category": "utils/string",
+        "display_name": "Case Converter"
+      },
+      {
+        "class_type": "ColorToRGBInt",
+        "category": "utils",
+        "display_name": "Color to RGB Int"
+      },
+      {
+        "class_type": "ComfyMathExpression",
+        "category": "math",
+        "display_name": "Math Expression"
+      },
+      {
+        "class_type": "ComfySwitchNode",
+        "category": "logic",
+        "display_name": "Switch"
+      },
+      {
+        "class_type": "CreateList",
+        "category": "logic",
+        "display_name": "Create List"
+      },
+      {
+        "class_type": "CropMask",
+        "category": "mask",
+        "display_name": null
+      },
+      {
+        "class_type": "DiffusersLoader",
+        "category": "advanced/loaders/deprecated",
+        "display_name": "DiffusersLoader"
+      },
+      {
+        "class_type": "EasyCache",
+        "category": "advanced/debug/model",
+        "display_name": "EasyCache"
+      },
+      {
+        "class_type": "ExtendIntermediateSigmas",
+        "category": "sampling/custom_sampling/sigmas",
+        "display_name": null
+      },
+      {
+        "class_type": "FeatherMask",
+        "category": "mask",
+        "display_name": null
+      },
+      {
+        "class_type": "Flux2MaxImageNode",
+        "category": "api node/image/BFL",
+        "display_name": "Flux.2 [max] Image"
+      },
+      {
+        "class_type": "Flux2ProImageNode",
+        "category": "api node/image/BFL",
+        "display_name": "Flux.2 [pro] Image"
+      },
+      {
+        "class_type": "FluxKontextMaxImageNode",
+        "category": "api node/image/BFL",
+        "display_name": "Flux.1 Kontext [max] Image"
+      },
+      {
+        "class_type": "FluxKontextProImageNode",
+        "category": "api node/image/BFL",
+        "display_name": "Flux.1 Kontext [pro] Image"
+      },
+      {
+        "class_type": "FluxProExpandNode",
+        "category": "api node/image/BFL",
+        "display_name": "Flux.1 Expand Image"
+      },
+      {
+        "class_type": "FluxProFillNode",
+        "category": "api node/image/BFL",
+        "display_name": "Flux.1 Fill Image"
+      },
+      {
+        "class_type": "FluxProUltraImageNode",
+        "category": "api node/image/BFL",
+        "display_name": "Flux 1.1 [pro] Ultra Image"
+      },
+      {
+        "class_type": "GLIGENLoader",
+        "category": "loaders",
+        "display_name": "GLIGENLoader"
+      },
+      {
+        "class_type": "GeminiImage2Node",
+        "category": "api node/image/Gemini",
+        "display_name": "Nano Banana Pro (Google Gemini Image)"
+      },
+      {
+        "class_type": "GeminiImageNode",
+        "category": "api node/image/Gemini",
+        "display_name": "Nano Banana (Google Gemini Image)"
+      },
+      {
+        "class_type": "GeminiInputFiles",
+        "category": "api node/text/Gemini",
+        "display_name": "Gemini Input Files"
+      },
+      {
+        "class_type": "GeminiNanoBanana2",
+        "category": "api node/image/Gemini",
+        "display_name": "Nano Banana 2"
+      },
+      {
+        "class_type": "GeminiNode",
+        "category": "api node/text/Gemini",
+        "display_name": "Google Gemini"
+      },
+      {
+        "class_type": "GrokImageEditNode",
+        "category": "api node/image/Grok",
+        "display_name": "Grok Image Edit"
+      },
+      {
+        "class_type": "GrokImageNode",
+        "category": "api node/image/Grok",
+        "display_name": "Grok Image"
+      },
+      {
+        "class_type": "GrowMask",
+        "category": "mask",
+        "display_name": "Grow Mask"
+      },
+      {
+        "class_type": "HitPawGeneralImageEnhance",
+        "category": "api node/image/HitPaw",
+        "display_name": "HitPaw General Image Enhance"
+      },
+      {
+        "class_type": "HypernetworkLoader",
+        "category": "loaders",
+        "display_name": null
+      },
+      {
+        "class_type": "IdeogramV1",
+        "category": "api node/image/Ideogram",
+        "display_name": "Ideogram V1"
+      },
+      {
+        "class_type": "IdeogramV2",
+        "category": "api node/image/Ideogram",
+        "display_name": "Ideogram V2"
+      },
+      {
+        "class_type": "IdeogramV3",
+        "category": "api node/image/Ideogram",
+        "display_name": "Ideogram V3"
+      },
+      {
+        "class_type": "ImageColorToMask",
+        "category": "mask",
+        "display_name": null
+      },
+      {
+        "class_type": "ImageCompositeMasked",
+        "category": "image",
+        "display_name": null
+      },
+      {
+        "class_type": "ImageFromBatch",
+        "category": "image/batch",
+        "display_name": null
+      },
+      {
+        "class_type": "ImageMergeTileList",
+        "category": "image/batch",
+        "display_name": "Merge List of Tiles to Image"
+      },
+      {
+        "class_type": "ImageRGBToYUV",
+        "category": "image/batch",
+        "display_name": null
+      },
+      {
+        "class_type": "ImageToMask",
+        "category": "mask",
+        "display_name": "Convert Image to Mask"
+      },
+      {
+        "class_type": "ImageYUVToRGB",
+        "category": "image/batch",
+        "display_name": null
+      },
+      {
+        "class_type": "InvertMask",
+        "category": "mask",
+        "display_name": null
+      },
+      {
+        "class_type": "JoinImageWithAlpha",
+        "category": "mask/compositing",
+        "display_name": "Join Image with Alpha"
+      },
+      {
+        "class_type": "KlingImageGenerationNode",
+        "category": "api node/image/Kling",
+        "display_name": "Kling 3.0 Image"
+      },
+      {
+        "class_type": "KlingOmniProImageNode",
+        "category": "api node/image/Kling",
+        "display_name": "Kling 3.0 Omni Image"
+      },
+      {
+        "class_type": "KlingVirtualTryOnNode",
+        "category": "api node/image/Kling",
+        "display_name": "Kling Virtual Try On"
+      },
+      {
+        "class_type": "LazyCache",
+        "category": "advanced/debug/model",
+        "display_name": "LazyCache"
+      }
+    ],
+    "unknown": [
+      {
+        "class_type": "APG",
+        "category": "sampling/custom_sampling",
+        "display_name": "Adaptive Projected Guidance"
+      },
+      {
+        "class_type": "AddNoise",
+        "category": "_for_testing/custom_sampling/noise",
+        "display_name": null
+      },
+      {
+        "class_type": "AddTextPrefix",
+        "category": "dataset/text",
+        "display_name": "Add Text Prefix"
+      },
+      {
+        "class_type": "AddTextSuffix",
+        "category": "dataset/text",
+        "display_name": "Add Text Suffix"
+      },
+      {
+        "class_type": "AdjustBrightness",
+        "category": "dataset/image",
+        "display_name": "Adjust Brightness"
+      },
+      {
+        "class_type": "AdjustContrast",
+        "category": "dataset/image",
+        "display_name": "Adjust Contrast"
+      },
+      {
+        "class_type": "CFGGuider",
+        "category": "sampling/custom_sampling/guiders",
+        "display_name": null
+      },
+      {
+        "class_type": "CFGNorm",
+        "category": "advanced/guidance",
+        "display_name": null
+      },
+      {
+        "class_type": "CFGZeroStar",
+        "category": "advanced/guidance",
+        "display_name": null
+      },
+      {
+        "class_type": "Canny",
+        "category": "image/preprocessors",
+        "display_name": "Canny"
+      },
+      {
+        "class_type": "ChromaRadianceOptions",
+        "category": "model_patches/chroma_radiance",
+        "display_name": null
+      },
+      {
+        "class_type": "ContextWindowsManual",
+        "category": "context",
+        "display_name": "Context Windows (Manual)"
+      },
+      {
+        "class_type": "CustomCombo",
+        "category": "utils",
+        "display_name": "Custom Combo"
+      },
+      {
+        "class_type": "DifferentialDiffusion",
+        "category": "_for_testing",
+        "display_name": "Differential Diffusion"
+      },
+      {
+        "class_type": "DisableNoise",
+        "category": "sampling/custom_sampling/noise",
+        "display_name": null
+      },
+      {
+        "class_type": "EmptyImage",
+        "category": "image",
+        "display_name": "EmptyImage"
+      },
+      {
+        "class_type": "FlipSigmas",
+        "category": "sampling/custom_sampling/sigmas",
+        "display_name": null
+      },
+      {
+        "class_type": "FluxKVCache",
+        "category": "",
+        "display_name": "Flux KV Cache"
+      },
+      {
+        "class_type": "FreSca",
+        "category": "_for_testing",
+        "display_name": "FreSca"
+      },
+      {
+        "class_type": "GLSLShader",
+        "category": "image/shader",
+        "display_name": "GLSL Shader"
+      },
+      {
+        "class_type": "GetImageSize",
+        "category": "image",
+        "display_name": "Get Image Size"
+      },
+      {
+        "class_type": "ImageAddNoise",
+        "category": "image",
+        "display_name": null
+      },
+      {
+        "class_type": "ImageBlur",
+        "category": "image/postprocessing",
+        "display_name": "Image Blur"
+      },
+      {
+        "class_type": "ImageCompare",
+        "category": "image",
+        "display_name": "Image Compare"
+      },
+      {
+        "class_type": "ImageDeduplication",
+        "category": "dataset/image",
+        "display_name": "Image Deduplication"
+      },
+      {
+        "class_type": "ImageFlip",
+        "category": "image/transform",
+        "display_name": null
+      },
+      {
+        "class_type": "ImageGrid",
+        "category": "dataset/image",
+        "display_name": "Image Grid"
+      },
+      {
+        "class_type": "ImageQuantize",
+        "category": "image/postprocessing",
+        "display_name": null
+      },
+      {
+        "class_type": "ImageRotate",
+        "category": "image/transform",
+        "display_name": "Image Rotate"
+      },
+      {
+        "class_type": "ImageScaleToMaxDimension",
+        "category": "image/upscaling",
+        "display_name": null
+      },
+      {
+        "class_type": "ImageSharpen",
+        "category": "image/postprocessing",
+        "display_name": null
+      },
+      {
+        "class_type": "ImageStitch",
+        "category": "image/transform",
+        "display_name": "Image Stitch"
+      },
+      {
+        "class_type": "Mahiro",
+        "category": "_for_testing",
+        "display_name": "Positive-Biased Guidance"
+      },
+      {
+        "class_type": "MakeTrainingDataset",
+        "category": "dataset",
+        "display_name": "Make Training Dataset"
+      },
+      {
+        "class_type": "ManualSigmas",
+        "category": "_for_testing/custom_sampling",
+        "display_name": null
+      },
+      {
+        "class_type": "MergeImageLists",
+        "category": "dataset/image",
+        "display_name": "Merge Image Lists"
+      },
+      {
+        "class_type": "MergeTextLists",
+        "category": "dataset/text",
+        "display_name": "Merge Text Lists"
+      },
+      {
+        "class_type": "ModelMergeAdd",
+        "category": "advanced/model_merging",
+        "display_name": "ModelMergeAdd"
+      },
+      {
+        "class_type": "ModelMergeBlocks",
+        "category": "advanced/model_merging",
+        "display_name": "ModelMergeBlocks"
+      },
+      {
+        "class_type": "ModelMergeCosmos14B",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeCosmos14B"
+      },
+      {
+        "class_type": "ModelMergeCosmos7B",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeCosmos7B"
+      },
+      {
+        "class_type": "ModelMergeCosmosPredict2_14B",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeCosmosPredict2_14B"
+      },
+      {
+        "class_type": "ModelMergeCosmosPredict2_2B",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeCosmosPredict2_2B"
+      },
+      {
+        "class_type": "ModelMergeFlux1",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeFlux1"
+      },
+      {
+        "class_type": "ModelMergeQwenImage",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeQwenImage"
+      },
+      {
+        "class_type": "ModelMergeSD1",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeSD1"
+      },
+      {
+        "class_type": "ModelMergeSD2",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeSD2"
+      },
+      {
+        "class_type": "ModelMergeSD35_Large",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeSD35_Large"
+      },
+      {
+        "class_type": "ModelMergeSD3_2B",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeSD3_2B"
+      },
+      {
+        "class_type": "ModelMergeSDXL",
+        "category": "advanced/model_merging/model_specific",
+        "display_name": "ModelMergeSDXL"
+      }
+    ]
+  },
+  "out_of_profile_nodes": {
+    "image_still": [
+      "AlignYourStepsScheduler",
+      "AudioEncoderEncode",
+      "BasicGuider",
+      "BasicScheduler",
+      "BatchLatentsNode",
+      "BetaSamplingScheduler",
+      "ByteDanceImageToVideoNode",
+      "CLIPAttentionMultiply",
+      "CLIPLoader",
+      "CLIPMergeAdd",
+      "CLIPMergeSimple",
+      "CLIPMergeSubtract",
+      "CLIPSave",
+      "CLIPSetLastLayer",
+      "CLIPTextEncode",
+      "CLIPTextEncodeControlnet",
+      "CLIPTextEncodeFlux",
+      "CLIPTextEncodeHiDream",
+      "CLIPTextEncodeHunyuanDiT",
+      "CLIPTextEncodeKandinsky5"
+    ],
+    "video_cine": [
+      "BriaRemoveVideoBackground",
+      "ByteDanceFirstLastFrameNode",
+      "ByteDanceImageReferenceNode",
+      "ByteDanceTextToVideoNode",
+      "CombineHooks2",
+      "CombineHooks4",
+      "CombineHooks8",
+      "CreateHookKeyframe",
+      "CreateHookKeyframesFromFloats",
+      "CreateHookKeyframesInterpolated",
+      "CreateVideo",
+      "GetVideoComponents",
+      "GrokVideoEditNode",
+      "GrokVideoNode",
+      "HitPawVideoEnhance",
+      "HunyuanVideo15SuperResolution",
+      "KlingAvatarNode",
+      "KlingCameraControlT2VNode",
+      "KlingCameraControls",
+      "KlingDualCharacterVideoEffectNode"
+    ],
+    "audio_dubbing": [
+      "AudioAdjustVolume",
+      "AudioConcat",
+      "AudioEncoderLoader",
+      "AudioEqualizer3Band",
+      "AudioMerge",
+      "ElevenLabsAudioIsolation",
+      "ElevenLabsInstantVoiceClone",
+      "ElevenLabsSpeechToSpeech",
+      "ElevenLabsSpeechToText",
+      "ElevenLabsTextToDialogue",
+      "ElevenLabsTextToSoundEffects",
+      "ElevenLabsTextToSpeech",
+      "ElevenLabsVoiceSelector",
+      "EmptyAudio",
+      "JoinAudioChannels",
+      "LoadAudio",
+      "PreviewAudio",
+      "RecordAudio",
+      "SaveAudio",
+      "SaveAudioMP3"
+    ],
+    "restoration": [
+      "CenterCropImages",
+      "CropByBBoxes",
+      "RandomCropImages",
+      "ResizeAndPadImage",
+      "ResizeImageMaskNode",
+      "ResizeImagesByLongerEdge",
+      "ResizeImagesByShorterEdge",
+      "SplitSigmasDenoise"
+    ]
+  },
+  "diagnostic": "NO-GO",
+  "diagnostic_detail": "Preferred '3D' is only 4.6% \u2014 insufficient coverage."
+}

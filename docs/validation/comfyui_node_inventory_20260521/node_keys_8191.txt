@@ -1,0 +1,3654 @@
+3DImage
+ACN_AdvancedControlNetApply
+ACN_AdvancedControlNetApplySingle
+ACN_AdvancedControlNetApplySingle_v2
+ACN_AdvancedControlNetApply_v2
+ACN_ControlNet++InputNode
+ACN_ControlNet++LoaderAdvanced
+ACN_ControlNet++LoaderSingle
+ACN_ControlNetLoaderAdvanced
+ACN_CtrLoRALoader
+ACN_CustomControlNetWeightsFlux
+ACN_CustomControlNetWeightsSD15
+ACN_CustomT2IAdapterWeights
+ACN_DefaultUniversalWeights
+ACN_DiffControlNetLoaderAdvanced
+ACN_ExtrasMiddleMult
+ACN_ReferenceControlNet
+ACN_ReferenceControlNetFinetune
+ACN_ReferencePreprocessor
+ACN_ScaledSoftControlNetWeights
+ACN_SoftControlNetWeightsSD15
+ACN_SoftT2IAdapterWeights
+ACN_SparseCtrlIndexMethodNode
+ACN_SparseCtrlLoaderAdvanced
+ACN_SparseCtrlMergedLoaderAdvanced
+ACN_SparseCtrlRGBPreprocessor
+ACN_SparseCtrlSpreadMethodNode
+ACN_SparseCtrlWeightExtras
+ACN_TimestepKeyframeFromStrengthList
+ACN_TimestepKeyframeInterpolation
+AILab_ColorInput
+AILab_ColorToMask
+AILab_CropObject
+AILab_Florence2
+AILab_Florence2ToCoordinates
+AILab_ICLoRAConcat
+AILab_ImageCombiner
+AILab_ImageCompare
+AILab_ImageCrop
+AILab_ImageMaskConvert
+AILab_ImageMaskToList
+AILab_ImagePreview
+AILab_ImageResize
+AILab_ImageStitch
+AILab_ImageToList
+AILab_LamaRemover
+AILab_LoadImage
+AILab_LoadImageAdvanced
+AILab_LoadImageBatch
+AILab_LoadImageSimple
+AILab_MaskCombiner
+AILab_MaskEnhancer
+AILab_MaskExtractor
+AILab_MaskOverlay
+AILab_MaskPreview
+AILab_MaskToList
+AILab_Preview
+AILab_QwenVL
+AILab_QwenVL_Advanced
+AILab_QwenVL_GGUF
+AILab_QwenVL_GGUF_Advanced
+AILab_QwenVL_GGUF_PromptEnhancer
+AILab_QwenVL_PromptEnhancer
+AILab_ReferenceLatentMask
+AILab_SDMatte
+AILab_UnbatchImages
+AILab_YoloV8
+AILab_YoloV8Adv
+AIO_Preprocessor
+APG
+APGGuider
+AV_AwsBedrockClaudeApi
+AV_AwsBedrockMistralApi
+AV_CheckpointLoader
+AV_CheckpointMerge
+AV_CheckpointModelsToParametersPipe
+AV_CheckpointSave
+AV_ClaudeApi
+AV_ControlNetEfficientLoader
+AV_ControlNetEfficientLoaderAdvanced
+AV_ControlNetEfficientStacker
+AV_ControlNetEfficientStackerSimple
+AV_ControlNetLoader
+AV_ControlNetPreprocessor
+AV_FaceDetailer
+AV_FaceDetailerPipe
+AV_GeminiApi
+AV_IPAdapter
+AV_IPAdapterPipe
+AV_LLMApiConfig
+AV_LLMChat
+AV_LLMCompletion
+AV_LLMMessage
+AV_LoraListLoader
+AV_LoraListStacker
+AV_LoraLoader
+AV_NanoBananaApiConfig
+AV_OpenAIApi
+AV_OpenRouterApi
+AV_ParametersPipeToCheckpointModels
+AV_ParametersPipeToPrompts
+AV_PromptsToParametersPipe
+AV_SAMLoader
+AV_VAELoader
+AcademiaModelLoader
+AcademiaSD_BatchLoader
+AcademiaSD_Downloader
+AcademiaSD_Gemini_Node
+AcademiaSD_MultiLora
+AcademiaSD_Numeric
+AcademiaSD_Resolution
+AcademiaSD_ResolutionDisplay
+AcademiaSD_SaveAndSend
+AcademiaSD_SaveCaption
+AcademiaVisionNode
+AdainFilterLatent
+AdainImage
+AdainLatent
+Add To Playlist (mtb)
+AddLabel
+AddLatentGuide
+AddMask
+AddMaskForICLora
+AddNoise
+AddNoiseToTrackPath
+AddTextPrefix
+AddTextSuffix
+AddWaterMarkNode
+AdjustBrightness
+AdjustBrightnessContrastSaturationNode
+AdjustContrast
+AdvancedPromptInjection
+AdvancedSD15PromptInjection
+AlignHintsToLatent
+AlignYourStepsScheduler
+AlphaClean
+AlphaMatte
+AnalyzeAudio
+AnimalPosePreprocessor
+Animation Builder (mtb)
+AnimeFace_SemSegPreprocessor
+AnimeLineArtPreprocessor
+Any Switch (rgthree)
+Any To String (mtb)
+AnyBooleanSwitch (Swwan)
+AnyLineArtPreprocessor_aux
+AnyPipeToBasic
+AnySwitch (Swwan)
+Anything Everywhere
+Anything Everywhere3
+Anything Everywhere?
+AppInfo
+AppendInstanceDiffusionTracking
+AppendStringsToList
+Apply ControlNet Stack
+Apply Text Template (mtb)
+Apply Vit Matte (mtb)
+ApplyCLIPSeg+
+ApplyFirstBlockCachePatch
+ApplyFirstBlockCachePatchAdvanced
+ApplyIPAdapterFlux
+ApplyIPAdapterFluxAdvanced
+ApplyInstantID
+ApplyInstantIDAdvanced
+ApplyInstantIDControlNet
+ApplyRifleXRoPE_HunuyanVideo
+ApplyRifleXRoPE_WanVideo
+ApplyTeaCachePatch
+ApplyTeaCachePatchAdvanced
+ApplyVisualStylePrompting_
+AreaToMask
+AspectRatioSelector
+Audio Cut (mtb)
+Audio Duration (mtb)
+Audio Isolate Speaker (mtb)
+Audio Resample (mtb)
+Audio Sequence (mtb)
+Audio Stack (mtb)
+Audio To Text (mtb)
+AudioAdjustVolume
+AudioConcat
+AudioConcatenate
+AudioEncoderEncode
+AudioEncoderLoader
+AudioEncoderLoaderGGUF
+AudioMerge
+AudioPlay
+Auto Pan Equilateral (mtb)
+AutoCropFaces
+AutoMasker
+AutoPatch
+AutoSize64
+Automatic CFG
+Automatic CFG - Advanced
+Automatic CFG - Attention modifiers
+Automatic CFG - Attention modifiers tester
+Automatic CFG - Custom attentions
+Automatic CFG - Excellent attention
+Automatic CFG - Negative
+Automatic CFG - Post rescale only
+Automatic CFG - Preset Loader
+Automatic CFG - Unpatch function
+Automatic CFG - Warp Drive
+BAE-NormalMapPreprocessor
+BBox Force Dimensions (mtb)
+BLIP Analyze Image
+BLIP Model Loader
+BLIPCaption
+BLIPLoader
+BOOLConstant
+BRIA_RMBG_ModelLoader_Zho
+BRIA_RMBG_Zho
+BackgroundSelect
+BaiduTranslateNode
+BasicGuider
+BasicPipeToDetailerPipe
+BasicPipeToDetailerPipeSDXL
+BasicScheduler
+Batch Float (mtb)
+Batch Float Assemble (mtb)
+Batch Float Fill (mtb)
+Batch Float Fit (mtb)
+Batch Float Math (mtb)
+Batch Float Normalize (mtb)
+Batch From Folder (mtb)
+Batch Make (mtb)
+Batch Merge (mtb)
+Batch Sequence (mtb)
+Batch Sequence Plus (mtb)
+Batch Shake (mtb)
+Batch Shape (mtb)
+Batch Time Wrap (mtb)
+Batch2d Transform (mtb)
+BatchAlign
+BatchAverageImage
+BatchAverageUnJittered
+BatchCLIPSeg
+BatchCount+
+BatchCropFromMask
+BatchCropFromMaskAdvanced
+BatchImageLoader
+BatchImagesNode
+BatchLatentsNode
+BatchMasksNode
+BatchNormalizeImage
+BatchNormalizeLatent
+BatchPromptJson
+BatchSlice
+BatchUncrop
+BatchUncropAdvanced
+Bbox (mtb)
+Bbox From Mask (mtb)
+BboxDetectorCombined_v2
+BboxDetectorSEGS
+BboxToInt
+BboxVisualize
+BetaSamplingScheduler
+BetterFilmGrain
+BiRefNetRMBG
+BilateralFilterImage
+BinaryPreprocessor
+BitwiseAndMask
+BitwiseAndMaskForEach
+BlackPatchRetryHookProvider
+Blend Latents
+BlockifyMask
+Blur
+Blur (mtb)
+BlurImageFast
+BlurMaskFast
+BodySegment
+Boolean To Text
+BooleanPrimitive
+Bounded Image Blend
+Bounded Image Blend with Mask
+Bounded Image Crop
+Bounded Image Crop with Mask
+BoundedImageCrop
+BoundedImageCropWithMask
+BriaImageEditNode
+BriaRemoveImageBackground
+BriaRemoveVideoBackground
+Build Filename String (WLSH)
+BuildAutoTunerPythonEvaluator
+Bus Node
+ByteDanceFirstLastFrameNode
+ByteDanceImageNode
+ByteDanceImageReferenceNode
+ByteDanceImageToVideoNode
+ByteDanceSeedreamNode
+ByteDanceTextToVideoNode
+CFGGuider
+CFGNorm
+CFGZeroStar
+CFGZeroStarAndInit
+CLIP +/- w/Text Unified (WLSH)
+CLIP Input Switch
+CLIP Positive-Negative (WLSH)
+CLIP Positive-Negative XL (WLSH)
+CLIP Positive-Negative XL w/Text (WLSH)
+CLIP Positive-Negative w/Text (WLSH)
+CLIP Vision Input Switch
+CLIPAttentionMultiply
+CLIPLoader
+CLIPLoaderGGUF
+CLIPMergeAdd
+CLIPMergeSimple
+CLIPMergeSubtract
+CLIPSEG2
+CLIPSave
+CLIPSeg Batch Masking
+CLIPSeg Masking
+CLIPSeg Model Loader
+CLIPSegDetectorProvider
+CLIPSetLastLayer
+CLIPTextEncode
+CLIPTextEncode (NSP)
+CLIPTextEncode SDXL Plus (JPS)
+CLIPTextEncodeControlnet
+CLIPTextEncodeFlux
+CLIPTextEncodeHiDream
+CLIPTextEncodeHunyuanDiT
+CLIPTextEncodeKandinsky5
+CLIPTextEncodeLumina2
+CLIPTextEncodePixArtAlpha
+CLIPTextEncodeSD3
+CLIPTextEncodeSDXL
+CLIPTextEncodeSDXL+
+CLIPTextEncodeSDXLRefiner
+CLIPVisionEncode
+CLIPVisionLoader
+CM_BoolBinaryOperation
+CM_BoolToInt
+CM_BoolUnaryOperation
+CM_BreakoutVec2
+CM_BreakoutVec3
+CM_BreakoutVec4
+CM_ComposeVec2
+CM_ComposeVec3
+CM_ComposeVec4
+CM_FloatBinaryCondition
+CM_FloatBinaryOperation
+CM_FloatToInt
+CM_FloatToNumber
+CM_FloatUnaryCondition
+CM_FloatUnaryOperation
+CM_IntBinaryCondition
+CM_IntBinaryOperation
+CM_IntToBool
+CM_IntToFloat
+CM_IntToNumber
+CM_IntUnaryCondition
+CM_IntUnaryOperation
+CM_NearestSDXLExtendedResolution
+CM_NearestSDXLResolution
+CM_NumberBinaryCondition
+CM_NumberBinaryOperation
+CM_NumberToFloat
+CM_NumberToInt
+CM_NumberUnaryCondition
+CM_NumberUnaryOperation
+CM_SDXLExtendedResolution
+CM_SDXLResolution
+CM_Vec2BinaryCondition
+CM_Vec2BinaryOperation
+CM_Vec2ScalarOperation
+CM_Vec2ToScalarBinaryOperation
+CM_Vec2ToScalarUnaryOperation
+CM_Vec2UnaryCondition
+CM_Vec2UnaryOperation
+CM_Vec3BinaryCondition
+CM_Vec3BinaryOperation
+CM_Vec3ScalarOperation
+CM_Vec3ToScalarBinaryOperation
+CM_Vec3ToScalarUnaryOperation
+CM_Vec3UnaryCondition
+CM_Vec3UnaryOperation
+CM_Vec4BinaryCondition
+CM_Vec4BinaryOperation
+CM_Vec4ScalarOperation
+CM_Vec4ToScalarBinaryOperation
+CM_Vec4ToScalarUnaryOperation
+CM_Vec4UnaryCondition
+CM_Vec4UnaryOperation
+CR 8 Channel In
+CR 8 Channel Out
+CR Apply ControlNet
+CR Apply LoRA Stack
+CR Apply Model Merge
+CR Apply Multi Upscale
+CR Apply Multi-ControlNet
+CR Aspect Ratio
+CR Aspect Ratio Banners
+CR Aspect Ratio SDXL
+CR Aspect Ratio Social Media
+CR Batch Images From List
+CR Batch Process Switch
+CR Binary Pattern
+CR Binary To Bit List
+CR Bit Schedule
+CR Central Schedule
+CR Checker Pattern
+CR Clamp Value
+CR Clip Input Switch
+CR Color Bars
+CR Color Gradient
+CR Color Panel
+CR Color Tint
+CR Combine Prompt
+CR Combine Schedules
+CR Comic Panel Templates
+CR Composite Text
+CR Conditioning Input Switch
+CR Conditioning Mixer
+CR ControlNet Input Switch
+CR Current Frame
+CR Cycle Images
+CR Cycle Images Simple
+CR Cycle LoRAs
+CR Cycle Models
+CR Cycle Text
+CR Cycle Text Simple
+CR Data Bus In
+CR Data Bus Out
+CR Debatch Frames
+CR Diamond Panel
+CR Draw Pie
+CR Draw Shape
+CR Draw Text
+CR Encode Scheduled Prompts
+CR Feathered Border
+CR Float Range List
+CR Float To Integer
+CR Float To String
+CR Font File List
+CR Get Parameter From Prompt
+CR Gradient Float
+CR Gradient Integer
+CR Half Drop Panel
+CR Halftone Filter
+CR Halftone Grid
+CR Hires Fix Process Switch
+CR Image Border
+CR Image Grid Panel
+CR Image Input Switch
+CR Image Input Switch (4 way)
+CR Image List
+CR Image List Simple
+CR Image Output
+CR Image Panel
+CR Image Pipe Edit
+CR Image Pipe In
+CR Image Pipe Out
+CR Image Size
+CR Img2Img Process Switch
+CR Increment Float
+CR Increment Integer
+CR Index
+CR Index Increment
+CR Index Multiply
+CR Index Reset
+CR Integer Multiple
+CR Integer Range List
+CR Integer To String
+CR Interpolate Latents
+CR Intertwine Lists
+CR Keyframe List
+CR Latent Batch Size
+CR Latent Input Switch
+CR LoRA List
+CR LoRA Stack
+CR Load Animation Frames
+CR Load Flow Frames
+CR Load GIF As List
+CR Load Image List
+CR Load Image List Plus
+CR Load LoRA
+CR Load Schedule From File
+CR Load Scheduled LoRAs
+CR Load Scheduled Models
+CR Load Text List
+CR Mask Text
+CR Math Operation
+CR Model Input Switch
+CR Model List
+CR Model Merge Stack
+CR Module Input
+CR Module Output
+CR Module Pipe Loader
+CR Multi Upscale Stack
+CR Multi-ControlNet Stack
+CR Multiline Text
+CR Output Flow Frames
+CR Output Schedule To File
+CR Overlay Text
+CR Overlay Transparent Image
+CR Page Layout
+CR Pipe Switch
+CR Polygons
+CR Prompt List
+CR Prompt List Keyframes
+CR Prompt Scheduler
+CR Prompt Text
+CR Radial Gradient
+CR Random Hex Color
+CR Random LoRA Stack
+CR Random Multiline Colors
+CR Random Multiline Values
+CR Random Panel Codes
+CR Random RGB
+CR Random RGB Gradient
+CR Random Shape Pattern
+CR Random Weight LoRA
+CR Repeater
+CR SD1.5 Aspect Ratio
+CR SDXL Aspect Ratio
+CR SDXL Base Prompt Encoder
+CR SDXL Prompt Mix Presets
+CR SDXL Prompt Mixer
+CR SDXL Style Text
+CR Save Text To File
+CR Schedule Input Switch
+CR Seamless Checker
+CR Seed
+CR Seed to Int
+CR Select Font
+CR Select ISO Size
+CR Select Model
+CR Select Resize Method
+CR Set Switch From String
+CR Set Value On Binary
+CR Set Value On Boolean
+CR Set Value on String
+CR Simple Banner
+CR Simple Binary Pattern
+CR Simple Image Compare
+CR Simple List
+CR Simple Meme Template
+CR Simple Prompt List
+CR Simple Prompt List Keyframes
+CR Simple Prompt Scheduler
+CR Simple Schedule
+CR Simple Text Panel
+CR Simple Text Scheduler
+CR Simple Text Watermark
+CR Simple Value Scheduler
+CR Split String
+CR Starburst Colors
+CR Starburst Lines
+CR String To Boolean
+CR String To Combo
+CR String To Number
+CR Style Bars
+CR Switch Model and CLIP
+CR Text
+CR Text Blacklist
+CR Text Concatenate
+CR Text Cycler
+CR Text Input Switch
+CR Text Input Switch (4 way)
+CR Text Length
+CR Text List
+CR Text List Simple
+CR Text List To String
+CR Text Operation
+CR Text Replace
+CR Text Scheduler
+CR Thumbnail Preview
+CR Trigger
+CR Upscale Image
+CR VAE Decode
+CR VAE Input Switch
+CR Value
+CR Value Cycler
+CR Value Scheduler
+CR Vignette Filter
+CR XY From Folder
+CR XY Index
+CR XY Interpolate
+CR XY List
+CR XY Product
+CR XY Save Grid Image
+CR_Aspect Ratio For Print
+Cache Node
+CameraPoseVisualizer
+Canny
+CannyEdgePreprocessor
+CaseConverter
+CatVTON
+CatvtonFluxSampler
+CenterCropImages
+CenterImage
+CfgScheduleHookProvider
+Change Channel Count
+ChannelSelector
+CharacterInText
+ChatGPTOpenAI
+ChatGptPrompt
+Checkpoint Loader
+Checkpoint Loader (LoraManager)
+Checkpoint Loader (Simple)
+Checkpoint Loader w/Name (WLSH)
+CheckpointLoader
+CheckpointLoaderKJ
+CheckpointLoaderSimple
+CheckpointLoader|pysssss
+CheckpointNameSelector
+CheckpointPerturbWeights
+CheckpointSave
+ChinesePrompt_Mix
+ChromaRadianceOptions
+CivitAI_Checkpoint_Loader
+CivitAI_Lora_Loader
+CkptNames_
+ClampImage
+ClampOutliers
+ClipInterrogator
+ClipLoaderGGUF
+ClipVisionStyleLoader
+ClothesSegment
+Color
+Color Correct (mtb)
+Color Correct GPU (mtb)
+ColorAdjustNew(FaceParsing)
+ColorBalanceNode
+ColorBlend
+ColorCorrect
+ColorMatch
+ColorMatchImage
+ColorMatchV2
+ColorPreprocessor
+ColorToMask
+ColorToRGBInt
+Colored Image (mtb)
+Combine Masks
+CombineAudioVideo
+CombineHooks2
+CombineHooks4
+CombineHooks8
+CombineRegionalPrompts
+Combo Clone
+ComfyDeployOutputEXR
+ComfyDeployOutputFile
+ComfyDeployOutputImage
+ComfyDeployOutputText
+ComfyDeployWebscoketImageInput
+ComfyDeployWebscoketImageOutput
+ComfySwitchNode
+ComfyUIDeployExternalAudio
+ComfyUIDeployExternalBoolean
+ComfyUIDeployExternalCheckpoint
+ComfyUIDeployExternalEXR
+ComfyUIDeployExternalEnum
+ComfyUIDeployExternalFaceModel
+ComfyUIDeployExternalFile
+ComfyUIDeployExternalImage
+ComfyUIDeployExternalImageAlpha
+ComfyUIDeployExternalImageBatch
+ComfyUIDeployExternalLora
+ComfyUIDeployExternalNumber
+ComfyUIDeployExternalNumberInt
+ComfyUIDeployExternalNumberSlider
+ComfyUIDeployExternalNumberSliderInt
+ComfyUIDeployExternalSeed
+ComfyUIDeployExternalText
+ComfyUIDeployExternalTextAny
+ComfyUIDeployExternalVid
+ComfyUIDeployExternalVideo
+ComfyUIDeployStringCombine
+ComfyUIVtonMaskGenerator
+ComfyUIVtonMaskLoader
+ComparingTwoFrames_
+CompileModel
+CompositeImages_
+Concat Images (mtb)
+ConcatContextWindow
+CondPassThrough
+Conditioning Input Switch
+Conditioning Switch (JPS)
+ConditioningAverage
+ConditioningCombine
+ConditioningCombineMultiple+
+ConditioningConcat
+ConditioningMultiCombine
+ConditioningSetArea
+ConditioningSetAreaPercentage
+ConditioningSetAreaPercentageVideo
+ConditioningSetAreaStrength
+ConditioningSetDefaultCombine
+ConditioningSetMask
+ConditioningSetMaskAndCombine
+ConditioningSetMaskAndCombine3
+ConditioningSetMaskAndCombine4
+ConditioningSetMaskAndCombine5
+ConditioningSetProperties
+ConditioningSetPropertiesAndCombine
+ConditioningSetTimestepRange
+ConditioningStableAudio
+ConditioningSubtract
+ConditioningTimestepsRange
+ConditioningZeroOut
+ConnectionString
+ConsoleDebug+
+ConsolidateMasksKJ
+Constant Mask
+Constant Number
+ConstrainImageforVideo|pysssss
+ConstrainImage|pysssss
+Context (rgthree)
+Context Big (rgthree)
+Context Merge (rgthree)
+Context Merge Big (rgthree)
+Context Switch (rgthree)
+Context Switch Big (rgthree)
+ContextWindowsManual
+Control Net Model Input Switch
+Control Net Stacker
+ControlNet Switch (JPS)
+ControlNetApply
+ControlNetApplyAdvanced
+ControlNetApplySD3
+ControlNetAuxSimpleAddText
+ControlNetInpaintingAliMamaApply
+ControlNetLoader
+ControlNetLoaderAdvanced
+ControlNetPreprocessorSelector
+Convert Color Space
+Convert Masks to Images
+ConvertGrayChannelNode
+ConvertNormals
+Coordinates To String (mtb)
+CoreMLDetailerHookProvider
+CosmosImageToVideoLatent
+CosmosPredict2ImageToVideoLatent
+Create Grid Image
+Create Grid Image from Batch
+Create Morph Image
+Create Morph Image from Path
+Create QR Code
+Create Rect Mask
+Create Video from Path
+CreateAudioMask
+CreateContextWindow
+CreateExtraMetaData
+CreateFadeMask
+CreateFadeMaskAdvanced
+CreateFluidMask
+CreateGradientFromCoords
+CreateGradientMask
+CreateHookKeyframe
+CreateHookKeyframesFromFloats
+CreateHookKeyframesInterpolated
+CreateHookLora
+CreateHookLoraModelOnly
+CreateHookModelAsLora
+CreateHookModelAsLoraModelOnly
+CreateInstanceDiffusionTracking
+CreateJsonNode
+CreateList
+CreateMagicMask
+CreateShapeImageOnPath
+CreateShapeMask
+CreateShapeMaskOnPath
+CreateTextMask
+CreateTextOnPath
+CreateVideo
+CreateVoronoiMask
+Crop (mtb)
+Crop Image Pipe (JPS)
+Crop Image Settings (JPS)
+Crop Image Square (JPS)
+Crop Image TargetSize (JPS)
+CropByBBox
+CropFace
+CropFaces
+CropMask
+CrossFadeImages
+CrossFadeImagesMulti
+CtrlNet CannyEdge Pipe (JPS)
+CtrlNet CannyEdge Settings (JPS)
+CtrlNet MiDaS Pipe (JPS)
+CtrlNet MiDaS Settings (JPS)
+CtrlNet OpenPose Pipe (JPS)
+CtrlNet OpenPose Settings (JPS)
+CtrlNet ZoeDepth Pipe (JPS)
+CtrlNet ZoeDepth Settings (JPS)
+Curve (mtb)
+Curve To Float (mtb)
+CustomCombo
+CustomControlNetWeights
+CustomControlNetWeightsFluxFromList
+CustomNoise
+CustomSamplerDetailerHookProvider
+CustomSigmas
+CustomT2IAdapterWeights
+Cut By Mask
+CutAndDragOnPath
+DA3_CreateCameraParams
+DA3_DownloadModel
+DA3_EnableTiledProcessing
+DA3_FilterGaussians
+DA3_MultiViewPointCloud
+DA3_ParseCameraPose
+DA3_PreviewPointCloud
+DA3_SavePointCloud
+DA3_ToMesh
+DA3_ToPointCloud
+DSINE-NormalMapPreprocessor
+DWPreprocessor
+Debug (mtb)
+Debug Metadata (LoraManager)
+Debug Number to Console
+DebugTensorShape+
+DecodeAndSaveVideo
+Deep Bump (mtb)
+DeepDanbooruCaption
+DenoiseScheduleHookProvider
+DenoiseSchedulerDetailerHookProvider
+DensePosePreprocessor
+DependenciesEdit
+DepthAnythingPreprocessor
+DepthAnythingV2Preprocessor
+DepthAnythingV3_MultiView
+DepthAnythingV3_Streaming
+DepthAnything_V2
+DepthAnything_V3
+DepthToNormals
+DepthViewer
+DetailDaemonGraphSigmasNode
+DetailDaemonSamplerNode
+DetailerForEach
+DetailerForEachAutoRetry
+DetailerForEachDebug
+DetailerForEachDebugPipe
+DetailerForEachPipe
+DetailerForEachPipeForAnimateDiff
+DetailerHookCombine
+DetailerPipeToBasicPipe
+DetectFaceByIndex
+DetectFaces
+DiTBlockLoraLoader
+Dictionary to Console
+DiffControlNetLoader
+DiffControlNetLoaderAdvanced
+DifferenceChecker
+DifferentialDiffusion
+DifferentialDiffusionAdvanced
+Diffusers Hub Model Down-Loader
+Diffusers Model Loader
+DiffusersLoader
+DiffusionEdge_Preprocessor
+DiffusionModelLoaderKJ
+DiffusionModelSelector
+DilateErodeMask
+Disable Enable Switch (JPS)
+DisableNoise
+Display Any (rgthree)
+Display Int (rgthree)
+DisplayAny
+DitForwardOverrider
+DoubleCLIPEncode
+DownloadAndLoadBlip
+DownloadAndLoadCLIPSeg
+DownloadAndLoadDepthAnythingV2Model
+DownloadAndLoadDepthAnythingV3Model
+DownloadAndLoadFlorence2Lora
+DownloadAndLoadFlorence2Model
+DownloadAndLoadSAM2Model
+DownloadISNetModel
+DrawInstanceDiffusionTracking
+DrawMaskOnImage
+DrawText+
+DualCFGGuider
+DualCLIPLoader
+DualCLIPLoaderGGUF
+DualClipLoaderGGUF
+DummyOut
+DynamicConditioning
+DynamicDelayProcessor
+ECHOCheckpointLoaderSimple
+EXTEND_CLIP_VISION_INPUT_SIZE
+EasyCache
+EditBasicPipe
+EditDetailerPipe
+EditDetailerPipeSDXL
+EditMask
+Eff. Loader SDXL
+Efficient Loader
+EmbeddingPrompt
+Empty Latent by Pixels (WLSH)
+Empty Latent by Ratio (WLSH)
+Empty Latent by Size (WLSH)
+EmptyAceStep1.5LatentAudio
+EmptyAceStepLatentAudio
+EmptyAudio
+EmptyChromaRadianceLatentImage
+EmptyCosmosLatentVideo
+EmptyFlux2LatentImage
+EmptyHunyuanImageLatent
+EmptyHunyuanLatentVideo
+EmptyHunyuanVideo15Latent
+EmptyImage
+EmptyLTXVLatentVideo
+EmptyLatentAudio
+EmptyLatentHunyuan3Dv2
+EmptyLatentImage
+EmptyLatentImageCustomPresets
+EmptyLatentImagePresets
+EmptyMochiLatentVideo
+EmptyQwenImageLayeredLatentImage
+EmptySD3LatentImage
+EmptySegs
+Enable Disable Switch (JPS)
+EncodeVideoComponents
+EndRecordCUDAMemoryHistory
+EnhanceDetail
+EnhanceImage
+EnhancementUtils_ImageLoadWithSubfolders
+EnhancementUtils_PlaySound
+EnhancementUtils_SystemNotification
+Epsilon Scaling
+EsesImageResize
+Evaluate Floats
+Evaluate Integers
+Evaluate Strings
+ExecuteAllControlNetPreprocessors
+ExponentialScheduler
+Export API
+Export With Ffmpeg (mtb)
+ExposureAdjust
+ExtendIntermediateSigmas
+Extract Coordinates From Image (mtb)
+ExtractNFrames
+Face Swap (mtb)
+FaceDetailer
+FaceDetailerPipe
+FaceKeypointsPreprocessor
+FaceRestoreCFWithModel
+FaceRestoreModelLoader
+FaceSegment
+FaceSwap
+FaceToMask
+FacialPartColoringFromPoseKps
+FakeScribblePreprocessor
+FalDifferentialDiffusion
+FalDiffusion
+FashionSegmentAccessories
+FashionSegmentClothing
+FastPreview
+FeatherMask
+FeatheredMask
+FetchFromRedis
+FetchJsonFromSurreal
+Filter Z (mtb)
+FilterZeroMasksAndCorrespondingImages
+Fit Number (mtb)
+FlipSigmas
+FlipSigmasAdjusted
+Float To Floats (mtb)
+Float To Number (mtb)
+FloatConstant
+FloatMathOperation
+FloatSlider
+FloatToMask
+FloatToSigmas
+FloatingVideo
+Floats To Float (mtb)
+Floats To Ints (mtb)
+Florence2CaptionImageUnderDirectory|Mie
+Florence2DescribeImage|Mie
+Florence2ModelLoader
+Florence2ModelLoader|Mie
+Florence2Run
+Florence2toCoordinates
+Flux2MaxImageNode
+Flux2ProImageNode
+Flux2Scheduler
+FluxAttentionSeeker+
+FluxBlockLoraSelect
+FluxBlocksBuster+
+FluxDisableGuidance
+FluxForwardOverrider
+FluxGuidance
+FluxKontextImageScale
+FluxKontextMaxImageNode
+FluxKontextMultiReferenceLatentMethod
+FluxKontextProImageNode
+FluxProExpandNode
+FluxProFillNode
+FluxProUltraImageNode
+FluxSamplerParams+
+Font
+Fooocus_KSampler
+Fooocus_KSamplerAdvanced
+Fooocus_KSamplerEfficient
+Fooocus_KSamplerEfficientAdvanced
+ForegroundMask
+FreSca
+FreeU
+FreeU_V2
+FrequencyCombine
+FrequencySeparate
+FromBasicPipe
+FromBasicPipe_v2
+FromDetailerPipe
+FromDetailerPipeSDXL
+FromDetailerPipe_v2
+FusionText
+GGUFLoaderKJ
+GGUFRun
+GGUFSave
+GGUFUndo
+GITSScheduler
+GITSSchedulerFuncProvider
+GLIGENLoader
+GLIGENTextBoxApply
+GLIGENTextBoxApplyBatchCoords
+GLIGENTextBoxApply_Advanced
+GameOfLife
+GeminiImage2Node
+GeminiImageNode
+GeminiInputFiles
+GeminiNode
+GemmaAPITextEncode
+Generate Border Mask (WLSH)
+Generate Trimap (mtb)
+GenerateFramesByCount
+GenerateNoise
+GenerateTracks
+Generation TXT IMG Settings (JPS)
+Get Batch From History (mtb)
+Get Date Time String (JPS)
+Get Image Size
+Get Image Size (JPS)
+Get resolution [Crystools]
+GetBoolFromJson
+GetFloatFromJson
+GetImageRangeFromBatch
+GetImageSize
+GetImageSize+
+GetImageSizeAndCount
+GetImageSize_
+GetImagesFromBatchIndexed
+GetIntFromJson
+GetLatentRangeFromBatch
+GetLatentSizeAndCount
+GetLatentsFromBatchIndexed
+GetLayerMask
+GetMaskSizeAndCount
+GetObjectFromJson
+GetSAMEmbedding
+GetTextFromJson
+GetTrackRange
+GetVideoComponents
+GradientImage
+GradientToFloat
+Grayscale Image (WLSH)
+GridDisplayAndSave
+GridInput
+GridOutput
+Griptape Agent Config: Amazon Bedrock Drivers
+Griptape Agent Config: Amazon Bedrock [DEPRECATED]
+Griptape Agent Config: Anthropic Drivers
+Griptape Agent Config: Anthropic [DEPRECATED]
+Griptape Agent Config: Azure OpenAI Drivers
+Griptape Agent Config: Azure OpenAI [DEPRECATED]
+Griptape Agent Config: Cohere Drivers
+Griptape Agent Config: Custom Structure
+Griptape Agent Config: Environment Variables
+Griptape Agent Config: Expand
+Griptape Agent Config: Google Drivers
+Griptape Agent Config: Google [DEPRECATED]
+Griptape Agent Config: Griptape Cloud
+Griptape Agent Config: Grok Drivers
+Griptape Agent Config: Groq Drivers
+Griptape Agent Config: HuggingFace Drivers
+Griptape Agent Config: HuggingFace [DEPRECATED]
+Griptape Agent Config: LM Studio Drivers
+Griptape Agent Config: LM Studio [DEPRECATED]
+Griptape Agent Config: Ollama Drivers
+Griptape Agent Config: Ollama [DEPRECATED]
+Griptape Agent Config: OpenAI Compatible Drivers
+Griptape Agent Config: OpenAI Compatible [DEPRECATED]
+Griptape Agent Config: OpenAI Drivers
+Griptape Agent Config: OpenAI [DEPRECATED]
+Griptape Audio Transcription Driver: Groq
+Griptape Audio Transcription Driver: OpenAI
+Griptape Code: Run Griptape Cloud Structure
+Griptape Code: Run Python [DEPRECATED]
+Griptape Combine: Merge Dictionary
+Griptape Combine: Merge Inputs
+Griptape Combine: Merge Texts
+Griptape Combine: RAG Module List
+Griptape Combine: Rules List
+Griptape Combine: String List
+Griptape Combine: Tool List
+Griptape Convert: Agent to Tool
+Griptape Convert: Text to CLIP Encode
+Griptape Convert: Text to Combo
+Griptape Create: Agent
+Griptape Create: Agent from Config
+Griptape Create: CLIP Text Encode
+Griptape Create: Image Inpainting Variation
+Griptape Create: Image Variation
+Griptape Create: Image from Text
+Griptape Create: Key Value Pair
+Griptape Create: Rules
+Griptape Create: Text
+Griptape Display: Data as Text
+Griptape Display: Dictionary
+Griptape Display: Image
+Griptape Display: Text
+Griptape Display: Text as Markdown
+Griptape Driver: Amazon Bedrock Stable Diffusion
+Griptape Driver: Amazon Bedrock Titan
+Griptape Driver: Azure OpenAI Image Generation
+Griptape Driver: Black Forest Labs Image Generation
+Griptape Driver: Leonardo.AI
+Griptape Driver: OpenAI Compatible Image Generation
+Griptape Driver: OpenAI Image Generation
+Griptape Embedding Driver: Amazon Bedrock Titan
+Griptape Embedding Driver: Amazon SageMaker Jumpstart
+Griptape Embedding Driver: Azure OpenAI
+Griptape Embedding Driver: Cohere
+Griptape Embedding Driver: Google
+Griptape Embedding Driver: HuggingFace
+Griptape Embedding Driver: LM Studio
+Griptape Embedding Driver: Ollama
+Griptape Embedding Driver: OpenAI
+Griptape Embedding Driver: OpenAI Compatible
+Griptape Embedding Driver: Voyage AI
+Griptape End Workflow
+Griptape Expand: Agent Nodes
+Griptape Load: Audio
+Griptape Load: Image From URL
+Griptape Load: Text
+Griptape Prompt Driver: Amazon Bedrock
+Griptape Prompt Driver: Amazon SageMaker Jumpstart
+Griptape Prompt Driver: Anthropic
+Griptape Prompt Driver: Azure OpenAI
+Griptape Prompt Driver: Cohere
+Griptape Prompt Driver: Google
+Griptape Prompt Driver: Griptape Cloud
+Griptape Prompt Driver: Grok
+Griptape Prompt Driver: Groq
+Griptape Prompt Driver: HuggingFace
+Griptape Prompt Driver: LM Studio
+Griptape Prompt Driver: Ollama
+Griptape Prompt Driver: OpenAI
+Griptape Prompt Driver: OpenAI Compatible
+Griptape RAG Query: Translate Module
+Griptape RAG Rerank: Text Chunks Module
+Griptape RAG Response: Footnote Prompt Module
+Griptape RAG Response: Prompt Module
+Griptape RAG Response: Text Chunks Module
+Griptape RAG Retrieve: Text Loader Module
+Griptape RAG Retrieve: Vector Store Module
+Griptape RAG: Engine
+Griptape Replace: Rulesets on Agent
+Griptape Replace: Tools on Agent
+Griptape Rerank Driver: Cohere
+Griptape Rerank Driver: Local
+Griptape Retrieve: Cloud Ruleset
+Griptape Run: Agent
+Griptape Run: Audio Transcription
+Griptape Run: Cloud Assistant
+Griptape Run: Image Description
+Griptape Run: Parallel Image Description
+Griptape Run: Parallel Prompt Task
+Griptape Run: Task
+Griptape Run: Text Extraction
+Griptape Run: Text Summary
+Griptape Run: Text to Speech
+Griptape Save: Text
+Griptape Set: Default Agent
+Griptape Start Workflow
+Griptape Text To Speech Driver: ElevenLabs
+Griptape Text To Speech Driver: OpenAI
+Griptape Tool: Audio Transcription
+Griptape Tool: Calculator
+Griptape Tool: DateTime
+Griptape Tool: Extraction
+Griptape Tool: FileManager
+Griptape Tool: Griptape Cloud KnowledgeBase
+Griptape Tool: Prompt Summary
+Griptape Tool: Query
+Griptape Tool: RAG
+Griptape Tool: Text to Speech
+Griptape Tool: VectorStore
+Griptape Tool: WebScraper
+Griptape Tool: WebSearch
+Griptape Util: Create Agent Modelfile
+Griptape Util: Create Model from Modelfile
+Griptape Util: Remove Ollama Model
+Griptape Util: Switch Node
+Griptape Vector Store Driver: Amazon OpenSearch
+Griptape Vector Store Driver: Azure MongoDB
+Griptape Vector Store Driver: Griptape Cloud
+Griptape Vector Store Driver: Local
+Griptape Vector Store Driver: Marqo
+Griptape Vector Store Driver: MongoDB Atlas
+Griptape Vector Store Driver: PGVector
+Griptape Vector Store Driver: Pinecone
+Griptape Vector Store Driver: Qdrant
+Griptape Vector Store Driver: Redis
+Griptape Vector Store: Add Text
+Griptape Vector Store: Query
+Griptape WebSearch Driver: DuckDuckGo
+Griptape WebSearch Driver: Exa
+Griptape WebSearch Driver: Google
+Griptape WebSearch Driver: Serper
+Griptape WebSearch Driver: Tavily
+GrokImageEditNode
+GrokImageNode
+GrokVideoEditNode
+GrokVideoNode
+GrowMask
+GrowMaskWithBlur
+GuidanceTimestepping+
+GuidedFilterImage
+GuiderParameters
+HEDPreprocessor
+HSL to Hex
+HSLColorNode
+Hex to HSL
+HighRes-Fix Script
+HighlightShadowBrightnessNode
+HintImageEnchance
+HitPawGeneralImageEnhance
+HitPawVideoEnhance
+Hunyuan3Dv2Conditioning
+Hunyuan3Dv2ConditioningMultiView
+Hunyuan3Dv2LatentUpscaleBy
+HunyuanImageToVideo
+HunyuanRefinerLatent
+HunyuanVideo15ImageToVideo
+HunyuanVideo15LatentUpscaleWithModel
+HunyuanVideo15SuperResolution
+HunyuanVideoBlockLoraSelect
+HunyuanVideoEncodeKeyframesToCond
+HyperTile
+HypernetworkLoader
+INPAINT_ApplyFooocusInpaint
+INPAINT_ColorMatch
+INPAINT_DenoiseToCompositingMask
+INPAINT_ExpandMask
+INPAINT_InpaintWithModel
+INPAINT_LoadFooocusInpaint
+INPAINT_LoadInpaintModel
+INPAINT_MaskedBlur
+INPAINT_MaskedFill
+INPAINT_ShrinkMask
+INPAINT_StabilizeMask
+INPAINT_VAEEncodeInpaintConditioning
+INTConstant
+IO_save_image
+IO_save_image_format
+IP Adapter Settings (JPS)
+IP Adapter Settings Pipe (JPS)
+IP Adapter Tiled Settings (JPS)
+IP Adapter Tiled Settings Pipe (JPS)
+IPA Switch (JPS)
+IPAAdapterFaceIDBatch
+IPAdapter
+IPAdapterAdvanced
+IPAdapterAdvancedSizeAware
+IPAdapterBatch
+IPAdapterCombineEmbeds
+IPAdapterCombineParams
+IPAdapterCombineWeights
+IPAdapterEmbeds
+IPAdapterEmbedsBatch
+IPAdapterEncoder
+IPAdapterFaceID
+IPAdapterFluxLoader
+IPAdapterFluxLoaderAdvanced
+IPAdapterFromParams
+IPAdapterInsightFaceLoader
+IPAdapterLoadEmbeds
+IPAdapterMS
+IPAdapterModelLoader
+IPAdapterNoise
+IPAdapterPromptScheduleFromWeightsStrategy
+IPAdapterRegionalConditioning
+IPAdapterSaveEmbeds
+IPAdapterStyleComposition
+IPAdapterStyleCompositionBatch
+IPAdapterTiled
+IPAdapterTiledBatch
+IPAdapterUnifiedLoader
+IPAdapterUnifiedLoaderCommunity
+IPAdapterUnifiedLoaderFaceID
+IPAdapterWeights
+IPAdapterWeightsFromStrategy
+ISNetLoader
+ISNetSegment
+IdeogramV1
+IdeogramV2
+IdeogramV3
+Image Analyze
+Image Aspect Ratio
+Image Batch
+Image Batch To Sublist (mtb)
+Image Blank
+Image Blend
+Image Blend by Mask
+Image Blending Mode
+Image Bloom Filter
+Image Bounds
+Image Bounds to Console
+Image Canny Filter
+Image Chromatic Aberration
+Image Color Palette
+Image Compare (mtb)
+Image Comparer (rgthree)
+Image Crop Face
+Image Crop Location
+Image Crop Square Location
+Image Displacement Warp
+Image Dragan Photography Filter
+Image Edge Detection Filter
+Image Film Grain
+Image Filter Adjustments
+Image Flip
+Image Generate Gradient
+Image Gradient Map
+Image H264 Compression (mtb)
+Image High Pass Filter
+Image History Loader
+Image Input Switch
+Image Inset Crop (rgthree)
+Image Levels Adjustment
+Image Load
+Image Load with Metadata (WLSH)
+Image Lucy Sharpen
+Image Median Filter
+Image Mix RGB Channels
+Image Monitor Effects Filter
+Image Nova Filter
+Image Overlay
+Image Padding
+Image Paste Crop
+Image Paste Crop by Location
+Image Paste Face
+Image Perlin Noise
+Image Perlin Power Fractal
+Image Pixelate
+Image Power Noise
+Image Premultiply (mtb)
+Image Prepare Pipe (JPS)
+Image Prepare Settings (JPS)
+Image Rembg (Remove Background)
+Image Remove Background (Alpha)
+Image Remove Background Rembg (mtb)
+Image Remove Color
+Image Resize
+Image Resize (rgthree)
+Image Resize Factor (mtb)
+Image Rotate
+Image Rotate Hue
+Image SSAO (Ambient Occlusion)
+Image SSDO (Direct Occlusion)
+Image Save
+Image Save with Prompt (WLSH)
+Image Save with Prompt File (WLSH)
+Image Save with Prompt/Info (WLSH)
+Image Save with Prompt/Info File (WLSH)
+Image Scale By Factor (WLSH)
+Image Scale by Shortside (WLSH)
+Image Seamless Texture
+Image Select Channel
+Image Select Color
+Image Send HTTP
+Image Shadows and Highlights
+Image Size to Number
+Image Stitch
+Image Style Filter
+Image Switch (JPS)
+Image Threshold
+Image Tile Offset (mtb)
+Image Tiled
+Image To Mask
+Image Transpose
+Image Voronoi Noise Filter
+Image fDOF Filter
+Image or Latent Size (rgthree)
+Image to Latent Mask
+Image to Noise
+Image to Seed
+ImageAddMulti
+ImageAddNoise
+ImageAddText
+ImageAlphaComposite
+ImageAndMaskPreview
+ImageApplyChannel
+ImageApplyLUT+
+ImageBatch
+ImageBatchExtendWithOverlap
+ImageBatchFilter
+ImageBatchJoinWithTransition
+ImageBatchMulti
+ImageBatchMultiple+
+ImageBatchRepeatInterleaving
+ImageBatchTestPattern
+ImageBatchToList+
+ImageBatchToList_
+ImageBlend
+ImageBlendSwwan
+ImageBlur
+ImageCASharpening+
+ImageColorAdapter
+ImageColorMatch+
+ImageColorMatchAdobe+
+ImageColorToMask
+ImageColorTransfer
+ImageCompare
+ImageComposite+
+ImageCompositeFromMaskBatch+
+ImageCompositeMasked
+ImageConcanate
+ImageConcatFromBatch
+ImageConcatMulti
+ImageConstant
+ImageConstantHSV
+ImageCrop
+ImageCrop+
+ImageCropByAlpha
+ImageCropByMask
+ImageCropByMaskAndResize
+ImageCropByMaskBatch
+ImageDeduplication
+ImageDesaturate+
+ImageEmpty
+ImageEnhanceDifference+
+ImageExpandBatch+
+ImageExtractChannel
+ImageFlip
+ImageFlip+
+ImageFromBatch
+ImageFromBatch+
+ImageGaussianBlur
+ImageGenResolutionFromImage
+ImageGenResolutionFromLatent
+ImageGrabPIL
+ImageGrid
+ImageGridComposite2x2
+ImageGridComposite3x3
+ImageGridtoBatch
+ImageHistogramMatch+
+ImageIntensityDetector
+ImageInvert
+ImageListReplace_
+ImageListToBatch+
+ImageListToBatch_
+ImageListToImageBatch
+ImageLuminanceDetector
+ImageMaskSwitch
+ImageMatting
+ImageMuxer
+ImageNoiseAugmentation
+ImageNormalize_Neg1_To_1
+ImageOnlyCheckpointLoader
+ImageOnlyCheckpointSave
+ImagePadForOutpaint
+ImagePadForOutpaintMasked
+ImagePadForOutpaintTargetSize
+ImagePadKJ
+ImagePass
+ImagePosterize+
+ImagePrepForICLora
+ImagePreviewFromLatent+
+ImageQuantize
+ImageRGBA2RGB
+ImageRGBToYUV
+ImageRandomTransform+
+ImageReceiver
+ImageRemoveAlpha+
+ImageRemoveBackground+
+ImageRepeat
+ImageResize+
+ImageResizeByMegapixels
+ImageResizeKJ
+ImageResizeKJv2
+ImageRotate
+ImageScale
+ImageScaleBy
+ImageScaleDown
+ImageScaleDownBy
+ImageScaleDownToSize
+ImageScaleToMaxDimension
+ImageScaleToMegapixels
+ImageScaleToTotalPixels
+ImageSeamCarving+
+ImageSender
+ImageSharpen
+ImageSharpenKJ
+ImageSmartSharpen+
+ImageStitch
+ImageTensorList
+ImageTile+
+ImageToCPU
+ImageToDevice+
+ImageToImage Pipe (JPS)
+ImageToImage Settings (JPS)
+ImageToMask
+ImageTransformByNormalizedAmplitude
+ImageUncropByMask
+ImageUntile+
+ImageUpscaleWithModel
+ImageUpscaleWithModelBatched
+ImageYUVToRGB
+Image_Resize_sum
+Image_Resize_sum_data
+Image_Resize_sum_restore
+Images Masks MultiPipe (JPS)
+Images to Linear
+Images to RGB
+ImagesPrompt_
+ImitationHueNode
+ImpactAssembleSEGS
+ImpactBoolean
+ImpactCombineConditionings
+ImpactCompare
+ImpactConcatConditionings
+ImpactConditionalBranch
+ImpactConditionalBranchSelMode
+ImpactConditionalStopIteration
+ImpactControlBridge
+ImpactControlNetApplyAdvancedSEGS
+ImpactControlNetApplySEGS
+ImpactControlNetClearSEGS
+ImpactConvertDataType
+ImpactCount_Elts_in_SEGS
+ImpactDecomposeSEGS
+ImpactDilateMask
+ImpactDilateMaskInSEGS
+ImpactDilate_Mask_SEG_ELT
+ImpactDummyInput
+ImpactEdit_SEG_ELT
+ImpactExecutionOrderController
+ImpactFlattenMask
+ImpactFloat
+ImpactFrom_SEG_ELT
+ImpactFrom_SEG_ELT_bbox
+ImpactFrom_SEG_ELT_crop_region
+ImpactGaussianBlurMask
+ImpactGaussianBlurMaskInSEGS
+ImpactHFTransformersClassifierProvider
+ImpactIPAdapterApplySEGS
+ImpactIfNone
+ImpactImageBatchToImageList
+ImpactImageInfo
+ImpactInt
+ImpactInversedSwitch
+ImpactIsNotEmptySEGS
+ImpactKSamplerAdvancedBasicPipe
+ImpactKSamplerBasicPipe
+ImpactLatentInfo
+ImpactListBridge
+ImpactLogger
+ImpactLogicalOperators
+ImpactMakeAnyList
+ImpactMakeImageBatch
+ImpactMakeImageList
+ImpactMakeMaskBatch
+ImpactMakeMaskList
+ImpactMakeTileSEGS
+ImpactMinMax
+ImpactNeg
+ImpactNegativeConditioningPlaceholder
+ImpactNodeSetMuteState
+ImpactQueueTrigger
+ImpactQueueTriggerCountdown
+ImpactRemoteBoolean
+ImpactRemoteInt
+ImpactSAM2VideoDetectorSEGS
+ImpactSEGSClassify
+ImpactSEGSConcat
+ImpactSEGSIntersectionFilter
+ImpactSEGSLabelAssign
+ImpactSEGSLabelFilter
+ImpactSEGSMerge
+ImpactSEGSNMSFilter
+ImpactSEGSOrderedFilter
+ImpactSEGSPicker
+ImpactSEGSRangeFilter
+ImpactSEGSToMaskBatch
+ImpactSEGSToMaskList
+ImpactScaleBy_BBOX_SEG_ELT
+ImpactSchedulerAdapter
+ImpactSegsAndMask
+ImpactSegsAndMaskForEach
+ImpactSelectNthItemOfAnyList
+ImpactSetWidgetValue
+ImpactSimpleDetectorSEGS
+ImpactSimpleDetectorSEGSPipe
+ImpactSimpleDetectorSEGS_for_AD
+ImpactSleep
+ImpactStringSelector
+ImpactSwitch
+ImpactValueReceiver
+ImpactValueSender
+ImpactWildcardEncode
+ImpactWildcardProcessor
+IncrementingListNode_
+IndexString
+InjectLatentNoise+
+InjectNoiseToLatent
+InpaintConditionApply
+InpaintConditionEncode
+InpaintCropImproved
+InpaintModelConditioning
+InpaintPreprocessor
+InpaintStitchImproved
+InsertImageBatchByIndexes
+InsertImagesToBatchIndexed
+InsertLatentToIndex
+InsertLatentToIndexed
+Inset Image Bounds
+InstantID Mask Prepare Pipe (JPS)
+InstantID Mask Prepare Settings (JPS)
+InstantID Pipe (JPS)
+InstantID Pose Prepare Pipe (JPS)
+InstantID Pose Prepare Settings (JPS)
+InstantID Settings (JPS)
+InstantID Source Prepare Pipe (JPS)
+InstantID Source Prepare Settings (JPS)
+InstantIDAttentionPatch
+InstantIDFaceAnalysis
+InstantIDModelLoader
+InstructPixToPixConditioning
+InstructPixToPixConditioningAdvanced
+Int To Bool (mtb)
+Int To Number (mtb)
+IntMathOperation
+IntNumber
+Integer Switch (JPS)
+Integer place counter
+IntegerBypasser
+Interpolate Clip Sequential (mtb)
+Interpolate Condition (mtb)
+InterpolateCoords
+Intrinsic_lora_sampling
+InvertMask
+IterativeImageUpscale
+IterativeLatentUpscale
+JSON comparator [Crystools]
+JSON extractor [Crystools]
+JWAudioBlend
+JWAudioSaveToPath
+JWDatetimeString
+JWFloat
+JWFloatAbsolute
+JWFloatAdd
+JWFloatDiv
+JWFloatMax
+JWFloatMin
+JWFloatMul
+JWFloatSub
+JWFloatToInteger
+JWFloatToString
+JWImageBatchCount
+JWImageContrast
+JWImageCropToClosestSDXLResolution
+JWImageExtractFromBatch
+JWImageFlip
+JWImageLevels
+JWImageLoadRGB
+JWImageLoadRGBA
+JWImageLoadRGBA From Clipboard
+JWImageLoadRGBFromClipboard
+JWImageLoadRGBIfExists
+JWImageMix
+JWImageResize
+JWImageResizeByFactor
+JWImageResizeByLongerSide
+JWImageResizeByShorterSide
+JWImageResizeToClosestSDXLResolution
+JWImageResizeToSquare
+JWImageSaturation
+JWImageSaveToPath
+JWImageSequenceExtractFromBatch
+JWImageStackChannels
+JWInteger
+JWIntegerAbsolute
+JWIntegerAdd
+JWIntegerDiv
+JWIntegerMax
+JWIntegerMin
+JWIntegerMul
+JWIntegerSub
+JWIntegerToFloat
+JWIntegerToString
+JWLoadAudio
+JWLoadImageSequence
+JWLoadImageSequenceWithStopIndex
+JWLoadImagesFromString
+JWLoopImageSequence
+JWMaskLikeImageSize
+JWMaskResize
+JWMaskSequenceApplyToLatent
+JWMaskSequenceFromMask
+JWMaskSequenceJoin
+JWSaveImageSequence
+JWString
+JWStringConcat
+JWStringGetLine
+JWStringMultiline
+JWStringReplace
+JWStringSplit
+JWStringToFloat
+JWStringToInteger
+JWStringUnescape
+JanusProCaptionImageUnderDirectory|Mie
+JanusProDescribeImage|Mie
+JanusProModelLoader|Mie
+JitterImage
+Join XY Inputs of Same Type
+JoinAudioChannels
+JoinImageBatch
+JoinImageWithAlpha
+JoinStringMulti
+JoinStrings
+JoinWithDelimiter
+JsonRepair
+KSampler
+KSampler (Efficient)
+KSampler (WAS)
+KSampler Adv. (Efficient)
+KSampler Config (rgthree)
+KSampler Cycle
+KSampler SDXL (Eff.)
+KSamplerAdvanced
+KSamplerAdvanced (WLSH)
+KSamplerAdvancedProvider
+KSamplerProvider
+KSamplerSelect
+KSamplerVariationsStochastic+
+KSamplerVariationsWithNoise+
+KSampler_A1111
+Kandinsky5ImageToVideo
+KarrasScheduler
+KeyInput
+Keyer
+KlingCameraControlI2VNode
+KlingCameraControlT2VNode
+KlingCameraControls
+KlingDualCharacterVideoEffectNode
+KlingFirstLastFrameNode
+KlingImage2VideoNode
+KlingImageGenerationNode
+KlingImageToVideoWithAudio
+KlingLipSyncAudioToVideoNode
+KlingLipSyncTextToVideoNode
+KlingMotionControl
+KlingOmniProEditVideoNode
+KlingOmniProFirstLastFrameNode
+KlingOmniProImageNode
+KlingOmniProImageToVideoNode
+KlingOmniProTextToVideoNode
+KlingOmniProVideoToVideoNode
+KlingSingleImageVideoEffectNode
+KlingStartEndFrameNode
+KlingTextToVideoNode
+KlingTextToVideoWithAudio
+KlingVideoExtendNode
+KlingVideoNode
+KlingVirtualTryOnNode
+LTX2AttentionTunerPatch
+LTX2AudioLatentNormalizingSampling
+LTX2BlockLoraSelect
+LTX2LoraLoaderAdvanced
+LTX2MemoryEfficientSageAttentionPatch
+LTX2SamplingPreviewOverride
+LTX2_NAG
+LTXAVTextEncoderLoader
+LTXAddVideoICLoRAGuide
+LTXAddVideoICLoRAGuideAdvanced
+LTXAttentioOverride
+LTXAttentionBank
+LTXAttnOverride
+LTXFetaEnhance
+LTXFloatToInt
+LTXFlowEditCFGGuider
+LTXFlowEditSampler
+LTXForwardModelSamplingPred
+LTXICLoRALoaderModelOnly
+LTXPerturbedAttention
+LTXPrepareAttnInjections
+LTXQ8Patch
+LTXRFForwardODESampler
+LTXRFReverseODESampler
+LTXReverseModelSamplingPred
+LTXVAdainLatent
+LTXVAddGuide
+LTXVAddGuideAdvanced
+LTXVAddGuideAdvancedAttention
+LTXVAddGuideMulti
+LTXVAddGuidesFromBatch
+LTXVAddLatentGuide
+LTXVAddLatents
+LTXVApplySTG
+LTXVAudioVAEDecode
+LTXVAudioVAEEncode
+LTXVAudioVAELoader
+LTXVAudioVideoMask
+LTXVBaseSampler
+LTXVChunkFeedForward
+LTXVConcatAVLatent
+LTXVConditioning
+LTXVCropGuides
+LTXVDilateLatent
+LTXVDilateVideoMask
+LTXVDrawTracks
+LTXVEmptyLatentAudio
+LTXVEnhanceAVideoKJ
+LTXVExtendSampler
+LTXVGemmaCLIPModelLoader
+LTXVGemmaEnhancePrompt
+LTXVImgToVideo
+LTXVImgToVideoAdvanced
+LTXVImgToVideoConditionOnly
+LTXVImgToVideoInplace
+LTXVImgToVideoInplaceKJ
+LTXVInContextSampler
+LTXVInpaintPreprocess
+LTXVLaplacianPyramidBlend
+LTXVLatentUpsampler
+LTXVLinearOverlapLatentTransition
+LTXVLoadConditioning
+LTXVLoopingSampler
+LTXVMultiPromptProvider
+LTXVNormalizingSampler
+LTXVPatcherVAE
+LTXVPerStepAdainPatcher
+LTXVPerStepStatNormPatcher
+LTXVPreprocess
+LTXVPreprocessMasks
+LTXVPromptEnhancer
+LTXVPromptEnhancerLoader
+LTXVQ8LoraModelLoader
+LTXVSaveConditioning
+LTXVScheduler
+LTXVSelectLatents
+LTXVSeparateAVLatent
+LTXVSetAudioVideoMaskByTime
+LTXVSetVideoLatentNoiseMasks
+LTXVSparseTrackEditor
+LTXVSpatioTemporalTiledVAEDecode
+LTXVStatNormLatent
+LTXVTiledSampler
+LTXVTiledVAEDecode
+LaMaInpaint
+LamaRemover
+LamaRemoverDetailerHookProvider
+LamaRemoverIMG
+LaplaceScheduler
+Largest Int (JPS)
+Latent Batch
+Latent Input Switch
+Latent Lerp (mtb)
+Latent Noise Injection
+Latent Size to Number
+Latent Switch (JPS)
+Latent Upscale by Factor (WAS)
+LatentAdd
+LatentApplyOperation
+LatentApplyOperationCFG
+LatentBatch
+LatentBatchSeedBehavior
+LatentBlend
+LatentComposite
+LatentCompositeMasked
+LatentConcat
+LatentCrop
+LatentCut
+LatentCutToBatch
+LatentFlip
+LatentFromBatch
+LatentInpaintTTM
+LatentInterpolate
+LatentKeyframe
+LatentKeyframeBatchedGroup
+LatentKeyframeGroup
+LatentKeyframeTiming
+LatentMultiply
+LatentNormalizeShuffle
+LatentOperationSharpen
+LatentOperationTonemapReinhard
+LatentPixelScale
+LatentReceiver
+LatentRotate
+LatentSender
+LatentStats
+LatentSubtract
+LatentSwitch
+LatentUpscale
+LatentUpscaleBy
+LatentUpscaleModelLoader
+LayerColor: AutoAdjust
+LayerColor: AutoAdjustV2
+LayerColor: AutoBrightness
+LayerColor: Brightness & Contrast
+LayerColor: BrightnessContrastV2
+LayerColor: Color of Shadow & Highlight
+LayerColor: ColorAdapter
+LayerColor: ColorBalance
+LayerColor: ColorTemperature
+LayerColor: ColorofShadowHighlightV2
+LayerColor: Exposure
+LayerColor: Gamma
+LayerColor: HSV
+LayerColor: LAB
+LayerColor: LUT Apply
+LayerColor: Levels
+LayerColor: Negative
+LayerColor: RGB
+LayerColor: YUV
+LayerFilter: AddGrain
+LayerFilter: ChannelShake
+LayerFilter: ColorMap
+LayerFilter: DistortDisplace
+LayerFilter: Film
+LayerFilter: FilmV2
+LayerFilter: GaussianBlur
+LayerFilter: GaussianBlurV2
+LayerFilter: HDREffects
+LayerFilter: HalfTone
+LayerFilter: LightLeak
+LayerFilter: MotionBlur
+LayerFilter: Sharp & Soft
+LayerFilter: SkinBeauty
+LayerFilter: SoftLight
+LayerFilter: WaterColor
+LayerMask: BBoxJoin
+LayerMask: BenUltra
+LayerMask: BiRefNetUltra
+LayerMask: BiRefNetUltraV2
+LayerMask: BlendIf Mask
+LayerMask: CreateGradientMask
+LayerMask: DrawBBoxMask
+LayerMask: DrawRoundedRectangle
+LayerMask: EVFSAMUltra
+LayerMask: Florence2Ultra
+LayerMask: HumanPartsUltra
+LayerMask: ImageToMask
+LayerMask: LoadBenModel
+LayerMask: LoadBiRefNetModel
+LayerMask: LoadBiRefNetModelV2
+LayerMask: LoadFlorence2Model
+LayerMask: LoadSegformerModel
+LayerMask: MaskBoxDetect
+LayerMask: MaskBoxExtend
+LayerMask: MaskByColor
+LayerMask: MaskByDifferent
+LayerMask: MaskEdgeShrink
+LayerMask: MaskEdgeUltraDetail
+LayerMask: MaskEdgeUltraDetail V2
+LayerMask: MaskEdgeUltraDetail V3
+LayerMask: MaskGradient
+LayerMask: MaskGrain
+LayerMask: MaskGrow
+LayerMask: MaskInvert
+LayerMask: MaskMotionBlur
+LayerMask: MaskPreview
+LayerMask: MaskStroke
+LayerMask: MediapipeFacialSegment
+LayerMask: ObjectDetectorFL2
+LayerMask: ObjectDetectorMask
+LayerMask: ObjectDetectorYOLO8
+LayerMask: ObjectDetectorYOLOWorld
+LayerMask: PersonMaskUltra
+LayerMask: PersonMaskUltra V2
+LayerMask: PixelSpread
+LayerMask: RemBgUltra
+LayerMask: RmBgUltra V2
+LayerMask: SAM2Ultra
+LayerMask: SAM2VideoUltra
+LayerMask: SegformerB2ClothesUltra
+LayerMask: SegformerClothesPipelineLoader
+LayerMask: SegformerClothesSetting
+LayerMask: SegformerFashionPipelineLoader
+LayerMask: SegformerFashionSetting
+LayerMask: SegformerUltraV2
+LayerMask: SegformerUltraV3
+LayerMask: SegmentAnythingUltra
+LayerMask: SegmentAnythingUltra V2
+LayerMask: Shadow & Highlight Mask
+LayerMask: ShadowHighlightMaskV2
+LayerMask: TransparentBackgroundUltra
+LayerMask: YoloV8Detect
+LayerStyle: ColorOverlay
+LayerStyle: ColorOverlay V2
+LayerStyle: DropShadow
+LayerStyle: DropShadow V2
+LayerStyle: DropShadow V3
+LayerStyle: Gradient Map
+LayerStyle: GradientOverlay
+LayerStyle: GradientOverlay V2
+LayerStyle: InnerGlow
+LayerStyle: InnerGlow V2
+LayerStyle: InnerShadow
+LayerStyle: InnerShadow V2
+LayerStyle: OuterGlow
+LayerStyle: OuterGlow V2
+LayerStyle: Stroke
+LayerStyle: Stroke V2
+LayerUtility: AddBlindWaterMark
+LayerUtility: AnyRerouter
+LayerUtility: BatchSelector
+LayerUtility: Boolean
+LayerUtility: BooleanOperator
+LayerUtility: BooleanOperatorV2
+LayerUtility: CheckMask
+LayerUtility: CheckMaskV2
+LayerUtility: ChoiceTextPreset
+LayerUtility: ColorImage
+LayerUtility: ColorImage V2
+LayerUtility: ColorName
+LayerUtility: ColorPicker
+LayerUtility: CreateQRCode
+LayerUtility: CropBoxResolve
+LayerUtility: CropByMask
+LayerUtility: CropByMask V2
+LayerUtility: CropByMask V3
+LayerUtility: CropByMask V4
+LayerUtility: DecodeQRCode
+LayerUtility: ExtendCanvas
+LayerUtility: ExtendCanvasV2
+LayerUtility: Float
+LayerUtility: Florence2Image2Prompt
+LayerUtility: FluxKontextImageScale
+LayerUtility: GetColorTone
+LayerUtility: GetColorToneV2
+LayerUtility: GetImageSize
+LayerUtility: GetMainColors
+LayerUtility: GetMainColorsV2
+LayerUtility: GradientImage
+LayerUtility: GradientImage V2
+LayerUtility: GrayValue
+LayerUtility: HLFrequencyDetailRestore
+LayerUtility: HSV Value
+LayerUtility: ICMask
+LayerUtility: ICMaskCropBack
+LayerUtility: If 
+LayerUtility: ImageAutoCrop
+LayerUtility: ImageAutoCrop V2
+LayerUtility: ImageAutoCrop V3
+LayerUtility: ImageBatchToList
+LayerUtility: ImageBlend
+LayerUtility: ImageBlend V2
+LayerUtility: ImageBlendAdvance
+LayerUtility: ImageBlendAdvance V2
+LayerUtility: ImageBlendAdvance V3
+LayerUtility: ImageChannelMerge
+LayerUtility: ImageChannelSplit
+LayerUtility: ImageCombineAlpha
+LayerUtility: ImageCompositeHandleMask
+LayerUtility: ImageHub
+LayerUtility: ImageListToBatch
+LayerUtility: ImageMaskScaleAs
+LayerUtility: ImageMaskScaleAsV2
+LayerUtility: ImageOpacity
+LayerUtility: ImageReel
+LayerUtility: ImageReelComposit
+LayerUtility: ImageRemoveAlpha
+LayerUtility: ImageRewardFilter
+LayerUtility: ImageScaleByAspectRatio
+LayerUtility: ImageScaleByAspectRatio V2
+LayerUtility: ImageScaleRestore
+LayerUtility: ImageScaleRestore V2
+LayerUtility: ImageShift
+LayerUtility: ImageTaggerSave
+LayerUtility: ImageTaggerSaveV2
+LayerUtility: Integer
+LayerUtility: JoyCaption2
+LayerUtility: JoyCaption2ExtraOptions
+LayerUtility: JoyCaption2Split
+LayerUtility: LaMa
+LayerUtility: LayerImageTransform
+LayerUtility: LayerMaskTransform
+LayerUtility: LlamaVision
+LayerUtility: LoadImagesFromPath
+LayerUtility: LoadJoyCaption2Model
+LayerUtility: LoadPSD
+LayerUtility: LoadVQAModel
+LayerUtility: NameToColor
+LayerUtility: NanoBananaImageScale
+LayerUtility: NumberCalculator
+LayerUtility: NumberCalculatorV2
+LayerUtility: PhiPrompt
+LayerUtility: PrintInfo
+LayerUtility: PromptEmbellish
+LayerUtility: PromptTagger
+LayerUtility: PurgeVRAM
+LayerUtility: PurgeVRAM V2
+LayerUtility: QWenImage2Prompt
+LayerUtility: QueueStop
+LayerUtility: RGB Value
+LayerUtility: RandomGenerator
+LayerUtility: RandomGeneratorV2
+LayerUtility: RestoreCropBox
+LayerUtility: RestoreCropBox V2
+LayerUtility: RoundedRectangle
+LayerUtility: SD3NegativeConditioning
+LayerUtility: SaveImagePlus
+LayerUtility: Seed
+LayerUtility: ShowBlindWaterMark
+LayerUtility: SimpleTextImage
+LayerUtility: String
+LayerUtility: StringCondition
+LayerUtility: SwitchCase
+LayerUtility: TextBox
+LayerUtility: TextImage
+LayerUtility: TextImage V2
+LayerUtility: TextJoin
+LayerUtility: TextJoinV2
+LayerUtility: TextPreseter
+LayerUtility: UserPromptGeneratorReplaceWord
+LayerUtility: UserPromptGeneratorTxt2ImgPrompt
+LayerUtility: UserPromptGeneratorTxt2ImgPromptWithReference
+LayerUtility: VQAPrompt
+LayerUtility: XY to Percent
+LazyCache
+LazySwitchKJ
+LeReS-DepthMapPreprocessor
+LeapfusionHunyuanI2VPatcher
+LightShapeNode
+LimitNumber
+LineArtPreprocessor
+LinearOverlapLatentTransition
+LineartStandardPreprocessor
+List of any [Crystools]
+List of strings [Crystools]
+ListSplit_
+LoRA Stack to String converter
+LoRA Stacker
+LoRA Text Loader (LoraManager)
+LoRAAutoTuner
+LoRAAutoTunerSettings
+LoRACompatibilityAnalyzer
+LoRAConflictEditor
+LoRAExtractFromModel
+LoRAMergeFormula
+LoRAMergeSelector
+LoRAMergeSettings
+LoRAMetadataReader
+LoRAOptimizer
+LoRAOptimizerSettings
+LoRAOptimizerSimple
+LoRAStack
+LoRAStackDynamic
+Load Cache
+Load Face Analysis Model (mtb)
+Load Face Enhance Model (mtb)
+Load Face Swap Model (mtb)
+Load Image Batch
+Load Image From Url (mtb)
+Load Image Sequence (mtb)
+Load Lora
+Load Text File
+Load Vit Matte Model (mtb)
+Load Whisper (mtb)
+Load image with metadata [Crystools]
+Load3D
+LoadAndCombinedAudio_
+LoadAndResizeImage
+LoadAudio
+LoadAutoMasker
+LoadCLIPSegModels+
+LoadCatVTONPipeline
+LoadCatvtonFlux
+LoadCatvtonFluxLoRA
+LoadEXR
+LoadEXRFrames
+LoadFaceEmbeds
+LoadImage
+LoadImageAndPrompt
+LoadImageAsMaskFromUrl
+LoadImageDataSetFromFolder
+LoadImageFromUrl
+LoadImageMask
+LoadImageOutput
+LoadImageS3
+LoadImageTextDataSetFromFolder
+LoadImagesFromDirectory
+LoadImagesFromFolder
+LoadImagesFromFolderKJ
+LoadImagesFromPath
+LoadImagesFromURL
+LoadImagesToBatch
+LoadJsonFromText
+LoadJsonFromUrl
+LoadLaMaModel
+LoadLatent
+LoadLatentEXR
+LoadResAdapterNormalization
+LoadSALADModel
+LoadText|pysssss
+LoadTrainingDataset
+LoadTripoSRModel_
+LoadTunerData
+LoadVideo
+LoadVideoAndSegment_
+LoadVideoFromURL
+LoadVideoUploadS3
+LoadVideosFromFolder
+LoaderGGUF
+LoaderGGUFAdvanced
+Logic Boolean
+Logic Boolean Primitive
+Logic Comparison AND
+Logic Comparison OR
+Logic Comparison XOR
+Logic NOT
+LoopCounterToFile
+Lora Cycler (LoraManager)
+Lora Input Switch
+Lora Loader
+Lora Loader (JPS)
+Lora Loader (LoraManager)
+Lora Loader Stack (rgthree)
+Lora Pool (LoraManager)
+Lora Randomizer (LoraManager)
+Lora Stack Combiner (LoraManager)
+Lora Stacker (LoraManager)
+LoraExtractKJ
+LoraListNames
+LoraLoader
+LoraLoaderAdvanced
+LoraLoaderBypass
+LoraLoaderBypassModelOnly
+LoraLoaderModelOnly
+LoraLoaderStackedAdvanced
+LoraLoaderStackedVanilla
+LoraLoaderVanilla
+LoraLoader|pysssss
+LoraModelLoader
+LoraNames_
+LoraReduceRankKJ
+LoraSave
+LoraTagsOnly
+LorasForFluxParams+
+LossGraphNode
+LotusConditioning
+LowVRAMAudioVAELoader
+LowVRAMCheckpointLoader
+LowVRAMLatentUpscaleModelLoader
+LtxvApiImageToVideo
+LtxvApiTextToVideo
+LumaConceptsNode
+LumaImageModifyNode
+LumaImageNode
+LumaImageToVideoNode
+LumaReferenceNode
+LumaVideoNode
+LyingSigmaSampler
+M-LSDPreprocessor
+MagnificImageRelightNode
+MagnificImageSkinEnhancerNode
+MagnificImageStyleTransferNode
+MagnificImageUpscalerCreativeNode
+MagnificImageUpscalerPreciseV2Node
+Mahiro
+Make Image Batch
+MakeTrainingDataset
+Manga2Anime_LineArt_Preprocessor
+Manual XY Entry Info
+ManualSigmas
+Mask Arbitrary Region
+Mask Batch
+Mask Batch to Mask
+Mask By Text
+Mask Ceiling Region
+Mask Crop Dominant Region
+Mask Crop Minority Region
+Mask Crop Region
+Mask Dilate Region
+Mask Dominant Region
+Mask Erode Region
+Mask Fill Holes
+Mask Floor Region
+Mask Gaussian Region
+Mask Invert
+Mask Minority Region
+Mask Morphology
+Mask Paste Region
+Mask Rect Area
+Mask Rect Area (Advanced)
+Mask Smooth Region
+Mask Switch (JPS)
+Mask Threshold Region
+Mask To Image (mtb)
+Mask To Region
+MaskBatch+
+MaskBatchMulti
+MaskBlur+
+MaskBoundingBox+
+MaskClean
+MaskComposite
+MaskDetailerPipe
+MaskExpandBatch+
+MaskFix+
+MaskFlip+
+MaskFromBatch+
+MaskFromColor+
+MaskFromList+
+MaskFromRGBCMYBW+
+MaskFromSegmentation+
+MaskImage
+MaskListMerge_
+MaskListReplace_
+MaskListToMaskBatch
+MaskOptFlow
+MaskOrImageToWeight
+MaskPreview
+MaskPreview+
+MaskRectArea
+MaskRectAreaAdvanced
+MaskSmooth+
+MaskToImage
+MaskToSEGS
+MaskToSEGS_for_AnimateDiff
+Mask_transform_sum
+Masks Add
+Masks Combine Batch
+Masks Combine Regions
+Masks Subtract
+MasksToMaskList
+MasqueradeIncrementer
+Match Dimensions (mtb)
+Math Expression (mtb)
+MathExpression_UTK
+MathExpression|pysssss
+MediaPipe-FaceMeshPreprocessor
+MediaPipeFaceMeshToSEGS
+MedianFilterImage
+MergeBatch
+MergeFramesByIndex
+MergeImageChannels
+MergeImageLists
+MergeLayers
+MergeModels
+MergeTextLists
+MergedLoRAToHook
+MergedLoRAToWanVideo
+MeshGraphormer+ImpactDetector-DepthMapPreprocessor
+MeshGraphormer-DepthMapPreprocessor
+MeshyAnimateModelNode
+MeshyImageToModelNode
+MeshyMultiImageToModelNode
+MeshyRefineNode
+MeshyRigModelNode
+MeshyTextToModelNode
+MeshyTextureNode
+Metadata comparator [Crystools]
+Metadata extractor [Crystools]
+Metric3D-DepthMapPreprocessor
+Metric3D-NormalMapPreprocessor
+MiDaS Depth Approximation
+MiDaS Mask Image
+MiDaS Model Loader
+MiDaS-DepthMapPreprocessor
+MiDaS-NormalMapPreprocessor
+MiniCPM_VQA_Simple
+MinimaxHailuoVideoNode
+MinimaxImageToVideoNode
+MinimaxTextToVideoNode
+MirroredImage
+Mix Color By Mask
+Mix Images By Mask
+Model Input Switch
+Model Patch Seamless (mtb)
+Model Pruner (mtb)
+Model Switch (JPS)
+ModelCompile+
+ModelComputeDtype
+ModelMemoryUsageFactorOverride
+ModelMemoryUseReportPatch
+ModelMergeAdd
+ModelMergeAuraflow
+ModelMergeBlocks
+ModelMergeCosmos14B
+ModelMergeCosmos7B
+ModelMergeCosmosPredict2_14B
+ModelMergeCosmosPredict2_2B
+ModelMergeFlux1
+ModelMergeLTXV
+ModelMergeMochiPreview
+ModelMergeQwenImage
+ModelMergeSD1
+ModelMergeSD2
+ModelMergeSD35_Large
+ModelMergeSD3_2B
+ModelMergeSDXL
+ModelMergeSimple
+ModelMergeSubtract
+ModelMergeWAN2_1
+ModelPassThrough
+ModelPatchLoader
+ModelPatchTorchSettings
+ModelPrinter
+ModelSamplingAuraFlow
+ModelSamplingContinuousEDM
+ModelSamplingContinuousV
+ModelSamplingDiscrete
+ModelSamplingFlux
+ModelSamplingLTXV
+ModelSamplingSD3
+ModelSamplingSD3Advanced+
+ModelSamplingStableCascade
+ModelSave
+ModelSaveKJ
+ModelTest
+ModifyLTXModel
+MoonvalleyImg2VideoNode
+MoonvalleyTxt2VideoNode
+MoonvalleyVideo2VideoNode
+Morphology
+MultiLoraCombine
+MultiLoraStackerLM
+MultiPromptProvider
+MultimodalGuider
+MultiplicationNode
+Multiply Float Float (JPS)
+Multiply Int Float (JPS)
+Multiply Int Int (JPS)
+Multiply Integer (WLSH)
+MultiplySigmas
+NABLA_AttentionKJ
+NegativePromptHelper
+NewLayer
+Noise Control Script
+NoiseFromImage+
+NoiseImage
+NoiseInjectionDetailerHookProvider
+NoiseInjectionHookProvider
+NormalMapSimple
+NormalizeImages
+NormalizeVideoLatentStart
+NormalizedAmplitudeToFloatList
+NormalizedAmplitudeToMask
+Number Counter
+Number Input Condition
+Number Input Switch
+Number Multiple Of
+Number Operation
+Number PI
+Number to Float
+Number to Int
+Number to Seed
+Number to String
+Number to Text
+NumberScaler
+NunchakuFluxDiTLoader
+NunchakuFluxIPAdapterApply
+NunchakuFluxLoraLoader
+NunchakuFluxLoraStack
+NunchakuFluxPuLIDApplyV2
+NunchakuIPAdapterLoader
+NunchakuModelMerger
+NunchakuPuLIDLoaderV2
+NunchakuPulidApply
+NunchakuPulidLoader
+NunchakuQwenImageDiTLoader
+NunchakuQwenImageLoraLoader
+NunchakuQwenImageLoraStack
+NunchakuQwenImageLoraStackV1
+NunchakuQwenImageLoraStackV2
+NunchakuQwenImageLoraStackV3
+NunchakuTextEncoderLoader
+NunchakuTextEncoderLoaderV2
+NunchakuWheelInstaller
+NunchakuZImageDiTLoader
+NunchakuZImageTurboLoraStackV1
+NunchakuZImageTurboLoraStackV2
+NunchakuZImageTurboLoraStackV4
+ONNXDetectorProvider
+ONNXDetectorSEGS
+OffsetLatentImage
+OffsetMask
+OffsetMaskByNormalizedAmplitude
+OneFormer-ADE20K-SemSegPreprocessor
+OneFormer-COCO-SemSegPreprocessor
+OpenAIChatConfig
+OpenAIChatNode
+OpenAIDalle2
+OpenAIDalle3
+OpenAIGPTImage1
+OpenAIInputFiles
+OpenAIVideoSora2
+OpenposePreprocessor
+OptimalStepsScheduler
+OptionString
+OutlineMask
+Outpaint to Image (WLSH)
+OverlayInpaintedImage
+OverlayInpaintedLatent
+P5Input
+PCAddMaskToCLIP
+PCAddMaskToCLIPMany
+PCAttentionCoupleBatchNegative
+PCExtractScheduledPrompt
+PCLazyLoraLoader
+PCLazyLoraLoaderAdvanced
+PCLazyTextEncode
+PCLazyTextEncodeAdvanced
+PCLoraHooksFromText
+PCMacroExpand
+PCSetLogLevel
+PCSetPCTextEncodeSettings
+PCTextEncode
+PCTextEncodeWithRange
+Pack SDXL Tuple
+PackVideoMask
+PadImageBatchInterleaved
+PaddedFileName
+PairConditioningCombine
+PairConditioningSetDefaultCombine
+PairConditioningSetProperties
+PairConditioningSetPropertiesAndCombine
+Paste By Mask
+PatchModelAddDownscale
+PatchModelPatcherOrder
+PatchSageAttentionKJ
+PathchSageAttentionKJ
+PerpNeg
+PerpNegGuider
+PerturbedAttentionGuidance
+PhotoMakerEncode
+PhotoMakerLoader
+PiDiNetPreprocessor
+Pick From Batch (mtb)
+Pipe from any [Crystools]
+Pipe to/edit any [Crystools]
+PixelKSampleHookCombine
+PixelKSampleUpscalerProvider
+PixelKSampleUpscalerProviderPipe
+PixelOEPixelize+
+PixelPerfectResolution
+PixelTiledKSampleUpscalerProvider
+PixelTiledKSampleUpscalerProviderPipe
+PixverseImageToVideoNode
+PixverseTemplateNode
+PixverseTextToVideoNode
+PixverseTransitionVideoNode
+PlaySoundKJ
+PlaySound|pysssss
+Plot Batch Float (mtb)
+PlotCoordinates
+PlotParameters+
+PointsEditor
+PoissonNoise
+PolyexponentialScheduler
+PorterDuffImageComposite
+PortraitStyler
+PostPolish
+Postshot Export (mtb)
+Postshot Train (mtb)
+Power Lora Loader (rgthree)
+Power Primitive (rgthree)
+Power Prompt (rgthree)
+Power Prompt - Simple (rgthree)
+Power Puter (rgthree)
+PrepImageForClipVision
+Prepare Image (JPS)
+Prepare Image Plus (JPS)
+Prepare Image Tiled IPA (JPS)
+PrepareImageAndMaskForInpaint
+Preview from image [Crystools]
+Preview from metadata [Crystools]
+Preview3D
+PreviewAnimation
+PreviewAny
+PreviewAudio
+PreviewBridge
+PreviewBridgeLatent
+PreviewDetailerHookProvider
+PreviewImage
+PreviewImageOrMask
+PreviewLatentNoiseMask
+PreviewMask_
+Primitive boolean [Crystools]
+Primitive float [Crystools]
+Primitive integer [Crystools]
+Primitive string [Crystools]
+Primitive string multiline [Crystools]
+PrimitiveBoolean
+PrimitiveFloat
+PrimitiveInt
+PrimitiveString
+PrimitiveStringMultiline
+PrintSigmas
+Process Whisper Diarization (mtb)
+Process Whisper Output (mtb)
+Prompt (LoraManager)
+Prompt Multiple Styles Selector
+Prompt Styles Selector
+Prompt Weight (WLSH)
+PromptApplyLora
+PromptBatchSelector
+PromptComposerCustomLists
+PromptComposerEffect
+PromptComposerGrouping
+PromptComposerListFoldersClothing
+PromptComposerMerge
+PromptComposerStyler
+PromptComposerTextSingle
+PromptExtractor
+PromptGenOptions
+PromptGenerate_Mix
+PromptGenerator
+PromptImage
+PromptInjection
+PromptManager
+PromptManagerAdvanced
+PromptSimplification
+PromptSlide
+Prompts Everywhere
+Prune By Mask
+PyraCannyPreprocessor
+QRCodeGenerator
+Qr Code (mtb)
+QuadrupleCLIPLoader
+QuadrupleCLIPLoaderGGUF
+QuadrupleClipLoaderGGUF
+Quick Resolution Multiply (WLSH)
+QwenImageDiffsynthControlnet
+RAFTEstimate
+RAFTFlowToImage
+RAFTLoadFlowFromEXRChannels
+RGBA_Multi_Save
+RGBA_Safe_Post
+RGBA_Safe_Pre
+RGBA_Save
+RMBG
+RandnLikeLatent
+Random Number
+RandomCropImages
+RandomFloat
+RandomInt
+RandomNoise
+RandomPrompt
+Randomizer
+RdancerFlorence2SAM2GenerateMask
+ReActorBuildFaceModel
+ReActorFaceBoost
+ReActorFaceSwap
+ReActorFaceSwapOpt
+ReActorImageDublicator
+ReActorLoadFaceModel
+ReActorMakeFaceModelBatch
+ReActorMaskHelper
+ReActorOptions
+ReActorRestoreFace
+ReActorRestoreFaceAdvanced
+ReActorSaveFaceModel
+ReActorSetWeight
+ReActorUnload
+Read JSON file [Crystools]
+Read Playlist (mtb)
+RealCUGAN NCNN Vulkan Upscale
+RealCUGANUpscaler
+RealESRGAN NCNN Vulkan Upscale
+RebatchImages
+RebatchLatents
+RecipeBuilder
+RecipeBuilderMultiPrompts
+RecipeExtractor
+RecipeManager
+RecipeModelLoader
+RecipeModelPicker
+RecipeRelay
+RecipeRenderer
+RecordAudio
+RecraftColorRGB
+RecraftControls
+RecraftCreateStyleNode
+RecraftCreativeUpscaleNode
+RecraftCrispUpscaleNode
+RecraftImageInpaintingNode
+RecraftImageToImageNode
+RecraftRemoveBackgroundNode
+RecraftReplaceBackgroundNode
+RecraftStyleV3DigitalIllustration
+RecraftStyleV3InfiniteStyleLibrary
+RecraftStyleV3LogoRaster
+RecraftStyleV3RealisticImage
+RecraftTextToImageNode
+RecraftTextToVectorNode
+RecraftVectorizeImageNode
+ReduxAdvanced
+ReduxFineTune
+ReduxFineTuneAdvanced
+ReduxPromptStyler
+ReencodeLatent
+ReencodeLatentPipe
+ReferenceLatent
+ReferenceTimbreAudio
+RegexExtract
+RegexMatch
+RegexReplace
+RegionalPrompt
+RegionalSampler
+RegionalSamplerAdvanced
+RelightSimple
+RemBGSession+
+RemapImageRange
+RemapMaskRange
+RemapRange
+RembgNode_Mix
+RemoveImageFromSEGS
+RemoveLatentMask+
+RemoveNoiseMask
+RemoveWatermarkNode
+RenderAnimalKps
+RenderPeopleKps
+RenormCFG
+RepeatImageBatch
+RepeatLatentBatch
+Repeater|pysssss
+ReplaceImagesInBatch
+ReplaceText
+ReplaceVideoLatentFrames
+ReroutePrimitive|pysssss
+RescaleCFG
+ResetCounterFile
+ResizeAndPadImage
+ResizeImageMaskNode
+ResizeImageMixlab
+ResizeImagesByLongerEdge
+ResizeImagesByShorterEdge
+ResizeMask
+Resolution Multiply (JPS)
+ResolutionBucket
+Resolutions by Ratio (WLSH)
+Restore Face (mtb)
+RestoreDetail
+ReverseImageBatch
+Revision Settings (JPS)
+Revision Settings Pipe (JPS)
+Rodin3D_Detail
+Rodin3D_Gen2
+Rodin3D_Regular
+Rodin3D_Sketch
+Rodin3D_Smooth
+RoundMask
+RunwayFirstLastFrameNode
+RunwayImageToVideoNodeGen3a
+RunwayImageToVideoNodeGen4
+RunwayTextToImageNode
+SAM Image Mask
+SAM Model Loader
+SAM Parameters
+SAM Parameters Combine
+SAM2Segment
+SAM3Segment
+SAMDetectorCombined
+SAMDetectorSegmented
+SAMEmbeddingToImage
+SAMLoader
+SAMPreprocessor
+SD15PromptInjection
+SD3AttentionSeekerLG+
+SD3AttentionSeekerT5+
+SD3NegativeConditioning+
+SDTurboScheduler
+SDXL Basic Settings (JPS)
+SDXL Basic Settings Pipe (JPS)
+SDXL Empty Latent Image (rgthree)
+SDXL Fundamentals MultiPipe (JPS)
+SDXL Power Prompt - Positive (rgthree)
+SDXL Power Prompt - Simple / Negative (rgthree)
+SDXL Prompt Handling (JPS)
+SDXL Prompt Handling Plus (JPS)
+SDXL Prompt Styler (JPS)
+SDXL Quick Empty Latent (WLSH)
+SDXL Quick Image Scale (WLSH)
+SDXL Recommended Resolution Calc (JPS)
+SDXL Resolutions (JPS)
+SDXL Resolutions (WLSH)
+SDXL Settings (JPS)
+SDXL Settings Pipe (JPS)
+SDXL Steps (WLSH)
+SDXLAspectRatioSelector
+SDXLDualClipEncode
+SDXLEmptyLatentSizePicker+
+SDXLPromptStyler
+SDXLPromptStylerAdvanced
+SD_4XUpscale_Conditioning
+SEGSDetailer
+SEGSDetailerForAnimateDiff
+SEGSLabelFilterDetailerHookProvider
+SEGSOrderedFilterDetailerHookProvider
+SEGSPaste
+SEGSPreview
+SEGSPreviewCNet
+SEGSRangeFilterDetailerHookProvider
+SEGSSwitch
+SEGSToImageList
+SEGSUpscaler
+SEGSUpscalerPipe
+STGAdvancedPresets
+STGGuider
+STGGuiderAdvanced
+STGGuiderNode
+SUPIR_Upscale
+SUPIR_conditioner
+SUPIR_decode
+SUPIR_encode
+SUPIR_first_stage
+SUPIR_model_loader
+SUPIR_model_loader_v2
+SUPIR_model_loader_v2_clip
+SUPIR_sample
+SUPIR_tiles
+SV3D_BatchSchedule
+SV3D_Conditioning
+SVD_img2vid_Conditioning
+Sam2AutoSegmentation
+Sam2Segmentation
+Sam2VideoSegmentation
+Sam2VideoSegmentationAddPoints
+Sampler Scheduler Settings (JPS)
+SamplerCustom
+SamplerCustomAdvanced
+SamplerDPMAdaptative
+SamplerDPMPP_2M_SDE
+SamplerDPMPP_2S_Ancestral
+SamplerDPMPP_3M_SDE
+SamplerDPMPP_SDE
+SamplerER_SDE
+SamplerEulerAncestral
+SamplerEulerAncestralCFGPP
+SamplerEulerCFGpp
+SamplerLCMUpscale
+SamplerLMS
+SamplerNames_
+SamplerSASolver
+SamplerSEEDS2
+SamplerSelectHelper+
+SamplerSelfRefineVideo
+Samples Passthrough (Stat System)
+SamplingPercentToSigma
+Save Gif (mtb)
+Save Image (LoraManager)
+Save Image (mtb)
+Save Image Grid (mtb)
+Save Image Sequence (mtb)
+Save Images Plus (JPS)
+Save Positive Prompt(WLSH)
+Save Prompt (WLSH)
+Save Prompt/Info (WLSH)
+Save Tensors (mtb)
+Save Text File
+Save image with extra metadata [Crystools]
+SaveAnimatedPNG
+SaveAnimatedWEBP
+SaveAudio
+SaveAudioMP3
+SaveAudioOpus
+SaveEXR
+SaveEXRFrames
+SaveFaceEmbeds
+SaveGLB
+SaveImage
+SaveImageAndMetadata_
+SaveImageAndPromptExact
+SaveImageAndPromptIncremental
+SaveImageDataSetToFolder
+SaveImageKJ
+SaveImageS3
+SaveImageTextDataSetToFolder
+SaveImageToLocal
+SaveImageToS3
+SaveImageWebsocket
+SaveImageWebsocketNew
+SaveImageWithAlpha
+SaveImageWithMetaData
+SaveJpgImage
+SaveJsonToSurreal
+SaveLatent
+SaveLatentEXR
+SaveLoRA
+SaveMergedLoRA
+SavePoseKpsAsJsonFile
+SaveSVGNode
+SaveStringKJ
+SaveTextToSurreal
+SaveText|pysssss
+SaveTiff
+SaveToRedis
+SaveTrainingDataset
+SaveTripoSRMesh
+SaveTunerData
+SaveVideo
+SaveWEBM
+ScaleBatchPromptSchedule
+ScaleROPE
+ScaledSoftControlNetWeights
+ScaledSoftMaskedUniversalWeights
+ScenesNode_
+ScheduledCFGGuidance
+SchedulerSelectHelper+
+ScreenShare
+ScreencapStream
+Screencap_mss
+ScribblePreprocessor
+Scribble_PiDiNet_Preprocessor
+Scribble_XDoG_Preprocessor
+Seed
+Seed (rgthree)
+Seed Everywhere
+Seed and Int (WLSH)
+Seed to Number (WLSH)
+SeedSelector
+SeedVR2LoadDiTModel
+SeedVR2LoadVAEModel
+SeedVR2TorchCompileSettings
+SeedVR2VideoUpscaler
+Seed_
+SegmDetectorCombined_v2
+SegmDetectorSEGS
+Segment
+SegmentV2
+SegsToCombinedMask
+SelectFloatByBool
+SelfAttentionGuidance
+SemSegPreprocessor
+SendImageOnWebSocket
+SendJsonOnWebSocket
+SenseVoiceNode
+Separate Mask Components
+SeparateMask
+SeparateMasks
+Set VAE Decoder Noise
+SetClipHooks
+SetDefaultImageForSEGS
+SetFirstSigma
+SetHookKeyframes
+SetLatentNoiseMask
+SetShakkerLabsUnionControlNetType
+SetUnionControlNetType
+Sharpen (mtb)
+SharpenFilterLatent
+Show any [Crystools]
+Show any to JSON [Crystools]
+ShowLayer
+ShowSigmas
+ShowTextForGPT
+ShowText|pysssss
+ShuffleChannels
+ShuffleDataset
+ShuffleImageBatch
+ShuffleImageTextDataset
+ShufflePreprocessor
+SigmasToFloat
+SiliconflowLLM
+SiliconflowTextToImageNode
+Simple Eval Examples
+Simple Pattern Replace (WLSH)
+Simple String
+Simple String Combine (WLSH)
+SimpleCalculatorKJ
+SimpleComparison+
+SimpleCondition+
+SimpleMath+
+SimpleMathBoolean+
+SimpleMathCondition+
+SimpleMathDual+
+SimpleMathFloat+
+SimpleMathInt+
+SimpleMathPercent+
+SimpleMathSlider+
+SimpleMathSliderLowRes+
+SimplePromptInjection
+SimpleSD15PromptInjection
+SimulateDevDesignDiscussions
+SkipLayerGuidanceDiT
+SkipLayerGuidanceDiTSimple
+SkipLayerGuidanceSD3
+SkipLayerGuidanceWanVideo
+Sleep
+Smart Step (mtb)
+SmartLatent
+SmoothMask
+SoftControlNetWeights
+SoftT2IAdapterWeights
+SolidMask
+SomethingToString
+SoundReactive
+SpeechRecognition
+SpeechSynthesis
+SplineEditor
+Split Bbox (mtb)
+SplitAudioChannels
+SplitBboxes
+SplitImage
+SplitImageChannels
+SplitImageWithAlpha
+SplitLongMask
+SplitSigmas
+SplitSigmasDenoise
+StabilityAudioInpaint
+StabilityAudioToAudio
+StabilityStableImageSD_3_5Node
+StabilityStableImageUltraNode
+StabilityTextToAudio
+StabilityUpscaleConservativeNode
+StabilityUpscaleCreativeNode
+StabilityUpscaleFastNode
+StableCascade_EmptyLatentImage
+StableCascade_StageB_Conditioning
+StableCascade_StageC_VAEEncode
+StableCascade_SuperResolutionControlnet
+StableZero123_BatchSchedule
+StableZero123_Conditioning
+StableZero123_Conditioning_Batched
+Stack Images (mtb)
+StartRecordCUDAMemoryHistory
+Stats system [Crystools]
+StepsScheduleHookProvider
+String Replace (mtb)
+String to Text
+StringCompare
+StringConcatenate
+StringConstant
+StringConstantMultiline
+StringContains
+StringFunction
+StringFunction|pysssss
+StringInput
+StringLength
+StringListToString
+StringReplace
+StringSubstring
+StringToFloatList
+StringToInt
+StringToNumber
+StringTrim
+StripWhitespace
+StyleAdvancedApply
+StyleAlignedBatchAlign_
+StyleAlignedReferenceSampler_
+StyleAlignedSampleReferenceLatents_
+StyleModelAdvancedApply
+StyleModelApply
+StyleModelApplyAdvanced
+StyleModelApplySimple
+StyleModelLoader
+Styles Loader (mtb)
+Sublist To Image Batch (mtb)
+Substract Int Int (JPS)
+SubtractMask
+SubtractMaskForEach
+Superprompt
+SvgImage
+Switch any [Crystools]
+Switch conditioning [Crystools]
+Switch from any [Crystools]
+Switch image [Crystools]
+Switch latent [Crystools]
+Switch mask [Crystools]
+Switch string [Crystools]
+SwitchByIndex
+SwwanCropByMaskV5
+SwwanImageBatchToImageList
+SwwanImageListToImageBatch
+SwwanRestoreCropBoxV3
+SwwanRestoreCropBoxV4
+SystemNotification|pysssss
+T5TokenizerOptions
+TCFG
+TEEDPreprocessor
+TENSORBoost
+TENSORCut
+TESTNODE_
+TESTNODE_TOKEN
+TTPlanet_TileGF_Preprocessor
+TTPlanet_TileSimple_Preprocessor
+TagsFormater
+TagsSelector
+TeaCache
+TeaCacheForCogVideoX
+TemporalScoreRescaling
+Tencent3DPartNode
+TencentImageToModelNode
+TencentTextToModelNode
+Tensor Batch to Image
+Tensor Ops (mtb)
+Text (LoraManager)
+Text Add Token by Input
+Text Add Tokens
+Text Compare
+Text Concatenate
+Text Concatenate (JPS)
+Text Contains
+Text Dictionary Convert
+Text Dictionary Get
+Text Dictionary Keys
+Text Dictionary New
+Text Dictionary To Text
+Text Dictionary Update
+Text File History Loader
+Text Find
+Text Find and Replace
+Text Find and Replace Input
+Text Find and Replace by Dictionary
+Text Input Switch
+Text List
+Text List Concatenate
+Text List to Text
+Text Load Line From File
+Text Multiline
+Text Multiline (Code Compatible)
+Text Parse A1111 Embeddings
+Text Parse Noodle Soup Prompts
+Text Parse Tokens
+Text Prompt (JPS)
+Text Prompt Combo (JPS)
+Text Random Line
+Text Random Prompt
+Text Shuffle
+Text Sort
+Text String
+Text String Truncate
+Text To Image (mtb)
+Text to Conditioning
+Text to Console
+Text to Number
+Text to String
+TextEncodeAceStepAudio
+TextEncodeAceStepAudio1.5
+TextEncodeForSamplerParams+
+TextEncodeHunyuanVideo_ImageToVideo
+TextEncodeQwenImageEdit
+TextEncodeQwenImageEditPlus
+TextEncodeZImageOmni
+TextImage
+TextInputBasic
+TextInput_
+TextRandomMultiline
+TextSplitByDelimiter
+TextSwitchCase
+TextToLowercase
+TextToNumber
+TextToUppercase
+ThresholdMask
+TilePreprocessor
+Tiled Upscaler Script
+TiledKSamplerProvider
+Time Seed (JPS)
+Time String (WLSH)
+TimerNodeKJ
+TimestepKeyframe
+To Device (mtb)
+ToBasicPipe
+ToBinaryMask
+ToDetailerPipe
+ToDetailerPipeSDXL
+TomePatchModel
+Tonemap
+TopazImageEnhance
+TopazVideoEnhance
+TorchCompileControlNet
+TorchCompileCosmosModel
+TorchCompileLTXModel
+TorchCompileModel
+TorchCompileModelAdvanced
+TorchCompileModelFluxAdvanced
+TorchCompileModelFluxAdvancedV2
+TorchCompileModelHyVideo
+TorchCompileModelQwenImage
+TorchCompileModelWanVideo
+TorchCompileModelWanVideoV2
+TorchCompileVAE
+TrainLoraNode
+Transform Image (mtb)
+TransitionImagesInBatch
+TransitionImagesMulti
+TransitionMask+
+TransparentBGSession+
+TransparentImage
+TriggerWord Toggle (LoraManager)
+TrimAudioDuration
+TrimVideoLatent
+TripleCLIPLoader
+TripleCLIPLoaderGGUF
+TripleClipLoaderGGUF
+TripoConversionNode
+TripoImageToModelNode
+TripoMultiviewToModelNode
+TripoRefineNode
+TripoRetargetNode
+TripoRigNode
+TripoSRSampler_
+TripoTextToModelNode
+TripoTextureNode
+True Random.org Number Generator
+TruncateText
+TwoAdvancedSamplersForMask
+TwoSamplersForMask
+TwoSamplersForMaskUpscalerProvider
+TwoSamplersForMaskUpscalerProviderPipe
+UNETLoader
+UNetCrossAttentionMultiply
+UNetSelfAttentionMultiply
+UNetTemporalAttentionMultiply
+USOStyleReference
+UltralyticsDetectorProvider
+UnJitterImage
+UnTonemap
+Unary Image Op
+Unary Mask Op
+Uncrop (mtb)
+Unet Loader (LoraManager)
+UnetLoaderGGUF
+UnetLoaderGGUFAdvanced
+UniFormer-SemSegPreprocessor
+Unimatch_OptFlowPreprocessor
+Unpack SDXL Tuple
+UnsamplerDetailerHookProvider
+UnsamplerHookProvider
+Unsplash Image (mtb)
+UpperBodyTrackingFromPoseKps
+Upscale Bbox By (mtb)
+Upscale Model Loader
+Upscale Model Switch
+Upscale by Factor with Model (WLSH)
+UpscaleModelLoader
+VAE Encode for Inpaint w/Padding (WLSH)
+VAE Input Switch
+VAE Switch (JPS)
+VAEDecode
+VAEDecodeAudio
+VAEDecodeAudioTiled
+VAEDecodeHunyuan3D
+VAEDecodeLoopKJ
+VAEDecodeNew
+VAEDecodeTiled
+VAEEncode
+VAEEncodeAudio
+VAEEncodeForInpaint
+VAEEncodeForInpaint_Frames
+VAEEncodeNew
+VAEEncodeTiled
+VAELoader
+VAELoaderKJ
+VAESave
+VHS_AudioToVHSAudio
+VHS_BatchManager
+VHS_DuplicateImages
+VHS_DuplicateLatents
+VHS_DuplicateMasks
+VHS_GetImageCount
+VHS_GetLatentCount
+VHS_GetMaskCount
+VHS_LoadAudio
+VHS_LoadAudioUpload
+VHS_LoadImagePath
+VHS_LoadImages
+VHS_LoadImagesPath
+VHS_LoadVideo
+VHS_LoadVideoFFmpeg
+VHS_LoadVideoFFmpegPath
+VHS_LoadVideoPath
+VHS_MergeImages
+VHS_MergeLatents
+VHS_MergeMasks
+VHS_PruneOutputs
+VHS_SelectEveryNthImage
+VHS_SelectEveryNthLatent
+VHS_SelectEveryNthMask
+VHS_SelectFilename
+VHS_SelectImages
+VHS_SelectLatents
+VHS_SelectLatest
+VHS_SelectMasks
+VHS_SplitImages
+VHS_SplitLatents
+VHS_SplitMasks
+VHS_Unbatch
+VHS_VAEDecodeBatched
+VHS_VAEEncodeBatched
+VHS_VHSAudioToAudio
+VHS_VideoCombine
+VHS_VideoInfo
+VHS_VideoInfoLoaded
+VHS_VideoInfoSource
+VPScheduler
+VRAM_Debug
+Vae Decode (mtb)
+VaeGGUF
+VariationNoiseDetailerHookProvider
+Veo3FirstLastFrameNode
+Veo3VideoGenerationNode
+VeoVideoGenerationNode
+Video Dump Frames
+Video Slice
+VideoCombineS3
+VideoCombine_Adv
+VideoForwardOverrider
+VideoGenKlingNode
+VideoGenLumaDreamMachineNode
+VideoGenRunwayGen3Node
+VideoLinearCFGGuidance
+VideoTriangleCFGGuidance
+Vidu2ImageToVideoNode
+Vidu2ReferenceVideoNode
+Vidu2StartEndToVideoNode
+Vidu2TextToVideoNode
+Vidu3ImageToVideoNode
+Vidu3TextToVideoNode
+ViduExtendVideoNode
+ViduImageToVideoNode
+ViduMultiFrameVideoNode
+ViduReferenceVideoNode
+ViduStartEndToVideoNode
+ViduTextToVideoNode
+VisualizeCUDAMemoryHistory
+VisualizeLatents
+VisualizeSigmasKJ
+VoxelToMesh
+VoxelToMeshBasic
+WD14Tagger|pysssss
+Wan21BlockLoraSelect
+Wan22FunControlToVideo
+Wan22ImageToVideoLatent
+WanAnimateToVideo
+WanCameraEmbedding
+WanCameraImageToVideo
+WanChunkFeedForward
+WanContextWindowsManual
+WanFirstLastFrameToVideo
+WanFunControlToVideo
+WanFunInpaintToVideo
+WanHuMoImageToVideo
+WanImageToImageApi
+WanImageToVideo
+WanImageToVideoApi
+WanImageToVideoSVIPro
+WanInfiniteTalkToVideo
+WanMoveConcatTrack
+WanMoveTrackToVideo
+WanMoveTracksFromCoords
+WanMoveVisualizeTracks
+WanPhantomSubjectToVideo
+WanReferenceVideoApi
+WanSoundImageToVideo
+WanSoundImageToVideoExtend
+WanTextToImageApi
+WanTextToVideoApi
+WanTrackToVideo
+WanVaceToVideo
+WanVideo Lora Select (LoraManager)
+WanVideo Lora Select From Text (LoraManager)
+WanVideoEnhanceAVideoKJ
+WanVideoLoRAOptimizer
+WanVideoNAG
+WanVideoTeaCacheKJ
+WarpFacesBack
+WavespeedFlashVSRNode
+WavespeedImageUpscaleNode
+WebcamCapture
+WebcamCaptureCV2
+WeightScheduleConvert
+WeightScheduleExtend
+WidgetToString
+WildcardPromptFromString
+Write to GIF
+Write to Video
+XY Input: Add/Return Noise
+XY Input: Aesthetic Score
+XY Input: CFG Scale
+XY Input: Checkpoint
+XY Input: Clip Skip
+XY Input: Control Net
+XY Input: Control Net Plot
+XY Input: Denoise
+XY Input: LoRA
+XY Input: LoRA Plot
+XY Input: LoRA Stacks
+XY Input: Manual XY Entry
+XY Input: Prompt S/R
+XY Input: Refiner On/Off
+XY Input: Sampler/Scheduler
+XY Input: Seeds++ Batch
+XY Input: Steps
+XY Input: VAE
+XY Plot
+YC_LG_Redux
+ZImageFunControlnet
+ZSQPixelLatent
+ZSQRatioLatent
+ZSQShowINT
+ZSQShowText
+Zoe-DepthMapPreprocessor
+Zoe_DepthAnythingPreprocessor
+ZsqLatent
+checkpoint_sampler
+checkpoint_sampler_dualclip
+checkpoint_sampler_tripleclip
+controlnetStack
+controlnetStack_2
+dynamicThresholdingFull
+easy LLLiteLoader
+easy XYInputs: CFG Scale
+easy XYInputs: Checkpoint
+easy XYInputs: ControlNet
+easy XYInputs: Denoise
+easy XYInputs: FluxGuidance
+easy XYInputs: Lora
+easy XYInputs: ModelMergeBlocks
+easy XYInputs: NegativeCond
+easy XYInputs: NegativeCondList
+easy XYInputs: PositiveCond
+easy XYInputs: PositiveCondList
+easy XYInputs: PromptSR
+easy XYInputs: Sampler/Scheduler
+easy XYInputs: Seeds++ Batch
+easy XYInputs: Steps
+easy XYPlot
+easy XYPlotAdvanced
+easy a1111Loader
+easy ab
+easy anythingIndexSwitch
+easy anythingInversedSwitch
+easy applyBrushNet
+easy applyFooocusInpaint
+easy applyInpaint
+easy applyPowerPaint
+easy batchAnything
+easy blocker
+easy boolean
+easy cascadeKSampler
+easy cascadeLoader
+easy ckptNames
+easy cleanGpuUsed
+easy clearCacheAll
+easy clearCacheKey
+easy comfyLoader
+easy compare
+easy conditioningIndexSwitch
+easy controlnetLoader
+easy controlnetLoader++
+easy controlnetLoaderADV
+easy controlnetNames
+easy controlnetStack
+easy controlnetStackApply
+easy convertAnything
+easy detailerFix
+easy float
+easy fluxLoader
+easy forLoopEnd
+easy forLoopStart
+easy fullCascadeKSampler
+easy fullLoader
+easy fullkSampler
+easy globalSeed
+easy hiresFix
+easy humanSegmentation
+easy hunyuanDiTLoader
+easy icLightApply
+easy if
+easy ifElse
+easy imageBatchToImageList
+easy imageChooser
+easy imageColorMatch
+easy imageConcat
+easy imageCount
+easy imageCropFromMask
+easy imageDetailTransfer
+easy imageIndexSwitch
+easy imageInsetCrop
+easy imageInterrogator
+easy imageListToImageBatch
+easy imagePixelPerfect
+easy imageRatio
+easy imageRemBg
+easy imageSave
+easy imageScaleDown
+easy imageScaleDownBy
+easy imageScaleDownToSize
+easy imageScaleToNormPixels
+easy imageSize
+easy imageSizeByLongerSide
+easy imageSizeBySide
+easy imageSplitGrid
+easy imageSplitList
+easy imageSplitTiles
+easy imageSwitch
+easy imageTilesFromBatch
+easy imageToBase64
+easy imageToMask
+easy imageUncropFromBBOX
+easy imagesCountInDirectory
+easy imagesSplitImage
+easy indexAnything
+easy injectNoiseToLatent
+easy instantIDApply
+easy instantIDApplyADV
+easy int
+easy ipadapterApply
+easy ipadapterApplyADV
+easy ipadapterApplyEmbeds
+easy ipadapterApplyEncoder
+easy ipadapterApplyFaceIDKolors
+easy ipadapterApplyFromParams
+easy ipadapterApplyRegional
+easy ipadapterStyleComposition
+easy isFileExist
+easy isMaskEmpty
+easy isNone
+easy isSDXL
+easy joinImageBatch
+easy joyCaption2API
+easy joyCaption3API
+easy kSampler
+easy kSamplerCustom
+easy kSamplerDownscaleUnet
+easy kSamplerInpainting
+easy kSamplerLayerDiffusion
+easy kSamplerSDTurbo
+easy kSamplerTiled
+easy kolorsLoader
+easy latentCompositeMaskedWithCond
+easy latentNoisy
+easy lengthAnything
+easy loadImageBase64
+easy loadImagesForLoop
+easy loraNames
+easy loraPromptApply
+easy loraStack
+easy loraStackApply
+easy loraSwitcher
+easy makeImageForICLora
+easy mathFloat
+easy mathInt
+easy mathString
+easy mochiLoader
+easy multiAngle
+easy negative
+easy outputToList
+easy pipeBatchIndex
+easy pipeEdit
+easy pipeEditPrompt
+easy pipeIn
+easy pipeOut
+easy pipeToBasicPipe
+easy pixArtLoader
+easy pixels
+easy portraitMaster
+easy poseEditor
+easy positive
+easy preDetailerFix
+easy preMaskDetailerFix
+easy preSampling
+easy preSamplingAdvanced
+easy preSamplingCascade
+easy preSamplingCustom
+easy preSamplingDynamicCFG
+easy preSamplingLayerDiffusion
+easy preSamplingLayerDiffusionADDTL
+easy preSamplingNoiseIn
+easy preSamplingSdTurbo
+easy prompt
+easy promptAwait
+easy promptConcat
+easy promptLine
+easy promptList
+easy promptReplace
+easy pulIDApply
+easy pulIDApplyADV
+easy rangeFloat
+easy rangeInt
+easy removeLocalImage
+easy samLoaderPipe
+easy saveImageLazy
+easy saveText
+easy saveTextLazy
+easy seed
+easy seedList
+easy showAnything
+easy showAnythingLazy
+easy showLoaderSettingsNames
+easy showSpentTime
+easy showTensorShape
+easy simpleMath
+easy simpleMathDual
+easy sleep
+easy sliderControl
+easy stableDiffusion3API
+easy string
+easy stringJoinLines
+easy stringToFloatList
+easy stringToIntList
+easy styleAlignedBatchAlign
+easy stylesSelector
+easy sv3dLoader
+easy svdLoader
+easy textIndexSwitch
+easy textSwitch
+easy ultralyticsDetectorPipe
+easy unSampler
+easy whileLoopEnd
+easy whileLoopStart
+easy wildcards
+easy wildcardsMatrix
+easy xyAny
+easy zero123Loader
+imageConcat
+imageCount
+imageCrop
+imageDetailTransfer
+imageFilter
+imageFlip
+imageGaussianBlur
+imageRGB
+imageRatio
+imageResize
+imageRotate
+imageSaveSimple
+imageScaleDown
+imageScaleDownBy
+imageSharpen
+imageSize
+imageTilesFromBatch
+imagesSplitImage
+list_Merge
+list_Slice
+list_Value
+list_num_range
+loraStack
+loraStack_2
+math_Remap_data
+math_calculate
+nsfwDetector
+nsfwDetectorV2
+promptComposerTextMultiple
+raiseExceptionOnTrue
+sch_Prompt
+sch_Value
+sch_image
+sch_mask
+sch_split_text
+sch_text
+type_AnyIndex
+unCLIP Checkpoint Loader
+unCLIPCheckpointLoader
+unCLIPConditioning
+wanBlockSwap
+zsqcheckpoint
+zsqcontrolnet
+zsqsampler

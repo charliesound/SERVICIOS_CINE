@@ -1,0 +1,25 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/2024-04-07 cascade+controlnet \u5b8c\u7f8e\u653e\u5927\u56fe\u50cf.png",
+  "metadata_keys": [
+    "prompt",
+    "workflow"
+  ],
+  "class_types": [
+    "CLIPTextEncode",
+    "CheckpointLoaderSimple",
+    "ControlNetApplyAdvanced",
+    "ControlNetLoader",
+    "KSampler",
+    "LoadImage",
+    "SaveImage",
+    "StableCascade_StageB_Conditioning",
+    "StableCascade_SuperResolutionControlnet",
+    "VAEDecode"
+  ],
+  "models": [
+    "cascade\\stable_cascade_stage_b.safetensors",
+    "cascade\\stable_cascade_stage_c.safetensors",
+    "cascade\\super_resolution.safetensors"
+  ],
+  "family": "image_still"
+}

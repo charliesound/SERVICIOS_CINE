@@ -1,0 +1,27 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Kazitorials-avatar-generator.png",
+  "metadata_keys": [
+    "workflow",
+    "srgb"
+  ],
+  "class_types": [
+    "ApplyInstantID",
+    "CLIPTextEncode",
+    "CheckpointLoaderSimple",
+    "ControlNetLoader",
+    "EmptyLatentImage",
+    "InstantIDFaceAnalysis",
+    "InstantIDModelLoader",
+    "KSampler",
+    "LoadImage",
+    "LoraLoader",
+    "SaveImage",
+    "VAEDecode"
+  ],
+  "models": [
+    "SDXL-Emoji-Lora-r4.safetensors",
+    "instantid-diffusion_pytorch_model.safetensors",
+    "turbovisionxlSuperFastXLBasedOnNew_tvxlV431Bakedvae.safetensors"
+  ],
+  "family": "image_still"
+}

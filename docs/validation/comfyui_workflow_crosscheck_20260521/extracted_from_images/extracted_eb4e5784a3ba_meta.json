@@ -1,0 +1,30 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/SRPO-workflow.png",
+  "metadata_keys": [
+    "workflow"
+  ],
+  "class_types": [
+    "BasicGuider",
+    "BasicScheduler",
+    "CLIPTextEncode",
+    "DualCLIPLoader",
+    "EmptySD3LatentImage",
+    "FluxGuidance",
+    "KSamplerSelect",
+    "ModelSamplingFlux",
+    "PrimitiveNode",
+    "RandomNoise",
+    "SamplerCustomAdvanced",
+    "SaveImage",
+    "UNETLoader",
+    "VAEDecode",
+    "VAELoader"
+  ],
+  "models": [
+    "SRPO/diffusion_pytorch_model.safetensors",
+    "ae.safetensors",
+    "clip_l.safetensors",
+    "t5xxl_fp16.safetensors"
+  ],
+  "family": "image_still"
+}

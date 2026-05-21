@@ -1,0 +1,19 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/Imagen/Kazitorials-talking-avatar.png",
+  "metadata_keys": [
+    "workflow",
+    "srgb"
+  ],
+  "class_types": [
+    "DownloadAndLoadLivePortraitModels",
+    "GetImageSizeAndCount",
+    "ImageConcatMulti",
+    "ImageResizeKJ",
+    "LivePortraitProcess",
+    "LoadImage",
+    "VHS_LoadVideoPath",
+    "VHS_VideoCombine"
+  ],
+  "models": [],
+  "family": "video_cine"
+}

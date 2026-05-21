@@ -1,0 +1,29 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/03a_Qwen-Edit-2509-Image-Edit-with-multi-images-input-and-Multi-Lora-Loader.png",
+  "metadata_keys": [
+    "workflow"
+  ],
+  "class_types": [
+    "CFGNorm",
+    "CLIPLoader",
+    "Image Comparer (rgthree)",
+    "ImageScaleToTotalPixels",
+    "KSampler",
+    "LoadImage",
+    "ModelSamplingAuraFlow",
+    "Power Lora Loader (rgthree)",
+    "PromptStashSaver",
+    "SaveImage",
+    "TextEncodeQwenImageEditPlus",
+    "UNETLoader",
+    "VAEDecode",
+    "VAEEncode",
+    "VAELoader"
+  ],
+  "models": [
+    "Qwen-Image-Edit_ComfyUI/qwen_image_edit_2509_fp8_e4m3fn.safetensors",
+    "Qwen-Image_ComfyUI/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "Qwen-Image_ComfyUI/qwen_image_vae.safetensors"
+  ],
+  "family": "image_still"
+}

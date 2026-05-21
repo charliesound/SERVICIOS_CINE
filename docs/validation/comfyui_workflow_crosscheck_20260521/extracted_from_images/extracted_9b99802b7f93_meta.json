@@ -1,0 +1,33 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/sdxl-recommended-res-calc_upscale-case.png",
+  "metadata_keys": [
+    "workflow"
+  ],
+  "class_types": [
+    "CLIPTextEncode",
+    "CheckpointLoaderSimple",
+    "EmptyLatentImage",
+    "ImageScaleBy",
+    "ImageUpscaleWithModel",
+    "KSampler",
+    "LatentUpscaleBy",
+    "LoraLoader",
+    "Note",
+    "PrimitiveNode",
+    "RecommendedResCalc",
+    "Reroute",
+    "SaveImage",
+    "UpscaleModelLoader",
+    "VAEDecode",
+    "VAEEncode",
+    "VAELoader"
+  ],
+  "models": [
+    "4x-UltraMix_Balanced.pth",
+    "LCM\\SDXL-SSD1B\\pytorch_lora_weights.safetensors",
+    "SDXL\\SSD-1B.safetensors",
+    "SDXL\\sd_xl_offset_example-lora_1.0.safetensors",
+    "SDXL\\sdxl-vae-fp16-fix.safetensors"
+  ],
+  "family": "image_still"
+}

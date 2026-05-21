@@ -1,0 +1,28 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/04_Omni-Gen2-Text2-Image.png",
+  "metadata_keys": [
+    "workflow"
+  ],
+  "class_types": [
+    "BasicScheduler",
+    "CLIPLoader",
+    "CLIPTextEncode",
+    "DualCFGGuider",
+    "EmptySD3LatentImage",
+    "KSamplerSelect",
+    "MarkdownNote",
+    "RandomNoise",
+    "SamplerCustomAdvanced",
+    "SaveImage",
+    "UNETLoader",
+    "VAEDecode",
+    "VAELoader"
+  ],
+  "models": [
+    "## Docs\n[English](http://docs.comfy.org/tutorials/image/omnigen/omnigen2) | [\u00e4\u00b8\u00ad\u00e6\u0096\u0087](http://docs.comfy.org/zh-CN/tutorials/image/omnigen/omnigen2)\n\n## Model links\n\n**diffusion model**\n\n- [omnigen2_fp16.safetensors](https://huggingface.co/Comfy-Org/Omnigen2_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/omnigen2_fp16.safetensors)\n\n**vae**\n\n- [ae.safetensors](https://huggingface.co/Comfy-Org/Lumina_Image_2.0_Repackaged/blob/main/split_files/vae/ae.safetensors)\n\n**text encoder**\n\n- [qwen_2.5_vl_fp16.safetensors](https://huggingface.co/Comfy-Org/Omnigen2_ComfyUI_repackaged/resolve/main/split_files/text_encoders/qwen_2.5_vl_fp16.safetensors)\n\nFile save location\n```\n\u00f0\u009f\u0093\u0082 ComfyUI/\n\u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 \u00f0\u009f\u0093\u0082 models/\n\u00e2\u0094\u0082   \u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 \u00f0\u009f\u0093\u0082 diffusion_models/\n\u00e2\u0094\u0082   \u00e2\u0094\u0082   \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080 omnigen2_fp16.safetensors\n\u00e2\u0094\u0082   \u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 \u00f0\u009f\u0093\u0082 vae/\n\u00e2\u0094\u0082   \u00e2\u0094\u0082   \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080 ae.safetensor\n\u00e2\u0094\u0082   \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080 \u00f0\u009f\u0093\u0082 text_encoders/\n\u00e2\u0094\u0082       \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080 qwen_2.5_vl_fp16.safetensors\n```\n",
+    "Omnigen2_ComfyUI_repackaged/ae.safetensors",
+    "Omnigen2_ComfyUI_repackaged/omnigen2_fp16.safetensors",
+    "Omnigen2_ComfyUI_repackaged/qwen_2.5_vl_fp16.safetensors"
+  ],
+  "family": "image_still"
+}

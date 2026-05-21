@@ -1,0 +1,1799 @@
+{
+  "port": 8190,
+  "instance": "dubbing",
+  "comfyui_version": "0.13.0",
+  "total_nodes": 1915,
+  "family_counts": {
+    "image_still": 580,
+    "video_cine": 327,
+    "audio_dubbing": 107,
+    "restoration": 24,
+    "three_d": 35,
+    "utility_general": 557,
+    "unknown": 285
+  },
+  "family_percentages": {
+    "image_still": 30.3,
+    "video_cine": 17.1,
+    "audio_dubbing": 5.6,
+    "restoration": 1.3,
+    "three_d": 1.8,
+    "utility_general": 29.1,
+    "unknown": 14.9
+  },
+  "top_categories": [
+    [
+      "WanVideoWrapper",
+      137
+    ],
+    [
+      "ImpactPack/Util",
+      70
+    ],
+    [
+      "KJNodes/image",
+      56
+    ],
+    [
+      "conditioning/video_models",
+      34
+    ],
+    [
+      "\ud83c\udff5\ufe0fFill Nodes/Image",
+      32
+    ],
+    [
+      "rgthree",
+      24
+    ],
+    [
+      "KJNodes/masking",
+      24
+    ],
+    [
+      "\ud83c\udff5\ufe0fFill Nodes/Utility",
+      24
+    ],
+    [
+      "api node/video/Kling",
+      21
+    ],
+    [
+      "\ud83c\udff5\ufe0fFill Nodes/AI",
+      20
+    ],
+    [
+      "image",
+      19
+    ],
+    [
+      "loaders",
+      18
+    ],
+    [
+      "KJNodes/experimental",
+      18
+    ],
+    [
+      "ImpactPack/Operation",
+      18
+    ],
+    [
+      "ImpactPack/Upscale",
+      18
+    ],
+    [
+      "conditioning",
+      17
+    ],
+    [
+      "audio",
+      16
+    ],
+    [
+      "api node/image/Recraft",
+      16
+    ],
+    [
+      "\ud83c\udff5\ufe0fFill Nodes/Audio",
+      16
+    ],
+    [
+      "Video Helper Suite \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62",
+      16
+    ],
+    [
+      "ImpactPack/Detailer",
+      16
+    ],
+    [
+      "_for_testing",
+      15
+    ],
+    [
+      "advanced/model_merging/model_specific",
+      15
+    ],
+    [
+      "\ud83c\udff5\ufe0fFill Nodes/VFX",
+      15
+    ],
+    [
+      "ImpactPack/Pipe",
+      15
+    ],
+    [
+      "ImpactPack/Logic",
+      15
+    ],
+    [
+      "math/conversion",
+      14
+    ],
+    [
+      "KJNodes/misc",
+      14
+    ],
+    [
+      "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+      14
+    ],
+    [
+      "ComfyUI-Frame-Interpolation/VFI",
+      14
+    ]
+  ],
+  "top_per_family": {
+    "image_still": [
+      {
+        "class_type": "AcademiaSD_BatchLoader",
+        "category": "AcademiaSD/Dataset",
+        "display_name": "\ud83d\udcc2 Batch Image Loader (Dataset)"
+      },
+      {
+        "class_type": "AcademiaSD_MultiLora",
+        "category": "Academia SD",
+        "display_name": "Academia SD Multi-LoRA \ud83d\udc8a"
+      },
+      {
+        "class_type": "AddNoiseToTrackPath",
+        "category": "conditioning/video_models",
+        "display_name": null
+      },
+      {
+        "class_type": "AlignYourStepsScheduler",
+        "category": "sampling/custom_sampling/schedulers",
+        "display_name": null
+      },
+      {
+        "class_type": "ApplyCLIPSeg+",
+        "category": "essentials/segmentation",
+        "display_name": "\ud83d\udd27 Apply CLIPSeg"
+      },
+      {
+        "class_type": "Audio IPAdapter Transitions",
+        "category": "\ud83d\udc41\ufe0f Yvann Nodes/\ud83d\udd0a Audio",
+        "display_name": "Audio IPAdapter Transitions"
+      },
+      {
+        "class_type": "Audio Prompt Schedule",
+        "category": "\ud83d\udc41\ufe0f Yvann Nodes/\ud83d\udd0a Audio",
+        "display_name": "Audio Prompt Schedule"
+      },
+      {
+        "class_type": "AudioEncoderEncode",
+        "category": "conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "BasicGuider",
+        "category": "sampling/custom_sampling/guiders",
+        "display_name": null
+      },
+      {
+        "class_type": "BasicScheduler",
+        "category": "sampling/custom_sampling/schedulers",
+        "display_name": null
+      },
+      {
+        "class_type": "BatchCLIPSeg",
+        "category": "KJNodes/masking",
+        "display_name": "Batch CLIPSeg"
+      },
+      {
+        "class_type": "BatchLatentsNode",
+        "category": "latent",
+        "display_name": "Batch Latents"
+      },
+      {
+        "class_type": "BetaSamplingScheduler",
+        "category": "sampling/custom_sampling/schedulers",
+        "display_name": null
+      },
+      {
+        "class_type": "ByteDanceImageToVideoNode",
+        "category": "api node/video/ByteDance",
+        "display_name": "ByteDance Image to Video"
+      },
+      {
+        "class_type": "CLIPAttentionMultiply",
+        "category": "_for_testing/attention_experiments",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPLoader",
+        "category": "advanced/loaders",
+        "display_name": "Load CLIP"
+      },
+      {
+        "class_type": "CLIPLoaderGGUF",
+        "category": "bootleg",
+        "display_name": "CLIPLoader (GGUF)"
+      },
+      {
+        "class_type": "CLIPMergeAdd",
+        "category": "advanced/model_merging",
+        "display_name": "CLIPMergeAdd"
+      },
+      {
+        "class_type": "CLIPMergeSimple",
+        "category": "advanced/model_merging",
+        "display_name": "CLIPMergeSimple"
+      },
+      {
+        "class_type": "CLIPMergeSubtract",
+        "category": "advanced/model_merging",
+        "display_name": "CLIPMergeSubtract"
+      },
+      {
+        "class_type": "CLIPSave",
+        "category": "advanced/model_merging",
+        "display_name": "CLIPSave"
+      },
+      {
+        "class_type": "CLIPSegDetectorProvider",
+        "category": "ImpactPack/Util",
+        "display_name": "CLIPSegDetectorProvider"
+      },
+      {
+        "class_type": "CLIPSetLastLayer",
+        "category": "conditioning",
+        "display_name": "CLIP Set Last Layer"
+      },
+      {
+        "class_type": "CLIPTextEncode",
+        "category": "conditioning",
+        "display_name": "CLIP Text Encode (Prompt)"
+      },
+      {
+        "class_type": "CLIPTextEncodeControlnet",
+        "category": "_for_testing/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeFlux",
+        "category": "advanced/conditioning/flux",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeHiDream",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeHunyuanDiT",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeKandinsky5",
+        "category": "advanced/conditioning/kandinsky5",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeLumina2",
+        "category": "conditioning",
+        "display_name": "CLIP Text Encode for Lumina2"
+      },
+      {
+        "class_type": "CLIPTextEncodePixArtAlpha",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeSD3",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeSDXL",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPTextEncodeSDXL+",
+        "category": "essentials/conditioning",
+        "display_name": "\ud83d\udd27 SDXL CLIPTextEncode"
+      },
+      {
+        "class_type": "CLIPTextEncodeSDXLRefiner",
+        "category": "advanced/conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "CLIPVisionEncode",
+        "category": "conditioning",
+        "display_name": "CLIP Vision Encode"
+      },
+      {
+        "class_type": "CLIPVisionLoader",
+        "category": "loaders",
+        "display_name": "Load CLIP Vision"
+      },
+      {
+        "class_type": "CR Apply ControlNet",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udd79\ufe0f ControlNet",
+        "display_name": "\ud83d\udd79\ufe0f CR Apply ControlNet"
+      },
+      {
+        "class_type": "CR Apply LoRA Stack",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udc8a LoRA",
+        "display_name": "\ud83d\udc8a CR Apply LoRA Stack"
+      },
+      {
+        "class_type": "CR Apply Multi-ControlNet",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udd79\ufe0f ControlNet",
+        "display_name": "\ud83d\udd79\ufe0f CR Apply Multi-ControlNet"
+      },
+      {
+        "class_type": "CR Clip Input Switch",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udee0\ufe0f Utils/\ud83d\udd00 Logic",
+        "display_name": "\ud83d\udd00 CR Clip Input Switch"
+      },
+      {
+        "class_type": "CR Combine Prompt",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udce6 Core",
+        "display_name": "\u2699\ufe0f CR Combine Prompt"
+      },
+      {
+        "class_type": "CR Conditioning Input Switch",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udee0\ufe0f Utils/\ud83d\udd00 Logic",
+        "display_name": "\ud83d\udd00 CR Conditioning Input Switch"
+      },
+      {
+        "class_type": "CR Conditioning Mixer",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udce6 Core",
+        "display_name": "\u2699\ufe0f CR Conditioning Mixer"
+      },
+      {
+        "class_type": "CR ControlNet Input Switch",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udee0\ufe0f Utils/\ud83d\udd00 Logic",
+        "display_name": "\ud83d\udd00 CR ControlNet Input Switch"
+      },
+      {
+        "class_type": "CR Cycle LoRAs",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+        "display_name": "CR Cycle LoRAs (Legacy)"
+      },
+      {
+        "class_type": "CR Encode Scheduled Prompts",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udcdd Prompt",
+        "display_name": "\ud83d\udcdd CR Encode Scheduled Prompts"
+      },
+      {
+        "class_type": "CR Get Parameter From Prompt",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udee0\ufe0f Utils/\u2699\ufe0f Other",
+        "display_name": "\u2699\ufe0f CR Get Parameter From Prompt"
+      },
+      {
+        "class_type": "CR Interpolate Latents",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udd22 Interpolate",
+        "display_name": "\ud83d\udd22 CR Interpolate Latents"
+      },
+      {
+        "class_type": "CR Keyframe List",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udcdd Prompt",
+        "display_name": "\ud83d\udcdd CR Keyframe List"
+      }
+    ],
+    "video_cine": [
+      {
+        "class_type": "AMT VFI",
+        "category": "ComfyUI-Frame-Interpolation/VFI",
+        "display_name": "AMT VFI"
+      },
+      {
+        "class_type": "ATM VFI",
+        "category": "ComfyUI-Frame-Interpolation/VFI",
+        "display_name": "ATM VFI (only supports 2x multiplier)"
+      },
+      {
+        "class_type": "Add Subtitles To Frames",
+        "category": "whisper",
+        "display_name": "Add Subtitles To Frames"
+      },
+      {
+        "class_type": "ApplyRifleXRoPE_HunuyanVideo",
+        "category": "KJNodes/hunyuanvideo",
+        "display_name": "Apply RifleXRoPE HunuyanVideo"
+      },
+      {
+        "class_type": "ApplyRifleXRoPE_WanVideo",
+        "category": "KJNodes/wan",
+        "display_name": "Apply RifleXRoPE WanVideo"
+      },
+      {
+        "class_type": "BboxDetectorCombined_v2",
+        "category": "ImpactPack/Detector",
+        "display_name": "BBOX Detector (combined)"
+      },
+      {
+        "class_type": "BriaRemoveVideoBackground",
+        "category": "api node/video/Bria",
+        "display_name": "Bria Remove Video Background"
+      },
+      {
+        "class_type": "ByteDanceFirstLastFrameNode",
+        "category": "api node/video/ByteDance",
+        "display_name": "ByteDance First-Last-Frame to Video"
+      },
+      {
+        "class_type": "ByteDanceImageReferenceNode",
+        "category": "api node/video/ByteDance",
+        "display_name": "ByteDance Reference Images to Video"
+      },
+      {
+        "class_type": "ByteDanceTextToVideoNode",
+        "category": "api node/video/ByteDance",
+        "display_name": "ByteDance Text to Video"
+      },
+      {
+        "class_type": "CAIN VFI",
+        "category": "ComfyUI-Frame-Interpolation/VFI",
+        "display_name": "CAIN VFI"
+      },
+      {
+        "class_type": "CR Bit Schedule",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udccb Schedule",
+        "display_name": "\ud83d\udccb CR Bit Schedule"
+      },
+      {
+        "class_type": "CR Central Schedule",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udccb Schedule",
+        "display_name": "\ud83d\udccb CR Central Schedule"
+      },
+      {
+        "class_type": "CR Combine Schedules",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udccb Schedule",
+        "display_name": "\ud83d\udccb CR Combine Schedules"
+      },
+      {
+        "class_type": "CR Current Frame",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udee0\ufe0f Utils",
+        "display_name": "\ud83d\udee0\ufe0f CR Current Frame"
+      },
+      {
+        "class_type": "CR Cycle Images",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+        "display_name": "CR Cycle Images (Legacy)"
+      },
+      {
+        "class_type": "CR Cycle Images Simple",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+        "display_name": "CR Cycle Images Simple (Legacy)"
+      },
+      {
+        "class_type": "CR Cycle Models",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+        "display_name": "CR Cycle Models (Legacy)"
+      },
+      {
+        "class_type": "CR Cycle Text",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+        "display_name": "CR Cycle Text (Legacy)"
+      },
+      {
+        "class_type": "CR Cycle Text Simple",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+        "display_name": "CR Cycle Text Simple (Legacy)"
+      },
+      {
+        "class_type": "CR Debatch Frames",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udee0\ufe0f Utils",
+        "display_name": "\ud83d\udee0\ufe0f CR Debatch Frames"
+      },
+      {
+        "class_type": "CR Gradient Float",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udd22 Interpolate",
+        "display_name": "\ud83d\udd22 CR Gradient Float"
+      },
+      {
+        "class_type": "CR Gradient Integer",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udd22 Interpolate",
+        "display_name": "\ud83d\udd22 CR Gradient Integer"
+      },
+      {
+        "class_type": "CR Image List",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+        "display_name": "CR Image List (Legacy)"
+      },
+      {
+        "class_type": "CR Image List Simple",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+        "display_name": "CR Image List Simple (Legacy)"
+      },
+      {
+        "class_type": "CR Increment Float",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udd22 Interpolate",
+        "display_name": "\ud83d\udd22 CR Increment Float"
+      },
+      {
+        "class_type": "CR Increment Integer",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udd22 Interpolate",
+        "display_name": "\ud83d\udd22 CR Increment Integer"
+      },
+      {
+        "class_type": "CR Load Animation Frames",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\u2328\ufe0f IO",
+        "display_name": "\u2328\ufe0f CR Load Animation Frames"
+      },
+      {
+        "class_type": "CR Load Flow Frames",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\u2328\ufe0f IO",
+        "display_name": "\u2328\ufe0f CR Load Flow Frames"
+      },
+      {
+        "class_type": "CR Load Schedule From File",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udccb Schedule",
+        "display_name": "\ud83d\udccb CR Load Schedule From File"
+      },
+      {
+        "class_type": "CR Model List",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+        "display_name": "CR Model List (Legacy)"
+      },
+      {
+        "class_type": "CR Output Flow Frames",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\u2328\ufe0f IO",
+        "display_name": "\u2328\ufe0f CR Output Flow Frames"
+      },
+      {
+        "class_type": "CR Output Schedule To File",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udccb Schedule",
+        "display_name": "\ud83d\udccb CR Output Schedule To File"
+      },
+      {
+        "class_type": "CR Schedule Input Switch",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udccb Schedule",
+        "display_name": "\ud83d\udccb CR Schedule Input Switch"
+      },
+      {
+        "class_type": "CR Simple Schedule",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udccb Schedule",
+        "display_name": "\ud83d\udccb CR Simple Schedule"
+      },
+      {
+        "class_type": "CR Text List Simple",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83c\udfa5 Animation/\ud83d\udc80 Legacy",
+        "display_name": "CR Text List Simple (Legacy)"
+      },
+      {
+        "class_type": "CombineHooks2",
+        "category": "advanced/hooks/combine",
+        "display_name": "Combine Hooks [2]"
+      },
+      {
+        "class_type": "CombineHooks4",
+        "category": "advanced/hooks/combine",
+        "display_name": "Combine Hooks [4]"
+      },
+      {
+        "class_type": "CombineHooks8",
+        "category": "advanced/hooks/combine",
+        "display_name": "Combine Hooks [8]"
+      },
+      {
+        "class_type": "CreateCFGScheduleFloatList",
+        "category": "WanVideoWrapper",
+        "display_name": "Create CFG Schedule Float List"
+      },
+      {
+        "class_type": "CreateHookKeyframe",
+        "category": "advanced/hooks/scheduling",
+        "display_name": "Create Hook Keyframe"
+      },
+      {
+        "class_type": "CreateHookKeyframesFromFloats",
+        "category": "advanced/hooks/scheduling",
+        "display_name": "Create Hook Keyframes From Floats"
+      },
+      {
+        "class_type": "CreateHookKeyframesInterpolated",
+        "category": "advanced/hooks/scheduling",
+        "display_name": "Create Hook Keyframes Interp."
+      },
+      {
+        "class_type": "CreateScheduleFloatList",
+        "category": "WanVideoWrapper",
+        "display_name": "Create Schedule Float List"
+      },
+      {
+        "class_type": "CreateVideo",
+        "category": "image/video",
+        "display_name": "Create Video"
+      },
+      {
+        "class_type": "DecodeAndSaveVideo",
+        "category": "KJNodes/image",
+        "display_name": "Decode and Save Video"
+      },
+      {
+        "class_type": "DetailerForEachPipeForAnimateDiff",
+        "category": "ImpactPack/Detailer",
+        "display_name": "Detailer For Video (SEGS/pipe)"
+      },
+      {
+        "class_type": "DetailerHookCombine",
+        "category": "ImpactPack/Upscale",
+        "display_name": "DetailerHookCombine"
+      },
+      {
+        "class_type": "DownloadAndLoadNLFModel",
+        "category": "WanVideoWrapper",
+        "display_name": "(Download)Load NLF Model"
+      },
+      {
+        "class_type": "DownloadAndLoadWav2VecModel",
+        "category": "WanVideoWrapper",
+        "display_name": "(Down)load Wav2Vec Model"
+      }
+    ],
+    "audio_dubbing": [
+      {
+        "class_type": "ASRPunctuationTruecaseNode",
+        "category": "TTS Audio Suite/Text",
+        "display_name": "\ud83d\udcdd ASR Punctuation / Truecase"
+      },
+      {
+        "class_type": "Add Subtitles To Background",
+        "category": "whisper",
+        "display_name": "Add Subtitles To Background"
+      },
+      {
+        "class_type": "Apply Whisper",
+        "category": "whisper",
+        "display_name": "Apply Whisper"
+      },
+      {
+        "class_type": "Audio Analysis",
+        "category": "\ud83d\udc41\ufe0f Yvann Nodes/\ud83d\udd0a Audio",
+        "display_name": "Audio Analysis"
+      },
+      {
+        "class_type": "Audio Peaks Detection",
+        "category": "\ud83d\udc41\ufe0f Yvann Nodes/\ud83d\udd0a Audio",
+        "display_name": "Audio Peaks Detection"
+      },
+      {
+        "class_type": "Audio Remixer",
+        "category": "\ud83d\udc41\ufe0f Yvann Nodes/\ud83d\udd0a Audio",
+        "display_name": "Audio Remixer"
+      },
+      {
+        "class_type": "AudioAdjustVolume",
+        "category": "audio",
+        "display_name": "Audio Adjust Volume"
+      },
+      {
+        "class_type": "AudioConcat",
+        "category": "audio",
+        "display_name": "Audio Concat"
+      },
+      {
+        "class_type": "AudioConcatenate",
+        "category": "KJNodes/audio",
+        "display_name": "AudioConcatenate"
+      },
+      {
+        "class_type": "AudioEncoderLoader",
+        "category": "loaders",
+        "display_name": null
+      },
+      {
+        "class_type": "AudioMerge",
+        "category": "audio",
+        "display_name": "Audio Merge"
+      },
+      {
+        "class_type": "CharacterVoicesNode",
+        "category": "TTS Audio Suite/\ud83c\udfad Voice & Character",
+        "display_name": "\ud83c\udfad Character Voices"
+      },
+      {
+        "class_type": "ChatterBoxAudioAnalyzer",
+        "category": "TTS Audio Suite/\ud83c\udfb5 Audio Processing",
+        "display_name": "\ud83c\udf0a Audio Wave Analyzer"
+      },
+      {
+        "class_type": "ChatterBoxAudioAnalyzerOptions",
+        "category": "TTS Audio Suite/\ud83c\udfb5 Audio Processing",
+        "display_name": "\ud83d\udd27 Audio Analyzer Options"
+      },
+      {
+        "class_type": "ChatterBoxEngineNode",
+        "category": "TTS Audio Suite/\u2699\ufe0f Engines",
+        "display_name": "\u2699\ufe0f ChatterBox TTS Engine"
+      },
+      {
+        "class_type": "ChatterBoxF5TTSEditOptions",
+        "category": "TTS Audio Suite/\ud83d\udc44 F5-TTS",
+        "display_name": "\ud83d\udd27 F5-TTS Edit Options"
+      },
+      {
+        "class_type": "ChatterBoxF5TTSEditVoice",
+        "category": "TTS Audio Suite/\ud83d\udc44 F5-TTS",
+        "display_name": "\ud83d\udc44 F5-TTS Speech Editor"
+      },
+      {
+        "class_type": "ChatterBoxOfficial23LangEngineNode",
+        "category": "TTS Audio Suite/\u2699\ufe0f Engines",
+        "display_name": "\u2699\ufe0f ChatterBox Official 23-Lang Engine"
+      },
+      {
+        "class_type": "ChatterBoxVoiceCapture",
+        "category": "TTS Audio Suite/\ud83c\udfb5 Audio Processing",
+        "display_name": "\ud83c\udf99\ufe0f Voice Capture"
+      },
+      {
+        "class_type": "CosyVoiceEngineNode",
+        "category": "TTS Audio Suite/\u2699\ufe0f Engines",
+        "display_name": "\u2699\ufe0f CosyVoice3 Engine"
+      },
+      {
+        "class_type": "CreateAudioMask",
+        "category": "KJNodes/deprecated",
+        "display_name": "Create Audio Mask"
+      },
+      {
+        "class_type": "EchoTTSEngineNode",
+        "category": "TTS Audio Suite/Engines",
+        "display_name": "\u2699\ufe0f Echo-TTS Engine"
+      },
+      {
+        "class_type": "Edit Audio Weights",
+        "category": "\ud83d\udc41\ufe0f Yvann Nodes/\ud83d\udd0a Audio",
+        "display_name": "Edit Audio Weights"
+      },
+      {
+        "class_type": "EmptyAudio",
+        "category": "audio",
+        "display_name": "Empty Audio"
+      },
+      {
+        "class_type": "EnhancementUtils_PlaySound",
+        "category": "utils",
+        "display_name": "Play Sound"
+      },
+      {
+        "class_type": "F5TTSEngineNode",
+        "category": "TTS Audio Suite/\u2699\ufe0f Engines",
+        "display_name": "\u2699\ufe0f F5 TTS Engine"
+      },
+      {
+        "class_type": "FL_Audio_BPM_Analyzer",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio BPM Analyzer"
+      },
+      {
+        "class_type": "FL_Audio_Beat_Visualizer",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Beat Visualizer"
+      },
+      {
+        "class_type": "FL_Audio_Crop",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Crop"
+      },
+      {
+        "class_type": "FL_Audio_Drum_Detector",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Drum Detector"
+      },
+      {
+        "class_type": "FL_Audio_Envelope_Visualizer",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Envelope Visualizer"
+      },
+      {
+        "class_type": "FL_Audio_Reactive_Brightness",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Reactive Brightness"
+      },
+      {
+        "class_type": "FL_Audio_Reactive_Edge_Glow",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Reactive Edge Glow"
+      },
+      {
+        "class_type": "FL_Audio_Reactive_Envelope",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Reactive Envelope"
+      },
+      {
+        "class_type": "FL_Audio_Reactive_Saturation",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Reactive Saturation"
+      },
+      {
+        "class_type": "FL_Audio_Reactive_Scale",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Reactive Scale"
+      },
+      {
+        "class_type": "FL_Audio_Reactive_Speed",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Reactive Speed"
+      },
+      {
+        "class_type": "FL_Audio_Segment_Extractor",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Segment Extractor"
+      },
+      {
+        "class_type": "FL_Audio_Separation",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Separation"
+      },
+      {
+        "class_type": "FL_Audio_Shot_Iterator",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Audio",
+        "display_name": "FL Audio Shot Iterator"
+      },
+      {
+        "class_type": "FL_Fal_Pixverse_LipSync",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/AI",
+        "display_name": "FL Fal Pixverse LipSync"
+      },
+      {
+        "class_type": "FishS2MultiSpeakerSplitTTS",
+        "category": "FishAudioS2",
+        "display_name": "Fish S2 Multi-Speaker Split TTS"
+      },
+      {
+        "class_type": "FishS2MultiSpeakerTTS",
+        "category": "FishAudioS2",
+        "display_name": "Fish S2 Multi-Speaker TTS"
+      },
+      {
+        "class_type": "FishS2TTS",
+        "category": "FishAudioS2",
+        "display_name": "Fish S2 TTS"
+      },
+      {
+        "class_type": "FishS2VoiceCloneTTS",
+        "category": "FishAudioS2",
+        "display_name": "Fish S2 Voice Clone TTS"
+      },
+      {
+        "class_type": "GraniteASREngineNode",
+        "category": "TTS Audio Suite/\u2699\ufe0f Engines",
+        "display_name": "\u2699\ufe0f Granite ASR Engine"
+      },
+      {
+        "class_type": "HiggsAudioEngineNode",
+        "category": "TTS Audio Suite/\u2699\ufe0f Engines",
+        "display_name": "\u2699\ufe0f Higgs Audio 2 Engine"
+      },
+      {
+        "class_type": "ImageTransformByNormalizedAmplitude",
+        "category": "KJNodes/audio",
+        "display_name": "ImageTransformByNormalizedAmplitude"
+      },
+      {
+        "class_type": "IndexTTSEmotionOptionsNode",
+        "category": "TTS Audio Suite/Engines/IndexTTS-2",
+        "display_name": "\ud83c\udf08 IndexTTS-2 Emotion Vectors"
+      },
+      {
+        "class_type": "IndexTTSEngineNode",
+        "category": "TTS Audio Suite/\u2699\ufe0f Engines",
+        "display_name": "\u2699\ufe0f IndexTTS-2 Engine"
+      }
+    ],
+    "restoration": [
+      {
+        "class_type": "BatchCropFromMask",
+        "category": "KJNodes/masking",
+        "display_name": "Batch Crop From Mask"
+      },
+      {
+        "class_type": "BatchCropFromMaskAdvanced",
+        "category": "KJNodes/masking",
+        "display_name": "Batch Crop From Mask Advanced"
+      },
+      {
+        "class_type": "BatchUncrop",
+        "category": "KJNodes/masking",
+        "display_name": "Batch Uncrop"
+      },
+      {
+        "class_type": "BatchUncropAdvanced",
+        "category": "KJNodes/masking",
+        "display_name": "Batch Uncrop Advanced"
+      },
+      {
+        "class_type": "CR Select Resize Method",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udee0\ufe0f Utils/\u2699\ufe0f Other",
+        "display_name": "\u2699\ufe0f CR Select Resize Method"
+      },
+      {
+        "class_type": "CenterCropImages",
+        "category": "dataset/image",
+        "display_name": "Center Crop Images"
+      },
+      {
+        "class_type": "ColorMatch",
+        "category": "KJNodes/image",
+        "display_name": "Color Match"
+      },
+      {
+        "class_type": "DenoiseScheduleHookProvider",
+        "category": "ImpactPack/Upscale",
+        "display_name": "DenoiseScheduleHookProvider"
+      },
+      {
+        "class_type": "FL_ImageAspectCropper",
+        "category": "\ud83c\udff5\ufe0fFill Nodes/Image",
+        "display_name": "FL Image Aspect Cropper"
+      },
+      {
+        "class_type": "Image Inset Crop (rgthree)",
+        "category": "rgthree",
+        "display_name": "Image Inset Crop (rgthree)"
+      },
+      {
+        "class_type": "ImageColorMatch+",
+        "category": "essentials/image processing",
+        "display_name": "\ud83d\udd27 Image Color Match"
+      },
+      {
+        "class_type": "ImageColorMatchAdobe+",
+        "category": "essentials/image processing",
+        "display_name": "\ud83d\udd27 Image Color Match Adobe"
+      },
+      {
+        "class_type": "ImageResizeKJ",
+        "category": "KJNodes/image",
+        "display_name": "Resize Image (deprecated)"
+      },
+      {
+        "class_type": "ImageResizeKJv2",
+        "category": "KJNodes/image",
+        "display_name": "Resize Image v2"
+      },
+      {
+        "class_type": "ImageUncropByMask",
+        "category": "KJNodes/image",
+        "display_name": "Image Uncrop By Mask"
+      },
+      {
+        "class_type": "ImpactFrom_SEG_ELT_crop_region",
+        "category": "ImpactPack/Util",
+        "display_name": "From SEG_ELT crop_region"
+      },
+      {
+        "class_type": "LoadAndResizeImage",
+        "category": "KJNodes/image",
+        "display_name": "Load & Resize Image"
+      },
+      {
+        "class_type": "RandomCropImages",
+        "category": "dataset/image",
+        "display_name": "Random Crop Images"
+      },
+      {
+        "class_type": "ResizeAndPadImage",
+        "category": "image/transform",
+        "display_name": null
+      },
+      {
+        "class_type": "ResizeImageMaskNode",
+        "category": "transform",
+        "display_name": "Resize Image/Mask"
+      },
+      {
+        "class_type": "ResizeImagesByLongerEdge",
+        "category": "dataset/image",
+        "display_name": "Resize Images by Longer Edge"
+      },
+      {
+        "class_type": "ResizeImagesByShorterEdge",
+        "category": "dataset/image",
+        "display_name": "Resize Images by Shorter Edge"
+      },
+      {
+        "class_type": "ResizeMask",
+        "category": "KJNodes/masking",
+        "display_name": "Resize Mask"
+      },
+      {
+        "class_type": "SplitSigmasDenoise",
+        "category": "sampling/custom_sampling/sigmas",
+        "display_name": null
+      }
+    ],
+    "three_d": [
+      {
+        "class_type": "CM_ComposeVec2",
+        "category": "math/conversion",
+        "display_name": "ComposeVec2"
+      },
+      {
+        "class_type": "CM_ComposeVec3",
+        "category": "math/conversion",
+        "display_name": "ComposeVec3"
+      },
+      {
+        "class_type": "CM_ComposeVec4",
+        "category": "math/conversion",
+        "display_name": "ComposeVec4"
+      },
+      {
+        "class_type": "CameraPoseVisualizer",
+        "category": "KJNodes/misc",
+        "display_name": "Camera Pose Visualizer"
+      },
+      {
+        "class_type": "DrawGaussianNoiseOnImage",
+        "category": "KJNodes/masking",
+        "display_name": "Draw Gaussian Noise On Image"
+      },
+      {
+        "class_type": "ImageNormalize_Neg1_To_1",
+        "category": "KJNodes/image",
+        "display_name": "Image Normalize -1 to 1"
+      },
+      {
+        "class_type": "ImpactDecomposeSEGS",
+        "category": "ImpactPack/Util",
+        "display_name": "Decompose (SEGS)"
+      },
+      {
+        "class_type": "ImpactGaussianBlurMask",
+        "category": "ImpactPack/Util",
+        "display_name": "Gaussian Blur Mask"
+      },
+      {
+        "class_type": "ImpactGaussianBlurMaskInSEGS",
+        "category": "ImpactPack/Util",
+        "display_name": "Gaussian Blur Mask (SEGS)"
+      },
+      {
+        "class_type": "LoadResAdapterNormalization",
+        "category": "KJNodes/experimental",
+        "display_name": "LoadResAdapterNormalization"
+      },
+      {
+        "class_type": "MediaPipeFaceMeshToSEGS",
+        "category": "ImpactPack/Operation",
+        "display_name": "MediaPipe FaceMesh to SEGS"
+      },
+      {
+        "class_type": "MeshyRefineNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Refine Draft Model"
+      },
+      {
+        "class_type": "MeshyRigModelNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Rig Model"
+      },
+      {
+        "class_type": "MeshyTextToModelNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Text to Model"
+      },
+      {
+        "class_type": "MeshyTextureNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Texture Model"
+      },
+      {
+        "class_type": "NormalizeImages",
+        "category": "dataset/image",
+        "display_name": "Normalize Images"
+      },
+      {
+        "class_type": "Rodin3D_Detail",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Detail Generate"
+      },
+      {
+        "class_type": "Rodin3D_Gen2",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Gen-2 Generate"
+      },
+      {
+        "class_type": "Rodin3D_Regular",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Regular Generate"
+      },
+      {
+        "class_type": "Rodin3D_Sketch",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Sketch Generate"
+      },
+      {
+        "class_type": "Rodin3D_Smooth",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Smooth Generate"
+      },
+      {
+        "class_type": "SV3D_BatchSchedule",
+        "category": "KJNodes/experimental",
+        "display_name": "SV3D Batch Schedule"
+      },
+      {
+        "class_type": "SaveGLB",
+        "category": "3d",
+        "display_name": "Save 3D Model"
+      },
+      {
+        "class_type": "Tencent3DPartNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: 3D Part"
+      },
+      {
+        "class_type": "TencentImageToModelNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: Image(s) to Model"
+      },
+      {
+        "class_type": "TencentTextToModelNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: Text to Model"
+      },
+      {
+        "class_type": "TripoConversionNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Convert model"
+      },
+      {
+        "class_type": "TripoMultiviewToModelNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Multiview to Model"
+      },
+      {
+        "class_type": "TripoRefineNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Refine Draft model"
+      },
+      {
+        "class_type": "TripoRetargetNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Retarget rigged model"
+      },
+      {
+        "class_type": "TripoRigNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Rig model"
+      },
+      {
+        "class_type": "TripoTextToModelNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Text to Model"
+      },
+      {
+        "class_type": "TripoTextureNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Texture model"
+      },
+      {
+        "class_type": "VoxelToMesh",
+        "category": "3d",
+        "display_name": null
+      },
+      {
+        "class_type": "VoxelToMeshBasic",
+        "category": "3d",
+        "display_name": null
+      }
+    ],
+    "utility_general": [
+      {
+        "class_type": "AcademiaSD_Downloader",
+        "category": "Academia SD",
+        "display_name": "Academia SD Automatic downloader \u2b07\ufe0f"
+      },
+      {
+        "class_type": "AcademiaSD_Gemini_Node",
+        "category": "AcademiaSD/GoogleAI",
+        "display_name": "\ud83e\udd16 Gemini Vision (AcademiaSD)"
+      },
+      {
+        "class_type": "AcademiaSD_SaveCaption",
+        "category": "AcademiaSD/Dataset",
+        "display_name": "\ud83d\udcbe Save Dataset Caption (.txt)"
+      },
+      {
+        "class_type": "AddLabel",
+        "category": "KJNodes/text",
+        "display_name": "Add Label"
+      },
+      {
+        "class_type": "AddMask",
+        "category": "ImpactPack/Operation",
+        "display_name": "Pixelwise(MASK + MASK)"
+      },
+      {
+        "class_type": "Any Switch (rgthree)",
+        "category": "rgthree",
+        "display_name": "Any Switch (rgthree)"
+      },
+      {
+        "class_type": "AppendInstanceDiffusionTracking",
+        "category": "KJNodes/InstanceDiffusion",
+        "display_name": "AppendInstanceDiffusionTracking"
+      },
+      {
+        "class_type": "AppendStringsToList",
+        "category": "KJNodes/text",
+        "display_name": "Append Strings To List"
+      },
+      {
+        "class_type": "BOOLConstant",
+        "category": "KJNodes/constants",
+        "display_name": "BOOL Constant"
+      },
+      {
+        "class_type": "BatchCount+",
+        "category": "essentials/utilities",
+        "display_name": "\ud83d\udd27 Batch Count"
+      },
+      {
+        "class_type": "BatchImagesNode",
+        "category": "image",
+        "display_name": "Batch Images"
+      },
+      {
+        "class_type": "BatchMasksNode",
+        "category": "mask",
+        "display_name": "Batch Masks"
+      },
+      {
+        "class_type": "BboxToInt",
+        "category": "KJNodes/masking",
+        "display_name": "Bbox To Int"
+      },
+      {
+        "class_type": "BboxVisualize",
+        "category": "KJNodes/masking",
+        "display_name": "Bbox Visualize"
+      },
+      {
+        "class_type": "BitwiseAndMask",
+        "category": "ImpactPack/Operation",
+        "display_name": "Pixelwise(MASK & MASK)"
+      },
+      {
+        "class_type": "BitwiseAndMaskForEach",
+        "category": "ImpactPack/Operation",
+        "display_name": "Pixelwise(SEGS & SEGS)"
+      },
+      {
+        "class_type": "BlockifyMask",
+        "category": "KJNodes/masking",
+        "display_name": "Blockify Mask"
+      },
+      {
+        "class_type": "BriaImageEditNode",
+        "category": "api node/image/Bria",
+        "display_name": "Bria FIBO Image Edit"
+      },
+      {
+        "class_type": "BriaRemoveImageBackground",
+        "category": "api node/image/Bria",
+        "display_name": "Bria Remove Image Background"
+      },
+      {
+        "class_type": "ByteDanceImageNode",
+        "category": "api node/image/ByteDance",
+        "display_name": "ByteDance Image"
+      },
+      {
+        "class_type": "ByteDanceSeedreamNode",
+        "category": "api node/image/ByteDance",
+        "display_name": "ByteDance Seedream 4.5"
+      },
+      {
+        "class_type": "CFGZeroStarAndInit",
+        "category": "KJNodes/experimental",
+        "display_name": "CFG Zero Star/Init"
+      },
+      {
+        "class_type": "CM_BoolBinaryOperation",
+        "category": "math/bool",
+        "display_name": "BoolBinaryOperation"
+      },
+      {
+        "class_type": "CM_BoolToInt",
+        "category": "math/conversion",
+        "display_name": "BoolToInt"
+      },
+      {
+        "class_type": "CM_BoolUnaryOperation",
+        "category": "math/bool",
+        "display_name": "BoolUnaryOperation"
+      },
+      {
+        "class_type": "CM_BreakoutVec2",
+        "category": "math/conversion",
+        "display_name": "BreakoutVec2"
+      },
+      {
+        "class_type": "CM_BreakoutVec3",
+        "category": "math/conversion",
+        "display_name": "BreakoutVec3"
+      },
+      {
+        "class_type": "CM_BreakoutVec4",
+        "category": "math/conversion",
+        "display_name": "BreakoutVec4"
+      },
+      {
+        "class_type": "CM_FloatBinaryCondition",
+        "category": "math/float",
+        "display_name": "FloatBinaryCondition"
+      },
+      {
+        "class_type": "CM_FloatBinaryOperation",
+        "category": "math/float",
+        "display_name": "FloatBinaryOperation"
+      },
+      {
+        "class_type": "CM_FloatToInt",
+        "category": "math/conversion",
+        "display_name": "FloatToInt"
+      },
+      {
+        "class_type": "CM_FloatToNumber",
+        "category": "math/conversion",
+        "display_name": "FloatToNumber"
+      },
+      {
+        "class_type": "CM_FloatUnaryCondition",
+        "category": "math/float",
+        "display_name": "FloatUnaryCondition"
+      },
+      {
+        "class_type": "CM_FloatUnaryOperation",
+        "category": "math/float",
+        "display_name": "FloatUnaryOperation"
+      },
+      {
+        "class_type": "CM_IntBinaryCondition",
+        "category": "math/int",
+        "display_name": "IntBinaryCondition"
+      },
+      {
+        "class_type": "CM_IntBinaryOperation",
+        "category": "math/int",
+        "display_name": "IntBinaryOperation"
+      },
+      {
+        "class_type": "CM_IntToBool",
+        "category": "math/conversion",
+        "display_name": "IntToBool"
+      },
+      {
+        "class_type": "CM_IntToFloat",
+        "category": "math/conversion",
+        "display_name": "IntToFloat"
+      },
+      {
+        "class_type": "CM_IntToNumber",
+        "category": "math/conversion",
+        "display_name": "IntToNumber"
+      },
+      {
+        "class_type": "CM_IntUnaryCondition",
+        "category": "math/int",
+        "display_name": "IntUnaryCondition"
+      },
+      {
+        "class_type": "CM_IntUnaryOperation",
+        "category": "math/int",
+        "display_name": "IntUnaryOperation"
+      },
+      {
+        "class_type": "CM_NearestSDXLExtendedResolution",
+        "category": "math/graphics",
+        "display_name": "NearestSDXLExtendedResolution"
+      },
+      {
+        "class_type": "CM_NearestSDXLResolution",
+        "category": "math/graphics",
+        "display_name": "NearestSDXLResolution"
+      },
+      {
+        "class_type": "CM_NumberBinaryCondition",
+        "category": "math/float",
+        "display_name": "NumberBinaryCondition"
+      },
+      {
+        "class_type": "CM_NumberBinaryOperation",
+        "category": "math/number",
+        "display_name": "NumberBinaryOperation"
+      },
+      {
+        "class_type": "CM_NumberToFloat",
+        "category": "math/conversion",
+        "display_name": "NumberToFloat"
+      },
+      {
+        "class_type": "CM_NumberToInt",
+        "category": "math/conversion",
+        "display_name": "NumberToInt"
+      },
+      {
+        "class_type": "CM_NumberUnaryCondition",
+        "category": "math/Number",
+        "display_name": "NumberUnaryCondition"
+      },
+      {
+        "class_type": "CM_NumberUnaryOperation",
+        "category": "math/number",
+        "display_name": "NumberUnaryOperation"
+      },
+      {
+        "class_type": "CM_SDXLExtendedResolution",
+        "category": "math/graphics",
+        "display_name": "SDXLExtendedResolution"
+      }
+    ],
+    "unknown": [
+      {
+        "class_type": "APG",
+        "category": "sampling/custom_sampling",
+        "display_name": "Adaptive Projected Guidance"
+      },
+      {
+        "class_type": "AcademiaSD_Numeric",
+        "category": "Academia SD",
+        "display_name": "Academia SD Numeric Input \ud83d\udd22"
+      },
+      {
+        "class_type": "AddNoise",
+        "category": "_for_testing/custom_sampling/noise",
+        "display_name": null
+      },
+      {
+        "class_type": "AddTextPrefix",
+        "category": "dataset/text",
+        "display_name": "Add Text Prefix"
+      },
+      {
+        "class_type": "AddTextSuffix",
+        "category": "dataset/text",
+        "display_name": "Add Text Suffix"
+      },
+      {
+        "class_type": "AdjustBrightness",
+        "category": "dataset/image",
+        "display_name": "Adjust Brightness"
+      },
+      {
+        "class_type": "AdjustContrast",
+        "category": "dataset/image",
+        "display_name": "Adjust Contrast"
+      },
+      {
+        "class_type": "AnyPipeToBasic",
+        "category": "ImpactPack/Pipe",
+        "display_name": "Any PIPE -> BasicPipe"
+      },
+      {
+        "class_type": "BasicPipeToDetailerPipe",
+        "category": "ImpactPack/Pipe",
+        "display_name": "BasicPipe -> DetailerPipe"
+      },
+      {
+        "class_type": "BasicPipeToDetailerPipeSDXL",
+        "category": "ImpactPack/Pipe",
+        "display_name": "BasicPipe -> DetailerPipe (SDXL)"
+      },
+      {
+        "class_type": "BboxDetectorSEGS",
+        "category": "ImpactPack/Detector",
+        "display_name": "BBOX Detector (SEGS)"
+      },
+      {
+        "class_type": "BlackPatchRetryHookProvider",
+        "category": "ImpactPack/Util",
+        "display_name": "BlackPatchRetryHookProvider"
+      },
+      {
+        "class_type": "CFGGuider",
+        "category": "sampling/custom_sampling/guiders",
+        "display_name": null
+      },
+      {
+        "class_type": "CFGNorm",
+        "category": "advanced/guidance",
+        "display_name": null
+      },
+      {
+        "class_type": "CFGZeroStar",
+        "category": "advanced/guidance",
+        "display_name": null
+      },
+      {
+        "class_type": "CR 8 Channel In",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83c\udfb7 Pipe/\ud83d\ude8c Bus",
+        "display_name": "\ud83d\ude8c CR 8 Channel In"
+      },
+      {
+        "class_type": "CR 8 Channel Out",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83c\udfb7 Pipe/\ud83d\ude8c Bus",
+        "display_name": "\ud83d\ude8c CR 8 Channel Out"
+      },
+      {
+        "class_type": "CR Apply Model Merge",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\u26cf\ufe0f Model Merge",
+        "display_name": "\u26cf\ufe0f CR Apply Model Merge"
+      },
+      {
+        "class_type": "CR Apply Multi Upscale",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udd0d Upscale",
+        "display_name": "\ud83d\udd0d CR Apply Multi Upscale"
+      },
+      {
+        "class_type": "CR Aspect Ratio",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udd33 Aspect Ratio",
+        "display_name": "\ud83d\udd33 CR Aspect Ratio"
+      },
+      {
+        "class_type": "CR Aspect Ratio Banners",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udd33 Aspect Ratio",
+        "display_name": "\ud83d\udd33 CR Aspect Ratio Banners"
+      },
+      {
+        "class_type": "CR Aspect Ratio SDXL",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udc80 Legacy",
+        "display_name": "CR Aspect Ratio SDXL (Legacy)"
+      },
+      {
+        "class_type": "CR Aspect Ratio Social Media",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udd33 Aspect Ratio",
+        "display_name": "\ud83d\udd33 CR Aspect Ratio Social Media"
+      },
+      {
+        "class_type": "CR Binary Pattern",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf08 Pattern",
+        "display_name": "\ud83d\udfe5 CR Binary Pattern"
+      },
+      {
+        "class_type": "CR Binary To Bit List",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udcdc List",
+        "display_name": "\ud83d\udcdc CR Binary To Bit List"
+      },
+      {
+        "class_type": "CR Checker Pattern",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf08 Pattern",
+        "display_name": "\ud83d\udfe6 CR Checker Pattern"
+      },
+      {
+        "class_type": "CR Clamp Value",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udee0\ufe0f Utils/\u2699\ufe0f Other",
+        "display_name": "\u2699\ufe0f CR Clamp Value"
+      },
+      {
+        "class_type": "CR Color Bars",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf08 Pattern",
+        "display_name": "\ud83d\udfeb CR Color Bars"
+      },
+      {
+        "class_type": "CR Color Gradient",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf08 Pattern",
+        "display_name": "\ud83d\udfe8 CR Color Gradient"
+      },
+      {
+        "class_type": "CR Color Panel",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf01 Layout",
+        "display_name": "\ud83c\udf01 CR Color Panel"
+      },
+      {
+        "class_type": "CR Comic Panel Templates",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83d\udcf1 Template",
+        "display_name": "\ud83d\udcf1 CR Comic Panel Templates"
+      },
+      {
+        "class_type": "CR Composite Text",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83d\udd24 Text",
+        "display_name": "\ud83d\udd24\ufe0f CR Composite Text"
+      },
+      {
+        "class_type": "CR Data Bus In",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83c\udfb7 Pipe/\ud83d\ude8c Bus",
+        "display_name": "\ud83d\ude8c CR Data Bus In"
+      },
+      {
+        "class_type": "CR Data Bus Out",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83c\udfb7 Pipe/\ud83d\ude8c Bus",
+        "display_name": "\ud83d\ude8c CR Data Bus Out"
+      },
+      {
+        "class_type": "CR Diamond Panel",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf01 Layout",
+        "display_name": "\ud83c\udf01 CR Diamond Panel"
+      },
+      {
+        "class_type": "CR Draw Pie",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83d\udfe3 Shape",
+        "display_name": "\ud83d\udfe2 CR Draw Pie"
+      },
+      {
+        "class_type": "CR Draw Shape",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83d\udfe3 Shape",
+        "display_name": "\ud83d\udfe1 CR Draw Shape"
+      },
+      {
+        "class_type": "CR Draw Text",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83d\udd24 Text",
+        "display_name": "\ud83d\udd24\ufe0f CR Draw Text"
+      },
+      {
+        "class_type": "CR Feathered Border",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf01 Layout",
+        "display_name": "\ud83c\udf01 CR Feathered Border"
+      },
+      {
+        "class_type": "CR Half Drop Panel",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf01 Layout",
+        "display_name": "\ud83c\udf01 CR Half Drop Panel"
+      },
+      {
+        "class_type": "CR Halftone Filter",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udfa8 Filter",
+        "display_name": "\ud83c\udfa8 Halftone Filter"
+      },
+      {
+        "class_type": "CR Halftone Grid",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf08 Pattern",
+        "display_name": "\ud83d\udfeb CR Halftone Grid"
+      },
+      {
+        "class_type": "CR Image Border",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf01 Layout",
+        "display_name": "\ud83c\udf01 CR Image Border"
+      },
+      {
+        "class_type": "CR Image Grid Panel",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf01 Layout",
+        "display_name": "\ud83c\udf01 CR Image Grid Panel"
+      },
+      {
+        "class_type": "CR Image Output",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udce6 Core",
+        "display_name": "\ud83d\udcbe CR Image Output"
+      },
+      {
+        "class_type": "CR Image Panel",
+        "category": "\ud83e\udde9 Comfyroll Studio/\ud83d\udc7e Graphics/\ud83c\udf01 Layout",
+        "display_name": "\ud83c\udf01 CR Image Panel"
+      },
+      {
+        "class_type": "CR Image Pipe Edit",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83c\udfb7 Pipe/\ud83d\udee9\ufe0f Image",
+        "display_name": "\ud83d\udee9\ufe0f CR Image Pipe Edit"
+      },
+      {
+        "class_type": "CR Image Pipe In",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83c\udfb7 Pipe/\ud83d\udee9\ufe0f Image",
+        "display_name": "\ud83d\udee9 CR Image Pipe In"
+      },
+      {
+        "class_type": "CR Image Pipe Out",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83c\udfb7 Pipe/\ud83d\udee9\ufe0f Image",
+        "display_name": "\ud83d\udee9\ufe0f CR Image Pipe Out"
+      },
+      {
+        "class_type": "CR Image Size",
+        "category": "\ud83e\udde9 Comfyroll Studio/\u2728 Essential/\ud83d\udc80 Legacy",
+        "display_name": "CR Image Size (Legacy)"
+      }
+    ]
+  },
+  "out_of_profile_nodes": {
+    "image_still": [
+      "AcademiaSD_BatchLoader",
+      "AcademiaSD_MultiLora",
+      "AddNoiseToTrackPath",
+      "AlignYourStepsScheduler",
+      "ApplyCLIPSeg+",
+      "Audio IPAdapter Transitions",
+      "Audio Prompt Schedule",
+      "AudioEncoderEncode",
+      "BasicGuider",
+      "BasicScheduler",
+      "BatchCLIPSeg",
+      "BatchLatentsNode",
+      "BetaSamplingScheduler",
+      "ByteDanceImageToVideoNode",
+      "CLIPAttentionMultiply",
+      "CLIPLoader",
+      "CLIPLoaderGGUF",
+      "CLIPMergeAdd",
+      "CLIPMergeSimple",
+      "CLIPMergeSubtract"
+    ],
+    "video_cine": [
+      "AMT VFI",
+      "ATM VFI",
+      "Add Subtitles To Frames",
+      "ApplyRifleXRoPE_HunuyanVideo",
+      "ApplyRifleXRoPE_WanVideo",
+      "BboxDetectorCombined_v2",
+      "BriaRemoveVideoBackground",
+      "ByteDanceFirstLastFrameNode",
+      "ByteDanceImageReferenceNode",
+      "ByteDanceTextToVideoNode",
+      "CAIN VFI",
+      "CR Bit Schedule",
+      "CR Central Schedule",
+      "CR Combine Schedules",
+      "CR Current Frame",
+      "CR Cycle Images",
+      "CR Cycle Images Simple",
+      "CR Cycle Models",
+      "CR Cycle Text",
+      "CR Cycle Text Simple"
+    ],
+    "restoration": [
+      "BatchCropFromMask",
+      "BatchCropFromMaskAdvanced",
+      "BatchUncrop",
+      "BatchUncropAdvanced",
+      "CR Select Resize Method",
+      "CenterCropImages",
+      "ColorMatch",
+      "DenoiseScheduleHookProvider",
+      "FL_ImageAspectCropper",
+      "Image Inset Crop (rgthree)",
+      "ImageColorMatch+",
+      "ImageColorMatchAdobe+",
+      "ImageResizeKJ",
+      "ImageResizeKJv2",
+      "ImageUncropByMask",
+      "ImpactFrom_SEG_ELT_crop_region",
+      "LoadAndResizeImage",
+      "RandomCropImages",
+      "ResizeAndPadImage",
+      "ResizeImageMaskNode"
+    ],
+    "three_d": [
+      "CM_ComposeVec2",
+      "CM_ComposeVec3",
+      "CM_ComposeVec4",
+      "CameraPoseVisualizer",
+      "DrawGaussianNoiseOnImage",
+      "ImageNormalize_Neg1_To_1",
+      "ImpactDecomposeSEGS",
+      "ImpactGaussianBlurMask",
+      "ImpactGaussianBlurMaskInSEGS",
+      "LoadResAdapterNormalization",
+      "MediaPipeFaceMeshToSEGS",
+      "MeshyRefineNode",
+      "MeshyRigModelNode",
+      "MeshyTextToModelNode",
+      "MeshyTextureNode",
+      "NormalizeImages",
+      "Rodin3D_Detail",
+      "Rodin3D_Gen2",
+      "Rodin3D_Regular",
+      "Rodin3D_Sketch"
+    ]
+  },
+  "diagnostic": "WARNING",
+  "diagnostic_detail": "Preferred 'Audio / Dubbing' is only 5.6%, but combined with 'Utility / General' reaches 34.7%. COMFYUI.1B cross-check needed."
+}

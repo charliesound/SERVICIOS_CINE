@@ -1,0 +1,26 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/Workflow confyui/03_FLUX-Krea-Text2-Image.png",
+  "metadata_keys": [
+    "workflow"
+  ],
+  "class_types": [
+    "CLIPTextEncode",
+    "ConditioningZeroOut",
+    "DualCLIPLoader",
+    "EmptySD3LatentImage",
+    "KSampler",
+    "MarkdownNote",
+    "SaveImage",
+    "UNETLoader",
+    "VAEDecode",
+    "VAELoader"
+  ],
+  "models": [
+    "## Important\n\nGo to [black-forest-labs/FLUX.1-Krea-dev](https://huggingface.co/black-forest-labs/FLUX.1-Krea-dev/), accept the agreement in that repo, then click the link below to download the models.\n\n## Model links\n\n**Diffusion Model**\n\n- [flux1-krea-dev.safetensors](https://huggingface.co/black-forest-labs/FLUX.1-Krea-dev/resolve/main/flux1-krea-dev.safetensors)\n\n**Text Encoder**\n\n- [clip_l.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/blob/main/clip_l.safetensors)\n\n- [t5xxl_fp16.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors) or [t5xxl_fp8_e4m3fn_scaled.safetensors](https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors)\n\n**VAE**\n\n- [ae.safetensors](https://huggingface.co/Comfy-Org/Lumina_Image_2.0_Repackaged/resolve/main/split_files/vae/ae.safetensors)\n\n\n```\nComfyUI/\n\u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 models/\n\u00e2\u0094\u0082   \u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 diffusion_models/\n\u00e2\u0094\u0082   \u00e2\u0094\u0082   \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080\u00e2\u0094\u0080 flux1-krea-dev.safetensors \n\u00e2\u0094\u0082   \u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 text_encoders/\n\u00e2\u0094\u0082   \u00e2\u0094\u0082   \u00e2\u0094\u009c\u00e2\u0094\u0080\u00e2\u0094\u0080 clip_l.safetensors\n\u00e2\u0094\u0082   \u00e2\u0094\u0082   \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080\u00e2\u0094\u0080 t5xxl_fp16.safetensors # or t5xxl_fp8_e4m3fn_scaled.safetensors\n\u00e2\u0094\u0082   \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080 vae/\n\u00e2\u0094\u0082       \u00e2\u0094\u0094\u00e2\u0094\u0080\u00e2\u0094\u0080 ae.safetensors\n```\n",
+    "clip_l.safetensors",
+    "flux1-krea-dev-ae.safetensors",
+    "flux1-krea-dev.safetensors",
+    "t5xxl_fp16.safetensors"
+  ],
+  "family": "image_still"
+}

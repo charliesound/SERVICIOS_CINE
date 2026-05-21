@@ -1,0 +1,21 @@
+{
+  "image_path": "/opt/SERVICIOS_CINE/data/style_references/storyboard/storyboard_fast_flux_00008.png",
+  "metadata_keys": [
+    "prompt",
+    "workflow"
+  ],
+  "class_types": [
+    "CLIPTextEncode",
+    "CheckpointLoaderSimple",
+    "EmptyLatentImage",
+    "KSampler",
+    "Note",
+    "PreviewImage",
+    "SaveImage",
+    "VAEDecode"
+  ],
+  "models": [
+    "FLUX/flux1-schnell-fp8.safetensors"
+  ],
+  "family": "image_still"
+}

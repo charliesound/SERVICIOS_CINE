@@ -1,0 +1,1764 @@
+{
+  "port": 8189,
+  "instance": "video",
+  "comfyui_version": "0.14.1",
+  "total_nodes": 2576,
+  "family_counts": {
+    "image_still": 969,
+    "video_cine": 538,
+    "audio_dubbing": 29,
+    "restoration": 23,
+    "three_d": 50,
+    "utility_general": 457,
+    "unknown": 510
+  },
+  "family_percentages": {
+    "image_still": 37.6,
+    "video_cine": 20.9,
+    "audio_dubbing": 1.1,
+    "restoration": 0.9,
+    "three_d": 1.9,
+    "utility_general": 17.7,
+    "unknown": 19.8
+  },
+  "top_categories": [
+    [
+      "WanVideoWrapper",
+      138
+    ],
+    [
+      "RES4LYF/sigmas",
+      72
+    ],
+    [
+      "ImpactPack/Util",
+      70
+    ],
+    [
+      "conditioning/video_models",
+      37
+    ],
+    [
+      "HunyuanVideoWrapper",
+      33
+    ],
+    [
+      "WAS Suite/Image/Masking",
+      32
+    ],
+    [
+      "EasyUse/Image",
+      32
+    ],
+    [
+      "RES4LYF/latents",
+      27
+    ],
+    [
+      "EasyUse/Logic",
+      25
+    ],
+    [
+      "rgthree",
+      24
+    ],
+    [
+      "audio",
+      23
+    ],
+    [
+      "CogVideoWrapper",
+      23
+    ],
+    [
+      "RES4LYF/sampler_options",
+      23
+    ],
+    [
+      "RES4LYF/sampler_extensions",
+      23
+    ],
+    [
+      "WAS Suite/Logic",
+      22
+    ],
+    [
+      "RES4LYF/model_patches",
+      22
+    ],
+    [
+      "api node/video/Kling",
+      21
+    ],
+    [
+      "RES4LYF/images",
+      20
+    ],
+    [
+      "image",
+      19
+    ],
+    [
+      "lightricks/LTXV",
+      19
+    ],
+    [
+      "EasyUse/Loaders",
+      19
+    ],
+    [
+      "loaders",
+      18
+    ],
+    [
+      "api node/image/Recraft",
+      18
+    ],
+    [
+      "WAS Suite/Text",
+      18
+    ],
+    [
+      "RES4LYF/conditioning",
+      18
+    ],
+    [
+      "ImpactPack/Operation",
+      18
+    ],
+    [
+      "ImpactPack/Upscale",
+      18
+    ],
+    [
+      "conditioning",
+      17
+    ],
+    [
+      "latent",
+      17
+    ],
+    [
+      "\u267e\ufe0fMixlab/Image",
+      17
+    ]
+  ],
+  "top_per_family": {
+    "image_still": [
+      {
+        "class_type": "ADE_AnimateDiffLoRALoader",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53",
+        "display_name": "Load AnimateDiff LoRA \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AttachLoraHookToCLIP",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning",
+        "display_name": "Set CLIP LoRA Hook \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AttachLoraHookToConditioning",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/single cond ops",
+        "display_name": "Set Model LoRA Hook \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_CombineLoraHooks",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/combine lora hooks",
+        "display_name": "Combine LoRA Hooks [2] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_CombineLoraHooksEight",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/combine lora hooks",
+        "display_name": "Combine LoRA Hooks [8] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_CombineLoraHooksFour",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/combine lora hooks",
+        "display_name": "Combine LoRA Hooks [4] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ConditioningCombine",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/single cond ops",
+        "display_name": "Manual Combine Cond \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ConditioningSetMask",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/single cond ops",
+        "display_name": "Set Props on Cond \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ConditioningSetMaskAndCombine",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/single cond ops",
+        "display_name": "Set Props and Combine Cond \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ConditioningSetUnmaskedAndCombine",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/single cond ops",
+        "display_name": "Set Unmasked Cond \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_EmptyLatentImageLarge",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/extras",
+        "display_name": "Empty Latent Image (Big Batch) \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_LoraHookKeyframe",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/schedule lora hooks",
+        "display_name": "LoRA Hook Keyframe \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_LoraHookKeyframeFromStrengthList",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/schedule lora hooks",
+        "display_name": "LoRA Hook Keyframes From List \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_LoraHookKeyframeInterpolation",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/schedule lora hooks",
+        "display_name": "LoRA Hook Keyframes Interp. \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_PairedConditioningCombine",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning",
+        "display_name": "Manual Combine Conds \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_PairedConditioningSetMask",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning",
+        "display_name": "Set Props on Conds \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_PairedConditioningSetMaskAndCombine",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning",
+        "display_name": "Set Props and Combine Conds \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_PairedConditioningSetUnmaskedAndCombine",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning",
+        "display_name": "Set Unmasked Conds \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_PromptScheduling",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/scheduling",
+        "display_name": "Prompt Scheduling \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_PromptSchedulingLatents",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/scheduling",
+        "display_name": "Prompt Scheduling [Latents] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_RegisterLoraHook",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/register lora hooks",
+        "display_name": "Register LoRA Hook \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_RegisterLoraHookModelOnly",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/register lora hooks",
+        "display_name": "Register LoRA Hook (Model Only) \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_RegisterModelAsLoraHook",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/register lora hooks",
+        "display_name": "Register Model as LoRA Hook \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_RegisterModelAsLoraHookModelOnly",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning/register lora hooks",
+        "display_name": "Register Model as LoRA Hook (MO) \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_SetLoraHookKeyframe",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning",
+        "display_name": "Set LoRA Hook Keyframes \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_TimestepsConditioning",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/conditioning",
+        "display_name": "Timesteps Conditioning \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_UpscaleAndVAEEncode",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461/AnimateLCM-I2V",
+        "display_name": "Scale Ref Image and VAE Encode \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2461"
+      },
+      {
+        "class_type": "ADE_ValueSchedulingLatents",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/scheduling",
+        "display_name": "Value Scheduling [Latents] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "AIO_Preprocessor",
+        "category": "ControlNet Preprocessors",
+        "display_name": "AIO Aux Preprocessor"
+      },
+      {
+        "class_type": "AddLatentGuide",
+        "category": "conditioning/video_models",
+        "display_name": null
+      },
+      {
+        "class_type": "AlignYourStepsScheduler",
+        "category": "sampling/custom_sampling/schedulers",
+        "display_name": null
+      },
+      {
+        "class_type": "AnimalPosePreprocessor",
+        "category": "ControlNet Preprocessors/Faces and Poses Estimators",
+        "display_name": "AnimalPose Estimator (AP10K)"
+      },
+      {
+        "class_type": "AnimeFace_SemSegPreprocessor",
+        "category": "ControlNet Preprocessors/Semantic Segmentation",
+        "display_name": "Anime Face Segmentor"
+      },
+      {
+        "class_type": "AnimeLineArtPreprocessor",
+        "category": "ControlNet Preprocessors/Line Extractors",
+        "display_name": "Anime Lineart"
+      },
+      {
+        "class_type": "AnyLineArtPreprocessor_aux",
+        "category": "ControlNet Preprocessors/Line Extractors",
+        "display_name": "AnyLine Lineart"
+      },
+      {
+        "class_type": "ApplyCLIPSeg+",
+        "category": "essentials/segmentation",
+        "display_name": "\ud83d\udd27 Apply CLIPSeg"
+      },
+      {
+        "class_type": "ApplyVisualStylePrompting_",
+        "category": "\u267e\ufe0fMixlab/Style",
+        "display_name": "Apply VisualStyle Prompting \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "AudioEncoderEncode",
+        "category": "conditioning",
+        "display_name": null
+      },
+      {
+        "class_type": "BAE-NormalMapPreprocessor",
+        "category": "ControlNet Preprocessors/Normal and Depth Estimators",
+        "display_name": "BAE Normal Map"
+      },
+      {
+        "class_type": "Base64ToConditioning",
+        "category": "RES4LYF/utilities",
+        "display_name": "Base64ToConditioning"
+      },
+      {
+        "class_type": "BasicGuider",
+        "category": "sampling/custom_sampling/guiders",
+        "display_name": null
+      },
+      {
+        "class_type": "BasicScheduler",
+        "category": "sampling/custom_sampling/schedulers",
+        "display_name": null
+      },
+      {
+        "class_type": "BatchLatentsNode",
+        "category": "latent",
+        "display_name": "Batch Latents"
+      },
+      {
+        "class_type": "BetaSamplingScheduler",
+        "category": "sampling/custom_sampling/schedulers",
+        "display_name": null
+      },
+      {
+        "class_type": "BinaryPreprocessor",
+        "category": "ControlNet Preprocessors/Line Extractors",
+        "display_name": "Binary Lines"
+      },
+      {
+        "class_type": "Blend Latents",
+        "category": "WAS Suite/Latent",
+        "display_name": "Blend Latents"
+      },
+      {
+        "class_type": "BongSampler",
+        "category": "RES4LYF/samplers",
+        "display_name": "BongSampler"
+      },
+      {
+        "class_type": "Bounded Image Blend",
+        "category": "WAS Suite/Image/Bound",
+        "display_name": "Bounded Image Blend"
+      },
+      {
+        "class_type": "Bounded Image Blend with Mask",
+        "category": "WAS Suite/Image/Bound",
+        "display_name": "Bounded Image Blend with Mask"
+      },
+      {
+        "class_type": "Bounded Image Crop",
+        "category": "WAS Suite/Image/Bound",
+        "display_name": "Bounded Image Crop"
+      }
+    ],
+    "video_cine": [
+      {
+        "class_type": "ADE_ADBlockCombo",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/per block",
+        "display_name": "AD Block \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ADBlockIndiv",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/per block",
+        "display_name": "AD Block+ \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AdjustPEFullStretch",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/ad settings/pe adjust",
+        "display_name": "Adjust PE [Full Stretch] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AdjustPEManual",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/ad settings/pe adjust",
+        "display_name": "Adjust PE [Manual] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AdjustPESweetspotStretch",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/ad settings/pe adjust",
+        "display_name": "Adjust PE [Sweetspot] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AdjustWeightAllAdd",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/ad settings/weight adjust",
+        "display_name": "Adjust Weight [All\u25c6Add] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AdjustWeightAllMult",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/ad settings/weight adjust",
+        "display_name": "Adjust Weight [All\u25c6Mult] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AdjustWeightIndivAdd",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/ad settings/weight adjust",
+        "display_name": "Adjust Weight [Indiv\u25c6Add] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AdjustWeightIndivAttnAdd",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/ad settings/weight adjust",
+        "display_name": "Adjust Weight [Indiv-Attn\u25c6Add] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AdjustWeightIndivAttnMult",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/ad settings/weight adjust",
+        "display_name": "Adjust Weight [Indiv-Attn\u25c6Mult] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AdjustWeightIndivMult",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/ad settings/weight adjust",
+        "display_name": "Adjust Weight [Indiv\u25c6Mult] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AncestralOptions",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/sample settings",
+        "display_name": "Ancestral Options \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AnimateDiffCombine",
+        "category": "",
+        "display_name": "\ud83d\udeabAnimateDiff Combine [DEPRECATED, Use Video Combine (VHS) Instead!] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AnimateDiffKeyframe",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53",
+        "display_name": "AnimateDiff Keyframe \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AnimateDiffLoaderGen1",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2460 Gen1 nodes \u2460",
+        "display_name": "AnimateDiff Loader \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2460"
+      },
+      {
+        "class_type": "ADE_AnimateDiffLoaderV1Advanced",
+        "category": "",
+        "display_name": "\ud83d\udeabAnimateDiff Loader (Advanced) [DEPRECATED] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AnimateDiffLoaderWithContext",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2460 Gen1 nodes \u2460",
+        "display_name": "AnimateDiff Loader [Legacy] \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2460"
+      },
+      {
+        "class_type": "ADE_AnimateDiffModelSettings",
+        "category": "",
+        "display_name": "\ud83d\udeab[DEPR] Motion Model Settings (Advanced) \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2460"
+      },
+      {
+        "class_type": "ADE_AnimateDiffModelSettingsAdvancedAttnStrengths",
+        "category": "",
+        "display_name": "\ud83d\udeab[DEPR] Motion Model Settings (Adv. Attn) \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2460"
+      },
+      {
+        "class_type": "ADE_AnimateDiffModelSettingsSimple",
+        "category": "",
+        "display_name": "\ud83d\udeab[DEPR] Motion Model Settings (Simple) \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2460"
+      },
+      {
+        "class_type": "ADE_AnimateDiffModelSettings_Release",
+        "category": "",
+        "display_name": "\ud83d\udeab[DEPR] Motion Model Settings \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2460"
+      },
+      {
+        "class_type": "ADE_AnimateDiffSamplingSettings",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53",
+        "display_name": "Sample Settings \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AnimateDiffSettings",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/ad settings",
+        "display_name": "AnimateDiff Settings \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AnimateDiffUniformContextOptions",
+        "category": "",
+        "display_name": "Context Options\u25c6Looped Uniform \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_AnimateDiffUnload",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/extras",
+        "display_name": "AnimateDiff Unload \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ApplyAnimateDiffModel",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461",
+        "display_name": "Apply AnimateDiff Model (Adv.) \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2461"
+      },
+      {
+        "class_type": "ADE_ApplyAnimateDiffModelSimple",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461",
+        "display_name": "Apply AnimateDiff Model \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2461"
+      },
+      {
+        "class_type": "ADE_ApplyAnimateDiffModelWithCameraCtrl",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461/CameraCtrl",
+        "display_name": "Apply AnimateDiff+CameraCtrl Model \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2461"
+      },
+      {
+        "class_type": "ADE_ApplyAnimateDiffModelWithPIA",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461/PIA",
+        "display_name": "Apply AnimateDiff-PIA Model \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2461"
+      },
+      {
+        "class_type": "ADE_ApplyAnimateLCMI2VModel",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461/AnimateLCM-I2V",
+        "display_name": "Apply AnimateLCM-I2V Model \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2461"
+      },
+      {
+        "class_type": "ADE_BatchedContextOptions",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/context opts",
+        "display_name": "Context Options\u25c6Batched [Non-AD] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_CFGExtrasPAG",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/sample settings/cfg extras",
+        "display_name": "CFG Extras\u25c6PAG [Multival] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_CFGExtrasPAGSimple",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/sample settings/cfg extras",
+        "display_name": "CFG Extras\u25c6PAG \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_CFGExtrasRescaleCFG",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/sample settings/cfg extras",
+        "display_name": "CFG Extras\u25c6RescaleCFG [Multival] \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_CFGExtrasRescaleCFGSimple",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/sample settings/cfg extras",
+        "display_name": "CFG Extras\u25c6RescaleCFG \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_CameraCtrlAnimateDiffKeyframe",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461/CameraCtrl",
+        "display_name": "AnimateDiff+CameraCtrl Keyframe \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_CameraManualPoseAppend",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461/CameraCtrl/poses",
+        "display_name": "Manual Append CameraCtrl Poses \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2461"
+      },
+      {
+        "class_type": "ADE_CameraPoseAdvanced",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461/CameraCtrl/poses",
+        "display_name": "Create CameraCtrl Poses (Adv.) \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2461"
+      },
+      {
+        "class_type": "ADE_CameraPoseBasic",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461/CameraCtrl/poses",
+        "display_name": "Create CameraCtrl Poses \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2461"
+      },
+      {
+        "class_type": "ADE_CameraPoseCombo",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/\u2461 Gen2 nodes \u2461/CameraCtrl/poses",
+        "display_name": "Create CameraCtrl Poses (Combo) \ud83c\udfad\ud83c\udd50\ud83c\udd53\u2461"
+      },
+      {
+        "class_type": "ADE_ConditionExtraction",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/scheduling",
+        "display_name": "Condition Step Extraction \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ContextExtras_ContextRef",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/context opts/context extras",
+        "display_name": "Context Extras\u25c6ContextRef \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ContextExtras_ContextRef_Keyframe",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/context opts/context extras/contextref",
+        "display_name": "ContextRef Keyframe \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ContextExtras_ContextRef_KeyframeFromList",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/context opts/context extras/contextref",
+        "display_name": "ContextRef Keyframes From List \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ContextExtras_ContextRef_KeyframeInterpolation",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/context opts/context extras/contextref",
+        "display_name": "ContextRef Keyframes Interp. \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ContextExtras_ContextRef_ModeFirst",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/context opts/context extras/contextref",
+        "display_name": "ContextRef Mode\u25c6First \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ContextExtras_ContextRef_ModeIndexes",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/context opts/context extras/contextref",
+        "display_name": "ContextRef Mode\u25c6Indexes \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ContextExtras_ContextRef_ModeSliding",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/context opts/context extras/contextref",
+        "display_name": "ContextRef Mode\u25c6Sliding \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ContextExtras_ContextRef_TuneAttn",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/context opts/context extras/contextref",
+        "display_name": "ContextRef Tune\u25c6Attn \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      },
+      {
+        "class_type": "ADE_ContextExtras_ContextRef_TuneAttnAdain",
+        "category": "Animate Diff \ud83c\udfad\ud83c\udd50\ud83c\udd53/context opts/context extras/contextref",
+        "display_name": "ContextRef Tune\u25c6Attn+Adain \ud83c\udfad\ud83c\udd50\ud83c\udd53"
+      }
+    ],
+    "audio_dubbing": [
+      {
+        "class_type": "AnalyzeAudio",
+        "category": "\u267e\ufe0fMixlab/Audio",
+        "display_name": "Analyze Audio \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "AudioAdjustVolume",
+        "category": "audio",
+        "display_name": "Audio Adjust Volume"
+      },
+      {
+        "class_type": "AudioConcat",
+        "category": "audio",
+        "display_name": "Audio Concat"
+      },
+      {
+        "class_type": "AudioCrop",
+        "category": "audio",
+        "display_name": "AudioCrop"
+      },
+      {
+        "class_type": "AudioEncoderLoader",
+        "category": "loaders",
+        "display_name": null
+      },
+      {
+        "class_type": "AudioGetTempo",
+        "category": "audio",
+        "display_name": "AudioGetTempo"
+      },
+      {
+        "class_type": "AudioMerge",
+        "category": "audio",
+        "display_name": "Audio Merge"
+      },
+      {
+        "class_type": "AudioPlay",
+        "category": "\u267e\ufe0fMixlab/Audio",
+        "display_name": "Preview Audio \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "AudioSeparation",
+        "category": "audio",
+        "display_name": "AudioSeparation"
+      },
+      {
+        "class_type": "AudioSpeedShift",
+        "category": "audio",
+        "display_name": "AudioSpeedShift"
+      },
+      {
+        "class_type": "AudioTempoMatch",
+        "category": "audio",
+        "display_name": "AudioTempoMatch"
+      },
+      {
+        "class_type": "EmptyAudio",
+        "category": "audio",
+        "display_name": "Empty Audio"
+      },
+      {
+        "class_type": "EnhancementUtils_PlaySound",
+        "category": "utils",
+        "display_name": "Play Sound"
+      },
+      {
+        "class_type": "JoinAudioChannels",
+        "category": "audio",
+        "display_name": "Join Audio Channels"
+      },
+      {
+        "class_type": "LoadAudio",
+        "category": "audio",
+        "display_name": "Load Audio"
+      },
+      {
+        "class_type": "PreviewAudio",
+        "category": "audio",
+        "display_name": "Preview Audio"
+      },
+      {
+        "class_type": "RecordAudio",
+        "category": "audio",
+        "display_name": "Record Audio"
+      },
+      {
+        "class_type": "SaveAudio",
+        "category": "audio",
+        "display_name": "Save Audio (FLAC)"
+      },
+      {
+        "class_type": "SaveAudioMP3",
+        "category": "audio",
+        "display_name": "Save Audio (MP3)"
+      },
+      {
+        "class_type": "SaveAudioOpus",
+        "category": "audio",
+        "display_name": "Save Audio (Opus)"
+      },
+      {
+        "class_type": "SenseVoiceNode",
+        "category": "\u267e\ufe0fMixlab/Audio",
+        "display_name": "Sense Voice \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "SpeechRecognition",
+        "category": "\u267e\ufe0fMixlab/Audio",
+        "display_name": "SpeechRecognition \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "SpeechSynthesis",
+        "category": "\u267e\ufe0fMixlab/Audio",
+        "display_name": "SpeechSynthesis \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "SplitAudioChannels",
+        "category": "audio",
+        "display_name": "Split Audio Channels"
+      },
+      {
+        "class_type": "StabilityAudioToAudio",
+        "category": "api node/audio/Stability AI",
+        "display_name": "Stability AI Audio To Audio"
+      },
+      {
+        "class_type": "StabilityTextToAudio",
+        "category": "api node/audio/Stability AI",
+        "display_name": "Stability AI Text To Audio"
+      },
+      {
+        "class_type": "TrimAudioDuration",
+        "category": "audio",
+        "display_name": "Trim Audio Duration"
+      },
+      {
+        "class_type": "Wav2Lip",
+        "category": "ComfyUI/Wav2Lip",
+        "display_name": "Wav2Lip"
+      },
+      {
+        "class_type": "WavespeedImageUpscaleNode",
+        "category": "api node/image/WaveSpeed",
+        "display_name": "WaveSpeed Image Upscale"
+      }
+    ],
+    "restoration": [
+      {
+        "class_type": "CenterCropImages",
+        "category": "dataset/image",
+        "display_name": "Center Crop Images"
+      },
+      {
+        "class_type": "DenoiseScheduleHookProvider",
+        "category": "ImpactPack/Upscale",
+        "display_name": "DenoiseScheduleHookProvider"
+      },
+      {
+        "class_type": "Image Inset Crop (rgthree)",
+        "category": "rgthree",
+        "display_name": "Image Inset Crop (rgthree)"
+      },
+      {
+        "class_type": "ImageColorMatch+",
+        "category": "essentials/image processing",
+        "display_name": "\ud83d\udd27 Image Color Match"
+      },
+      {
+        "class_type": "ImageColorMatchAdobe+",
+        "category": "essentials/image processing",
+        "display_name": "\ud83d\udd27 Image Color Match Adobe"
+      },
+      {
+        "class_type": "ImageCropByAlpha",
+        "category": "\u267e\ufe0fMixlab/Image",
+        "display_name": "ImageCropByAlpha \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "ImpactFrom_SEG_ELT_crop_region",
+        "category": "ImpactPack/Util",
+        "display_name": "From SEG_ELT crop_region"
+      },
+      {
+        "class_type": "Mask Crop Dominant Region",
+        "category": "WAS Suite/Image/Masking",
+        "display_name": "Mask Crop Dominant Region"
+      },
+      {
+        "class_type": "Mask Crop Minority Region",
+        "category": "WAS Suite/Image/Masking",
+        "display_name": "Mask Crop Minority Region"
+      },
+      {
+        "class_type": "Mask Crop Region",
+        "category": "WAS Suite/Image/Masking",
+        "display_name": "Mask Crop Region"
+      },
+      {
+        "class_type": "RandomCropImages",
+        "category": "dataset/image",
+        "display_name": "Random Crop Images"
+      },
+      {
+        "class_type": "ResizeAndPadImage",
+        "category": "image/transform",
+        "display_name": null
+      },
+      {
+        "class_type": "ResizeImageMaskNode",
+        "category": "transform",
+        "display_name": "Resize Image/Mask"
+      },
+      {
+        "class_type": "ResizeImageMixlab",
+        "category": "\u267e\ufe0fMixlab/Image",
+        "display_name": "Resize Image \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "ResizeImagesByLongerEdge",
+        "category": "dataset/image",
+        "display_name": "Resize Images by Longer Edge"
+      },
+      {
+        "class_type": "ResizeImagesByShorterEdge",
+        "category": "dataset/image",
+        "display_name": "Resize Images by Shorter Edge"
+      },
+      {
+        "class_type": "Sigmas Cleanup",
+        "category": "RES4LYF/sigmas",
+        "display_name": "Sigmas Cleanup"
+      },
+      {
+        "class_type": "SplitSigmasDenoise",
+        "category": "sampling/custom_sampling/sigmas",
+        "display_name": null
+      },
+      {
+        "class_type": "easy XYInputs: Denoise",
+        "category": "EasyUse/XY Inputs",
+        "display_name": "XY Inputs: Denoise //EasyUse"
+      },
+      {
+        "class_type": "easy imageColorMatch",
+        "category": "EasyUse/Image",
+        "display_name": "Image Color Match"
+      },
+      {
+        "class_type": "easy imageCropFromMask",
+        "category": "EasyUse/Image",
+        "display_name": "imageCropFromMask"
+      },
+      {
+        "class_type": "easy imageInsetCrop",
+        "category": "EasyUse/Image",
+        "display_name": "ImageInsetCrop"
+      },
+      {
+        "class_type": "easy imageUncropFromBBOX",
+        "category": "EasyUse/Image",
+        "display_name": "imageUncropFromBBOX"
+      }
+    ],
+    "three_d": [
+      {
+        "class_type": "3DImage",
+        "category": "\u267e\ufe0fMixlab/3D",
+        "display_name": "3DImage \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "CM_ComposeVec2",
+        "category": "math/conversion",
+        "display_name": "ComposeVec2"
+      },
+      {
+        "class_type": "CM_ComposeVec3",
+        "category": "math/conversion",
+        "display_name": "ComposeVec3"
+      },
+      {
+        "class_type": "CM_ComposeVec4",
+        "category": "math/conversion",
+        "display_name": "ComposeVec4"
+      },
+      {
+        "class_type": "DepthAnything_V2",
+        "category": "DepthAnythingV2",
+        "display_name": "Depth Anything V2"
+      },
+      {
+        "class_type": "DepthCrafter",
+        "category": "DepthCrafter",
+        "display_name": "DepthCrafter"
+      },
+      {
+        "class_type": "DepthViewer",
+        "category": "\u267e\ufe0fMixlab/3D",
+        "display_name": "Depth Viewer \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "DownloadAndLoadDepthAnythingV2Model",
+        "category": "DepthAnythingV2",
+        "display_name": "DownloadAndLoadDepthAnythingV2Model"
+      },
+      {
+        "class_type": "DownloadAndLoadDepthCrafterModel",
+        "category": "DepthCrafter",
+        "display_name": "DownloadAndLoadDepthCrafterModel"
+      },
+      {
+        "class_type": "DrawGaussianNoiseOnImage",
+        "category": "KJNodes/masking",
+        "display_name": "Draw Gaussian Noise On Image"
+      },
+      {
+        "class_type": "Image Gaussian Blur",
+        "category": "RES4LYF/images",
+        "display_name": "Image Gaussian Blur"
+      },
+      {
+        "class_type": "Image Seamless Texture",
+        "category": "WAS Suite/Image/Process",
+        "display_name": "Image Seamless Texture"
+      },
+      {
+        "class_type": "Image Transpose",
+        "category": "WAS Suite/Image/Transform",
+        "display_name": "Image Transpose"
+      },
+      {
+        "class_type": "ImpactDecomposeSEGS",
+        "category": "ImpactPack/Util",
+        "display_name": "Decompose (SEGS)"
+      },
+      {
+        "class_type": "ImpactGaussianBlurMask",
+        "category": "ImpactPack/Util",
+        "display_name": "Gaussian Blur Mask"
+      },
+      {
+        "class_type": "ImpactGaussianBlurMaskInSEGS",
+        "category": "ImpactPack/Util",
+        "display_name": "Gaussian Blur Mask (SEGS)"
+      },
+      {
+        "class_type": "LoadTripoSRModel_",
+        "category": "\u267e\ufe0fMixlab/3D/TripoSR",
+        "display_name": "Load TripoSR Model"
+      },
+      {
+        "class_type": "Mask Gaussian Region",
+        "category": "WAS Suite/Image/Masking",
+        "display_name": "Mask Gaussian Region"
+      },
+      {
+        "class_type": "MediaPipeFaceMeshToSEGS",
+        "category": "ImpactPack/Operation",
+        "display_name": "MediaPipe FaceMesh to SEGS"
+      },
+      {
+        "class_type": "MeshyRefineNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Refine Draft Model"
+      },
+      {
+        "class_type": "MeshyRigModelNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Rig Model"
+      },
+      {
+        "class_type": "MeshyTextToModelNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Text to Model"
+      },
+      {
+        "class_type": "MeshyTextureNode",
+        "category": "api node/3d/Meshy",
+        "display_name": "Meshy: Texture Model"
+      },
+      {
+        "class_type": "MiDaS Depth Approximation",
+        "category": "WAS Suite/Image/AI",
+        "display_name": "MiDaS Depth Approximation"
+      },
+      {
+        "class_type": "MimicMotionGetPoses",
+        "category": "MimicMotionWrapper",
+        "display_name": "MimicMotion GetPoses"
+      },
+      {
+        "class_type": "NAGuidance",
+        "category": "",
+        "display_name": "Normalized Attention Guidance"
+      },
+      {
+        "class_type": "NormalizeImages",
+        "category": "dataset/image",
+        "display_name": "Normalize Images"
+      },
+      {
+        "class_type": "Rodin3D_Detail",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Detail Generate"
+      },
+      {
+        "class_type": "Rodin3D_Gen2",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Gen-2 Generate"
+      },
+      {
+        "class_type": "Rodin3D_Regular",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Regular Generate"
+      },
+      {
+        "class_type": "Rodin3D_Sketch",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Sketch Generate"
+      },
+      {
+        "class_type": "Rodin3D_Smooth",
+        "category": "api node/3d/Rodin",
+        "display_name": "Rodin 3D Generate - Smooth Generate"
+      },
+      {
+        "class_type": "SaveGLB",
+        "category": "3d",
+        "display_name": "Save 3D Model"
+      },
+      {
+        "class_type": "SaveTripoSRMesh",
+        "category": "\u267e\ufe0fMixlab/3D/TripoSR",
+        "display_name": "Save TripoSR Mesh"
+      },
+      {
+        "class_type": "Sigmas Gaussian",
+        "category": "RES4LYF/sigmas",
+        "display_name": "Sigmas Gaussian"
+      },
+      {
+        "class_type": "Sigmas GaussianCDF",
+        "category": "RES4LYF/sigmas",
+        "display_name": "Sigmas GaussianCDF"
+      },
+      {
+        "class_type": "Tencent3DPartNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: 3D Part"
+      },
+      {
+        "class_type": "TencentImageToModelNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: Image(s) to Model"
+      },
+      {
+        "class_type": "TencentTextToModelNode",
+        "category": "api node/3d/Tencent",
+        "display_name": "Hunyuan3D: Text to Model"
+      },
+      {
+        "class_type": "TripoConversionNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Convert model"
+      },
+      {
+        "class_type": "TripoMultiviewToModelNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Multiview to Model"
+      },
+      {
+        "class_type": "TripoRefineNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Refine Draft model"
+      },
+      {
+        "class_type": "TripoRetargetNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Retarget rigged model"
+      },
+      {
+        "class_type": "TripoRigNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Rig model"
+      },
+      {
+        "class_type": "TripoTextToModelNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Text to Model"
+      },
+      {
+        "class_type": "TripoTextureNode",
+        "category": "api node/3d/Tripo",
+        "display_name": "Tripo: Texture model"
+      },
+      {
+        "class_type": "VoxelToMesh",
+        "category": "3d",
+        "display_name": null
+      },
+      {
+        "class_type": "VoxelToMeshBasic",
+        "category": "3d",
+        "display_name": null
+      },
+      {
+        "class_type": "easy poseEditor",
+        "category": "EasyUse/\ud83d\udeab Deprecated",
+        "display_name": "PoseEditor (\ud83d\udeabDeprecated)"
+      },
+      {
+        "class_type": "easy sv3dLoader",
+        "category": "EasyUse/Loaders",
+        "display_name": "EasyLoader (SV3D)"
+      }
+    ],
+    "utility_general": [
+      {
+        "class_type": "AddMask",
+        "category": "ImpactPack/Operation",
+        "display_name": "Pixelwise(MASK + MASK)"
+      },
+      {
+        "class_type": "Any Switch (rgthree)",
+        "category": "rgthree",
+        "display_name": "Any Switch (rgthree)"
+      },
+      {
+        "class_type": "AreaToMask",
+        "category": "\u267e\ufe0fMixlab/Mask",
+        "display_name": "Area To Mask \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "BLIP Model Loader",
+        "category": "WAS Suite/Loaders",
+        "display_name": "BLIP Model Loader"
+      },
+      {
+        "class_type": "BatchCount+",
+        "category": "essentials/utilities",
+        "display_name": "\ud83d\udd27 Batch Count"
+      },
+      {
+        "class_type": "BatchImagesNode",
+        "category": "image",
+        "display_name": "Batch Images"
+      },
+      {
+        "class_type": "BatchMasksNode",
+        "category": "mask",
+        "display_name": "Batch Masks"
+      },
+      {
+        "class_type": "BitwiseAndMask",
+        "category": "ImpactPack/Operation",
+        "display_name": "Pixelwise(MASK & MASK)"
+      },
+      {
+        "class_type": "BitwiseAndMaskForEach",
+        "category": "ImpactPack/Operation",
+        "display_name": "Pixelwise(SEGS & SEGS)"
+      },
+      {
+        "class_type": "Boolean To Text",
+        "category": "WAS Suite/Logic",
+        "display_name": "Boolean To Text"
+      },
+      {
+        "class_type": "BriaImageEditNode",
+        "category": "api node/image/Bria",
+        "display_name": "Bria FIBO Image Edit"
+      },
+      {
+        "class_type": "BriaRemoveImageBackground",
+        "category": "api node/image/Bria",
+        "display_name": "Bria Remove Image Background"
+      },
+      {
+        "class_type": "Bus Node",
+        "category": "WAS Suite/Utilities",
+        "display_name": "Bus Node"
+      },
+      {
+        "class_type": "ByteDanceImageNode",
+        "category": "api node/image/ByteDance",
+        "display_name": "ByteDance Image"
+      },
+      {
+        "class_type": "ByteDanceSeedreamNode",
+        "category": "api node/image/ByteDance",
+        "display_name": "ByteDance Seedream 4.5"
+      },
+      {
+        "class_type": "CM_BoolBinaryOperation",
+        "category": "math/bool",
+        "display_name": "BoolBinaryOperation"
+      },
+      {
+        "class_type": "CM_BoolToInt",
+        "category": "math/conversion",
+        "display_name": "BoolToInt"
+      },
+      {
+        "class_type": "CM_BoolUnaryOperation",
+        "category": "math/bool",
+        "display_name": "BoolUnaryOperation"
+      },
+      {
+        "class_type": "CM_BreakoutVec2",
+        "category": "math/conversion",
+        "display_name": "BreakoutVec2"
+      },
+      {
+        "class_type": "CM_BreakoutVec3",
+        "category": "math/conversion",
+        "display_name": "BreakoutVec3"
+      },
+      {
+        "class_type": "CM_BreakoutVec4",
+        "category": "math/conversion",
+        "display_name": "BreakoutVec4"
+      },
+      {
+        "class_type": "CM_FloatBinaryCondition",
+        "category": "math/float",
+        "display_name": "FloatBinaryCondition"
+      },
+      {
+        "class_type": "CM_FloatBinaryOperation",
+        "category": "math/float",
+        "display_name": "FloatBinaryOperation"
+      },
+      {
+        "class_type": "CM_FloatToInt",
+        "category": "math/conversion",
+        "display_name": "FloatToInt"
+      },
+      {
+        "class_type": "CM_FloatToNumber",
+        "category": "math/conversion",
+        "display_name": "FloatToNumber"
+      },
+      {
+        "class_type": "CM_FloatUnaryCondition",
+        "category": "math/float",
+        "display_name": "FloatUnaryCondition"
+      },
+      {
+        "class_type": "CM_FloatUnaryOperation",
+        "category": "math/float",
+        "display_name": "FloatUnaryOperation"
+      },
+      {
+        "class_type": "CM_IntBinaryCondition",
+        "category": "math/int",
+        "display_name": "IntBinaryCondition"
+      },
+      {
+        "class_type": "CM_IntBinaryOperation",
+        "category": "math/int",
+        "display_name": "IntBinaryOperation"
+      },
+      {
+        "class_type": "CM_IntToBool",
+        "category": "math/conversion",
+        "display_name": "IntToBool"
+      },
+      {
+        "class_type": "CM_IntToFloat",
+        "category": "math/conversion",
+        "display_name": "IntToFloat"
+      },
+      {
+        "class_type": "CM_IntToNumber",
+        "category": "math/conversion",
+        "display_name": "IntToNumber"
+      },
+      {
+        "class_type": "CM_IntUnaryCondition",
+        "category": "math/int",
+        "display_name": "IntUnaryCondition"
+      },
+      {
+        "class_type": "CM_IntUnaryOperation",
+        "category": "math/int",
+        "display_name": "IntUnaryOperation"
+      },
+      {
+        "class_type": "CM_NearestSDXLExtendedResolution",
+        "category": "math/graphics",
+        "display_name": "NearestSDXLExtendedResolution"
+      },
+      {
+        "class_type": "CM_NearestSDXLResolution",
+        "category": "math/graphics",
+        "display_name": "NearestSDXLResolution"
+      },
+      {
+        "class_type": "CM_NumberBinaryCondition",
+        "category": "math/float",
+        "display_name": "NumberBinaryCondition"
+      },
+      {
+        "class_type": "CM_NumberBinaryOperation",
+        "category": "math/number",
+        "display_name": "NumberBinaryOperation"
+      },
+      {
+        "class_type": "CM_NumberToFloat",
+        "category": "math/conversion",
+        "display_name": "NumberToFloat"
+      },
+      {
+        "class_type": "CM_NumberToInt",
+        "category": "math/conversion",
+        "display_name": "NumberToInt"
+      },
+      {
+        "class_type": "CM_NumberUnaryCondition",
+        "category": "math/Number",
+        "display_name": "NumberUnaryCondition"
+      },
+      {
+        "class_type": "CM_NumberUnaryOperation",
+        "category": "math/number",
+        "display_name": "NumberUnaryOperation"
+      },
+      {
+        "class_type": "CM_SDXLExtendedResolution",
+        "category": "math/graphics",
+        "display_name": "SDXLExtendedResolution"
+      },
+      {
+        "class_type": "CM_SDXLResolution",
+        "category": "math/graphics",
+        "display_name": "SDXLResolution"
+      },
+      {
+        "class_type": "CM_Vec2BinaryCondition",
+        "category": "math/vec2",
+        "display_name": "Vec2BinaryCondition"
+      },
+      {
+        "class_type": "CM_Vec2BinaryOperation",
+        "category": "math/vec2",
+        "display_name": "Vec2BinaryOperation"
+      },
+      {
+        "class_type": "CM_Vec2ScalarOperation",
+        "category": "math/vec2",
+        "display_name": "Vec2ScalarOperation"
+      },
+      {
+        "class_type": "CM_Vec2ToScalarBinaryOperation",
+        "category": "math/vec2",
+        "display_name": "Vec2ToScalarBinaryOperation"
+      },
+      {
+        "class_type": "CM_Vec2ToScalarUnaryOperation",
+        "category": "math/vec2",
+        "display_name": "Vec2ToScalarUnaryOperation"
+      },
+      {
+        "class_type": "CM_Vec2UnaryCondition",
+        "category": "math/vec2",
+        "display_name": "Vec2UnaryCondition"
+      }
+    ],
+    "unknown": [
+      {
+        "class_type": "APG",
+        "category": "sampling/custom_sampling",
+        "display_name": "Adaptive Projected Guidance"
+      },
+      {
+        "class_type": "AddNoise",
+        "category": "_for_testing/custom_sampling/noise",
+        "display_name": null
+      },
+      {
+        "class_type": "AddTextPrefix",
+        "category": "dataset/text",
+        "display_name": "Add Text Prefix"
+      },
+      {
+        "class_type": "AddTextSuffix",
+        "category": "dataset/text",
+        "display_name": "Add Text Suffix"
+      },
+      {
+        "class_type": "AdjustBrightness",
+        "category": "dataset/image",
+        "display_name": "Adjust Brightness"
+      },
+      {
+        "class_type": "AdjustContrast",
+        "category": "dataset/image",
+        "display_name": "Adjust Contrast"
+      },
+      {
+        "class_type": "AdvancedNoise",
+        "category": "RES4LYF/noise",
+        "display_name": "AdvancedNoise"
+      },
+      {
+        "class_type": "AnyPipeToBasic",
+        "category": "ImpactPack/Pipe",
+        "display_name": "Any PIPE -> BasicPipe"
+      },
+      {
+        "class_type": "Anything Everywhere",
+        "category": "everywhere",
+        "display_name": "Anything Everywhere"
+      },
+      {
+        "class_type": "Anything Everywhere3",
+        "category": "everywhere/deprecated",
+        "display_name": "Anything Everywhere Triplet"
+      },
+      {
+        "class_type": "Anything Everywhere?",
+        "category": "everywhere/deprecated",
+        "display_name": "Anything Somewhere"
+      },
+      {
+        "class_type": "AppInfo",
+        "category": "\u267e\ufe0fMixlab",
+        "display_name": "App Info \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "ApplyFirstBlockCachePatch",
+        "category": "patches/speed",
+        "display_name": "ApplyFirstBlockCachePatch"
+      },
+      {
+        "class_type": "ApplyFirstBlockCachePatchAdvanced",
+        "category": "patches/speed",
+        "display_name": "ApplyFirstBlockCachePatchAdvanced"
+      },
+      {
+        "class_type": "ApplyTeaCachePatch",
+        "category": "patches/speed",
+        "display_name": "ApplyTeaCachePatch"
+      },
+      {
+        "class_type": "ApplyTeaCachePatchAdvanced",
+        "category": "patches/speed",
+        "display_name": "ApplyTeaCachePatchAdvanced"
+      },
+      {
+        "class_type": "BLIP Analyze Image",
+        "category": "WAS Suite/Text/AI",
+        "display_name": "BLIP Analyze Image"
+      },
+      {
+        "class_type": "BasicPipeToDetailerPipe",
+        "category": "ImpactPack/Pipe",
+        "display_name": "BasicPipe -> DetailerPipe"
+      },
+      {
+        "class_type": "BasicPipeToDetailerPipeSDXL",
+        "category": "ImpactPack/Pipe",
+        "display_name": "BasicPipe -> DetailerPipe (SDXL)"
+      },
+      {
+        "class_type": "BboxDetectorSEGS",
+        "category": "ImpactPack/Detector",
+        "display_name": "BBOX Detector (SEGS)"
+      },
+      {
+        "class_type": "BlackPatchRetryHookProvider",
+        "category": "ImpactPack/Util",
+        "display_name": "BlackPatchRetryHookProvider"
+      },
+      {
+        "class_type": "CFGGuider",
+        "category": "sampling/custom_sampling/guiders",
+        "display_name": null
+      },
+      {
+        "class_type": "CFGNorm",
+        "category": "advanced/guidance",
+        "display_name": null
+      },
+      {
+        "class_type": "CFGZeroStar",
+        "category": "advanced/guidance",
+        "display_name": null
+      },
+      {
+        "class_type": "Canny",
+        "category": "image/preprocessors",
+        "display_name": null
+      },
+      {
+        "class_type": "CenterImage",
+        "category": "\u267e\ufe0fMixlab/Layer",
+        "display_name": "Center Image \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "CfgScheduleHookProvider",
+        "category": "ImpactPack/Upscale",
+        "display_name": "CfgScheduleHookProvider"
+      },
+      {
+        "class_type": "ChatGPTOpenAI",
+        "category": "\u267e\ufe0fMixlab/GPT",
+        "display_name": "ChatGPT & Local LLM \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "ChromaRadianceOptions",
+        "category": "model_patches/chroma_radiance",
+        "display_name": null
+      },
+      {
+        "class_type": "CkptNames_",
+        "category": "\u267e\ufe0fMixlab/Experiment",
+        "display_name": "CreateCkptNames \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "Color",
+        "category": "\u267e\ufe0fMixlab/Color",
+        "display_name": "Color Input \u267e\ufe0fMixlabApp"
+      },
+      {
+        "class_type": "Combo Clone",
+        "category": "everywhere",
+        "display_name": "Combo Clone"
+      },
+      {
+        "class_type": "CompositeImages_",
+        "category": "\u267e\ufe0fMixlab/Layer",
+        "display_name": "Composite Images \u267e\ufe0fMixlab"
+      },
+      {
+        "class_type": "Constant Number",
+        "category": "WAS Suite/Number",
+        "display_name": "Constant Number"
+      },
+      {
+        "class_type": "Context (rgthree)",
+        "category": "rgthree",
+        "display_name": "Context (rgthree)"
+      },
+      {
+        "class_type": "Context Big (rgthree)",
+        "category": "rgthree",
+        "display_name": "Context Big (rgthree)"
+      },
+      {
+        "class_type": "Context Merge (rgthree)",
+        "category": "rgthree",
+        "display_name": "Context Merge (rgthree)"
+      },
+      {
+        "class_type": "Context Merge Big (rgthree)",
+        "category": "rgthree",
+        "display_name": "Context Merge Big (rgthree)"
+      },
+      {
+        "class_type": "ContextWindowsManual",
+        "category": "context",
+        "display_name": "Context Windows (Manual)"
+      },
+      {
+        "class_type": "CoreMLDetailerHookProvider",
+        "category": "ImpactPack/Detailer",
+        "display_name": "CoreMLDetailerHookProvider"
+      },
+      {
+        "class_type": "Create Grid Image",
+        "category": "WAS Suite/Image/Process",
+        "display_name": "Create Grid Image"
+      },
+      {
+        "class_type": "CustomCombo",
+        "category": "utils",
+        "display_name": "Custom Combo"
+      },
+      {
+        "class_type": "DetailerForEach",
+        "category": "ImpactPack/Detailer",
+        "display_name": "Detailer (SEGS)"
+      },
+      {
+        "class_type": "DetailerForEachAutoRetry",
+        "category": "ImpactPack/Detailer",
+        "display_name": "Detailer (SEGS) with auto retry"
+      },
+      {
+        "class_type": "DetailerForEachPipe",
+        "category": "ImpactPack/Detailer",
+        "display_name": "Detailer (SEGS/pipe)"
+      },
+      {
+        "class_type": "DetailerPipeToBasicPipe",
+        "category": "ImpactPack/Pipe",
+        "display_name": "DetailerPipe -> BasicPipe"
+      },
+      {
+        "class_type": "DifferentialDiffusion",
+        "category": "_for_testing",
+        "display_name": "Differential Diffusion"
+      },
+      {
+        "class_type": "DisableNoise",
+        "category": "sampling/custom_sampling/noise",
+        "display_name": null
+      },
+      {
+        "class_type": "Display Any (rgthree)",
+        "category": "rgthree",
+        "display_name": "Display Any (rgthree)"
+      },
+      {
+        "class_type": "DitForwardOverrider",
+        "category": "patches/dit",
+        "display_name": "DitForwardOverrider"
+      }
+    ]
+  },
+  "out_of_profile_nodes": {
+    "audio_dubbing": [
+      "AnalyzeAudio",
+      "AudioAdjustVolume",
+      "AudioConcat",
+      "AudioCrop",
+      "AudioEncoderLoader",
+      "AudioGetTempo",
+      "AudioMerge",
+      "AudioPlay",
+      "AudioSeparation",
+      "AudioSpeedShift",
+      "AudioTempoMatch",
+      "EmptyAudio",
+      "EnhancementUtils_PlaySound",
+      "JoinAudioChannels",
+      "LoadAudio",
+      "PreviewAudio",
+      "RecordAudio",
+      "SaveAudio",
+      "SaveAudioMP3",
+      "SaveAudioOpus"
+    ],
+    "restoration": [
+      "CenterCropImages",
+      "DenoiseScheduleHookProvider",
+      "Image Inset Crop (rgthree)",
+      "ImageColorMatch+",
+      "ImageColorMatchAdobe+",
+      "ImageCropByAlpha",
+      "ImpactFrom_SEG_ELT_crop_region",
+      "Mask Crop Dominant Region",
+      "Mask Crop Minority Region",
+      "Mask Crop Region",
+      "RandomCropImages",
+      "ResizeAndPadImage",
+      "ResizeImageMaskNode",
+      "ResizeImageMixlab",
+      "ResizeImagesByLongerEdge",
+      "ResizeImagesByShorterEdge",
+      "Sigmas Cleanup",
+      "SplitSigmasDenoise",
+      "easy XYInputs: Denoise",
+      "easy imageColorMatch"
+    ],
+    "three_d": [
+      "3DImage",
+      "CM_ComposeVec2",
+      "CM_ComposeVec3",
+      "CM_ComposeVec4",
+      "DepthAnything_V2",
+      "DepthCrafter",
+      "DepthViewer",
+      "DownloadAndLoadDepthAnythingV2Model",
+      "DownloadAndLoadDepthCrafterModel",
+      "DrawGaussianNoiseOnImage",
+      "Image Gaussian Blur",
+      "Image Seamless Texture",
+      "Image Transpose",
+      "ImpactDecomposeSEGS",
+      "ImpactGaussianBlurMask",
+      "ImpactGaussianBlurMaskInSEGS",
+      "LoadTripoSRModel_",
+      "Mask Gaussian Region",
+      "MediaPipeFaceMeshToSEGS",
+      "MeshyRefineNode"
+    ],
+    "utility_general": [
+      "AddMask",
+      "Any Switch (rgthree)",
+      "AreaToMask",
+      "BLIP Model Loader",
+      "BatchCount+",
+      "BatchImagesNode",
+      "BatchMasksNode",
+      "BitwiseAndMask",
+      "BitwiseAndMaskForEach",
+      "Boolean To Text",
+      "BriaImageEditNode",
+      "BriaRemoveImageBackground",
+      "Bus Node",
+      "ByteDanceImageNode",
+      "ByteDanceSeedreamNode",
+      "CM_BoolBinaryOperation",
+      "CM_BoolToInt",
+      "CM_BoolUnaryOperation",
+      "CM_BreakoutVec2",
+      "CM_BreakoutVec3"
+    ]
+  },
+  "diagnostic": "WARNING",
+  "diagnostic_detail": "Preferred 'Video / Cine' is only 20.9%, but combined with 'Image / Still' reaches 58.5%. COMFYUI.1B cross-check needed."
+}

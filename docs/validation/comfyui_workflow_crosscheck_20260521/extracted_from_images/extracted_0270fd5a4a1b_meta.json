@@ -1,0 +1,27 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/00_IMAGEN_fija/Wan2-2-Ultimate-Text-To-Image-fast-render-cinematic-quality.png",
+  "metadata_keys": [
+    "workflow"
+  ],
+  "class_types": [
+    "CLIPLoader",
+    "CLIPTextEncode",
+    "Empty Latent by Ratio (WLSH)",
+    "KSamplerAdvanced",
+    "LoraLoaderModelOnly",
+    "ModelSamplingSD3",
+    "Note",
+    "SaveImage",
+    "UNETLoader",
+    "VAEDecode",
+    "VAELoader"
+  ],
+  "models": [
+    "Wan2.1_I2V_14B_FusionX_LoRA.safetensors",
+    "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+    "wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors",
+    "wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors",
+    "wan_2.1_vae.safetensors"
+  ],
+  "family": "image_still"
+}

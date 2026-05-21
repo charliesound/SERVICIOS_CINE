@@ -1,0 +1,177 @@
+{
+  "10": {
+    "inputs": {
+      "image": "ComfyUI_00656_.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "is_changed": [
+      "89132d6ccc5fa6d0c394cbf1358150059b4afcd5fcc5e3551f0af9a680e294fe"
+    ]
+  },
+  "11": {
+    "inputs": {
+      "image": [
+        "10",
+        0
+      ],
+      "vae": [
+        "12",
+        2
+      ]
+    },
+    "class_type": "StableCascade_SuperResolutionControlnet"
+  },
+  "12": {
+    "inputs": {
+      "ckpt_name": "cascade\\stable_cascade_stage_c.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  "13": {
+    "inputs": {
+      "text": "masterpiece,best quality,",
+      "clip": [
+        "12",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "14": {
+    "inputs": {
+      "text": "text,watermark,",
+      "clip": [
+        "12",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "17": {
+    "inputs": {
+      "seed": 166214271349628,
+      "steps": 20,
+      "cfg": 3.0,
+      "sampler_name": "dpmpp_sde_gpu",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": [
+        "12",
+        0
+      ],
+      "positive": [
+        "23",
+        0
+      ],
+      "negative": [
+        "23",
+        1
+      ],
+      "latent_image": [
+        "11",
+        1
+      ]
+    },
+    "class_type": "KSampler"
+  },
+  "18": {
+    "inputs": {
+      "conditioning": [
+        "13",
+        0
+      ],
+      "stage_c": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "StableCascade_StageB_Conditioning"
+  },
+  "19": {
+    "inputs": {
+      "seed": 703878401533046,
+      "steps": 10,
+      "cfg": 1.0,
+      "sampler_name": "dpmpp_sde_gpu",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": [
+        "20",
+        0
+      ],
+      "positive": [
+        "18",
+        0
+      ],
+      "negative": [
+        "14",
+        0
+      ],
+      "latent_image": [
+        "11",
+        2
+      ]
+    },
+    "class_type": "KSampler"
+  },
+  "20": {
+    "inputs": {
+      "ckpt_name": "cascade\\stable_cascade_stage_b.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  "21": {
+    "inputs": {
+      "samples": [
+        "19",
+        0
+      ],
+      "vae": [
+        "20",
+        2
+      ]
+    },
+    "class_type": "VAEDecode"
+  },
+  "22": {
+    "inputs": {
+      "filename_prefix": "cascadeupscale",
+      "images": [
+        "21",
+        0
+      ]
+    },
+    "class_type": "SaveImage"
+  },
+  "23": {
+    "inputs": {
+      "strength": 1.0,
+      "start_percent": 0.0,
+      "end_percent": 1.0,
+      "positive": [
+        "13",
+        0
+      ],
+      "negative": [
+        "14",
+        0
+      ],
+      "control_net": [
+        "24",
+        0
+      ],
+      "image": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced"
+  },
+  "24": {
+    "inputs": {
+      "control_net_name": "cascade\\super_resolution.safetensors"
+    },
+    "class_type": "ControlNetLoader"
+  }
+}

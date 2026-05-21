@@ -1,0 +1,15 @@
+{
+  "image_path": "/mnt/g/COMFYUI_HUB/workflows/00_VIDEO/2025-01-07 latent sync\u5507\u5f62\u62df\u5408.png",
+  "metadata_keys": [
+    "workflow",
+    "srgb"
+  ],
+  "class_types": [
+    "D_LatentSyncNode",
+    "LoadAudio",
+    "VHS_LoadVideo",
+    "VHS_VideoCombine"
+  ],
+  "models": [],
+  "family": "video_cine"
+}

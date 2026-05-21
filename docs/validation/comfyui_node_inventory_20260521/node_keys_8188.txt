@@ -914,6 +914,7 @@ Export With Ffmpeg (mtb)
 ExposureAdjust
 ExtendIntermediateSigmas
 Extract Coordinates From Image (mtb)
+ExtractFluxLoRA
 ExtractNFrames
 Face Swap (mtb)
 FaceDetailer
@@ -966,6 +967,7 @@ FluxDisableGuidance
 FluxForwardOverrider
 FluxGuidance
 FluxKVCache
+FluxKohyaInferenceSampler
 FluxKontextImageScale
 FluxKontextMaxImageNode
 FluxKontextMultiReferenceLatentMethod
@@ -974,6 +976,17 @@ FluxProExpandNode
 FluxProFillNode
 FluxProUltraImageNode
 FluxSamplerParams+
+FluxTrainAndValidateLoop
+FluxTrainBlockSelect
+FluxTrainEnd
+FluxTrainLoop
+FluxTrainModelSelect
+FluxTrainResume
+FluxTrainSave
+FluxTrainSaveModel
+FluxTrainValidate
+FluxTrainValidationSettings
+FluxTrainerLossConfig
 Font
 Fooocus_KSampler
 Fooocus_KSamplerAdvanced
@@ -1596,6 +1609,10 @@ ImpactWildcardEncode
 ImpactWildcardProcessor
 IncrementingListNode_
 IndexString
+InitFluxLoRATraining
+InitFluxTraining
+InitSD3LoRATraining
+InitSDXLLoRATraining
 InjectLatentNoise+
 InjectNoiseToLatent
 InpaintConditionApply
@@ -2481,6 +2498,10 @@ OpenAIInputFiles
 OpenAIVideoSora2
 OpenposePreprocessor
 OptimalStepsScheduler
+OptimizerConfig
+OptimizerConfigAdafactor
+OptimizerConfigProdigy
+OptimizerConfigProdigyPlusScheduleFree
 OptionString
 OutlineMask
 Outpaint to Image (WLSH)
@@ -2763,7 +2784,9 @@ SAMPreprocessor
 SD15PromptInjection
 SD3AttentionSeekerLG+
 SD3AttentionSeekerT5+
+SD3ModelSelect
 SD3NegativeConditioning+
+SD3TrainValidationSettings
 SDPoseDrawKeypoints
 SDPoseFaceBBoxes
 SDPoseKeypointExtractor
@@ -2788,8 +2811,11 @@ SDXL Steps (WLSH)
 SDXLAspectRatioSelector
 SDXLDualClipEncode
 SDXLEmptyLatentSizePicker+
+SDXLModelSelect
 SDXLPromptStyler
 SDXLPromptStylerAdvanced
+SDXLTrainValidate
+SDXLTrainValidationSettings
 SD_4XUpscale_Conditioning
 SEGSDetailer
 SEGSDetailerForAnimateDiff
@@ -3181,7 +3207,11 @@ TorchCompileModelQwenImage
 TorchCompileModelWanVideo
 TorchCompileModelWanVideoV2
 TorchCompileVAE
+TrainDatasetAdd
+TrainDatasetGeneralConfig
+TrainDatasetRegularization
 TrainLoraNode
+TrainNetworkConfig
 Transform Image (mtb)
 TransitionImagesInBatch
 TransitionImagesMulti
@@ -3227,6 +3257,7 @@ Unpack SDXL Tuple
 UnsamplerDetailerHookProvider
 UnsamplerHookProvider
 Unsplash Image (mtb)
+UploadToHuggingFace
 UpperBodyTrackingFromPoseKps
 Upscale Bbox By (mtb)
 Upscale Model Loader
@@ -3325,6 +3356,7 @@ ViduStartEndToVideoNode
 ViduTextToVideoNode
 VisualizeCUDAMemoryHistory
 VisualizeLatents
+VisualizeLoss
 VisualizeSigmasKJ
 VoxelToMesh
 VoxelToMeshBasic
@@ -3654,6 +3686,8 @@ sch_image
 sch_mask
 sch_split_text
 sch_text
+segformer_b2_clothes
+segformer_b3_fashion
 type_AnyIndex
 unCLIP Checkpoint Loader
 unCLIPCheckpointLoader

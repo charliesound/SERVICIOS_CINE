@@ -2,7 +2,7 @@
   "system": {
     "os": "linux",
     "ram_total": 58969976832,
-    "ram_free": 48407035904,
+    "ram_free": 48386076672,
     "comfyui_version": "0.17.0",
     "required_frontend_version": "1.41.21",
     "installed_templates_version": "0.9.26",

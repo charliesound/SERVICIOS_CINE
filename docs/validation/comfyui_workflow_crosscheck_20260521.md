@@ -1,6 +1,6 @@
 # ComfyUI Workflow Cross-Check Audit
 
-**Date:** 2026-05-21 19:55:46
+**Date:** 2026-05-21 21:12:05
 **Script:** `scripts/dev/audit_comfyui_workflow_crosscheck.py`
 
 ## Executive Summary
@@ -86,11 +86,11 @@
 
 | Instance | Total Missing | External Nodes |
 |----------|-------------:|----------------|
-| :8188 still | 1627 | 406 |
-| :8189 video | 2081 | 406 |
-| :8190 dubbing | 2287 | 406 |
-| :8191 restoration | 1626 | 406 |
-| :8192 3d | 3452 | 406 |
+| :8188 still | 1601 | 393 |
+| :8189 video | 2081 | 393 |
+| :8190 dubbing | 2287 | 393 |
+| :8191 restoration | 1626 | 393 |
+| :8192 3d | 3452 | 393 |
 
 ### Nodes Requiring External Installation
 
@@ -1380,7 +1380,7 @@ fp8_scaled version:
 
 ## Custom Nodes per Instance
 
-### :8188 — Image / Still (97 custom nodes)
+### :8188 — Image / Still (99 custom nodes)
 
 - **ComfyMath** | git: https://github.com/evanspearman/ComfyMath | has requirements.txt
 - **ComfyUI-AutoCropFaces** | git: https://github.com/liusida/ComfyUI-AutoCropFaces
@@ -1402,7 +1402,7 @@ fp8_scaled version:
 - **ComfyUI-QwenImageLoraLoader**
 - **ComfyUI-QwenVL** | has requirements.txt
 - **ComfyUI-ReActor** | git: https://github.com/Gourieff/ComfyUI-ReActor | has requirements.txt
-  *... and 77 more*
+  *... and 79 more*
 
 ### :8189 — Video / Cine (69 custom nodes)
 
@@ -2453,12 +2453,12 @@ fp8_scaled version:
 - **Family:** image_still
 - **Format:** ui
 - **Required nodes:** 24
-- **Best instance:** :8188 (missing 15)
-  - :8188: 15 missing (15 external: FluxTrainEnd, FluxTrainLoop, FluxTrainModelSelect, FluxTrainSave, FluxTrainValidate)
-  - :8189: 21 missing (15 external: FluxTrainEnd, FluxTrainLoop, FluxTrainModelSelect, FluxTrainSave, FluxTrainValidate)
-  - :8190: 15 missing (15 external: FluxTrainEnd, FluxTrainLoop, FluxTrainModelSelect, FluxTrainSave, FluxTrainValidate)
-  - :8191: 15 missing (15 external: FluxTrainEnd, FluxTrainLoop, FluxTrainModelSelect, FluxTrainSave, FluxTrainValidate)
-  - :8192: 22 missing (15 external: FluxTrainEnd, FluxTrainLoop, FluxTrainModelSelect, FluxTrainSave, FluxTrainValidate)
+- **Best instance:** :8188 (missing 3)
+  - :8188: 3 missing (3 external: GetNode, Note, SetNode)
+  - :8189: 21 missing (3 external: GetNode, Note, SetNode)
+  - :8190: 15 missing (3 external: GetNode, Note, SetNode)
+  - :8191: 15 missing (3 external: GetNode, Note, SetNode)
+  - :8192: 22 missing (3 external: GetNode, Note, SetNode)
 
 ### Hacer pelicula - copia.json
 - **Family:** image_still
@@ -5082,12 +5082,12 @@ fp8_scaled version:
 - **Family:** image_still
 - **Format:** ui
 - **Required nodes:** 24
-- **Best instance:** :8188 (missing 15)
-  - :8188: 15 missing (15 external: FluxTrainEnd, FluxTrainLoop, FluxTrainModelSelect, FluxTrainSave, FluxTrainValidate)
-  - :8189: 21 missing (15 external: FluxTrainEnd, FluxTrainLoop, FluxTrainModelSelect, FluxTrainSave, FluxTrainValidate)
-  - :8190: 15 missing (15 external: FluxTrainEnd, FluxTrainLoop, FluxTrainModelSelect, FluxTrainSave, FluxTrainValidate)
-  - :8191: 15 missing (15 external: FluxTrainEnd, FluxTrainLoop, FluxTrainModelSelect, FluxTrainSave, FluxTrainValidate)
-  - :8192: 22 missing (15 external: FluxTrainEnd, FluxTrainLoop, FluxTrainModelSelect, FluxTrainSave, FluxTrainValidate)
+- **Best instance:** :8188 (missing 3)
+  - :8188: 3 missing (3 external: GetNode, Note, SetNode)
+  - :8189: 21 missing (3 external: GetNode, Note, SetNode)
+  - :8190: 15 missing (3 external: GetNode, Note, SetNode)
+  - :8191: 15 missing (3 external: GetNode, Note, SetNode)
+  - :8192: 22 missing (3 external: GetNode, Note, SetNode)
 
 ### hidream_e1_Capitulo17.json
 - **Family:** image_still

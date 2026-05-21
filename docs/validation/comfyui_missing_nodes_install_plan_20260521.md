@@ -1,6 +1,6 @@
 # ComfyUI Missing Nodes Install Plan
 
-**Date:** 2026-05-21 19:55:46
+**Date:** 2026-05-21 21:12:05
 **Source:** COMFYUI.1B cross-check audit
 
 ## Rules
@@ -55,7 +55,6 @@
 | `DiffusersPipeline` | change-clothes.json | :8188 still | none | YES | high |
 | `DiffusersTextureInversionLoader` | change-clothes.json | :8188 still | none | YES | high |
 | `preview_mask` | change-clothes.json | :8188 still | none | YES | high |
-| `segformer_b2_clothes` | change-clothes.json | :8188 still | :8189 Comfyui_segformer_b2_clothes | no | medium |
 | `UpscaleImage` | comfyui_workflow_previz_refine.json | :8188 still | none | YES | high |
 | `VHS_FramesToVideoWAudio` | comfyui_workflow_previz_refine.json | :8188 still | none | YES | high |
 | `VHS_VideoToFramesWAudio` | comfyui_workflow_previz_refine.json | :8188 still | none | YES | high |
@@ -67,18 +66,6 @@
 | `DF_Get_image_size` | flux-redux-pulid-face-swap-clone-any-portrait-photography.json | :8188 still | none | YES | high |
 | `Int Literal` | FluxRealLoraWorkflowjson.json | :8188 still | none | YES | high |
 | `String Literal` | FluxRealLoraWorkflowjson.json | :8188 still | none | YES | high |
-| `FluxTrainEnd` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `FluxTrainLoop` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `FluxTrainModelSelect` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `FluxTrainSave` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `FluxTrainValidate` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `FluxTrainValidationSettings` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `InitFluxLoRATraining` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `OptimizerConfig` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `TrainDatasetAdd` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `TrainDatasetGeneralConfig` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `UploadToHuggingFace` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
-| `VisualizeLoss` | flux_lora_train_Capitulo14.json | :8188 still | none | YES | high |
 | `IPAdapterApply` | Hacer pelicula - copia.json | :8188 still | none | YES | high |
 | `rgthree.ImageSwitch` | Hacer pelicula - copia.json | :8188 still | none | YES | high |
 | `rgthree.Int` | Hacer pelicula - copia.json | :8188 still | none | YES | high |
@@ -114,3 +101,16 @@
 | `809e2017-0ccb-4667-b9d8-19102e83c301` | workflow-flux-2-klein-inpaint-segment-edit-for-accurate-image-edit-vo9umAlx9kjGRaijxRmP-cgpixel_ai_art-openart.ai.json | :8188 still | none | YES | high |
 | `8a41ffb9-6ce7-4bec-80f5-c6ac49e87434` | workflow-flux-2-klein-inpaint-segment-edit-for-accurate-image-edit-vo9umAlx9kjGRaijxRmP-cgpixel_ai_art-openart.ai.json | :8188 still | none | YES | high |
 | `a8e409d9-c985-45b8-bcb2-935ac5ef7894` | workflow-flux-2-klein-inpaint-segment-edit-for-accurate-image-edit-vo9umAlx9kjGRaijxRmP-cgpixel_ai_art-openart.ai.json | :8188 still | none | YES | high |
+| `bd3cd284-7bf4-4a5c-a747-5941765c32d4` | workflow-flux-2-klein-inpaint-segment-edit-for-accurate-image-edit-vo9umAlx9kjGRaijxRmP-cgpixel_ai_art-openart.ai.json | :8188 still | none | YES | high |
+| `dee77e48-697e-4dd1-86fe-5c40ad49dd45` | workflow-flux-2-klein-inpaint-segment-edit-for-accurate-image-edit-vo9umAlx9kjGRaijxRmP-cgpixel_ai_art-openart.ai.json | :8188 still | none | YES | high |
+| `Molmo7BDbnb` | workflow-flux-controlnet-upscale-XsEKTG1cvnRXYdsPsQVc-cychenyue-openart.ai.json | :8188 still | none | YES | high |
+| `Multi Text Merge` | workflow-flux-your-ootd-flux-D6q01xaUd0AOf6A9OQym-jaylin-openart.ai.json | :8188 still | none | YES | high |
+| `PortraitMaster` | workflow-flux-your-ootd-flux-D6q01xaUd0AOf6A9OQym-jaylin-openart.ai.json | :8188 still | none | YES | high |
+| `RH_Captioner` | workflow-flux-your-ootd-flux-D6q01xaUd0AOf6A9OQym-jaylin-openart.ai.json | :8188 still | none | YES | high |
+| `SDXLRecommendedImageSize` | workflow-flux-your-ootd-flux-D6q01xaUd0AOf6A9OQym-jaylin-openart.ai.json | :8188 still | none | YES | high |
+| `TTP_Image_Assy` | workflow-flux-your-ootd-flux-D6q01xaUd0AOf6A9OQym-jaylin-openart.ai.json | :8188 still | none | YES | high |
+| `TTP_Image_Tile_Batch` | workflow-flux-your-ootd-flux-D6q01xaUd0AOf6A9OQym-jaylin-openart.ai.json | :8188 still | none | YES | high |
+| `TTP_Tile_image_size` | workflow-flux-your-ootd-flux-D6q01xaUd0AOf6A9OQym-jaylin-openart.ai.json | :8188 still | none | YES | high |
+| `HiDreamSampler` | workflow-hidream-full-824ixsLCZZeX4GEidHsz-datou-openart.ai.json | :8188 still | none | YES | high |
+| `Google-Gemini` | workflow-restore-old-and-damaged-photosflux-kontext-yXttxLAnquPMZ9feVI7g-datou-openart.ai.json | :8188 still | none | YES | high |
+| `ailab_SaveImage` | workflow-simple-clean-fast-nunchaku-kontext-lora-CSUdCgX2qoPsKYI5pz9f-ailab-openart.ai.json | :8188 still | none | YES | high |

@@ -1,6 +1,6 @@
 # ComfyUI Embedded Workflows from Images
 
-**Date:** 2026-05-21 19:55:46
+**Date:** 2026-05-21 21:12:05
 
 ## Summary
 

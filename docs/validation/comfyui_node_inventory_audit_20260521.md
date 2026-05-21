@@ -1,6 +1,6 @@
 # ComfyUI Node Inventory Audit
 
-**Date:** 2026-05-21 19:54:44
+**Date:** 2026-05-21 21:10:22
 **Script:** `scripts/dev/audit_comfyui_node_inventory.py`
 
 ## Executive Summary
@@ -14,19 +14,19 @@
 ### :8188 — Image / Still
 
 - **ComfyUI version:** 0.19.3
-- **Total nodes:** 3664
+- **Total nodes:** 3698
 
 #### Family Distribution
 
 | Family | Count | % |
 |--------|------:|---:|
-| Image / Still | 1248 | 34.1% |
-| Video / Cine | 327 | 8.9% |
+| Image / Still | 1255 | 33.9% |
+| Video / Cine | 327 | 8.8% |
 | Audio / Dubbing | 64 | 1.7% |
 | Restoration | 73 | 2.0% |
 | 3D | 85 | 2.3% |
-| Utility / General | 1061 | 29.0% |
-| Unknown | 806 | 22.0% |
+| Utility / General | 1063 | 28.7% |
+| Unknown | 831 | 22.5% |
 
 #### Top Categories
 
@@ -48,7 +48,7 @@
 - **Restoration** (20): AILab_CropObject, AutoCropFaces, BBox Force Dimensions (mtb), BatchCropFromMask, BatchCropFromMaskAdvanced, BatchUncrop, BatchUncropAdvanced, Bbox (mtb), Bbox From Mask (mtb), CR Select Resize Method
 - **3D** (20): 3DImage, Batch Float Normalize (mtb), BatchNormalizeImage, CM_ComposeVec2, CM_ComposeVec3, CM_ComposeVec4, CameraPoseVisualizer, ConvertNormals, CtrlNet OpenPose Pipe (JPS), CtrlNet OpenPose Settings (JPS)
 
-**✅ GO** — Preferred family 'Image / Still' represents 34.1% of all nodes — adequate for purpose.
+**✅ GO** — Preferred family 'Image / Still' represents 33.9% of all nodes — adequate for purpose.
 
 ---
 

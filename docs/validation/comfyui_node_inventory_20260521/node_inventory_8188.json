@@ -2,24 +2,24 @@
   "port": 8188,
   "instance": "still",
   "comfyui_version": "0.19.3",
-  "total_nodes": 3664,
+  "total_nodes": 3698,
   "family_counts": {
-    "image_still": 1248,
+    "image_still": 1255,
     "video_cine": 327,
     "audio_dubbing": 64,
     "restoration": 73,
     "three_d": 85,
-    "utility_general": 1061,
-    "unknown": 806
+    "utility_general": 1063,
+    "unknown": 831
   },
   "family_percentages": {
-    "image_still": 34.1,
-    "video_cine": 8.9,
+    "image_still": 33.9,
+    "video_cine": 8.8,
     "audio_dubbing": 1.7,
     "restoration": 2.0,
     "three_d": 2.3,
-    "utility_general": 29.0,
-    "unknown": 22.0
+    "utility_general": 28.7,
+    "unknown": 22.5
   },
   "top_categories": [
     [
@@ -69,6 +69,10 @@
     [
       "\ud83d\ude3adzNodes/LayerUtility/Data",
       27
+    ],
+    [
+      "FluxTrainer",
+      26
     ],
     [
       "EasyUse/Logic",
@@ -136,10 +140,6 @@
     ],
     [
       "api node/image/Recraft",
-      18
-    ],
-    [
-      "JPS Nodes/Pipes",
       18
     ]
   ],
@@ -2000,5 +2000,5 @@
     ]
   },
   "diagnostic": "GO",
-  "diagnostic_detail": "Preferred family 'Image / Still' represents 34.1% of all nodes \u2014 adequate for purpose."
+  "diagnostic_detail": "Preferred family 'Image / Still' represents 33.9% of all nodes \u2014 adequate for purpose."
 }

@@ -2,10 +2,10 @@
   "system": {
     "os": "linux",
     "ram_total": 58969976832,
-    "ram_free": 48522993664,
+    "ram_free": 48436445184,
     "comfyui_version": "0.19.3",
     "required_frontend_version": "1.42.11",
-    "installed_templates_version": "0.9.57",
+    "installed_templates_version": "0.8.38",
     "required_templates_version": "0.9.57",
     "python_version": "3.12.3 (main, Mar 23 2026, 19:04:32) [GCC 13.3.0]",
     "pytorch_version": "2.10.0+cu128",

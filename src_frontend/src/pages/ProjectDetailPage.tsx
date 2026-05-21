@@ -23,7 +23,7 @@ import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/sto
 type Tab = 'script' | 'analysis' | 'storyboard' | 'concept-art' | 'history'
 
 interface AnalysisResult {
-  source: 'breakdown' | 'document'
+  source: 'breakdown' | 'document' | 'cinematic_script_analysis' | 'fallback_script_breakdown'
   document_id?: string
   doc_type?: string
   confidence_score?: number | null
@@ -35,6 +35,8 @@ interface AnalysisResult {
   sequences_count?: number
   summary?: Record<string, unknown>
   scenes?: Array<Record<string, unknown>>
+  cinematic_context_used?: boolean
+  analysis_provider?: string
 }
 
 interface Shot {
@@ -1401,7 +1403,7 @@ export default function ProjectDetailPage() {
                   <div className="p-4 bg-white/5 rounded-xl">
                     <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Fuente</p>
                     <p className="text-white font-semibold capitalize">
-                      {analysisData.source === 'breakdown' ? 'Scene breakdown' : (analysisData.doc_type || 'document').replace(/_/g, ' ')}
+                      {analysisData.source === 'cinematic_script_analysis' ? 'Análisis cinematográfico' : analysisData.source === 'breakdown' ? 'Desglose básico' : analysisData.source === 'fallback_script_breakdown' ? 'Desglose básico (fallback)' : (analysisData.doc_type || 'document').replace(/_/g, ' ')}
                     </p>
                   </div>
                   <div className="p-4 bg-white/5 rounded-xl">
@@ -1417,10 +1419,12 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
 
-              {analysisData.source === 'breakdown' ? (
+              {analysisData.source === 'breakdown' || analysisData.source === 'cinematic_script_analysis' || analysisData.source === 'fallback_script_breakdown' ? (
                 <>
                   <div className="card bg-dark-200/80 border border-white/5 p-6">
-                    <h4 className="text-sm font-semibold mb-4 text-gray-300">Desglose</h4>
+                    <h4 className="text-sm font-semibold mb-4 text-gray-300">
+                      {analysisData.source === 'cinematic_script_analysis' ? 'Análisis cinematográfico' : analysisData.source === 'fallback_script_breakdown' ? 'Desglose básico (fallback)' : 'Desglose básico'}
+                    </h4>
                     <div className="grid gap-3 md:grid-cols-3 text-sm text-slate-300">
                       <p><span className="text-slate-500">Localizaciones:</span> {analysisData.locations_count ?? '—'}</p>
                       <p><span className="text-slate-500">Secuencias:</span> {analysisData.sequences_count ?? '—'}</p>
@@ -1429,13 +1433,15 @@ export default function ProjectDetailPage() {
                   </div>
                   <div className="card bg-dark-200/80 border border-white/5 p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-sm font-semibold text-gray-300">Escenas detectadas</h4>
-                      <span className="text-xs text-slate-500">{analysisData.scenes?.length ?? 0} escenas</span>
+                      <h4 className="text-sm font-semibold text-gray-300">{analysisData.scenes?.some((s: any) => s.sequence_label) ? 'Secuencias detectadas' : 'Escenas detectadas'}</h4>
+                      <span className="text-xs text-slate-500">{analysisData.scenes?.length ?? 0} {analysisData.scenes?.some((s: any) => s.sequence_label) ? 'secuencias' : 'escenas'}</span>
                     </div>
                     <div className="space-y-3">
                       {(analysisData.scenes || []).slice(0, showAllScenes ? undefined : 8).map((scene, index) => (
                         <div key={`${scene.scene_id || index}`} className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
-                          <p className="font-medium text-white">{String(scene.heading || scene.scene_id || `Escena ${index + 1}`)}</p>
+                          <p className="font-medium text-white">
+                            {(scene as any).sequence_label ? `${(scene as any).sequence_label} — ` : ''}{String(scene.heading || scene.scene_id || `Escena ${index + 1}`)}
+                          </p>
                           <p className="mt-1 text-xs text-slate-400">
                             {String(scene.location || 'sin localizacion')} · {String(scene.time_of_day || 'DAY')}
                           </p>
@@ -1448,7 +1454,7 @@ export default function ProjectDetailPage() {
                     {(analysisData.scenes?.length ?? 0) > 8 && (
                       <div className="mt-3 flex items-center justify-between">
                         <span className="text-xs text-slate-500">
-                          Mostrando {showAllScenes ? analysisData.scenes!.length : 8} de {analysisData.scenes!.length} escenas
+                          Mostrando {showAllScenes ? analysisData.scenes!.length : 8} de {analysisData.scenes!.length} {analysisData.scenes?.some((s: any) => s.sequence_label) ? 'secuencias' : 'escenas'}
                         </span>
                         <button
                           onClick={() => setShowAllScenes(!showAllScenes)}

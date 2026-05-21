@@ -67,6 +67,15 @@ class ScriptScene(BaseModel):
     forbidden_elements: list[str] = Field(default_factory=list)
     sequence_number: int | None = None
     sequence_label: str | None = None
+    visual_beats: list[str] = []
+    sound_beats: list[str] = []
+    dialogue_beats: list[str] = []
+    reaction_beats: list[str] = []
+    threat_beats: list[str] = []
+    object_beats: list[str] = []
+    suggested_coverage: list[str] = []
+    cinematic_coverage_score: float | None = None
+    missing_coverage_warnings: list[str] = []
 
     @field_validator(
         "heading",

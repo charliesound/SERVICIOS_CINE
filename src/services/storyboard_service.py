@@ -1182,6 +1182,15 @@ class StoryboardService:
             characters=scene.get("characters", []) or scene.get("characters_detected", []),
             sequence_number=scene.get("sequence_number"),
             sequence_label=scene.get("sequence_label"),
+            visual_beats=scene.get("visual_beats") or [],
+            sound_beats=scene.get("sound_beats") or [],
+            dialogue_beats=scene.get("dialogue_beats") or [],
+            reaction_beats=scene.get("reaction_beats") or [],
+            threat_beats=scene.get("threat_beats") or [],
+            object_beats=scene.get("object_beats") or [],
+            suggested_coverage=scene.get("suggested_coverage") or [],
+            cinematic_coverage_score=scene.get("cinematic_coverage_score"),
+            missing_coverage_warnings=scene.get("missing_coverage_warnings") or [],
         )
 
         if shots_per_sequence_mode == "auto_cinematic":
@@ -1742,6 +1751,15 @@ class StoryboardService:
             emotional_tone=scene.get("emotional_tone"),
             visual_anchors=scene.get("visual_anchors") or [],
             forbidden_elements=scene.get("forbidden_elements") or [],
+            visual_beats=scene.get("visual_beats") or [],
+            sound_beats=scene.get("sound_beats") or [],
+            dialogue_beats=scene.get("dialogue_beats") or [],
+            reaction_beats=scene.get("reaction_beats") or [],
+            threat_beats=scene.get("threat_beats") or [],
+            object_beats=scene.get("object_beats") or [],
+            suggested_coverage=scene.get("suggested_coverage") or [],
+            cinematic_coverage_score=scene.get("cinematic_coverage_score"),
+            missing_coverage_warnings=scene.get("missing_coverage_warnings") or [],
         )
 
     def _build_cinematic_storyboard_shot(

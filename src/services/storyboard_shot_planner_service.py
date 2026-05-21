@@ -108,12 +108,43 @@ class StoryboardShotPlannerService:
         beats: list[dict[str, Any]] = []
         matched_types: set[str] = set()
 
+        analysis_beat_map: dict[str, str] = {
+            "visual_beats": "character_entry",
+            "sound_beats": "sound_detail",
+            "dialogue_beats": "dialogue",
+            "reaction_beats": "reaction_closeup",
+            "threat_beats": "shadow_reveal",
+            "object_beats": "detail_object",
+        }
+
+        for field_name, beat_type in analysis_beat_map.items():
+            items = getattr(scene, field_name, None) or []
+            if items and beat_type not in matched_types:
+                for beat_def in BEAT_PATTERNS:
+                    if beat_def["type"] == beat_type:
+                        beats.append(beat_def)
+                        matched_types.add(beat_type)
+                        break
+
+        suggested = getattr(scene, "suggested_coverage", None) or []
+        if suggested and not beats:
+            for coverage_item in suggested:
+                coverage_lower = coverage_item.lower()
+                for beat_def in BEAT_PATTERNS:
+                    for pattern in beat_def["patterns"]:
+                        if re.search(pattern, coverage_lower, re.IGNORECASE):
+                            if beat_def["type"] not in matched_types:
+                                beats.append(beat_def)
+                                matched_types.add(beat_def["type"])
+                            break
+
         for beat_def in BEAT_PATTERNS:
+            if beat_def["type"] in matched_types:
+                continue
             for pattern in beat_def["patterns"]:
                 if re.search(pattern, raw_text, re.IGNORECASE):
-                    if beat_def["type"] not in matched_types:
-                        beats.append(beat_def)
-                        matched_types.add(beat_def["type"])
+                    beats.append(beat_def)
+                    matched_types.add(beat_def["type"])
                     break
 
         beats.sort(key=lambda b: b["priority"])

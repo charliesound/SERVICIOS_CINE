@@ -27,6 +27,7 @@ class StoryboardGenerateRequest(BaseModel):
     style_preset: str = "hand_drawn_storyboard"
     visual_mode: Optional[str] = None
     shots_per_scene: int = 3
+    shots_per_sequence_mode: str = "legacy_count"
     max_scenes: Optional[int] = None
     overwrite: bool = False
     director_lens_id: Optional[str] = None

@@ -278,6 +278,7 @@ export default function StoryboardBuilderPage() {
         style_preset: stylePreset,
         shots_per_scene: shotsPerScene,
         overwrite: true,
+        shots_per_sequence_mode: 'auto_cinematic',
       })
       const resolvedResponseSequence = response.sequence_id
         ? resolveSequenceAlias(response.sequence_id, sequences)?.sequence_id || response.sequence_id

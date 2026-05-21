@@ -273,6 +273,7 @@ async def generate_storyboard(
         model_family=payload.model_family,
         motion_ready=payload.motion_ready,
         image_edit_mode=payload.image_edit_mode,
+        shots_per_sequence_mode=payload.shots_per_sequence_mode,
     )
 
     service_response = {k: result[k] for k in StoryboardJobResponse.model_fields if k in result}
@@ -421,6 +422,7 @@ async def generate_sequence_storyboard(
         model_family=payload.model_family,
         motion_ready=payload.motion_ready,
         image_edit_mode=payload.image_edit_mode,
+        shots_per_sequence_mode=payload.shots_per_sequence_mode,
     )
     return StoryboardJobResponse(**{k: result[k] for k in StoryboardJobResponse.model_fields.keys()})
 
@@ -637,6 +639,7 @@ async def regenerate_storyboard_sequence(
         shots_per_scene=max(1, min(payload.shots_per_scene, 8)),
         overwrite=True,
         include_coverage_shots=payload.include_coverage_shots,
+        shots_per_sequence_mode=payload.shots_per_sequence_mode,
     )
     return StoryboardGenerationAuditResponse(
         job_id=result["job_id"],

@@ -47,7 +47,7 @@ export const storyboardApi = {
   generateBySequence: async (
     projectId: string,
     sequenceId: string,
-    payload: { style_preset?: string; shots_per_scene?: number; overwrite?: boolean }
+    payload: { style_preset?: string; shots_per_scene?: number; overwrite?: boolean; shots_per_sequence_mode?: string }
   ): Promise<StoryboardGenerationJob> => {
     const { data } = await api.post<StoryboardGenerationJob>(
       `/projects/${projectId}/storyboard/sequences/${sequenceId}/generate`,

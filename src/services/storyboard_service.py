@@ -345,6 +345,7 @@ class StoryboardService:
         model_family: str | None = None,
         motion_ready: bool = False,
         image_edit_mode: bool = False,
+        shots_per_sequence_mode: str = "legacy_count",
     ) -> dict[str, Any]:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
         analysis_data = await self._get_analysis_payload(db, project)
@@ -503,7 +504,12 @@ class StoryboardService:
                 shot_payloads = (
                     [shot.model_dump() for shot in llm_shot_bundle.shots]
                     if llm_shot_bundle and llm_shot_bundle.shots
-                    else self._build_scene_shots(scene, shots_per_scene=shots_per_scene, style_preset=style_preset)
+                    else self._build_scene_shots(
+                        scene,
+                        shots_per_scene=shots_per_scene,
+                        style_preset=style_preset,
+                        shots_per_sequence_mode=shots_per_sequence_mode,
+                    )
                 )
             if include_coverage_shots:
                 coverage_payloads = self.build_cinematic_coverage_plan(
@@ -1160,7 +1166,7 @@ class StoryboardService:
         for shot in result.scalars().all():
             shot.is_active = False
 
-    def _build_scene_shots(self, scene: dict[str, Any], *, shots_per_scene: int, style_preset: str) -> list[dict[str, Any]]:
+    def _build_scene_shots(self, scene: dict[str, Any], *, shots_per_scene: int, style_preset: str, shots_per_sequence_mode: str = "legacy_count") -> list[dict[str, Any]]:
         from schemas.cid_script_to_prompt_schema import ScriptScene
 
         script_scene = ScriptScene(
@@ -1178,10 +1184,17 @@ class StoryboardService:
             sequence_label=scene.get("sequence_label"),
         )
 
-        planned_shots = storyboard_shot_planner_service.plan_sequence_shots(
-            script_scene,
-            mode="auto_cinematic",
-        )
+        if shots_per_sequence_mode == "auto_cinematic":
+            planned_shots = storyboard_shot_planner_service.plan_sequence_shots(
+                script_scene,
+                mode="auto_cinematic",
+            )
+        else:
+            planned_shots = storyboard_shot_planner_service.plan_sequence_shots(
+                script_scene,
+                mode="manual_count",
+                manual_count=shots_per_scene,
+            )
 
         shots: list[dict[str, Any]] = []
         for index, planned in enumerate(planned_shots):

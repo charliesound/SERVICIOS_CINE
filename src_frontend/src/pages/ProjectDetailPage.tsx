@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { projectsApi } from '@/api'
 import { storyboardApi } from '@/api/storyboard'
@@ -57,6 +57,12 @@ interface StoryboardResult {
   project_id: string
   total_scenes: number
   scenes: Scene[]
+}
+
+interface StoryboardJobResult {
+  total_scenes?: number
+  total_shots?: number
+  scenes?: Scene[]
 }
 
 interface JobHistoryEntry {
@@ -214,6 +220,14 @@ export default function ProjectDetailPage() {
     acc[seqId].push(asset)
     return acc
   }, {} as Record<string, ProjectAsset[]>)
+
+  const latestCompletedStoryboardJob = useMemo(() => {
+    return [...jobs]
+      .filter((job) => job.job_type === 'storyboard' && job.status === 'completed')
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0] || null
+  }, [jobs])
+
+  const latestStoryboardJobResult = (latestCompletedStoryboardJob?.result_data || null) as StoryboardJobResult | null
 
   // Sort shots within each sequence by shot_order
   Object.keys(assetsBySequence).forEach(seqId => {
@@ -446,13 +460,17 @@ export default function ProjectDetailPage() {
   const loadStoryboardState = async () => {
     if (!projectId) return
     try {
-      const storyboardScope = await storyboardApi.getStoryboard(projectId, { mode: 'FULL_SCRIPT' })
-      setStoryboardShots(storyboardScope?.shots || [])
-      if (!storyboardScope?.shots?.length) {
+      const [storyboardScope, listedShots] = await Promise.all([
+        storyboardApi.getStoryboard(projectId, { mode: 'FULL_SCRIPT' }).catch(() => null),
+        storyboardApi.listShots(projectId).catch(() => []),
+      ])
+      const resolvedShots = storyboardScope?.shots?.length ? storyboardScope.shots : listedShots
+      setStoryboardShots(resolvedShots || [])
+      if (!resolvedShots?.length) {
         setStoryboardData(null)
         return
       }
-      setStoryboardData(mapStoryboardScopeToResult(projectId, storyboardScope.shots))
+      setStoryboardData(mapStoryboardScopeToResult(projectId, resolvedShots))
     } catch {
       setStoryboardShots([])
       setStoryboardData(null)
@@ -545,6 +563,43 @@ export default function ProjectDetailPage() {
     if (!projectId || !storyboardShots.length) return
     setStoryboardData(mapStoryboardScopeToResult(projectId, storyboardShots))
   }, [assets, storyboardShots, projectId])
+
+  const storyboardViewData = useMemo<StoryboardResult | null>(() => {
+    if (storyboardData && storyboardData.scenes.length > 0) {
+      return storyboardData
+    }
+
+    if (projectId && storyboardShots.length > 0) {
+      return mapStoryboardScopeToResult(projectId, storyboardShots)
+    }
+
+    if (projectId && latestStoryboardJobResult && Array.isArray(latestStoryboardJobResult.scenes) && latestStoryboardJobResult.scenes.length > 0) {
+      return {
+        project_id: projectId,
+        total_scenes: typeof latestStoryboardJobResult.total_scenes === 'number'
+          ? latestStoryboardJobResult.total_scenes
+          : latestStoryboardJobResult.scenes.length,
+        scenes: latestStoryboardJobResult.scenes,
+      }
+    }
+
+    return null
+  }, [latestStoryboardJobResult, projectId, storyboardData, storyboardShots])
+
+  const storyboardSceneCount = storyboardViewData?.total_scenes
+    ?? (typeof latestStoryboardJobResult?.total_scenes === 'number' ? latestStoryboardJobResult.total_scenes : null)
+
+  const storyboardShotCount = storyboardViewData
+    ? storyboardViewData.scenes.reduce((total, scene) => total + scene.shots.length, 0)
+    : (typeof latestStoryboardJobResult?.total_shots === 'number' ? latestStoryboardJobResult.total_shots : null)
+
+  const hasStoryboardGenerated = Boolean(
+    storyboardViewData
+    || storyboardShots.length > 0
+    || latestCompletedStoryboardJob
+    || ((storyboardSceneCount || 0) > 0)
+    || ((storyboardShotCount || 0) > 0)
+  )
 
   const pollJobsUntilSettled = (
     jobType: 'analyze' | 'storyboard',
@@ -889,7 +944,7 @@ export default function ProjectDetailPage() {
     {
       key: 'storyboard',
       label: 'Storyboard',
-      count: storyboardData ? storyboardData.total_scenes : null,
+      count: storyboardSceneCount,
     },
     {
       key: 'concept-art',
@@ -1402,7 +1457,9 @@ export default function ProjectDetailPage() {
 
       {/* ── TAB: STORYBOARD ── */}
       {activeTab === 'storyboard' && (
-        <div>
+        <div className="space-y-4">
+          {projectId && <StoryboardSheetExportPanel projectId={projectId} />}
+
           {isStoryboarding ? (
             <div className="card p-12 flex flex-col items-center justify-center gap-4 text-center">
               <svg className="animate-spin w-8 h-8 text-gray-300" viewBox="0 0 24 24">
@@ -1414,24 +1471,32 @@ export default function ProjectDetailPage() {
                 <p className="text-gray-400 text-sm mt-1">Parseando escenas y sugiriendo planos</p>
               </div>
             </div>
-          ) : storyboardData ? (
+          ) : storyboardViewData ? (
             <div className="space-y-3">
               {/* Stats bar */}
               <div className="flex items-center gap-4 mb-2">
                 <div className="flex items-center gap-2 text-sm">
                   <Film className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-300">
-                    <span className="font-semibold text-white">{storyboardData.total_scenes}</span>{' '}
-                    escena{storyboardData.total_scenes !== 1 ? 's' : ''} detectada{storyboardData.total_scenes !== 1 ? 's' : ''}
+                    <span className="font-semibold text-white">{storyboardViewData.total_scenes}</span>{' '}
+                    escena{storyboardViewData.total_scenes !== 1 ? 's' : ''} detectada{storyboardViewData.total_scenes !== 1 ? 's' : ''}
                   </span>
                 </div>
+                {storyboardShotCount != null && (
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <span className="font-semibold text-white">{storyboardShotCount}</span>
+                    plano{storyboardShotCount !== 1 ? 's' : ''}
+                  </div>
+                )}
                 <div className="flex-1 h-px bg-white/10" />
               </div>
 
-              {projectId && <StoryboardSheetExportPanel projectId={projectId} />}
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                Storyboard generado. Usa Exportar Storyboard Sheet para generar PNG/PDF.
+              </div>
 
               {/* Scene cards */}
-              {storyboardData.scenes.map((scene) => (
+              {storyboardViewData.scenes.map((scene) => (
                 <div key={scene.scene_number} className="card bg-dark-200/80 border border-white/5 overflow-hidden">
                   {/* Scene header */}
                   <div className="px-5 py-4 border-b border-white/5 bg-white/[0.02]">
@@ -1525,6 +1590,34 @@ export default function ProjectDetailPage() {
                 <ChevronRight className="w-4 h-4" />
                 Volver al guion
               </button>
+            </div>
+          ) : hasStoryboardGenerated ? (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-200">
+                Storyboard generado. Usa Exportar Storyboard Sheet para generar PNG/PDF.
+              </div>
+              <div className="card p-6 border border-white/5 bg-dark-200/80">
+                <div className="flex flex-wrap items-center gap-6 text-sm text-slate-300">
+                  {storyboardSceneCount != null && (
+                    <div>
+                      <span className="text-slate-500">Escenas:</span>{' '}
+                      <span className="font-semibold text-white">{storyboardSceneCount}</span>
+                    </div>
+                  )}
+                  {storyboardShotCount != null && (
+                    <div>
+                      <span className="text-slate-500">Planos:</span>{' '}
+                      <span className="font-semibold text-white">{storyboardShotCount}</span>
+                    </div>
+                  )}
+                  {latestCompletedStoryboardJob?.id && (
+                    <div>
+                      <span className="text-slate-500">Job:</span>{' '}
+                      <span className="font-mono text-white">{latestCompletedStoryboardJob.id}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="card p-12 flex flex-col items-center justify-center gap-3 text-center">

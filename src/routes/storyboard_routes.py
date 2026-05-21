@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import mimetypes
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -17,6 +18,7 @@ from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.shot_schema import StoryboardShotListResponse, StoryboardShotResponse
 from schemas.storyboard_schema import (
+    StoryboardAutoExportItem,
     StoryboardCreditEstimateRequest,
     StoryboardCreditEstimateResponse,
     StoryboardFailedRegenerateRequest,
@@ -29,6 +31,12 @@ from schemas.storyboard_schema import (
     StoryboardShotRegenerateRequest,
     StoryboardSequenceDetailResponse,
     StoryboardSequenceResponse,
+)
+from schemas.storyboard_presentation_schema import (
+    StoryboardLayoutConfig,
+    StoryboardLayoutName,
+    StoryboardSheetPreset,
+    StoryboardSheetTemplate,
 )
 from services.comfyui_model_inventory_service import ComfyUIInventoryError
 from services.comfyui_pipeline_builder_service import build_storyboard_pipeline_plan
@@ -52,7 +60,9 @@ from services.cid_script_scene_parser_service import cid_script_scene_parser_ser
 from services.script_sequence_mapping_service import script_sequence_mapping_service
 from services.storyboard_service import storyboard_service, StoryboardGenerationMode
 from services.storyboard_credit_estimator_service import storyboard_credit_estimator_service
+from services.storyboard_export_service import storyboard_export_service
 from services.storyboard_frame_service import storyboard_frame_service
+from services.storyboard_layout_engine import storyboard_layout_engine
 from services.storyboard_pdf_export_service import storyboard_pdf_export_service
 
 
@@ -69,7 +79,7 @@ async def _get_storyboard_shot_and_asset(
     project_id: str,
     shot_id: str,
     tenant: TenantContext,
-) -> tuple[StoryboardShot, MediaAsset]:
+) -> tuple[StoryboardShot, MediaAsset | None]:
     await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
     shot_result = await db.execute(
         select(StoryboardShot).where(
@@ -82,8 +92,9 @@ async def _get_storyboard_shot_and_asset(
     shot = shot_result.scalar_one_or_none()
     if shot is None:
         raise HTTPException(status_code=404, detail="Storyboard shot not found")
+
     if not getattr(shot, "asset_id", None):
-        raise HTTPException(status_code=404, detail="Storyboard shot has no image asset")
+        return shot, None
 
     asset_result = await db.execute(
         select(MediaAsset).where(
@@ -93,8 +104,6 @@ async def _get_storyboard_shot_and_asset(
         )
     )
     asset = asset_result.scalar_one_or_none()
-    if asset is None:
-        raise HTTPException(status_code=404, detail="Storyboard asset not found")
     return shot, asset
 
 
@@ -134,6 +143,87 @@ async def list_storyboard_sequences(
         tenant=tenant,
     )
     return [StoryboardSequenceResponse(**item) for item in sequences]
+
+
+async def _generate_auto_exports(
+    db: AsyncSession,
+    project_id: str,
+    tenant: TenantContext,
+    payload: StoryboardGenerateRequest,
+) -> tuple[list[StoryboardAutoExportItem], list[str]]:
+    exports: list[StoryboardAutoExportItem] = []
+    errors: list[str] = []
+
+    try:
+        frames = await storyboard_frame_service.collect_by_project(
+            db, project_id, organization_id=tenant.organization_id
+        )
+        frames = storyboard_frame_service.limit_frames(
+            frames,
+            max_frames=payload.auto_export_max_frames,
+            frame_selection_mode="first",
+        )
+    except Exception as exc:
+        errors.append(f"Failed to collect frames for auto-export: {exc}")
+        return exports, errors
+
+    if not frames:
+        errors.append("No frames available for auto-export")
+        return exports, errors
+
+    layout_config = StoryboardLayoutConfig(
+        layout=StoryboardLayoutName.grid_2x2,
+        preset=StoryboardSheetPreset.realistic_client_review,
+        page_width_px=1080,
+        page_height_px=1920,
+    )
+
+    sheet_template_enum = None
+    if payload.auto_export_template:
+        try:
+            sheet_template_enum = StoryboardSheetTemplate(payload.auto_export_template)
+        except ValueError:
+            pass
+
+    try:
+        pages = storyboard_layout_engine.render_pages(frames, layout_config)
+    except Exception as exc:
+        errors.append(f"Failed to render pages for auto-export: {exc}")
+        return exports, errors
+
+    for fmt in payload.auto_export_formats or ["png", "pdf"]:
+        try:
+            base_name = storyboard_export_service.build_export_base_name(
+                project_id=project_id,
+                layout=layout_config.layout.value,
+                frame_count=len(frames),
+                output_format=fmt,
+                sheet_template=sheet_template_enum.value if sheet_template_enum else None,
+            )
+            if fmt == "png":
+                export_result = storyboard_export_service.export_png(
+                    project_id=project_id, pages=pages, base_name=base_name
+                )
+            else:
+                export_result = storyboard_export_service.export_pdf(
+                    project_id=project_id, pages=pages, base_name=base_name
+                )
+
+            artifact_path = Path(str(export_result["artifact_path"]))
+            artifact_url = storyboard_export_service.build_artifact_url(project_id, artifact_path.name)
+
+            exports.append(StoryboardAutoExportItem(
+                output_format=fmt,
+                artifact_url=artifact_url,
+                artifact_path=str(artifact_path),
+                frame_count=len(frames),
+                page_count=int(export_result.get("page_count", 1)),
+                credit_estimate=storyboard_export_service.build_credit_estimate(len(frames)),
+            ))
+        except Exception as exc:
+            errors.append(f"Auto-export {fmt.upper()} failed: {exc}")
+
+    return exports, errors
 
 
 @router.post("/{project_id}/storyboard/generate", response_model=StoryboardJobResponse)
@@ -183,7 +273,18 @@ async def generate_storyboard(
         motion_ready=payload.motion_ready,
         image_edit_mode=payload.image_edit_mode,
     )
-    return StoryboardJobResponse(**{k: result[k] for k in StoryboardJobResponse.model_fields.keys()})
+
+    service_response = {k: result[k] for k in StoryboardJobResponse.model_fields if k in result}
+    response = StoryboardJobResponse(**service_response)
+
+    if payload.auto_export_sheet:
+        auto_exports, auto_errors = await _generate_auto_exports(
+            db, project_id, tenant, payload
+        )
+        response.auto_exports = auto_exports
+        response.auto_export_errors = auto_errors
+
+    return response
 
 
 @router.post("/{project_id}/storyboard/estimate-credits", response_model=StoryboardCreditEstimateResponse)
@@ -413,6 +514,23 @@ async def get_storyboard(
     )
 
 
+def _resolve_media_from_shot_metadata(shot: StoryboardShot) -> str | None:
+    meta = storyboard_frame_service.decode_metadata(getattr(shot, "metadata_json", None))
+    for key in ("rendered_image_path", "output_path", "image_path", "storage_path"):
+        candidate = meta.get(key)
+        if isinstance(candidate, str) and candidate.strip():
+            resolved = storyboard_frame_service.resolve_asset_thumbnail_path(
+                SimpleNamespace(canonical_path=candidate, content_ref=None, relative_path=""),
+                {"storage_path": candidate, "relative_path": None},
+            ) or storyboard_frame_service.resolve_asset_image_path(
+                SimpleNamespace(canonical_path=candidate, content_ref=None, relative_path="", mime_type=None, file_name=None),
+                {"storage_path": candidate, "relative_path": None},
+            )
+            if resolved:
+                return resolved
+    return None
+
+
 @router.get("/{project_id}/storyboard/shots/{shot_id}/image")
 async def get_storyboard_shot_image(
     project_id: str,
@@ -426,15 +544,21 @@ async def get_storyboard_shot_image(
         shot_id=shot_id,
         tenant=tenant,
     )
-    metadata = storyboard_frame_service.decode_metadata(getattr(asset, "metadata_json", None))
-    image_path = storyboard_frame_service.resolve_asset_image_path(asset, metadata)
-    if image_path is None:
-        raise HTTPException(status_code=404, detail="Storyboard image not found")
-    return _file_response_for_storyboard_media(
-        image_path,
-        getattr(asset, "mime_type", None),
-        getattr(asset, "file_name", None) or f"storyboard-shot-{shot.id}",
-    )
+    if asset is not None:
+        metadata = storyboard_frame_service.decode_metadata(getattr(asset, "metadata_json", None))
+        image_path = storyboard_frame_service.resolve_asset_image_path(asset, metadata)
+        if image_path:
+            return _file_response_for_storyboard_media(
+                image_path,
+                getattr(asset, "mime_type", None),
+                getattr(asset, "file_name", None) or f"storyboard-shot-{shot.id}",
+            )
+
+    fallback_path = _resolve_media_from_shot_metadata(shot)
+    if fallback_path:
+        return _file_response_for_storyboard_media(fallback_path, None, f"storyboard-shot-{shot.id}")
+
+    raise HTTPException(status_code=404, detail="Storyboard image not found")
 
 
 @router.get("/{project_id}/storyboard/shots/{shot_id}/thumbnail")
@@ -450,17 +574,23 @@ async def get_storyboard_shot_thumbnail(
         shot_id=shot_id,
         tenant=tenant,
     )
-    metadata = storyboard_frame_service.decode_metadata(getattr(asset, "metadata_json", None))
-    thumbnail_path = storyboard_frame_service.resolve_asset_thumbnail_path(asset, metadata)
-    if thumbnail_path is None:
-        thumbnail_path = storyboard_frame_service.resolve_asset_image_path(asset, metadata)
-    if thumbnail_path is None:
-        raise HTTPException(status_code=404, detail="Storyboard thumbnail not found")
-    return _file_response_for_storyboard_media(
-        thumbnail_path,
-        mimetypes.guess_type(thumbnail_path)[0] or getattr(asset, "mime_type", None),
-        Path(thumbnail_path).name,
-    )
+    if asset is not None:
+        metadata = storyboard_frame_service.decode_metadata(getattr(asset, "metadata_json", None))
+        thumbnail_path = storyboard_frame_service.resolve_asset_thumbnail_path(asset, metadata)
+        if thumbnail_path is None:
+            thumbnail_path = storyboard_frame_service.resolve_asset_image_path(asset, metadata)
+        if thumbnail_path:
+            return _file_response_for_storyboard_media(
+                thumbnail_path,
+                mimetypes.guess_type(thumbnail_path)[0] or getattr(asset, "mime_type", None),
+                Path(thumbnail_path).name,
+            )
+
+    fallback_path = _resolve_media_from_shot_metadata(shot)
+    if fallback_path:
+        return _file_response_for_storyboard_media(fallback_path, None, Path(fallback_path).name)
+
+    raise HTTPException(status_code=404, detail="Storyboard thumbnail not found")
 
 
 @router.get("/{project_id}/storyboard/sequences/{sequence_id}", response_model=StoryboardSequenceDetailResponse)

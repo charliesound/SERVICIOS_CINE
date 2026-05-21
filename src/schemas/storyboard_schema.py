@@ -41,6 +41,19 @@ class StoryboardGenerateRequest(BaseModel):
     model_family: Optional[Literal["flux", "sdxl", "wan22", "qwen_image_edit", "auto"]] = None
     motion_ready: bool = False
     image_edit_mode: bool = False
+    auto_export_sheet: bool = False
+    auto_export_formats: list[Literal["png", "pdf"]] = Field(default_factory=lambda: ["png", "pdf"])
+    auto_export_template: Optional[str] = None
+    auto_export_max_frames: Optional[int] = None
+
+
+class StoryboardAutoExportItem(BaseModel):
+    output_format: str
+    artifact_url: Optional[str] = None
+    artifact_path: str
+    frame_count: int = 0
+    page_count: int = 0
+    credit_estimate: dict[str, object] = Field(default_factory=dict)
 
 
 class StoryboardCreditEstimateRequest(BaseModel):
@@ -119,6 +132,8 @@ class StoryboardJobResponse(BaseModel):
     total_selected: int = 0
     total_scenes: int = 0
     total_shots: int = 0
+    auto_exports: list[StoryboardAutoExportItem] = Field(default_factory=list)
+    auto_export_errors: list[str] = Field(default_factory=list)
 
 
 class StoryboardListResponse(BaseModel):

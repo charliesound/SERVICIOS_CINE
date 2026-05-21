@@ -29,16 +29,8 @@ async def _serialize_shot(
     if shot.asset_id:
         result = await db.execute(select(MediaAsset).where(MediaAsset.id == shot.asset_id))
         asset = result.scalar_one_or_none()
-    thumbnail_url = (
-        f"/api/projects/{project_id}/storyboard/shots/{shot.id}/thumbnail"
-        if shot.asset_id and asset is not None
-        else None
-    )
-    image_url = (
-        f"/api/projects/{project_id}/storyboard/shots/{shot.id}/image"
-        if shot.asset_id and asset is not None
-        else None
-    )
+    thumbnail_url = f"/api/projects/{project_id}/storyboard/shots/{shot.id}/thumbnail"
+    image_url = f"/api/projects/{project_id}/storyboard/shots/{shot.id}/image"
     return StoryboardShotResponse(
         id=str(shot.id),
         project_id=str(shot.project_id),

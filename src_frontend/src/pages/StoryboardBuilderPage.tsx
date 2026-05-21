@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check, Upload, X } from 'lucide-react'
+import { Download, ExternalLink, Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check, Upload, X } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import { AuthenticatedStoryboardShotImage } from '@/components/storyboard/AuthenticatedStoryboardShotImage'
 import { ShotCard } from '@/components/storyboard/ShotCard'
@@ -16,6 +16,7 @@ import type {
   ScriptSequenceMapEntry,
   ScriptUploadResult,
   SequenceStoryboardPlan,
+  StoryboardAutoExportItem,
   StoryboardCreditEstimate,
   StoryboardGeneratePayload,
   StoryboardSelectionMode,
@@ -96,6 +97,8 @@ export default function StoryboardBuilderPage() {
   const [isEstimatingCredits, setIsEstimatingCredits] = useState(false)
   const [showCreditModal, setShowCreditModal] = useState(false)
   const [pendingGenerateAction, setPendingGenerateAction] = useState<(() => Promise<void>) | null>(null)
+  const [autoExportSheet, setAutoExportSheet] = useState(true)
+  const [autoExportResponse, setAutoExportResponse] = useState<StoryboardAutoExportItem[] | null>(null)
 
   const fetchSequences = useCallback(async () => {
     if (!projectId) return
@@ -303,6 +306,7 @@ export default function StoryboardBuilderPage() {
     setIsGenerating(true)
     setError(null)
     setRegenerationProgress(null)
+    setAutoExportResponse(null)
     try {
       if (regenerateSequence && selectedSequenceId) {
         setRegenerationProgress({
@@ -350,8 +354,13 @@ export default function StoryboardBuilderPage() {
           use_cinematic_intelligence: useCinematicIntelligence,
           use_montage_intelligence: useMontageIntelligence,
           validate_prompts: validatePrompts,
+          auto_export_sheet: autoExportSheet,
+          auto_export_formats: ['png', 'pdf'],
         }
-        await storyboardApi.generate(projectId, payload)
+        const job = await storyboardApi.generate(projectId, payload)
+        if (job.auto_exports && job.auto_exports.length > 0) {
+          setAutoExportResponse(job.auto_exports)
+        }
         await Promise.all([fetchShots(), fetchSequences()])
       }
     } catch (err: any) {
@@ -972,6 +981,79 @@ export default function StoryboardBuilderPage() {
                 />
               )}
             </section>
+
+            <section className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoExportSheet}
+                  onChange={(e) => setAutoExportSheet(e.target.checked)}
+                  className="w-4 h-4 rounded border-amber-500/50 text-amber-500 focus:ring-amber-500/30"
+                />
+                <div>
+                  <p className="text-sm font-medium text-white">Crear también Storyboard Sheet PNG/PDF</p>
+                  <p className="text-xs text-slate-400">
+                    Al generar el storyboard se crearán automáticamente los sheets editoriales
+                  </p>
+                </div>
+              </label>
+            </section>
+
+            {autoExportResponse && autoExportResponse.length > 0 && (
+              <section className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-emerald-400">Storyboard Sheet generado</p>
+                <div className="flex flex-wrap gap-3">
+                  {autoExportResponse.map((item) => {
+                    const extension = item.output_format === 'pdf' ? 'pdf' : 'png'
+                    const handleOpen = () => {
+                      if (item.artifact_url) {
+                        storyboardApi.fetchArtifactBlob(item.artifact_url)
+                          .then((blob) => {
+                            const url = URL.createObjectURL(blob)
+                            window.open(url, '_blank', 'noopener,noreferrer')
+                            setTimeout(() => URL.revokeObjectURL(url), 60000)
+                          })
+                          .catch(() => {})
+                      }
+                    }
+                    const handleDownload = () => {
+                      if (item.artifact_url) {
+                        storyboardApi.fetchArtifactBlob(item.artifact_url)
+                          .then((blob) => {
+                            const url = URL.createObjectURL(blob)
+                            const anchor = document.createElement('a')
+                            anchor.href = url
+                            anchor.download = `storyboard_sheet_auto.${extension}`
+                            anchor.click()
+                            URL.revokeObjectURL(url)
+                          })
+                          .catch(() => {})
+                      }
+                    }
+                    return (
+                      <div key={item.output_format} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                        <span className="text-sm font-medium text-white uppercase">{item.output_format}</span>
+                        <span className="text-xs text-slate-400">{item.frame_count} frames · {item.page_count} páginas</span>
+                        {item.artifact_url && (
+                          <>
+                            <button type="button" onClick={handleOpen}
+                              className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10">
+                              <Download className="h-3.5 w-3.5" />
+                              Abrir
+                            </button>
+                            <button type="button" onClick={handleDownload}
+                              className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20">
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              Descargar
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
 
             {projectId && <StoryboardSheetExportPanel projectId={projectId} />}
 

@@ -238,6 +238,17 @@ export interface StoryboardGeneratePayload {
   use_cinematic_intelligence?: boolean
   use_montage_intelligence?: boolean
   validate_prompts?: boolean
+  auto_export_sheet?: boolean
+  auto_export_formats?: string[]
+}
+
+export interface StoryboardAutoExportItem {
+  output_format: string
+  artifact_url: string | null
+  artifact_path: string
+  frame_count: number
+  page_count: number
+  credit_estimate?: Record<string, unknown>
 }
 
 export interface StoryboardGenerationJob {
@@ -254,6 +265,8 @@ export interface StoryboardGenerationJob {
   total_selected?: number
   total_scenes: number
   total_shots: number
+  auto_exports?: StoryboardAutoExportItem[]
+  auto_export_errors?: string[]
   render_jobs?: Array<{ job_id: string; backend?: string; workflow_key?: string; storyboard_shot_id?: string }>
 }
 

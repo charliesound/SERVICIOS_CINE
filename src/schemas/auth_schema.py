@@ -68,6 +68,24 @@ class RegisterPartnerPayload(BaseModel):
     password: Optional[str] = Field(default=None, min_length=6)
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=8)
+    confirm_password: str
+
+
+class ResetPasswordResponse(BaseModel):
+    message: str
+
+
 class TenantContext(BaseModel):
     user_id: str
     organization_id: str

@@ -63,6 +63,16 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     request_id_header: str = "X-Request-ID"
 
+    # ── Password Reset / Email ──────────────────────────────────────────
+    frontend_base_url: str = "http://localhost:3000"
+    password_reset_token_ttl_minutes: int = 30
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = "noreply@ailinkcinema.com"
+    smtp_tls: bool = True
+
     # ── Health ───────────────────────────────────────────────────────────
     healthcheck_db_enabled: bool = True
     healthcheck_redis_enabled: bool = False

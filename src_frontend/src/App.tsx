@@ -6,6 +6,8 @@ import PlanRoute from './components/PlanRoute'
 import AppShell from './components/AppShell'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import RegisterSelectPage from './pages/RegisterSelectPage'
 import RegisterCIDPage from './pages/RegisterCIDPage'
 import RegisterDemoPage from './pages/RegisterDemoPage'
@@ -104,6 +106,9 @@ export default function App() {
         <Route path="/legal/aviso-legal" element={<LegalNoticePage />} />
         <Route path="/legal/terminos" element={<LegalTermsPage />} />
         <Route path="/legal/ia-y-contenidos" element={<LegalAiContentPage />} />
+
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />

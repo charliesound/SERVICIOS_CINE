@@ -3,12 +3,14 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore, getPrimaryCIDTarget } from '@/store'
 import { Clapperboard, Mail, Lock, ArrowRight } from 'lucide-react'
 import { useSeo } from '@/hooks/useSeo'
+import { PasswordToggle } from '@/components/PasswordToggle'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const { login, isAuthenticated, user } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -84,13 +86,25 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="input pl-10"
+                  className="input pl-10 pr-10"
                   required
                 />
+                <PasswordToggle
+                  visible={showPassword}
+                  onToggle={() => setShowPassword(!showPassword)}
+                />
+              </div>
+              <div className="mt-1 text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-amber-400 hover:text-amber-300 text-xs transition-colors"
+                >
+                  ¿Has olvidado tu contraseña?
+                </Link>
               </div>
             </div>
 

@@ -17,5 +17,9 @@ export type {
   RegisterCIDPayload,
   RegisterDemoPayload,
   RegisterPartnerPayload,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
 } from './auth'
 export type { TokenResponse, PlanInfo, UserPlanStatus } from './user'

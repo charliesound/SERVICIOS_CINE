@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Clapperboard, Mail, Lock, User, ArrowRight } from 'lucide-react'
 import { useAuthStore } from '@/store'
+import { PasswordToggle } from '@/components/PasswordToggle'
 import { authApi } from '@/api'
 import type { CIDProgram, RegisterCIDPayload } from '@/types'
 import { getApiErrorMessage } from '@/utils/apiErrors'
@@ -29,6 +30,7 @@ export default function RegisterCIDPage() {
     country: '',
     accept_terms: false,
   })
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -211,13 +213,17 @@ export default function RegisterCIDPage() {
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
                       placeholder="Mínimo 6 caracteres"
-                      className="input pl-10"
+                      className="input pl-10 pr-10"
                       required
                       minLength={6}
+                    />
+                    <PasswordToggle
+                      visible={showPassword}
+                      onToggle={() => setShowPassword(!showPassword)}
                     />
                   </div>
                 </div>

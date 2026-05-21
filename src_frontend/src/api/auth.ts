@@ -6,6 +6,10 @@ import type {
   RegisterCIDPayload,
   RegisterDemoPayload,
   RegisterPartnerPayload,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
 } from '@/types'
 
 export const authApi = {
@@ -46,6 +50,16 @@ export const authApi = {
 
   getMe: async (): Promise<UserProfile> => {
     const { data } = await api.get<UserProfile>('/auth/me')
+    return data
+  },
+
+  forgotPassword: async (payload: ForgotPasswordRequest): Promise<ForgotPasswordResponse> => {
+    const { data } = await api.post<ForgotPasswordResponse>('/auth/forgot-password', payload)
+    return data
+  },
+
+  resetPassword: async (payload: ResetPasswordRequest): Promise<ResetPasswordResponse> => {
+    const { data } = await api.post<ResetPasswordResponse>('/auth/reset-password', payload)
     return data
   },
 }

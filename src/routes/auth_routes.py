@@ -4,7 +4,7 @@ import secrets
 from typing import Any, Optional
 
 import bcrypt
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy.exc import SQLAlchemyError
@@ -15,9 +15,13 @@ from core.config import get_settings
 from database import get_db
 from models.core import User as DBUser
 from schemas.auth_schema import (
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     RegisterCIDPayload,
     RegisterDemoPayload,
     RegisterPartnerPayload,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
     TokenResponse,
     UserLogin,
     UserRegister,
@@ -32,6 +36,7 @@ from services.account_service import (
     resolve_effective_plan,
 )
 from services.logging_service import logger
+from services.password_reset_service import request_password_reset, reset_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -265,6 +270,35 @@ async def register_partner(
         )
 
         return await build_user_response_from_db(db, user)
+    except SQLAlchemyError as error:
+        raise_auth_database_unavailable(error)
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        client_ip = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+        await request_password_reset(db, payload.email, client_ip, user_agent)
+        return ForgotPasswordResponse(
+            message="Si el email está registrado, recibirás instrucciones para restablecer tu contraseña."
+        )
+    except SQLAlchemyError as error:
+        raise_auth_database_unavailable(error)
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse)
+async def reset_password_handler(
+    payload: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        await reset_password(db, payload.token, payload.new_password, payload.confirm_password)
+        return ResetPasswordResponse(message="Contraseña restablecida correctamente.")
     except SQLAlchemyError as error:
         raise_auth_database_unavailable(error)
 

@@ -29,7 +29,7 @@ export const storyboardApi = {
   },
 
   analyzeFullScript: async (projectId: string): Promise<FullScriptAnalysisResult> => {
-    const { data } = await api.post<FullScriptAnalysisResult>('/api/cid/script-to-prompt/analyze-full', {
+    const { data } = await api.post<FullScriptAnalysisResult>('/cid/script-to-prompt/analyze-full', {
       project_id: projectId,
       script_text: '',
     })

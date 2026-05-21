@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { JobProgress } from '@/components/JobProgress'
 import { ActionProgressPanel, type ActionProgressState } from '@/components/ActionProgressPanel'
+import { StoryboardSheetExportPanel } from '@/components/storyboard/StoryboardSheetExportPanel'
 import { StoryboardSequenceSelectorModal, type StoryboardSelectionValue } from '@/components/storyboard/StoryboardSequenceSelectorModal'
 import type { ScriptUploadResult, StoryboardSceneCandidate, StoryboardSequence, StoryboardShot } from '@/types/storyboard'
 import ConceptArtDryRunPanel from '@/components/concept-art/ConceptArtDryRunPanel'
@@ -1426,6 +1427,8 @@ export default function ProjectDetailPage() {
                 </div>
                 <div className="flex-1 h-px bg-white/10" />
               </div>
+
+              {projectId && <StoryboardSheetExportPanel projectId={projectId} />}
 
               {/* Scene cards */}
               {storyboardData.scenes.map((scene) => (

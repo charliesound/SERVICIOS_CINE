@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { Download, ExternalLink, Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check, Upload, X } from 'lucide-react'
+import { Download, ExternalLink, Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check, Upload, X, Users } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import { AuthenticatedStoryboardShotImage } from '@/components/storyboard/AuthenticatedStoryboardShotImage'
 import { ShotCard } from '@/components/storyboard/ShotCard'
@@ -24,6 +24,8 @@ import type {
   StoryboardShot,
 } from '@/types/storyboard'
 import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/storyboardText'
+import { deriveCharacterBreakdown } from '@/utils/characterBreakdown'
+import { CharacterBreakdownPanel } from '@/components/storyboard/CharacterBreakdownPanel'
 
 function toDirtyShot(shot: StoryboardShot): DirtyShot {
   return { ...shot, isDirty: false }
@@ -84,7 +86,7 @@ export default function StoryboardBuilderPage() {
   const [selectedSequenceEntry, setSelectedSequenceEntry] = useState<ScriptSequenceMapEntry | null>(null)
   const [shotPlan, setShotPlan] = useState<SequenceStoryboardPlan | null>(null)
   const [isPlanning, setIsPlanning] = useState(false)
-  const [activeTab, setActiveTab] = useState<'analyze' | 'sequences' | 'shots'>('analyze')
+  const [activeTab, setActiveTab] = useState<'analyze' | 'sequences' | 'characters' | 'shots'>('analyze')
   const [regenerationProgress, setRegenerationProgress] = useState<ActionProgressState | null>(null)
   const [cinematicViewMode, setCinematicViewMode] = useState<'filmstrip' | 'contact_sheet'>('filmstrip')
 
@@ -99,6 +101,11 @@ export default function StoryboardBuilderPage() {
   const [pendingGenerateAction, setPendingGenerateAction] = useState<(() => Promise<void>) | null>(null)
   const [autoExportSheet, setAutoExportSheet] = useState(true)
   const [autoExportResponse, setAutoExportResponse] = useState<StoryboardAutoExportItem[] | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<'number' | 'location' | 'characters' | 'status'>('number')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [groupBy, setGroupBy] = useState<'none' | 'sequence' | 'location' | 'character' | 'int_ext' | 'day_night'>('none')
+  const [characterFilter, setCharacterFilter] = useState<string | null>(null)
 
   const fetchSequences = useCallback(async () => {
     if (!projectId) return
@@ -143,8 +150,40 @@ export default function StoryboardBuilderPage() {
   }, [shots, selectedMode, selectedSequenceId])
 
   const orderedCinematicShots = useMemo(() => {
-    const safe = [...filteredShots]
+    let safe = [...filteredShots]
+    if (characterFilter) {
+      const q = characterFilter.toLowerCase()
+      safe = safe.filter((shot) => {
+        const meta = shot.metadata_json || {}
+        const chars = meta.characters as string[] | undefined
+        return chars?.some((c: string) => c.toLowerCase().includes(q))
+      })
+    }
     safe.sort((a, b) => {
+      const dir = sortDirection === 'asc' ? 1 : -1
+      if (sortBy === 'number') {
+        const seqA = Number(a.sequence_order || 0)
+        const seqB = Number(b.sequence_order || 0)
+        if (seqA !== seqB) return (seqA - seqB) * dir
+      }
+      if (sortBy === 'location') {
+        const locA = (a.metadata_json as Record<string, string> | undefined)?.location || a.scene_heading || ''
+        const locB = (b.metadata_json as Record<string, string> | undefined)?.location || b.scene_heading || ''
+        const cmp = locA.localeCompare(locB)
+        if (cmp !== 0) return cmp * dir
+      }
+      if (sortBy === 'characters') {
+        const charsA = ((a.metadata_json as Record<string, string[]> | undefined)?.characters || []).join(', ')
+        const charsB = ((b.metadata_json as Record<string, string[]> | undefined)?.characters || []).join(', ')
+        const cmp = charsA.localeCompare(charsB)
+        if (cmp !== 0) return cmp * dir
+      }
+      if (sortBy === 'status') {
+        const statusA = a.render_status || 'no_asset'
+        const statusB = b.render_status || 'no_asset'
+        const cmp = statusA.localeCompare(statusB)
+        if (cmp !== 0) return cmp * dir
+      }
       const sequenceA = (a.sequence_id || '').toLowerCase()
       const sequenceB = (b.sequence_id || '').toLowerCase()
       if (sequenceA < sequenceB) return -1
@@ -158,7 +197,7 @@ export default function StoryboardBuilderPage() {
       return a.id.localeCompare(b.id)
     })
     return safe
-  }, [filteredShots])
+  }, [filteredShots, sortBy, sortDirection, characterFilter])
 
   const handleScriptFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null
@@ -520,6 +559,7 @@ export default function StoryboardBuilderPage() {
           {[
             { id: 'analyze' as const, label: '1. Analizar guion', icon: FileText },
             { id: 'sequences' as const, label: '2. Secuencias', icon: ListChecks },
+            { id: 'characters' as const, label: 'Personajes', icon: Users },
             { id: 'shots' as const, label: '3. Planos generados', icon: Film },
           ].map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -781,9 +821,59 @@ export default function StoryboardBuilderPage() {
               </div>
             ) : (
               <>
+                {/* Search, sort and filter */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex-1 min-w-[200px]">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Buscar por número, localización, personaje..."
+                      className="w-full rounded-xl border border-white/10 bg-dark-300/70 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
+                    />
+                  </div>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                    className="rounded-xl border border-white/10 bg-dark-300/70 px-3 py-2.5 text-sm text-white outline-none"
+                  >
+                    <option value="number">Número de secuencia</option>
+                    <option value="location">Localización</option>
+                    <option value="characters">Personajes</option>
+                    <option value="status">Estado</option>
+                  </select>
+                  <button
+                    onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                    className="px-3 py-2.5 text-sm border border-white/10 rounded-xl hover:bg-white/5 text-slate-300 transition-colors"
+                  >
+                    {sortDirection === 'asc' ? '↑ Asc' : '↓ Desc'}
+                  </button>
+                  <span className="text-xs text-slate-400">{sequences.length} secuencia{sequences.length !== 1 ? 's' : ''}</span>
+                </div>
+
                 {/* Sequence cards grid */}
                 <div className="grid gap-3">
-                  {sequences.map((seq) => {
+                  {(() => {
+                    let filtered = sequences
+                    if (searchQuery.trim()) {
+                      const q = searchQuery.trim().toLowerCase()
+                      filtered = sequences.filter((s) =>
+                        String(s.sequence_number).includes(q) ||
+                        (s.title || '').toLowerCase().includes(q) ||
+                        (s.location || '').toLowerCase().includes(q) ||
+                        s.characters.some((ch) => ch.toLowerCase().includes(q)) ||
+                        (s.summary || '').toLowerCase().includes(q)
+                      )
+                    }
+                    filtered = [...filtered].sort((a, b) => {
+                      const dir = sortDirection === 'asc' ? 1 : -1
+                      if (sortBy === 'number') return (a.sequence_number - b.sequence_number) * dir
+                      if (sortBy === 'location') return ((a.location || '').localeCompare(b.location || '')) * dir
+                      if (sortBy === 'characters') return (a.characters.join(', ').localeCompare(b.characters.join(', '))) * dir
+                      if (sortBy === 'status') return (a.storyboard_status.localeCompare(b.storyboard_status)) * dir
+                      return 0
+                    })
+                    return filtered.map((seq) => {
                     const isSelected = selectedSequenceId === seq.sequence_id
                     return (
                       <div key={seq.sequence_id}
@@ -843,8 +933,31 @@ export default function StoryboardBuilderPage() {
                         )}
                       </div>
                     )
-                  })}
+                  })})()}
                 </div>
+
+                {/* Character breakdown */}
+                <details className="rounded-xl border border-cyan-500/20 bg-cyan-500/5">
+                  <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-cyan-300 flex items-center gap-2">
+                    <Users className="w-4 h-4" /> Personajes y desglose
+                  </summary>
+                  <div className="px-5 pb-5">
+                    <CharacterBreakdownPanel
+                      sequences={sequences}
+                      onFilterByCharacter={(character) => {
+                        setCharacterFilter(character)
+                        setActiveTab('shots')
+                      }}
+                      onSelectSequencesByCharacter={(seqIds) => {
+                        const found = sequences.find((s) => seqIds.includes(s.sequence_id))
+                        if (found) {
+                          setSelectedSequenceId(found.sequence_id)
+                          setActiveTab('shots')
+                        }
+                      }}
+                    />
+                  </div>
+                </details>
 
                 {/* Selected sequence actions */}
                 {selectedSequenceId && (() => {
@@ -948,6 +1061,47 @@ export default function StoryboardBuilderPage() {
           </div>
         )}
 
+        {/* TAB Personajes */}
+        {activeTab === 'characters' && (
+          <div className="space-y-6">
+            <section className="card bg-dark-200/80 border border-white/5 p-6">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Users className="w-4 h-4 text-cyan-400" />
+                Personajes y desglose por secuencias
+              </h2>
+              <p className="text-sm text-slate-400 mt-1">
+                {sequences.length > 0
+                  ? `${deriveCharacterBreakdown(sequences).length} personajes detectados en ${sequences.length} secuencias`
+                  : 'Analiza el guion completo para ver el desglose de personajes.'}
+              </p>
+            </section>
+            {sequences.length > 0 ? (
+              <CharacterBreakdownPanel
+                sequences={sequences}
+                onFilterByCharacter={(character) => {
+                  setCharacterFilter(character)
+                  setActiveTab('shots')
+                }}
+                onSelectSequencesByCharacter={(seqIds) => {
+                  const found = sequences.find((s) => seqIds.includes(s.sequence_id))
+                  if (found) {
+                    setSelectedSequenceId(found.sequence_id)
+                    setActiveTab('shots')
+                  }
+                }}
+              />
+            ) : (
+              <div className="text-center py-10">
+                <p className="text-slate-400 mb-4">No hay datos de personajes. Analiza el guion completo primero.</p>
+                <button onClick={handleAnalyzeFullScript} disabled={isAnalyzing}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300">
+                  <FileText className="w-4 h-4" /> Analizar guion completo
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* TAB 3: Generated Shots */}
         {activeTab === 'shots' && (
           <>
@@ -972,6 +1126,34 @@ export default function StoryboardBuilderPage() {
                     ))}
                   </select>
                 </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="rounded-xl border border-white/10 bg-dark-300/70 px-3 py-2 text-xs text-white outline-none"
+                >
+                  <option value="number">Número secuencia</option>
+                  <option value="location">Localización</option>
+                  <option value="characters">Personajes</option>
+                  <option value="status">Estado</option>
+                </select>
+                <button
+                  onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                  className="px-3 py-2 text-xs border border-white/10 rounded-xl hover:bg-white/5 text-slate-300 transition-colors"
+                >
+                  {sortDirection === 'asc' ? '↑' : '↓'}
+                </button>
+                <select
+                  value={groupBy}
+                  onChange={(e) => setGroupBy(e.target.value as typeof groupBy)}
+                  className="rounded-xl border border-white/10 bg-dark-300/70 px-3 py-2 text-xs text-white outline-none"
+                >
+                  <option value="none">Sin agrupar</option>
+                  <option value="sequence">Por secuencia</option>
+                  <option value="location">Por localización</option>
+                  <option value="character">Por personaje</option>
+                </select>
               </div>
               {regenerationProgress && (
                 <ActionProgressPanel

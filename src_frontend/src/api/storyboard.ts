@@ -1,4 +1,4 @@
-import api from './client'
+import api, { normalizeApiUrl } from './client'
 import type {
   FullScriptAnalysisResult,
   ScriptUploadResult,
@@ -205,7 +205,8 @@ export const storyboardApi = {
   },
 
   fetchArtifactBlob: async (url: string): Promise<Blob> => {
-    const { data } = await api.get(url, { responseType: 'blob' })
+    const normalized = normalizeApiUrl(url)
+    const { data } = await api.get(normalized, { responseType: 'blob' })
     return data
   },
 }

@@ -404,6 +404,9 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<StoryboardSheetResponse | null>(null)
+  const [selectedPages, setSelectedPages] = useState<'all' | 'current' | 'range' | 'manual'>('all')
+  const [pageRange, setPageRange] = useState('1-3')
+  const [manualPageSelection, setManualPageSelection] = useState<number[]>([])
 
   const selectedTemplateOption = useMemo(
     () => sheetTemplateOptions.find((option) => option.value === sheetTemplate) || sheetTemplateOptions[0],
@@ -504,14 +507,15 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-amber-300">
             <LayoutGrid className="h-5 w-5" />
-            <h3 className="text-lg font-semibold text-white">Storyboard Sheet Export</h3>
+            <h3 className="text-lg font-semibold text-white">Descargar Storyboard Sheet</h3>
           </div>
           <p className="max-w-3xl text-sm text-slate-400">
-            Genera una hoja editorial del storyboard usando los frames disponibles del proyecto. El backend devuelve la ruta del artefacto y, si existe, una URL pública para abrirlo o descargarlo.
+            Selecciona formato, plantilla y páginas para descargar el Storyboard Sheet en PNG o PDF.
+            Si ya generaste el storyboard, los ajustes están preconfigurados.
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-400">
-          Endpoint: <span className="font-mono text-slate-200">POST /api/projects/{projectId}/storyboard/sheet</span>
+          Formato listo para producción · {result ? 'export disponible' : 'configura y prepara descarga'}
         </div>
       </div>
 
@@ -622,6 +626,55 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
         {estimatedCreditsLabel}
       </div>
 
+      {/* Page selection */}
+      <div className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Selección de páginas</p>
+        <div className="flex flex-wrap gap-3">
+          <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+            <input type="radio" name="page-select" checked={selectedPages === 'all'} onChange={() => setSelectedPages('all')} className="text-amber-500" />
+            Todas las páginas
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+            <input type="radio" name="page-select" checked={selectedPages === 'current'} onChange={() => setSelectedPages('current')} className="text-amber-500" />
+            Página actual
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+            <input type="radio" name="page-select" checked={selectedPages === 'range'} onChange={() => setSelectedPages('range')} className="text-amber-500" />
+            Rango
+          </label>
+          {selectedPages === 'range' && (
+            <input
+              type="text"
+              value={pageRange}
+              onChange={(e) => setPageRange(e.target.value)}
+              placeholder="1-3"
+              className="w-20 rounded-lg border border-white/10 bg-dark-300/70 px-2 py-1 text-sm text-white outline-none"
+            />
+          )}
+        </div>
+        {result && result.metadata?.page_urls && Array.isArray(result.metadata.page_urls) && (
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
+            {(result.metadata.page_urls as string[]).map((_url, idx) => (
+              <label key={idx} className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                <input
+                  type={selectedPages === 'manual' ? 'checkbox' : 'radio'}
+                  name="page-manual"
+                  checked={selectedPages === 'manual' ? manualPageSelection.includes(idx) : false}
+                  onChange={() => {
+                    setSelectedPages('manual')
+                    setManualPageSelection((prev) =>
+                      prev.includes(idx) ? prev.filter((p) => p !== idx) : [...prev, idx]
+                    )
+                  }}
+                  className="text-amber-500"
+                />
+                Página {idx + 1}
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -630,10 +683,16 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
           className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileImage className="h-4 w-4" />}
-          {isSubmitting ? 'Generando storyboard sheet...' : 'Generar Storyboard Sheet'}
+          {isSubmitting ? 'Preparando descarga...' : result ? 'Descargar Storyboard Sheet' : 'Preparar descarga'}
         </button>
+        {result && (
+          <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs text-emerald-300">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Export disponible
+          </span>
+        )}
         <div className="text-xs text-slate-500">
-          Configuración actual: <span className="text-slate-300">{sheetTemplate === 'current' ? 'modo actual' : selectedTemplateOption.label}</span> · <span className="text-slate-300">{outputFormat.toUpperCase()}</span> · <span className="text-slate-300">{requestedFrameCount == null ? 'frames por defecto/todos' : `${requestedFrameCount} imágenes`}</span>
+          {sheetTemplate === 'current' ? 'modo actual' : selectedTemplateOption.label} · {outputFormat.toUpperCase()} · {requestedFrameCount == null ? 'frames por defecto/todos' : `${requestedFrameCount} imágenes`}
         </div>
       </div>
 

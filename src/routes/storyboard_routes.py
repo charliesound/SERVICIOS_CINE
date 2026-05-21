@@ -60,6 +60,7 @@ from services.cid_script_scene_parser_service import cid_script_scene_parser_ser
 from services.script_sequence_mapping_service import script_sequence_mapping_service
 from services.storyboard_service import storyboard_service, StoryboardGenerationMode
 from services.storyboard_credit_estimator_service import storyboard_credit_estimator_service
+from services.storyboard_asset_repair_service import storyboard_asset_repair_service
 from services.storyboard_export_service import storyboard_export_service
 from services.storyboard_frame_service import storyboard_frame_service
 from services.storyboard_layout_engine import storyboard_layout_engine
@@ -1032,3 +1033,16 @@ async def export_sequence_storyboard_zip(
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
     )
+
+
+@router.post("/{project_id}/storyboard/repair-assets")
+async def repair_storyboard_shot_assets(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> dict:
+    await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+    result = await storyboard_asset_repair_service.repair_storyboard_shot_asset_links(
+        db, project_id=project_id, tenant=tenant
+    )
+    return result

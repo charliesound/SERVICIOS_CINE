@@ -1,5 +1,10 @@
 import axios from 'axios'
 
+export function normalizeApiUrl(url: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return url.replace(/^\/api(\/|$)/, '/')
+}
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8010/api',
   headers: {

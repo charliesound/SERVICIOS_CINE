@@ -377,3 +377,43 @@ export interface StoryboardCreditEstimate {
   warnings: string[]
   notes: string[]
 }
+
+export type StoryboardSheetOutputFormat = 'png' | 'pdf'
+
+export type StoryboardSheetLayoutName = 'grid_2x2' | 'grid_2x3' | 'grid_2x4' | 'grid_3x3'
+
+export type StoryboardSheetPreset = 'clean_corporate' | 'cinematic_pitch' | 'production_sheet' | 'realistic_client_review'
+
+export interface StoryboardSheetLayoutConfig {
+  layout: StoryboardSheetLayoutName
+  preset: StoryboardSheetPreset
+  page_width_px?: number
+  page_height_px?: number
+  gutter_px?: number
+  margin_px?: number
+  caption_height_px?: number
+  title?: string | null
+}
+
+export interface StoryboardSheetRequest {
+  project_id: string
+  render_job_id?: string | null
+  asset_ids?: string[] | null
+  layout: StoryboardSheetLayoutConfig
+  output_format: StoryboardSheetOutputFormat
+  override_shot_info?: Record<string, unknown> | null
+}
+
+export interface StoryboardSheetResponse {
+  artifact_path: string
+  artifact_url: string | null
+  output_format: StoryboardSheetOutputFormat
+  frame_count: number
+  layout: StoryboardSheetLayoutName
+  preset: StoryboardSheetPreset
+  metadata: {
+    page_count?: number
+    page_paths?: string[]
+    [key: string]: unknown
+  }
+}

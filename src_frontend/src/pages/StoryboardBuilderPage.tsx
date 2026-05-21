@@ -5,6 +5,7 @@ import { storyboardApi } from '@/api/storyboard'
 import { ShotCard } from '@/components/storyboard/ShotCard'
 import { AssetPickerModal } from '@/components/storyboard/AssetPickerModal'
 import DirectorFeedbackPanel from '@/components/storyboard/DirectorFeedbackPanel'
+import { StoryboardSheetExportPanel } from '@/components/storyboard/StoryboardSheetExportPanel'
 import { ActionProgressPanel } from '@/components/ActionProgressPanel'
 import type { ActionProgressState } from '@/components/ActionProgressPanel'
 import type {
@@ -968,6 +969,8 @@ export default function StoryboardBuilderPage() {
                 />
               )}
             </section>
+
+            {projectId && <StoryboardSheetExportPanel projectId={projectId} />}
 
             {sequences.length > 0 && !selectedSequenceId && filteredShots.length === 0 && (
               <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-sm text-amber-300/80 flex items-center gap-2">

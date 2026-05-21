@@ -15,6 +15,8 @@ import type {
   StoryboardGeneratePayload,
   StoryboardGenerationJob,
   StoryboardOptions,
+  StoryboardSheetRequest,
+  StoryboardSheetResponse,
   StoryboardScopeResponse,
   StoryboardSequence,
   StoryboardSequenceDetail,
@@ -183,6 +185,11 @@ export const storyboardApi = {
 
   estimateStoryboardCredits: async (projectId: string, payload: Record<string, unknown> = {}): Promise<StoryboardCreditEstimate> => {
     const { data } = await api.post<StoryboardCreditEstimate>(`/projects/${projectId}/storyboard/estimate-credits`, payload)
+    return data
+  },
+
+  exportStoryboardSheet: async (projectId: string, payload: StoryboardSheetRequest): Promise<StoryboardSheetResponse> => {
+    const { data } = await api.post<StoryboardSheetResponse>(`/projects/${projectId}/storyboard/sheet`, payload)
     return data
   },
 }

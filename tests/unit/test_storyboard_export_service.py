@@ -36,3 +36,16 @@ def test_export_pdf_creates_file(tmp_path: Path) -> None:
     path = Path(result["artifact_path"])
     assert path.is_file()
     assert path.stat().st_size > 0
+
+
+def test_build_credit_estimate_uses_frame_count() -> None:
+    service = StoryboardExportService()
+
+    estimate = service.build_credit_estimate(8)
+
+    assert estimate == {
+        "billable_frames": 8,
+        "pricing_unit": "storyboard_sheet_frame",
+        "estimated_credits": 8,
+        "credit_policy": "1 credit per included storyboard frame",
+    }

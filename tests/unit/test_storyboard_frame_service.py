@@ -223,3 +223,34 @@ async def test_collect_by_asset_ids_missing_image_raises_clear_error(tmp_path: P
 
     with pytest.raises(ValueError, match="No storyboard frames with existing image files were found"):
         await storyboard_frame_service.collect_by_asset_ids(session, ["a1"])
+
+
+def test_limit_frames_without_max_frames_keeps_all() -> None:
+    frames = [SimpleNamespace(shot_number=index) for index in range(1, 6)]
+
+    limited = storyboard_frame_service.limit_frames(frames, max_frames=None)
+
+    assert [frame.shot_number for frame in limited] == [1, 2, 3, 4, 5]
+
+
+def test_limit_frames_respects_max_frames() -> None:
+    frames = [SimpleNamespace(shot_number=index) for index in range(1, 7)]
+
+    limited = storyboard_frame_service.limit_frames(frames, max_frames=4)
+
+    assert [frame.shot_number for frame in limited] == [1, 2, 3, 4]
+
+
+def test_limit_frames_uses_available_frames_when_max_is_higher() -> None:
+    frames = [SimpleNamespace(shot_number=index) for index in range(1, 4)]
+
+    limited = storyboard_frame_service.limit_frames(frames, max_frames=8)
+
+    assert [frame.shot_number for frame in limited] == [1, 2, 3]
+
+
+def test_limit_frames_rejects_unsupported_selection_mode() -> None:
+    frames = [SimpleNamespace(shot_number=1)]
+
+    with pytest.raises(ValueError, match="Unsupported frame_selection_mode"):
+        storyboard_frame_service.limit_frames(frames, max_frames=1, frame_selection_mode="latest")

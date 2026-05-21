@@ -157,6 +157,19 @@ class StoryboardFrameService:
         frames.sort(key=lambda item: item[0])
         return [frame for _key, frame in frames]
 
+    def limit_frames(
+        self,
+        frames: list[StoryboardFrame],
+        *,
+        max_frames: int | None,
+        frame_selection_mode: str = "first",
+    ) -> list[StoryboardFrame]:
+        if frame_selection_mode != "first":
+            raise ValueError(f"Unsupported frame_selection_mode: {frame_selection_mode}")
+        if max_frames is None or max_frames >= len(frames):
+            return list(frames)
+        return list(frames[:max_frames])
+
     async def _load_storyboard_shots(
         self,
         db: AsyncSession,

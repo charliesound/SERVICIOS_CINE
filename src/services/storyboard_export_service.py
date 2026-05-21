@@ -44,5 +44,13 @@ class StoryboardExportService:
             "page_count": len(pages),
         }
 
+    def build_credit_estimate(self, frame_count: int) -> dict[str, object]:
+        return {
+            "billable_frames": frame_count,
+            "pricing_unit": "storyboard_sheet_frame",
+            "estimated_credits": frame_count,
+            "credit_policy": "1 credit per included storyboard frame",
+        }
+
 
 storyboard_export_service = StoryboardExportService()

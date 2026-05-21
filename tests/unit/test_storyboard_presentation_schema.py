@@ -46,6 +46,20 @@ def test_storyboard_presentation_schema_accepts_realistic_client_review() -> Non
         output_format="pdf",
     )
     assert req.layout.preset == StoryboardSheetPreset.realistic_client_review
+    assert req.frame_selection_mode == "first"
+
+
+def test_storyboard_presentation_schema_accepts_max_frames() -> None:
+    req = StoryboardSheetRequest(
+        project_id="proj-1",
+        layout=StoryboardLayoutConfig(
+            layout=StoryboardLayoutName.grid_2x2,
+            preset=StoryboardSheetPreset.realistic_client_review,
+        ),
+        output_format="png",
+        max_frames=8,
+    )
+    assert req.max_frames == 8
 
 
 def test_output_format_valid() -> None:
@@ -63,4 +77,25 @@ def test_output_format_invalid() -> None:
             project_id="proj-1",
             layout=StoryboardLayoutConfig(layout=StoryboardLayoutName.grid_2x2, preset=StoryboardSheetPreset.clean_corporate),
             output_format="jpg",
+        )
+
+
+@pytest.mark.parametrize("max_frames", [0, -1, 101])
+def test_max_frames_invalid(max_frames: int) -> None:
+    with pytest.raises(ValidationError):
+        StoryboardSheetRequest(
+            project_id="proj-1",
+            layout=StoryboardLayoutConfig(layout=StoryboardLayoutName.grid_2x2, preset=StoryboardSheetPreset.clean_corporate),
+            output_format="png",
+            max_frames=max_frames,
+        )
+
+
+def test_frame_selection_mode_invalid() -> None:
+    with pytest.raises(ValidationError):
+        StoryboardSheetRequest(
+            project_id="proj-1",
+            layout=StoryboardLayoutConfig(layout=StoryboardLayoutName.grid_2x2, preset=StoryboardSheetPreset.clean_corporate),
+            output_format="png",
+            frame_selection_mode="latest",
         )

@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Download, ExternalLink, FileImage, LayoutGrid, Loader2 } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import type {
-  StoryboardSheetLayoutConfig,
+  StoryboardSheetRequest,
   StoryboardSheetLayoutName,
   StoryboardSheetOutputFormat,
   StoryboardSheetPreset,
+  StoryboardSheetCreditEstimate,
   StoryboardSheetResponse,
 } from '@/types/storyboard'
 
@@ -44,6 +45,16 @@ const outputFormatOptions: Array<{ value: StoryboardSheetOutputFormat; label: st
   { value: 'png', label: 'PNG' },
   { value: 'pdf', label: 'PDF' },
 ]
+
+const frameCountOptions = [
+  { value: 'all', label: 'Todas' },
+  { value: '4', label: '4 imágenes' },
+  { value: '8', label: '8 imágenes' },
+  { value: '12', label: '12 imágenes' },
+  { value: '16', label: '16 imágenes' },
+  { value: '24', label: '24 imágenes' },
+  { value: 'custom', label: 'Personalizado' },
+] as const
 
 function getStoryboardSheetErrorMessage(error: unknown): string {
   const apiError = error as StoryboardSheetApiError
@@ -118,9 +129,20 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
   const [outputFormat, setOutputFormat] = useState<StoryboardSheetOutputFormat>('png')
   const [layout, setLayout] = useState<StoryboardSheetLayoutName>('grid_2x2')
   const [preset, setPreset] = useState<StoryboardSheetPreset>('realistic_client_review')
+  const [frameCountMode, setFrameCountMode] = useState<(typeof frameCountOptions)[number]['value']>('all')
+  const [customFrameCount, setCustomFrameCount] = useState('20')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<StoryboardSheetResponse | null>(null)
+
+  const requestedFrameCount = useMemo(() => {
+    if (frameCountMode === 'all') return null
+    if (frameCountMode === 'custom') {
+      const parsed = Number(customFrameCount)
+      return Number.isInteger(parsed) ? parsed : null
+    }
+    return Number(frameCountMode)
+  }, [customFrameCount, frameCountMode])
 
   const pagePaths = useMemo(() => {
     const paths = result?.metadata?.page_paths
@@ -136,14 +158,38 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
     return pagePaths.length
   }, [pagePaths.length, result])
 
+  const creditEstimate = useMemo(() => {
+    const estimate = result?.metadata?.credit_estimate
+    if (!estimate || typeof estimate !== 'object') return null
+    return estimate as StoryboardSheetCreditEstimate
+  }, [result])
+
+  const estimatedCreditsLabel = useMemo(() => {
+    if (requestedFrameCount == null) {
+      return 'Créditos estimados: Se calculará al generar el sheet.'
+    }
+    return `Créditos estimados: ${requestedFrameCount}`
+  }, [requestedFrameCount])
+
   const handleGenerate = async () => {
-    const payload: { project_id: string; layout: StoryboardSheetLayoutConfig; output_format: StoryboardSheetOutputFormat } = {
+    if (frameCountMode === 'custom') {
+      const parsed = Number(customFrameCount)
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
+        setError('El valor personalizado debe ser un número entero entre 1 y 100.')
+        setResult(null)
+        return
+      }
+    }
+
+    const payload: StoryboardSheetRequest = {
       project_id: projectId,
       layout: {
         layout,
         preset,
       },
       output_format: outputFormat,
+      max_frames: requestedFrameCount,
+      frame_selection_mode: 'first',
     }
 
     setIsSubmitting(true)
@@ -177,7 +223,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <label className="space-y-2">
           <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Formato</span>
           <select
@@ -222,6 +268,46 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             {presetOptions.find((option) => option.value === preset)?.description}
           </p>
         </label>
+
+        <label className="space-y-2">
+          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Imágenes a incluir</span>
+          <select
+            value={frameCountMode}
+            onChange={(event) => setFrameCountMode(event.target.value as (typeof frameCountOptions)[number]['value'])}
+            className="w-full rounded-xl border border-white/10 bg-dark-300/70 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-amber-500/50"
+          >
+            {frameCountOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-500">
+            Selecciona cuántos frames incluir para controlar el coste estimado del export.
+          </p>
+        </label>
+      </div>
+
+      {frameCountMode === 'custom' && (
+        <div className="grid gap-4 md:grid-cols-[minmax(0,280px)_1fr] md:items-end">
+          <label className="space-y-2">
+            <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Cantidad personalizada</span>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              step={1}
+              value={customFrameCount}
+              onChange={(event) => setCustomFrameCount(event.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-dark-300/70 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-amber-500/50"
+            />
+          </label>
+          <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-400">
+            Valor permitido: entre 1 y 100 imágenes.
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3 text-sm text-cyan-100">
+        {estimatedCreditsLabel}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -235,7 +321,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
           {isSubmitting ? 'Generando storyboard sheet...' : 'Generar Storyboard Sheet'}
         </button>
         <div className="text-xs text-slate-500">
-          Configuración actual: <span className="text-slate-300">{layout}</span> · <span className="text-slate-300">{preset}</span> · <span className="text-slate-300">{outputFormat.toUpperCase()}</span>
+          Configuración actual: <span className="text-slate-300">{layout}</span> · <span className="text-slate-300">{preset}</span> · <span className="text-slate-300">{outputFormat.toUpperCase()}</span> · <span className="text-slate-300">{requestedFrameCount == null ? 'todas las imágenes' : `${requestedFrameCount} imágenes`}</span>
         </div>
       </div>
 
@@ -284,7 +370,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             )}
           </div>
 
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-5">
             <div className="rounded-xl border border-white/10 bg-black/20 p-3">
               <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Frames</p>
               <p className="mt-2 text-2xl font-semibold text-white">{result.frame_count}</p>
@@ -300,6 +386,10 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             <div className="rounded-xl border border-white/10 bg-black/20 p-3">
               <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Layout</p>
               <p className="mt-2 text-lg font-semibold text-white">{result.layout}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Créditos</p>
+              <p className="mt-2 text-lg font-semibold text-white">{creditEstimate?.estimated_credits ?? 'n/a'}</p>
             </div>
           </div>
 
@@ -332,6 +422,18 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
               </div>
             )}
           </div>
+
+          {creditEstimate && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Credit Estimate</p>
+              <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-200">
+                <p><span className="text-slate-500">Billable frames:</span> {creditEstimate.billable_frames}</p>
+                <p><span className="text-slate-500">Pricing unit:</span> {creditEstimate.pricing_unit}</p>
+                <p><span className="text-slate-500">Estimated credits:</span> {creditEstimate.estimated_credits}</p>
+                <p><span className="text-slate-500">Policy:</span> {creditEstimate.credit_policy}</p>
+              </div>
+            </div>
+          )}
 
           {result.artifact_url && result.output_format === 'png' && (
             <div className="space-y-3">

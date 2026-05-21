@@ -68,6 +68,12 @@ async def generate_storyboard_sheet(
                 override_shot_info=payload.override_shot_info,
             )
 
+        frames = storyboard_frame_service.limit_frames(
+            frames,
+            max_frames=payload.max_frames,
+            frame_selection_mode=payload.frame_selection_mode,
+        )
+
         pages = storyboard_layout_engine.render_pages(frames, payload.layout)
         base_name = f"storyboard_sheet_{project_id[:8]}_{payload.layout.layout.value}"
         if payload.output_format == "png":
@@ -89,5 +95,6 @@ async def generate_storyboard_sheet(
             "page_paths": list(export_payload["page_paths"]),
             "render_job_id": payload.render_job_id,
             "asset_ids": payload.asset_ids or [],
+            "credit_estimate": storyboard_export_service.build_credit_estimate(len(frames)),
         },
     )

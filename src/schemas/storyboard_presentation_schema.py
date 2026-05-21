@@ -71,6 +71,8 @@ class StoryboardSheetRequest(BaseModel):
     asset_ids: list[str] | None = None
     layout: StoryboardLayoutConfig
     output_format: Literal["png", "pdf"]
+    max_frames: int | None = Field(default=None, ge=1, le=100)
+    frame_selection_mode: Literal["first"] = "first"
     override_shot_info: dict[str, StoryboardShotInfo] | None = None
 
 

@@ -384,6 +384,15 @@ export type StoryboardSheetLayoutName = 'grid_2x2' | 'grid_2x3' | 'grid_2x4' | '
 
 export type StoryboardSheetPreset = 'clean_corporate' | 'cinematic_pitch' | 'production_sheet' | 'realistic_client_review'
 
+export type StoryboardSheetFrameSelectionMode = 'first'
+
+export interface StoryboardSheetCreditEstimate {
+  billable_frames: number
+  pricing_unit: string
+  estimated_credits: number
+  credit_policy: string
+}
+
 export interface StoryboardSheetLayoutConfig {
   layout: StoryboardSheetLayoutName
   preset: StoryboardSheetPreset
@@ -401,6 +410,8 @@ export interface StoryboardSheetRequest {
   asset_ids?: string[] | null
   layout: StoryboardSheetLayoutConfig
   output_format: StoryboardSheetOutputFormat
+  max_frames?: number | null
+  frame_selection_mode?: StoryboardSheetFrameSelectionMode
   override_shot_info?: Record<string, unknown> | null
 }
 
@@ -414,6 +425,7 @@ export interface StoryboardSheetResponse {
   metadata: {
     page_count?: number
     page_paths?: string[]
+    credit_estimate?: StoryboardSheetCreditEstimate
     [key: string]: unknown
   }
 }

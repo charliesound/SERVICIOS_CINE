@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -35,6 +35,12 @@ class StoryboardGenerateRequest(BaseModel):
     include_coverage_shots: bool = True
     use_montage_intelligence: bool = False
     validate_prompts: bool = False
+    sheet_template: Optional[str] = None
+    workflow_profile: Optional[str] = None
+    render_quality: Literal["fast", "standard", "production"] = "standard"
+    model_family: Optional[Literal["flux", "sdxl", "wan22", "qwen_image_edit", "auto"]] = None
+    motion_ready: bool = False
+    image_edit_mode: bool = False
 
 
 class StoryboardCreditEstimateRequest(BaseModel):

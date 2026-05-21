@@ -124,6 +124,12 @@ async def generate_storyboard(
         include_coverage_shots=payload.include_coverage_shots,
         use_montage_intelligence=payload.use_montage_intelligence,
         validate_prompts=payload.validate_prompts,
+        sheet_template=payload.sheet_template,
+        workflow_profile=payload.workflow_profile,
+        render_quality=payload.render_quality,
+        model_family=payload.model_family,
+        motion_ready=payload.motion_ready,
+        image_edit_mode=payload.image_edit_mode,
     )
     return StoryboardJobResponse(**{k: result[k] for k in StoryboardJobResponse.model_fields.keys()})
 
@@ -255,6 +261,12 @@ async def generate_sequence_storyboard(
         include_coverage_shots=payload.include_coverage_shots,
         use_montage_intelligence=payload.use_montage_intelligence,
         validate_prompts=payload.validate_prompts,
+        sheet_template=payload.sheet_template,
+        workflow_profile=payload.workflow_profile,
+        render_quality=payload.render_quality,
+        model_family=payload.model_family,
+        motion_ready=payload.motion_ready,
+        image_edit_mode=payload.image_edit_mode,
     )
     return StoryboardJobResponse(**{k: result[k] for k in StoryboardJobResponse.model_fields.keys()})
 

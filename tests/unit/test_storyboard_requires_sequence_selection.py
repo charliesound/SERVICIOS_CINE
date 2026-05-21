@@ -41,6 +41,24 @@ def test_sequence_plan_endpoint_exists() -> None:
     assert any("plan" in p for p in paths)
 
 
+def test_storyboard_generate_request_accepts_workflow_preset_fields() -> None:
+    request = StoryboardGenerateRequest(
+        sequence_id="seq_001",
+        sheet_template="clean_4_panel_pitch",
+        workflow_profile="storyboard_flux_fast",
+        render_quality="production",
+        model_family="flux",
+        motion_ready=True,
+        image_edit_mode=False,
+    )
+
+    assert request.sheet_template == "clean_4_panel_pitch"
+    assert request.workflow_profile == "storyboard_flux_fast"
+    assert request.render_quality == "production"
+    assert request.model_family == "flux"
+    assert request.motion_ready is True
+
+
 def test_storyboard_generate_refuses_full_script() -> None:
     mode = StoryboardGenerationMode.FULL_SCRIPT
     has_sequence = False
@@ -539,6 +557,91 @@ def test_render_queue_receives_enriched_prompt(monkeypatch) -> None:
     assert "linterna" in prompt
     assert "casa abandonada" in prompt
     assert "noche" in prompt
+
+
+def test_generate_storyboard_injects_workflow_profile_metadata(monkeypatch) -> None:
+    service = StoryboardService()
+    fake_db = _FakeDb()
+    tenant = SimpleNamespace(organization_id="org-1", user_id="user-1", plan="free", is_global_admin=False)
+    project = SimpleNamespace(id="project-1", name="Proyecto QA", description=None, script_text="INT. CASA ABANDONADA - NOCHE")
+    captured: dict[str, object] = {}
+
+    async def fake_get_project_for_tenant(db, *, project_id, tenant):
+        return project
+
+    async def fake_get_analysis_payload(db, project):
+        return {"scenes": [_marta_scene()], "sequences": _canonical_sequences()}
+
+    async def fake_update_progress(*args, **kwargs):
+        return None
+
+    async def fake_record_project_job_event(*args, **kwargs):
+        return None
+
+    async def fake_upsert_job_asset(*args, **kwargs):
+        return SimpleNamespace(id="asset-1")
+
+    async def fake_run_llm_storyboard_prompts_or_none(**kwargs):
+        return None
+
+    async def fake_submit_job(**kwargs):
+        captured["prompt"] = kwargs["prompt"]
+        captured["metadata"] = kwargs["metadata"]
+        return (
+            SimpleNamespace(job_id="job-1", error="queue unavailable", backend="still", status=SimpleNamespace(value="failed")),
+            None,
+        )
+
+    monkeypatch.setattr(service, "_get_project_for_tenant", fake_get_project_for_tenant)
+    monkeypatch.setattr(service, "_get_analysis_payload", fake_get_analysis_payload)
+    monkeypatch.setattr(service, "_next_generation_version", _VersionCounter())
+    monkeypatch.setattr(service, "_run_llm_storyboard_prompts_or_none", fake_run_llm_storyboard_prompts_or_none)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.update_progress", fake_update_progress)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.record_project_job_event", fake_record_project_job_event)
+    monkeypatch.setattr("services.storyboard_service.job_tracking_service.upsert_job_asset", fake_upsert_job_asset)
+    monkeypatch.setattr("services.storyboard_service.render_job_service.submit_job", fake_submit_job)
+
+    asyncio.run(
+        service.generate_storyboard(
+            fake_db,
+            project_id="project-1",
+            tenant=tenant,
+            mode=StoryboardGenerationMode.SEQUENCE,
+            sequence_id="seq_001",
+            sequence_ids=[],
+            scene_start=None,
+            scene_end=None,
+            selected_scene_ids=[],
+            scene_numbers=[],
+            style_preset="cinematic_realistic",
+            shots_per_scene=1,
+            max_scenes=None,
+            overwrite=False,
+            sheet_template="clean_4_panel_pitch",
+            workflow_profile=None,
+            render_quality="production",
+            model_family="flux",
+            motion_ready=True,
+            image_edit_mode=False,
+        )
+    )
+
+    created_shots = [item for item in fake_db.items if item.__class__.__name__ == "StoryboardShot"]
+    metadata = json.loads(getattr(created_shots[0], "metadata_json", "{}"))
+    prompt_payload = captured["prompt"]
+    queue_metadata = captured["metadata"]
+
+    assert metadata["workflow_profile_requested"] == "storyboard_cinematic_pitch"
+    assert metadata["storyboard_workflow_profile_info"]["source"] == "sheet_template"
+    assert metadata["sheet_template"] == "clean_4_panel_pitch"
+    assert metadata["render_quality"] == "production"
+    assert metadata["model_family"] == "flux"
+    assert metadata["motion_ready"] is True
+    assert prompt_payload["workflow_profile_requested"] == "storyboard_cinematic_pitch"
+    assert prompt_payload["render_quality"] == "production"
+    assert prompt_payload["model_family"] == "flux"
+    assert queue_metadata["workflow_profile_requested"] == "storyboard_cinematic_pitch"
+    assert queue_metadata["storyboard_workflow_profile_info"]["sheet_template"] == "clean_4_panel_pitch"
 
 
 def test_export_sequence_zip_accepts_alias(monkeypatch, tmp_path) -> None:

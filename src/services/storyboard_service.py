@@ -51,6 +51,7 @@ from services.semantic_prompt_validation_service import semantic_prompt_validati
 from services.storyboard_image_script_validation_service import storyboard_image_script_validation_service
 from services.storyboard_prompt_reference_service import storyboard_prompt_reference_service
 from services.storyboard_style_preset_service import storyboard_style_preset_service
+from services.storyboard_workflow_preset_service import storyboard_workflow_preset_service
 
 
 logger = logging.getLogger(__name__)
@@ -319,6 +320,12 @@ class StoryboardService:
         validate_prompts: bool = False,
         visual_reference_profile_id: str | None = None,
         visual_reference_mode: str | None = None,
+        sheet_template: str | None = None,
+        workflow_profile: str | None = None,
+        render_quality: str = "standard",
+        model_family: str | None = None,
+        motion_ready: bool = False,
+        image_edit_mode: bool = False,
     ) -> dict[str, Any]:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
         analysis_data = await self._get_analysis_payload(db, project)
@@ -384,6 +391,11 @@ class StoryboardService:
             scene_start=scene_start,
             scene_end=scene_end,
             selected_scenes=selected_scenes,
+        )
+
+        profile_info = storyboard_workflow_preset_service.resolve_profile(
+            sheet_template=sheet_template,
+            requested_profile=workflow_profile,
         )
 
         job = ProjectJob(
@@ -537,6 +549,13 @@ class StoryboardService:
                 metadata_raw["sequence_summary"] = sequence_for_scene.summary if sequence_for_scene else None
                 metadata_raw["shot_plan_reason"] = shot.get("shot_plan_reason", "automatic from scene analysis")
                 metadata_raw["script_excerpt_used"] = shot.get("script_excerpt_used", "")
+                metadata_raw["workflow_profile_requested"] = profile_info["workflow_profile_requested"]
+                metadata_raw["storyboard_workflow_profile_info"] = dict(profile_info)
+                metadata_raw["sheet_template"] = sheet_template
+                metadata_raw["render_quality"] = render_quality
+                metadata_raw["model_family"] = model_family
+                metadata_raw["motion_ready"] = motion_ready
+                metadata_raw["image_edit_mode"] = image_edit_mode
                 metadata_str = json.dumps(metadata_raw, ensure_ascii=False, default=str)
                 shot_record = StoryboardShot(
                     project_id=project_id,
@@ -600,6 +619,13 @@ class StoryboardService:
             "render_jobs": render_jobs,
             "render_errors": render_errors,
             "scenes": generated_scenes_payload,
+            "workflow_profile_requested": profile_info["workflow_profile_requested"],
+            "storyboard_workflow_profile_info": dict(profile_info),
+            "sheet_template": sheet_template,
+            "render_quality": render_quality,
+            "model_family": model_family,
+            "motion_ready": motion_ready,
+            "image_edit_mode": image_edit_mode,
         }
 
         await job_tracking_service.update_progress(
@@ -688,13 +714,19 @@ class StoryboardService:
                         "visual_bible_id": vb_meta.get("visual_bible_id"),
                         "visual_bible_preset": vb_meta.get("active_preset_id"),
                         "storyboard_style_preset": style_preset,
-                        "workflow_profile_requested": "storyboard_safe",
-                        "workflow_profile_executed": "storyboard_safe",
+                        "workflow_profile_requested": profile_info["workflow_profile_requested"],
+                        "storyboard_workflow_profile_info": dict(profile_info),
+                        "sheet_template": sheet_template,
+                        "render_quality": render_quality,
+                        "model_family": model_family,
+                        "motion_ready": motion_ready,
+                        "image_edit_mode": image_edit_mode,
+                        "workflow_profile_executed": profile_info["workflow_profile_requested"],
                         "workflow_fallback_report": {
-                            "requested_profile": "storyboard_safe",
-                            "executed_profile": "storyboard_safe",
-                            "fallback_applied": False,
-                            "reason": "none",
+                            "requested_profile": profile_info["workflow_profile_requested"],
+                            "executed_profile": profile_info["workflow_profile_requested"],
+                            "fallback_applied": bool(profile_info["fallback_applied"]),
+                            "reason": profile_info["reason"],
                             "missing_nodes": [],
                             "missing_models": [],
                         },
@@ -1768,6 +1800,13 @@ class StoryboardService:
             "scheduler": "normal",
             "filename_prefix": f"storyboard_{str(project.id)[:8]}_{int(scene_number or 0):03d}_{shot_id[:8]}",
             "style_preset": style_preset,
+            "workflow_profile_requested": metadata_payload.get("workflow_profile_requested") or "storyboard_safe",
+            "storyboard_workflow_profile_info": metadata_payload.get("storyboard_workflow_profile_info") or {},
+            "sheet_template": metadata_payload.get("sheet_template"),
+            "render_quality": metadata_payload.get("render_quality"),
+            "model_family": metadata_payload.get("model_family"),
+            "motion_ready": bool(metadata_payload.get("motion_ready", False)),
+            "image_edit_mode": bool(metadata_payload.get("image_edit_mode", False)),
         }
 
     def _scene_number(self, scene: dict[str, Any]) -> int:

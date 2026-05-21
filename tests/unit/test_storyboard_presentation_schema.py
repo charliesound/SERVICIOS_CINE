@@ -17,6 +17,7 @@ from schemas.storyboard_presentation_schema import (  # noqa: E402
     StoryboardLayoutName,
     StoryboardSheetPreset,
     StoryboardSheetRequest,
+    StoryboardSheetTemplate,
 )
 
 
@@ -60,6 +61,19 @@ def test_storyboard_presentation_schema_accepts_max_frames() -> None:
         max_frames=8,
     )
     assert req.max_frames == 8
+
+
+def test_storyboard_presentation_schema_accepts_sheet_template() -> None:
+    req = StoryboardSheetRequest(
+        project_id="proj-1",
+        layout=StoryboardLayoutConfig(
+            layout=StoryboardLayoutName.grid_2x2,
+            preset=StoryboardSheetPreset.realistic_client_review,
+        ),
+        output_format="png",
+        sheet_template=StoryboardSheetTemplate.clean_4_panel_pitch,
+    )
+    assert req.sheet_template == StoryboardSheetTemplate.clean_4_panel_pitch
 
 
 def test_output_format_valid() -> None:

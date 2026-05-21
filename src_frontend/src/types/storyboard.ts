@@ -386,11 +386,29 @@ export type StoryboardSheetPreset = 'clean_corporate' | 'cinematic_pitch' | 'pro
 
 export type StoryboardSheetFrameSelectionMode = 'first'
 
+export type StoryboardSheetTemplate =
+  | 'clean_4_panel_pitch'
+  | 'clean_6_panel_review'
+  | 'grid_8_panel_vertical'
+  | 'grid_8_panel_landscape'
+  | 'production_12_panel_vertical'
+  | 'production_12_panel_landscape'
+  | 'client_review_with_notes'
+  | 'technical_storyboard_sheet'
+
 export interface StoryboardSheetCreditEstimate {
   billable_frames: number
   pricing_unit: string
   estimated_credits: number
   credit_policy: string
+}
+
+export interface StoryboardSheetTemplateMetadata {
+  sheet_template: StoryboardSheetTemplate | null
+  effective_layout: StoryboardSheetLayoutName
+  effective_preset: StoryboardSheetPreset
+  effective_max_frames: number | null
+  orientation: 'portrait' | 'landscape'
 }
 
 export interface StoryboardSheetLayoutConfig {
@@ -410,6 +428,7 @@ export interface StoryboardSheetRequest {
   asset_ids?: string[] | null
   layout: StoryboardSheetLayoutConfig
   output_format: StoryboardSheetOutputFormat
+  sheet_template?: StoryboardSheetTemplate | null
   max_frames?: number | null
   frame_selection_mode?: StoryboardSheetFrameSelectionMode
   override_shot_info?: Record<string, unknown> | null
@@ -425,7 +444,9 @@ export interface StoryboardSheetResponse {
   metadata: {
     page_count?: number
     page_paths?: string[]
+    page_urls?: string[]
     credit_estimate?: StoryboardSheetCreditEstimate
+    template?: StoryboardSheetTemplateMetadata
     [key: string]: unknown
   }
 }

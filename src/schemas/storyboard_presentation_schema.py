@@ -20,6 +20,17 @@ class StoryboardLayoutName(str, Enum):
     grid_3x3 = "grid_3x3"
 
 
+class StoryboardSheetTemplate(str, Enum):
+    clean_4_panel_pitch = "clean_4_panel_pitch"
+    clean_6_panel_review = "clean_6_panel_review"
+    grid_8_panel_vertical = "grid_8_panel_vertical"
+    grid_8_panel_landscape = "grid_8_panel_landscape"
+    production_12_panel_vertical = "production_12_panel_vertical"
+    production_12_panel_landscape = "production_12_panel_landscape"
+    client_review_with_notes = "client_review_with_notes"
+    technical_storyboard_sheet = "technical_storyboard_sheet"
+
+
 class StoryboardFrameMetadata(BaseModel):
     visual_bible: dict[str, Any] | None = None
     workflow_profile: dict[str, Any] | None = None
@@ -71,6 +82,7 @@ class StoryboardSheetRequest(BaseModel):
     asset_ids: list[str] | None = None
     layout: StoryboardLayoutConfig
     output_format: Literal["png", "pdf"]
+    sheet_template: StoryboardSheetTemplate | None = None
     max_frames: int | None = Field(default=None, ge=1, le=100)
     frame_selection_mode: Literal["first"] = "first"
     override_shot_info: dict[str, StoryboardShotInfo] | None = None

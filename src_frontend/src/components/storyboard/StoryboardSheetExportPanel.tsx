@@ -3,6 +3,8 @@ import { AlertTriangle, CheckCircle2, Download, ExternalLink, FileImage, LayoutG
 import { storyboardApi } from '@/api/storyboard'
 import type {
   StoryboardSheetRequest,
+  StoryboardSheetTemplate,
+  StoryboardSheetTemplateMetadata,
   StoryboardSheetLayoutName,
   StoryboardSheetOutputFormat,
   StoryboardSheetPreset,
@@ -55,6 +57,68 @@ const frameCountOptions = [
   { value: '24', label: '24 imágenes' },
   { value: 'custom', label: 'Personalizado' },
 ] as const
+
+const sheetTemplateOptions: Array<{
+  value: 'current' | StoryboardSheetTemplate
+  label: string
+  description: string
+  defaultFrames: number | null
+}> = [
+  {
+    value: 'current',
+    label: 'Automático / Actual',
+    description: 'Usa el layout y preset actuales sin aplicar plantilla comercial.',
+    defaultFrames: null,
+  },
+  {
+    value: 'clean_4_panel_pitch',
+    label: 'Pitch limpio — 4 imágenes',
+    description: 'Pitch compacto para presentar 4 frames clave.',
+    defaultFrames: 4,
+  },
+  {
+    value: 'clean_6_panel_review',
+    label: 'Review — 6 imágenes',
+    description: 'Formato de revisión editorial con 6 frames.',
+    defaultFrames: 6,
+  },
+  {
+    value: 'grid_8_panel_vertical',
+    label: '8 imágenes vertical',
+    description: 'Plantilla vertical de 8 panels para revisión densa.',
+    defaultFrames: 8,
+  },
+  {
+    value: 'grid_8_panel_landscape',
+    label: '8 imágenes landscape',
+    description: 'Versión horizontal de 8 panels.',
+    defaultFrames: 8,
+  },
+  {
+    value: 'production_12_panel_vertical',
+    label: 'Producción — 12 vertical',
+    description: 'Hoja de producción vertical para secuencias extensas.',
+    defaultFrames: 12,
+  },
+  {
+    value: 'production_12_panel_landscape',
+    label: 'Producción — 12 landscape',
+    description: 'Hoja de producción horizontal de alta densidad.',
+    defaultFrames: 12,
+  },
+  {
+    value: 'client_review_with_notes',
+    label: 'Cliente con notas',
+    description: 'Template con más espacio para revisión y notas.',
+    defaultFrames: 4,
+  },
+  {
+    value: 'technical_storyboard_sheet',
+    label: 'Técnico',
+    description: 'Formato técnico inspirado en hojas de shot list y notas.',
+    defaultFrames: null,
+  },
+]
 
 function getStoryboardSheetErrorMessage(error: unknown): string {
   const apiError = error as StoryboardSheetApiError
@@ -129,11 +193,17 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
   const [outputFormat, setOutputFormat] = useState<StoryboardSheetOutputFormat>('png')
   const [layout, setLayout] = useState<StoryboardSheetLayoutName>('grid_2x2')
   const [preset, setPreset] = useState<StoryboardSheetPreset>('realistic_client_review')
+  const [sheetTemplate, setSheetTemplate] = useState<'current' | StoryboardSheetTemplate>('current')
   const [frameCountMode, setFrameCountMode] = useState<(typeof frameCountOptions)[number]['value']>('all')
   const [customFrameCount, setCustomFrameCount] = useState('20')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<StoryboardSheetResponse | null>(null)
+
+  const selectedTemplateOption = useMemo(
+    () => sheetTemplateOptions.find((option) => option.value === sheetTemplate) || sheetTemplateOptions[0],
+    [sheetTemplate]
+  )
 
   const requestedFrameCount = useMemo(() => {
     if (frameCountMode === 'all') return null
@@ -164,12 +234,36 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
     return estimate as StoryboardSheetCreditEstimate
   }, [result])
 
+  const pageUrls = useMemo(() => {
+    const urls = result?.metadata?.page_urls
+    if (!Array.isArray(urls)) return []
+    return urls.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+  }, [result])
+
+  const templateMetadata = useMemo(() => {
+    const metadata = result?.metadata?.template
+    if (!metadata || typeof metadata !== 'object') return null
+    return metadata as StoryboardSheetTemplateMetadata
+  }, [result])
+
+  const singleImagePreviewUrl = useMemo(() => {
+    if (result?.output_format !== 'png') return null
+    if (pageUrls.length > 1) return null
+    return result?.artifact_url || pageUrls[0] || null
+  }, [pageUrls, result])
+
   const estimatedCreditsLabel = useMemo(() => {
+    if (requestedFrameCount != null) {
+      return `Créditos estimados: ${requestedFrameCount}`
+    }
+    if (selectedTemplateOption.defaultFrames != null) {
+      return `Créditos estimados: ${selectedTemplateOption.defaultFrames}`
+    }
     if (requestedFrameCount == null) {
       return 'Créditos estimados: Se calculará al generar el sheet.'
     }
-    return `Créditos estimados: ${requestedFrameCount}`
-  }, [requestedFrameCount])
+    return 'Créditos estimados: Se calculará al generar el sheet.'
+  }, [requestedFrameCount, selectedTemplateOption.defaultFrames])
 
   const handleGenerate = async () => {
     if (frameCountMode === 'custom') {
@@ -188,6 +282,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
         preset,
       },
       output_format: outputFormat,
+      sheet_template: sheetTemplate === 'current' ? null : sheetTemplate,
       max_frames: requestedFrameCount,
       frame_selection_mode: 'first',
     }
@@ -223,7 +318,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <label className="space-y-2">
           <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Formato</span>
           <select
@@ -235,6 +330,22 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
+        </label>
+
+        <label className="space-y-2 xl:col-span-2">
+          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Template</span>
+          <select
+            value={sheetTemplate}
+            onChange={(event) => setSheetTemplate(event.target.value as 'current' | StoryboardSheetTemplate)}
+            className="w-full rounded-xl border border-white/10 bg-dark-300/70 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-amber-500/50"
+          >
+            {sheetTemplateOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-500">
+            {selectedTemplateOption.description}
+          </p>
         </label>
 
         <label className="space-y-2">
@@ -249,7 +360,9 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             ))}
           </select>
           <p className="text-xs text-slate-500">
-            {layoutOptions.find((option) => option.value === layout)?.description}
+            {sheetTemplate === 'current'
+              ? layoutOptions.find((option) => option.value === layout)?.description
+              : 'La plantilla seleccionada resolverá automáticamente el layout efectivo.'}
           </p>
         </label>
 
@@ -265,7 +378,9 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             ))}
           </select>
           <p className="text-xs text-slate-500">
-            {presetOptions.find((option) => option.value === preset)?.description}
+            {sheetTemplate === 'current'
+              ? presetOptions.find((option) => option.value === preset)?.description
+              : 'La plantilla seleccionada resolverá automáticamente el preset efectivo.'}
           </p>
         </label>
 
@@ -321,7 +436,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
           {isSubmitting ? 'Generando storyboard sheet...' : 'Generar Storyboard Sheet'}
         </button>
         <div className="text-xs text-slate-500">
-          Configuración actual: <span className="text-slate-300">{layout}</span> · <span className="text-slate-300">{preset}</span> · <span className="text-slate-300">{outputFormat.toUpperCase()}</span> · <span className="text-slate-300">{requestedFrameCount == null ? 'todas las imágenes' : `${requestedFrameCount} imágenes`}</span>
+          Configuración actual: <span className="text-slate-300">{sheetTemplate === 'current' ? 'modo actual' : selectedTemplateOption.label}</span> · <span className="text-slate-300">{outputFormat.toUpperCase()}</span> · <span className="text-slate-300">{requestedFrameCount == null ? 'frames por defecto/todos' : `${requestedFrameCount} imágenes`}</span>
         </div>
       </div>
 
@@ -345,6 +460,11 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
               <p className="text-xs text-slate-400">
                 Resultado backend: {result.output_format.toUpperCase()} · layout {result.layout} · preset {result.preset}
               </p>
+              {templateMetadata && (
+                <p className="text-xs text-slate-500">
+                  Template efectivo: {templateMetadata.sheet_template || 'current'} · orientación {templateMetadata.orientation}
+                </p>
+              )}
             </div>
 
             {result.artifact_url && (
@@ -423,6 +543,38 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             )}
           </div>
 
+          {pageUrls.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Page URLs</p>
+              <ul className="space-y-2">
+                {pageUrls.map((url, index) => (
+                  <li key={`${url}-${index}`} className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-slate-200 md:flex-row md:items-center md:justify-between">
+                    <span className="overflow-x-auto font-mono">{url}</span>
+                    <span className="flex shrink-0 gap-2">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Abrir
+                      </a>
+                      <a
+                        href={url}
+                        download
+                        className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Descargar
+                      </a>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {creditEstimate && (
             <div className="space-y-2">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Credit Estimate</p>
@@ -435,12 +587,12 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             </div>
           )}
 
-          {result.artifact_url && result.output_format === 'png' && (
+          {singleImagePreviewUrl && (
             <div className="space-y-3">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Preview</p>
               <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-2">
                 <img
-                  src={result.artifact_url}
+                  src={singleImagePreviewUrl}
                   alt="Storyboard sheet export preview"
                   className="h-auto w-full rounded-xl object-cover"
                 />

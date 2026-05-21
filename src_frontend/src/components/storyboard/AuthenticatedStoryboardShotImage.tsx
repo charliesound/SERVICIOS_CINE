@@ -42,10 +42,22 @@ export function AuthenticatedStoryboardShotImage({
 
       try {
         objectUrl = await tryLoad('thumbnail')
-      } catch {
+      } catch (thumbError) {
+        if (import.meta.env.DEV) {
+          console.warn(
+            `[AuthenticatedStoryboardShotImage] Thumbnail fetch failed for shot ${shotId}:`,
+            (thumbError as { response?: { status?: number } })?.response?.status ?? thumbError
+          )
+        }
         try {
           objectUrl = await tryLoad('image')
-        } catch {
+        } catch (imageError) {
+          if (import.meta.env.DEV) {
+            console.warn(
+              `[AuthenticatedStoryboardShotImage] Image fetch also failed for shot ${shotId}:`,
+              (imageError as { response?: { status?: number } })?.response?.status ?? imageError
+            )
+          }
           objectUrl = null
         }
       }

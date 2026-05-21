@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Download, ExternalLink, FileImage, LayoutGrid, Loader2 } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import type {
@@ -185,6 +185,211 @@ function getStoryboardSheetErrorMessage(error: unknown): string {
   return 'No se pudo generar el storyboard sheet.'
 }
 
+function useBlobUrl(url: string | null): string | null {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!url) return
+    let active = true
+    const blobUrlRef: { current: string | null } = { current: null }
+
+    const load = async () => {
+      try {
+        const blob = await storyboardApi.fetchArtifactBlob(url)
+        const objectUrl = URL.createObjectURL(blob)
+        blobUrlRef.current = objectUrl
+        if (active) setBlobUrl(objectUrl)
+      } catch {
+        if (active) setBlobUrl(null)
+      }
+    }
+
+    void load()
+
+    return () => {
+      active = false
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
+    }
+  }, [url])
+
+  return blobUrl
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const objectUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = objectUrl
+  anchor.download = filename
+  anchor.click()
+  URL.revokeObjectURL(objectUrl)
+}
+
+function openBlobInTab(blob: Blob) {
+  const objectUrl = URL.createObjectURL(blob)
+  window.open(objectUrl, '_blank', 'noopener,noreferrer')
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60000)
+}
+
+function downloadFromUrl(url: string, filename: string) {
+  storyboardApi.fetchArtifactBlob(url)
+    .then((blob) => downloadBlob(blob, filename))
+    .catch(() => {})
+}
+
+function openFromUrl(url: string) {
+  storyboardApi.fetchArtifactBlob(url)
+    .then((blob) => openBlobInTab(blob))
+    .catch(() => {})
+}
+
+interface StoryboardSheetResultProps {
+  result: StoryboardSheetResponse
+  pageCount: number
+  templateMetadata: StoryboardSheetTemplateMetadata | null
+  creditEstimate: StoryboardSheetCreditEstimate | null
+  pageUrls: string[]
+}
+
+function StoryboardSheetResult({
+  result,
+  pageCount,
+  templateMetadata,
+  creditEstimate,
+  pageUrls,
+}: StoryboardSheetResultProps) {
+  const extension = result.output_format === 'pdf' ? 'pdf' : 'png'
+  const previewUrl = useBlobUrl(
+    result.output_format === 'png' && pageUrls.length === 1 ? (result.artifact_url || pageUrls[0]) : null
+  )
+
+  return (
+    <div className="space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-emerald-300">
+            <CheckCircle2 className="h-5 w-5" />
+            <p className="text-sm font-semibold text-white">Export generado correctamente</p>
+          </div>
+          <p className="text-xs text-slate-400">
+            Resultado: {result.output_format.toUpperCase()} · layout {result.layout} · preset {result.preset}
+          </p>
+          {templateMetadata && (
+            <p className="text-xs text-slate-500">
+              Template: {templateMetadata.sheet_template || 'actual'} · orientación {templateMetadata.orientation}
+            </p>
+          )}
+        </div>
+
+        {result.artifact_url && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => openFromUrl(result.artifact_url!)}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Abrir
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadFromUrl(result.artifact_url!, `storyboard_sheet.${extension}`)}
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 transition-colors hover:bg-amber-500/20"
+            >
+              <Download className="h-4 w-4" />
+              Descargar
+            </button>
+          </div>
+        )}
+      </div>
+
+      {!result.artifact_url && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200">
+          Export generado, pero la URL de descarga no está disponible. Reintenta o contacta soporte.
+        </div>
+      )}
+
+      <div className="grid gap-3 md:grid-cols-5">
+        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Frames</p>
+          <p className="mt-2 text-2xl font-semibold text-white">{result.frame_count}</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Páginas</p>
+          <p className="mt-2 text-2xl font-semibold text-white">{pageCount}</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Formato</p>
+          <p className="mt-2 text-lg font-semibold text-white">{result.output_format.toUpperCase()}</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Layout</p>
+          <p className="mt-2 text-lg font-semibold text-white">{result.layout}</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Créditos</p>
+          <p className="mt-2 text-lg font-semibold text-white">{creditEstimate?.estimated_credits ?? 'n/a'}</p>
+        </div>
+      </div>
+
+      {pageUrls.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+            {pageUrls.length > 1 ? 'Páginas' : 'Página'}
+          </p>
+          <ul className="space-y-2">
+            {pageUrls.map((url, index) => (
+              <li key={`${url}-${index}`} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+                <span className="text-sm text-slate-200">Página {index + 1}</span>
+                <span className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openFromUrl(url)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Abrir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadFromUrl(url, `storyboard_sheet_pagina_${index + 1}.${extension}`)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Descargar
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {creditEstimate && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Créditos</p>
+          <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-200">
+            <p><span className="text-slate-500">Frames facturables:</span> {creditEstimate.billable_frames}</p>
+            <p><span className="text-slate-500">Créditos estimados:</span> {creditEstimate.estimated_credits}</p>
+          </div>
+        </div>
+      )}
+
+      {previewUrl && (
+        <div className="space-y-3">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Vista previa</p>
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-2">
+            <img
+              src={previewUrl}
+              alt="Storyboard sheet export preview"
+              className="h-auto w-full rounded-xl object-cover"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface StoryboardSheetExportPanelProps {
   projectId: string
 }
@@ -214,19 +419,17 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
     return Number(frameCountMode)
   }, [customFrameCount, frameCountMode])
 
-  const pagePaths = useMemo(() => {
-    const paths = result?.metadata?.page_paths
-    if (!Array.isArray(paths)) return []
-    return paths.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-  }, [result])
-
   const pageCount = useMemo(() => {
     const rawPageCount = result?.metadata?.page_count
     if (typeof rawPageCount === 'number' && Number.isFinite(rawPageCount)) {
       return rawPageCount
     }
-    return pagePaths.length
-  }, [pagePaths.length, result])
+    const pageUrlsFallback = result?.metadata?.page_urls
+    if (Array.isArray(pageUrlsFallback)) {
+      return pageUrlsFallback.length
+    }
+    return 1
+  }, [result])
 
   const creditEstimate = useMemo(() => {
     const estimate = result?.metadata?.credit_estimate
@@ -245,12 +448,6 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
     if (!metadata || typeof metadata !== 'object') return null
     return metadata as StoryboardSheetTemplateMetadata
   }, [result])
-
-  const singleImagePreviewUrl = useMemo(() => {
-    if (result?.output_format !== 'png') return null
-    if (pageUrls.length > 1) return null
-    return result?.artifact_url || pageUrls[0] || null
-  }, [pageUrls, result])
 
   const estimatedCreditsLabel = useMemo(() => {
     if (requestedFrameCount != null) {
@@ -450,156 +647,13 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
       )}
 
       {result && (
-        <div className="space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-emerald-300">
-                <CheckCircle2 className="h-5 w-5" />
-                <p className="text-sm font-semibold text-white">Export generado correctamente</p>
-              </div>
-              <p className="text-xs text-slate-400">
-                Resultado backend: {result.output_format.toUpperCase()} · layout {result.layout} · preset {result.preset}
-              </p>
-              {templateMetadata && (
-                <p className="text-xs text-slate-500">
-                  Template efectivo: {templateMetadata.sheet_template || 'current'} · orientación {templateMetadata.orientation}
-                </p>
-              )}
-            </div>
-
-            {result.artifact_url && (
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href={result.artifact_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Abrir export
-                </a>
-                <a
-                  href={result.artifact_url}
-                  download
-                  className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 transition-colors hover:bg-amber-500/20"
-                >
-                  <Download className="h-4 w-4" />
-                  Descargar
-                </a>
-              </div>
-            )}
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-5">
-            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Frames</p>
-              <p className="mt-2 text-2xl font-semibold text-white">{result.frame_count}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Páginas</p>
-              <p className="mt-2 text-2xl font-semibold text-white">{pageCount}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Formato</p>
-              <p className="mt-2 text-lg font-semibold text-white">{result.output_format.toUpperCase()}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Layout</p>
-              <p className="mt-2 text-lg font-semibold text-white">{result.layout}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Créditos</p>
-              <p className="mt-2 text-lg font-semibold text-white">{creditEstimate?.estimated_credits ?? 'n/a'}</p>
-            </div>
-          </div>
-
-          {!result.artifact_url && (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200">
-              Export generado. La URL pública de descarga todavía no está disponible.
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Artifact Path</p>
-            <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-xs text-slate-200">
-              {result.artifact_path}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Page Paths</p>
-            {pagePaths.length > 0 ? (
-              <ul className="space-y-2">
-                {pagePaths.map((path, index) => (
-                  <li key={`${path}-${index}`} className="overflow-x-auto rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-xs text-slate-200">
-                    {path}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="rounded-xl border border-dashed border-white/10 bg-black/10 px-4 py-3 text-sm text-slate-500">
-                El backend no devolvió rutas de páginas adicionales para este export.
-              </div>
-            )}
-          </div>
-
-          {pageUrls.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Page URLs</p>
-              <ul className="space-y-2">
-                {pageUrls.map((url, index) => (
-                  <li key={`${url}-${index}`} className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-slate-200 md:flex-row md:items-center md:justify-between">
-                    <span className="overflow-x-auto font-mono">{url}</span>
-                    <span className="flex shrink-0 gap-2">
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        Abrir
-                      </a>
-                      <a
-                        href={url}
-                        download
-                        className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                        Descargar
-                      </a>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {creditEstimate && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Credit Estimate</p>
-              <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-200">
-                <p><span className="text-slate-500">Billable frames:</span> {creditEstimate.billable_frames}</p>
-                <p><span className="text-slate-500">Pricing unit:</span> {creditEstimate.pricing_unit}</p>
-                <p><span className="text-slate-500">Estimated credits:</span> {creditEstimate.estimated_credits}</p>
-                <p><span className="text-slate-500">Policy:</span> {creditEstimate.credit_policy}</p>
-              </div>
-            </div>
-          )}
-
-          {singleImagePreviewUrl && (
-            <div className="space-y-3">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Preview</p>
-              <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-2">
-                <img
-                  src={singleImagePreviewUrl}
-                  alt="Storyboard sheet export preview"
-                  className="h-auto w-full rounded-xl object-cover"
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        <StoryboardSheetResult
+          result={result}
+          pageCount={pageCount}
+          templateMetadata={templateMetadata}
+          creditEstimate={creditEstimate}
+          pageUrls={pageUrls}
+        />
       )}
     </section>
   )

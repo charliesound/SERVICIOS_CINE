@@ -203,4 +203,9 @@ export const storyboardApi = {
     })
     return data
   },
+
+  fetchArtifactBlob: async (url: string): Promise<Blob> => {
+    const { data } = await api.get(url, { responseType: 'blob' })
+    return data
+  },
 }

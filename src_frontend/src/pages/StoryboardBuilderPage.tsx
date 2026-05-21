@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { Download, ExternalLink, Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check, Upload, X, Users } from 'lucide-react'
+import { Download, ExternalLink, Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check, Upload, X, Users, Wrench } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import { AuthenticatedStoryboardShotImage } from '@/components/storyboard/AuthenticatedStoryboardShotImage'
 import { ShotCard } from '@/components/storyboard/ShotCard'
@@ -13,7 +13,6 @@ import type {
   CinematicShotMetadata,
   DirtyShot,
   FullScriptAnalysisResult,
-  ScriptSequenceMapEntry,
   ScriptUploadResult,
   SequenceStoryboardPlan,
   StoryboardAutoExportItem,
@@ -29,16 +28,6 @@ import { CharacterBreakdownPanel } from '@/components/storyboard/CharacterBreakd
 
 function toDirtyShot(shot: StoryboardShot): DirtyShot {
   return { ...shot, isDirty: false }
-}
-
-function dedupeList(items: string[]): string {
-  const seen = new Set<string>()
-  return items.filter(item => {
-    const key = item.trim().toLowerCase()
-    if (!key || seen.has(key)) return false
-    seen.add(key)
-    return true
-  }).join(', ') || '—'
 }
 
 function extractSequenceNumber(value?: string | null): number | null {
@@ -83,9 +72,7 @@ export default function StoryboardBuilderPage() {
 
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<FullScriptAnalysisResult | null>(null)
-  const [selectedSequenceEntry, setSelectedSequenceEntry] = useState<ScriptSequenceMapEntry | null>(null)
   const [shotPlan, setShotPlan] = useState<SequenceStoryboardPlan | null>(null)
-  const [isPlanning, setIsPlanning] = useState(false)
   const [activeTab, setActiveTab] = useState<'analyze' | 'sequences' | 'characters' | 'shots'>('analyze')
   const [regenerationProgress, setRegenerationProgress] = useState<ActionProgressState | null>(null)
   const [cinematicViewMode, setCinematicViewMode] = useState<'filmstrip' | 'contact_sheet'>('filmstrip')
@@ -101,11 +88,12 @@ export default function StoryboardBuilderPage() {
   const [pendingGenerateAction, setPendingGenerateAction] = useState<(() => Promise<void>) | null>(null)
   const [autoExportSheet, setAutoExportSheet] = useState(true)
   const [autoExportResponse, setAutoExportResponse] = useState<StoryboardAutoExportItem[] | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'number' | 'location' | 'characters' | 'status'>('number')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [groupBy, setGroupBy] = useState<'none' | 'sequence' | 'location' | 'character' | 'int_ext' | 'day_night'>('none')
   const [characterFilter, setCharacterFilter] = useState<string | null>(null)
+  const [isRepairing, setIsRepairing] = useState(false)
+  const [repairResult, setRepairResult] = useState<string | null>(null)
 
   const fetchSequences = useCallback(async () => {
     if (!projectId) return
@@ -268,7 +256,6 @@ export default function StoryboardBuilderPage() {
     setError(null)
     setAnalysisResult(null)
     setShotPlan(null)
-    setSelectedSequenceEntry(null)
     try {
       const data = await storyboardApi.analyzeFullScript(projectId)
       setAnalysisResult(data)
@@ -277,26 +264,6 @@ export default function StoryboardBuilderPage() {
       setError(err?.response?.data?.detail || err?.message || 'Error analyzing full script')
     } finally {
       setIsAnalyzing(false)
-    }
-  }
-
-  const handlePlanSequence = async (entry: ScriptSequenceMapEntry) => {
-    if (!projectId) return
-    setIsPlanning(true)
-    setError(null)
-    setSelectedSequenceEntry(entry)
-    setShotPlan(null)
-    try {
-      const canonicalSequence = resolveSequenceAlias(entry.sequence_id, sequences)
-      const requestedSequenceId = canonicalSequence?.sequence_id || entry.sequence_id
-      const plan = await storyboardApi.planSequence(projectId, requestedSequenceId)
-      setSelectedSequenceId(requestedSequenceId)
-      setShotPlan(plan)
-      setActiveTab('sequences')
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Error planning sequence')
-    } finally {
-      setIsPlanning(false)
     }
   }
 
@@ -322,21 +289,6 @@ export default function StoryboardBuilderPage() {
       setError(err?.response?.data?.detail || 'Error generating sequence')
     } finally {
       setIsGenerating(false)
-    }
-  }
-
-  const handlePlanSequenceFromList = async (seq: StoryboardSequence) => {
-    if (!projectId) return
-    setIsPlanning(true)
-    setError(null)
-    setShotPlan(null)
-    try {
-      const plan = await storyboardApi.planSequence(projectId, seq.sequence_id)
-      setShotPlan(plan)
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Error planning sequence')
-    } finally {
-      setIsPlanning(false)
     }
   }
 
@@ -484,6 +436,24 @@ export default function StoryboardBuilderPage() {
     )
     setPickerOpen(false)
     setSelectedShotId(null)
+  }
+
+  const handleRepairAssets = async () => {
+    if (!projectId) return
+    setIsRepairing(true)
+    setRepairResult(null)
+    try {
+      const { default: api } = await import('@/api/client')
+      const { data } = await api.post(`/projects/${projectId}/storyboard/repair-assets`)
+      setRepairResult(
+        `Reparados: ${data.repaired_count} | Omitidos: ${data.skipped_count} | Sin match: ${data.not_found_count}`
+      )
+      await fetchShots()
+    } catch (err: any) {
+      setRepairResult('Error: ' + (err?.response?.data?.detail || err.message))
+    } finally {
+      setIsRepairing(false)
+    }
   }
 
   const dirtyCount = shots.filter((s) => s.isDirty).length
@@ -635,14 +605,6 @@ export default function StoryboardBuilderPage() {
                       </p>
                     </div>
                   </div>
-                  {scriptUploadResult.warnings.length > 0 && (
-                    <div className="flex items-start gap-2 text-xs text-amber-300/80 bg-amber-500/5 rounded-lg p-2">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                      <ul className="list-disc list-inside">
-                        {scriptUploadResult.warnings.map((w, i) => <li key={i}>{w}</li>)}
-                      </ul>
-                    </div>
-                  )}
                 </div>
               )}
               {scriptUploadError && (
@@ -735,328 +697,117 @@ export default function StoryboardBuilderPage() {
                             </div>
                             <p className="text-xs text-slate-400 mb-2">{entry.summary}</p>
                             <div className="flex flex-wrap gap-1 mb-2">
-                              {entry.characters.map((ch, i) => (
-                                <span key={i} className="px-1.5 py-0.5 text-[10px] bg-slate-700/50 text-slate-300 rounded">{ch}</span>
+                              {entry.location && (
+                                <span className="px-1.5 py-0.5 text-[10px] bg-cyan-400/10 text-cyan-300 rounded">{entry.location}</span>
+                              )}
+                              {entry.characters.map((ch: string, i: number) => (
+                                <span key={i} className="px-1.5 py-0.5 text-[10px] bg-amber-400/10 text-amber-300 rounded">{ch}</span>
                               ))}
                             </div>
-                            <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-500">
-                              <span>Función: {entry.dramatic_function}</span>
-                              <span>Meta: {entry.emotional_goal}</span>
-                              <span>Planos: {entry.suggested_shot_count}</span>
-                            </div>
+                            <button onClick={() => {
+                              setSelectedSequenceId(entry.sequence_id)
+                              setActiveTab('shots')
+                            }}
+                              className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
+                              Ver plan de storyboard →
+                            </button>
                           </div>
-                          <button onClick={() => handlePlanSequence(entry)} disabled={isPlanning}
-                            className="shrink-0 px-4 py-2 text-xs font-medium bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 rounded-xl hover:bg-cyan-500/20 transition-all disabled:opacity-40">
-                            {isPlanning && selectedSequenceEntry?.sequence_id === entry.sequence_id
-                              ? 'Planificando...' : 'Planificar storyboard'}
-                          </button>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] text-slate-500">{entry.suggested_shot_count || 0} planos</span>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </section>
-
-                {/* Shot Plan */}
-                {shotPlan && (
-                  <section className="card bg-dark-200/80 border border-cyan-500/20 p-6 space-y-4">
-                    <h3 className="text-base font-semibold text-cyan-300 flex items-center gap-2">
-                      <Eye className="w-4 h-4" /> Plan de storyboard: {shotPlan.sequence_title}
-                    </h3>
-                    <p className="text-xs text-slate-400">{shotPlan.continuity_plan.join(' | ')}</p>
-                    <div className="grid gap-2">
-                      {shotPlan.shot_plan.map((shot) => (
-                        <div key={shot.shot_number}
-                          className="rounded-xl border border-white/10 bg-[#0a1016] p-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-bold text-cyan-400">#{shot.shot_number} {shot.shot_type}</span>
-                            <span className="text-[10px] text-slate-500">{shot.framing} • {shot.camera_angle} • {shot.camera_movement} • {shot.lens_suggestion}</span>
-                          </div>
-                          <p className="text-xs text-slate-300 mb-1">{shot.action || shot.prompt_brief}</p>
-                          <p className="text-[10px] text-slate-500 italic">{shot.shot_plan_reason}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-3">
-                      <button onClick={() => selectedSequenceEntry && handleGenerateWithEstimate(() => handleGenerateSequence(selectedSequenceEntry.sequence_id!))}
-                        disabled={isGenerating || isEstimatingCredits}
-                        className="flex items-center gap-2 px-6 py-3 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40">
-                        {isGenerating || isEstimatingCredits ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                        {isGenerating ? 'Generando storyboard...' : isEstimatingCredits ? 'Estimando créditos...' : 'Generar storyboard de esta secuencia'}
-                      </button>
-                    </div>
-                  </section>
-                )}
               </>
             )}
-          </div>
-        )}
 
-        {/* TAB 2: Sequences */}
-        {activeTab === 'sequences' && (
-          <div className="space-y-6">
-            {/* Header */}
-            <section className="card bg-dark-200/80 border border-white/5 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-white">Secuencias del proyecto</h2>
-                  <p className="text-sm text-slate-400 mt-1">
-                    {sequences.length} secuencia{sequences.length !== 1 ? 's' : ''} disponibles
-                  </p>
-                </div>
-                <button onClick={handleAnalyzeFullScript} disabled={isAnalyzing}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl hover:bg-amber-500/20 transition-all">
-                  {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                  Re-analizar guion
-                </button>
+            {/* Template section */}
+            <section className="card bg-dark-200/80 border border-white/5 p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-white">Selecciona una secuencia</h2>
+
+              {/* Sequence cards grid */}
+              <div className="grid gap-3">
+                {sequences.map((seq) => (
+                  <div key={seq.sequence_id}
+                    onClick={() => setSelectedSequenceId(seq.sequence_id)}
+                    className="rounded-xl border border-white/10 bg-[#0a1016] p-4 hover:border-amber-500/30 cursor-pointer transition-all">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold text-amber-400">#{seq.sequence_number}</span>
+                          <h4 className="text-sm font-semibold text-white">{seq.title}</h4>
+                        </div>
+                        <p className="text-xs text-slate-400 mb-2">{seq.summary || ''}</p>
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {seq.location && (
+                            <span className="px-1.5 py-0.5 text-[10px] bg-cyan-400/10 text-cyan-300 rounded">{seq.location}</span>
+                          )}
+                          {seq.characters.map((ch: string, i: number) => (
+                            <span key={i} className="px-1.5 py-0.5 text-[10px] bg-amber-400/10 text-amber-300 rounded">{ch}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[10px] text-slate-500">{seq.estimated_shots || 0} planos</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
 
-            {sequences.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-slate-400 mb-4">No hay secuencias disponibles. Analiza el guion completo primero.</p>
-                <button onClick={handleAnalyzeFullScript} disabled={isAnalyzing}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300">
-                  <FileText className="w-4 h-4" /> Analizar guion completo
-                </button>
-              </div>
-            ) : (
-              <>
-                {/* Search, sort and filter */}
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex-1 min-w-[200px]">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Buscar por número, localización, personaje..."
-                      className="w-full rounded-xl border border-white/10 bg-dark-300/70 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
-                    />
+            {/* Shot plan */}
+            {shotPlan && selectedSequenceId && (
+              <section className="card bg-dark-200/80 border border-cyan-500/20 p-6 space-y-4">
+                <h3 className="text-base font-semibold text-cyan-300 flex items-center gap-2">
+                  <Eye className="w-4 h-4" /> Plan de storyboard: {shotPlan.sequence_title}
+                </h3>
+                {shotPlan.warnings && shotPlan.warnings.length > 0 && (
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
+                    <p className="text-xs font-medium text-amber-400">Advertencias</p>
+                    {shotPlan.warnings.map((w, i) => (
+                      <p key={i} className="text-[11px] text-amber-300/70">{w}</p>
+                    ))}
                   </div>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                    className="rounded-xl border border-white/10 bg-dark-300/70 px-3 py-2.5 text-sm text-white outline-none"
-                  >
-                    <option value="number">Número de secuencia</option>
-                    <option value="location">Localización</option>
-                    <option value="characters">Personajes</option>
-                    <option value="status">Estado</option>
-                  </select>
-                  <button
-                    onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-                    className="px-3 py-2.5 text-sm border border-white/10 rounded-xl hover:bg-white/5 text-slate-300 transition-colors"
-                  >
-                    {sortDirection === 'asc' ? '↑ Asc' : '↓ Desc'}
+                )}
+                <p className="text-xs text-slate-400">
+                  <span className="text-cyan-400 font-medium">{shotPlan.shot_plan.length} planos</span> planificados
+                </p>
+                {shotPlan.continuity_plan.length > 0 && (
+                  <p className="text-xs text-slate-500">{shotPlan.continuity_plan.join(' | ')}</p>
+                )}
+                <div className="grid gap-2">
+                  {shotPlan.shot_plan.map((shot) => (
+                    <div key={shot.shot_number}
+                      className="rounded-xl border border-white/10 bg-[#0a1016] p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-cyan-400">#{shot.shot_number} {shot.shot_type}</span>
+                        <span className="text-[10px] text-slate-500">{shot.framing} • {shot.camera_angle} • {shot.camera_movement} • {shot.lens_suggestion}</span>
+                      </div>
+                      <p className="text-xs text-slate-300 mb-1">{shot.action || shot.prompt_brief}</p>
+                      <p className="text-[10px] text-slate-500 italic">{shot.shot_plan_reason}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => selectedSequenceId && handleGenerateWithEstimate(() => handleGenerateSequence(selectedSequenceId))}
+                    disabled={isGenerating || isEstimatingCredits}
+                    className="flex items-center gap-2 px-6 py-3 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40">
+                    {isGenerating || isEstimatingCredits ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                    {isGenerating ? 'Generando storyboard...' : isEstimatingCredits ? 'Estimando créditos...' : 'Generar storyboard de esta secuencia'}
                   </button>
-                  <span className="text-xs text-slate-400">{sequences.length} secuencia{sequences.length !== 1 ? 's' : ''}</span>
                 </div>
+              </section>
+            )}
 
-                {/* Sequence cards grid */}
-                <div className="grid gap-3">
-                  {(() => {
-                    let filtered = sequences
-                    if (searchQuery.trim()) {
-                      const q = searchQuery.trim().toLowerCase()
-                      filtered = sequences.filter((s) =>
-                        String(s.sequence_number).includes(q) ||
-                        (s.title || '').toLowerCase().includes(q) ||
-                        (s.location || '').toLowerCase().includes(q) ||
-                        s.characters.some((ch) => ch.toLowerCase().includes(q)) ||
-                        (s.summary || '').toLowerCase().includes(q)
-                      )
-                    }
-                    filtered = [...filtered].sort((a, b) => {
-                      const dir = sortDirection === 'asc' ? 1 : -1
-                      if (sortBy === 'number') return (a.sequence_number - b.sequence_number) * dir
-                      if (sortBy === 'location') return ((a.location || '').localeCompare(b.location || '')) * dir
-                      if (sortBy === 'characters') return (a.characters.join(', ').localeCompare(b.characters.join(', '))) * dir
-                      if (sortBy === 'status') return (a.storyboard_status.localeCompare(b.storyboard_status)) * dir
-                      return 0
-                    })
-                    return filtered.map((seq) => {
-                    const isSelected = selectedSequenceId === seq.sequence_id
-                    return (
-                      <div key={seq.sequence_id}
-                        className={`rounded-xl border p-4 transition-all ${
-                          isSelected
-                            ? 'border-amber-500/50 bg-amber-400/10 ring-1 ring-amber-500/30'
-                            : 'border-white/10 bg-[#0a1016] hover:border-white/20'
-                        }`}>
-                        {/* Card header */}
-                        <div className="flex items-start justify-between gap-3 mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-amber-400">#{seq.sequence_number}</span>
-                            <h3 className="text-sm font-semibold text-white">{seq.title}</h3>
-                            {isSelected && (
-                              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-amber-500/20 text-amber-300 rounded-full flex items-center gap-1">
-                                <Check className="w-2.5 h-2.5" /> Seleccionada
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-xs text-amber-400 shrink-0">v{seq.current_version || 0}</span>
-                        </div>
-
-                        {/* Summary */}
-                        <p className="text-xs text-slate-400 mb-2">{seq.summary}</p>
-
-                        {/* Details grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 text-[10px] text-slate-500 mb-3">
-                          <p><span className="text-slate-600">ID:</span> {seq.sequence_id}</p>
-                          <p><span className="text-slate-600">Escenas:</span> {seq.included_scenes.join(', ')}</p>
-                          <p><span className="text-slate-600">Personajes:</span> {dedupeList(seq.characters)}</p>
-                          {seq.location && <p><span className="text-slate-600">Localización:</span> {seq.location}</p>}
-                          {seq.emotional_arc && <p><span className="text-slate-600">Arco emocional:</span> {seq.emotional_arc}</p>}
-                          {seq.estimated_duration != null && <p><span className="text-slate-600">Duración est.:</span> {seq.estimated_duration}s</p>}
-                          <p><span className="text-slate-600">Planos est.:</span> {seq.estimated_shots}</p>
-                          <p>
-                            <span className="text-slate-600">Estado:</span>{' '}
-                            <span className={seq.storyboard_status === 'generated' ? 'text-green-400' : 'text-slate-400'}>
-                              {seq.storyboard_status}
-                            </span>
-                          </p>
-                        </div>
-
-                        {/* Select button */}
-                        {isSelected ? (
-                          <span className="text-xs text-amber-400 font-medium flex items-center gap-1">
-                            <Check className="w-3 h-3" /> Secuencia seleccionada: {seq.sequence_id} — {seq.title}
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setShotPlan(null)
-                              setSelectedSequenceId(seq.sequence_id)
-                            }}
-                            className="px-3 py-1.5 text-xs font-medium bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-lg hover:bg-amber-500/20 transition-all">
-                            Seleccionar secuencia
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })})()}
-                </div>
-
-                {/* Character breakdown */}
-                <details className="rounded-xl border border-cyan-500/20 bg-cyan-500/5">
-                  <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-cyan-300 flex items-center gap-2">
-                    <Users className="w-4 h-4" /> Personajes y desglose
-                  </summary>
-                  <div className="px-5 pb-5">
-                    <CharacterBreakdownPanel
-                      sequences={sequences}
-                      onFilterByCharacter={(character) => {
-                        setCharacterFilter(character)
-                        setActiveTab('shots')
-                      }}
-                      onSelectSequencesByCharacter={(seqIds) => {
-                        const found = sequences.find((s) => seqIds.includes(s.sequence_id))
-                        if (found) {
-                          setSelectedSequenceId(found.sequence_id)
-                          setActiveTab('shots')
-                        }
-                      }}
-                    />
-                  </div>
-                </details>
-
-                {/* Selected sequence actions */}
-                {selectedSequenceId && (() => {
-                  const selectedSeq = sequences.find(s => s.sequence_id === selectedSequenceId)
-                  if (!selectedSeq) return null
-                  return (
-                    <section className="card bg-dark-200/80 border border-amber-500/20 p-6 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-amber-400" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-semibold text-amber-300">
-                            Secuencia seleccionada: {selectedSeq.sequence_id} — {selectedSeq.title}
-                          </h3>
-                          <p className="text-xs text-slate-400">{selectedSeq.summary}</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        <button onClick={() => handlePlanSequenceFromList(selectedSeq)} disabled={isPlanning}
-                          className="flex items-center gap-2 px-6 py-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-300 font-medium hover:bg-cyan-500/20 transition-all disabled:opacity-40">
-                          {isPlanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                          {isPlanning ? 'Planificando...' : 'Planificar storyboard'}
-                        </button>
-                        <button onClick={() => handleGenerateWithEstimate(() => handleGenerateSequence(selectedSeq.sequence_id))} disabled={isGenerating || isEstimatingCredits}
-                          className="flex items-center gap-2 px-6 py-3 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40">
-                          {isGenerating || isEstimatingCredits ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                          {isGenerating ? 'Generando storyboard...' : isEstimatingCredits ? 'Estimando créditos...' : 'Generar storyboard de esta secuencia'}
-                        </button>
-                        <button onClick={() => handleGenerate(true)} disabled={isGenerating}
-                          className="flex items-center gap-2 px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white font-medium hover:bg-white/20 transition-all disabled:opacity-40">
-                          <RefreshCw className="w-4 h-4" /> Regenerar
-                        </button>
-                      </div>
-                    </section>
-                  )
-                })()}
-
-                {/* Regeneration progress */}
-                {regenerationProgress && (
-                  <ActionProgressPanel
-                    progress={regenerationProgress}
-                    onRetry={() => handleGenerate(true)}
-                    retryLabel="Reintentar regeneración"
-                  />
-                )}
-
-                {/* Plan result */}
-                {shotPlan && selectedSequenceId && (
-                  <section className="card bg-dark-200/80 border border-cyan-500/20 p-6 space-y-4">
-                    <h3 className="text-base font-semibold text-cyan-300 flex items-center gap-2">
-                      <Eye className="w-4 h-4" /> Plan de storyboard: {shotPlan.sequence_title}
-                    </h3>
-                    {shotPlan.warnings && shotPlan.warnings.length > 0 && (
-                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
-                        <p className="text-xs font-medium text-amber-400">Advertencias</p>
-                        {shotPlan.warnings.map((w, i) => (
-                          <p key={i} className="text-[11px] text-amber-300/70">{w}</p>
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-xs text-slate-400">
-                      <span className="text-cyan-400 font-medium">{shotPlan.shot_plan.length} planos</span> planificados
-                    </p>
-                    {shotPlan.continuity_plan.length > 0 && (
-                      <p className="text-xs text-slate-500">{shotPlan.continuity_plan.join(' | ')}</p>
-                    )}
-                    <div className="grid gap-2">
-                      {shotPlan.shot_plan.map((shot) => (
-                        <div key={shot.shot_number}
-                          className="rounded-xl border border-white/10 bg-[#0a1016] p-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-bold text-cyan-400">#{shot.shot_number} {shot.shot_type}</span>
-                            <span className="text-[10px] text-slate-500">{shot.framing} • {shot.camera_angle} • {shot.camera_movement} • {shot.lens_suggestion}</span>
-                          </div>
-                          <p className="text-xs text-slate-300 mb-1">{shot.action || shot.prompt_brief}</p>
-                          <p className="text-[10px] text-slate-500 italic">{shot.shot_plan_reason}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-3">
-                      <button onClick={() => selectedSequenceId && handleGenerateWithEstimate(() => handleGenerateSequence(selectedSequenceId))}
-                        disabled={isGenerating || isEstimatingCredits}
-                        className="flex items-center gap-2 px-6 py-3 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40">
-                        {isGenerating || isEstimatingCredits ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                        {isGenerating ? 'Generando storyboard...' : isEstimatingCredits ? 'Estimando créditos...' : 'Generar storyboard de esta secuencia'}
-                      </button>
-                    </div>
-                  </section>
-                )}
-
-                {/* Guard message when no sequence selected */}
-                {sequences.length > 0 && !selectedSequenceId && (
-                  <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-sm text-amber-300/80 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    Primero selecciona una secuencia. CID genera storyboards por secuencia para preservar la lógica narrativa.
-                  </div>
-                )}
-              </>
+            {/* Guard message when no sequence selected */}
+            {sequences.length > 0 && !selectedSequenceId && (
+              <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-sm text-amber-300/80 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                Primero selecciona una secuencia. CID genera storyboards por secuencia para preservar la lógica narrativa.
+              </div>
             )}
           </div>
         )}
@@ -1118,6 +869,15 @@ export default function StoryboardBuilderPage() {
                       <RefreshCw className="w-4 h-4" /> Regenerar secuencia
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={handleRepairAssets}
+                    disabled={isRepairing}
+                    className="px-3 py-2 text-xs border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 rounded-xl hover:bg-cyan-500/20 transition-all disabled:opacity-50 inline-flex items-center gap-1"
+                  >
+                    <Wrench className="w-3 h-3" />
+                    {isRepairing ? 'Reparando...' : 'Reparar miniaturas'}
+                  </button>
                   <select className="input text-sm w-auto" value={selectedSequenceId}
                     onChange={(e) => setSelectedSequenceId(e.target.value)}>
                     <option value="">Todas las secuencias</option>
@@ -1155,6 +915,11 @@ export default function StoryboardBuilderPage() {
                   <option value="character">Por personaje</option>
                 </select>
               </div>
+              {repairResult && (
+                <div className="px-4 py-2 text-xs bg-cyan-500/10 border border-cyan-500/20 rounded-xl text-cyan-300">
+                  {repairResult}
+                </div>
+              )}
               {regenerationProgress && (
                 <ActionProgressPanel
                   progress={regenerationProgress}

@@ -50,6 +50,7 @@ from services.script_intake_service import script_intake_service
 from services.semantic_prompt_validation_service import semantic_prompt_validation_service
 from services.storyboard_image_script_validation_service import storyboard_image_script_validation_service
 from services.storyboard_prompt_reference_service import storyboard_prompt_reference_service
+from services.storyboard_shot_planner_service import storyboard_shot_planner_service
 from services.storyboard_style_preset_service import storyboard_style_preset_service
 from services.storyboard_workflow_preset_service import storyboard_workflow_preset_service
 
@@ -567,6 +568,19 @@ class StoryboardService:
                 metadata_raw["sequence_summary"] = sequence_for_scene.summary if sequence_for_scene else None
                 metadata_raw["shot_plan_reason"] = shot.get("shot_plan_reason", "automatic from scene analysis")
                 metadata_raw["script_excerpt_used"] = shot.get("script_excerpt_used", "")
+                seq_label = scene.get("sequence_label") or sequence_for_scene.source_sequence_label if hasattr(sequence_for_scene, "source_sequence_label") else None
+                if seq_label:
+                    metadata_raw["sequence_label"] = seq_label
+                seq_number = scene.get("sequence_number")
+                if seq_number is not None:
+                    metadata_raw["sequence_number"] = seq_number
+                for meta_key in ("beat_type", "dramatic_intent", "dramatic_intent_es",
+                                 "display_description_en", "display_description_es",
+                                 "sound_or_silence_note", "continuity_notes",
+                                 "camera_angle", "lens", "script_reference"):
+                    val = shot.get(meta_key)
+                    if val:
+                        metadata_raw[meta_key] = val
                 metadata_raw["workflow_profile_requested"] = profile_info["workflow_profile_requested"]
                 metadata_raw["storyboard_workflow_profile_info"] = dict(profile_info)
                 metadata_raw["sheet_template"] = sheet_template
@@ -1147,18 +1161,47 @@ class StoryboardService:
             shot.is_active = False
 
     def _build_scene_shots(self, scene: dict[str, Any], *, shots_per_scene: int, style_preset: str) -> list[dict[str, Any]]:
-        actions = [line for line in scene.get("action_blocks", []) if line]
-        heading = scene.get("heading") or "Escena"
-        text_pool = actions[:shots_per_scene] or [heading]
+        from schemas.cid_script_to_prompt_schema import ScriptScene
+
+        script_scene = ScriptScene(
+            scene_id=scene.get("scene_id", ""),
+            scene_number=self._scene_number(scene),
+            heading=scene.get("heading", ""),
+            int_ext=scene.get("int_ext"),
+            location=scene.get("location"),
+            time_of_day=scene.get("time_of_day"),
+            raw_text=scene.get("raw_text", ""),
+            action_summary=scene.get("action_summary", ""),
+            dialogue_summary=scene.get("dialogue_summary"),
+            characters=scene.get("characters", []) or scene.get("characters_detected", []),
+            sequence_number=scene.get("sequence_number"),
+            sequence_label=scene.get("sequence_label"),
+        )
+
+        planned_shots = storyboard_shot_planner_service.plan_sequence_shots(
+            script_scene,
+            mode="auto_cinematic",
+        )
+
         shots: list[dict[str, Any]] = []
-        for index in range(max(1, shots_per_scene)):
-            source_text = text_pool[index] if index < len(text_pool) else heading
-            shot_type = self._detect_shot_type(source_text)
+        for index, planned in enumerate(planned_shots):
+            source_text = planned.get("visual_action", "") or scene.get("heading", "")
+            shot_type = planned.get("shot_type") or self._detect_shot_type(source_text)
             shots.append(
                 {
                     "shot_number": index + 1,
                     "shot_type": shot_type,
-                    "description": f"{source_text[:140]} ({style_preset})",
+                    "description": source_text[:200],
+                    "camera_angle": planned.get("camera_angle", "frontal"),
+                    "lens": planned.get("lens", "50mm"),
+                    "beat_type": planned.get("beat_type", ""),
+                    "dramatic_intent": planned.get("dramatic_intent", ""),
+                    "dramatic_intent_es": planned.get("dramatic_intent_es", ""),
+                    "sound_or_silence_note": planned.get("sound_or_silence_note", ""),
+                    "continuity_notes": planned.get("continuity_notes", ""),
+                    "display_description_en": planned.get("display_description_en", source_text),
+                    "display_description_es": planned.get("display_description_es", source_text),
+                    "script_reference": planned.get("script_reference", ""),
                 }
             )
         return shots

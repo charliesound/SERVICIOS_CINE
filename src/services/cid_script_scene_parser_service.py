@@ -12,6 +12,11 @@ SCENE_HEADING_RE = re.compile(
     r"^\s*(?:(?P<number>\d{1,4})\s*[\.:\)-]?\s+)?(?P<int_ext>INT\.?\s*/\s*EXT\.?|EXT\.?\s*/\s*INT\.?|INT\.?|EXT\.?|INTERIOR|EXTERIOR)\s+(?P<body>.+?)\s*$",
     re.IGNORECASE,
 )
+
+SEQUENCE_HEADING_RE = re.compile(
+    r"^\s*(?P<seq_prefix>Secuencia|Sec|Seq)[.\s]+(?P<seq_number>\d+)\s+(?P<rest>.+?)\s*$",
+    re.IGNORECASE,
+)
 CHARACTER_CUE_RE = re.compile(r"^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\.'\-]{1,40}$")
 TIME_OF_DAY_CUES = [
     "NIGHT",
@@ -55,6 +60,8 @@ class ParsedSceneBlock:
     location: str | None
     time_of_day: str | None
     lines: list[str]
+    sequence_number: int | None = None
+    sequence_label: str | None = None
 
 
 class CIDScriptSceneParserService:
@@ -119,6 +126,8 @@ class CIDScriptSceneParserService:
                     location=heading_data["location"],
                     time_of_day=heading_data["time_of_day"],
                     lines=[],
+                    sequence_number=heading_data.get("sequence_number"),
+                    sequence_label=heading_data.get("sequence_label"),
                 )
                 continue
 
@@ -168,6 +177,10 @@ class CIDScriptSceneParserService:
         ]
 
     def _parse_heading(self, line: str) -> dict[str, str | int | None] | None:
+        seq_heading = self._parse_sequence_heading(line)
+        if seq_heading is not None:
+            return seq_heading
+
         match = SCENE_HEADING_RE.match(line)
         if not match:
             return None
@@ -197,6 +210,55 @@ class CIDScriptSceneParserService:
             "int_ext": int_ext,
             "location": location or None,
             "time_of_day": time_of_day,
+            "sequence_number": None,
+            "sequence_label": None,
+        }
+
+    def _parse_sequence_heading(self, line: str) -> dict[str, str | int | None] | None:
+        seq_match = SEQUENCE_HEADING_RE.match(line)
+        if not seq_match:
+            return None
+        seq_prefix = (seq_match.group("seq_prefix") or "").strip().lower()
+        seq_number = int(seq_match.group("seq_number"))
+        rest = seq_match.group("rest").strip()
+        seq_label = f"Sec {seq_number}"
+
+        scene_match = SCENE_HEADING_RE.match(rest)
+        if not scene_match:
+            return {
+                "scene_number": seq_number,
+                "heading": line,
+                "int_ext": None,
+                "location": None,
+                "time_of_day": None,
+                "sequence_number": seq_number,
+                "sequence_label": seq_label,
+            }
+
+        raw_int_ext = (scene_match.group("int_ext") or "").upper().replace(" ", "")
+        body = (scene_match.group("body") or "").strip().rstrip(".")
+        int_ext = raw_int_ext.replace("INTERIOR", "INT").replace("EXTERIOR", "EXT")
+        int_ext = int_ext.replace("INT./EXT.", "INT/EXT").replace("EXT./INT.", "EXT/INT")
+        int_ext = int_ext.replace("INT.", "INT").replace("EXT.", "EXT")
+
+        location = body
+        time_of_day: str | None = None
+        for cue in TIME_OF_DAY_CUES:
+            cue_match = re.search(rf"(?:^|[\s\.-]){re.escape(cue)}\.?$", body, re.IGNORECASE)
+            if not cue_match:
+                continue
+            location = body[:cue_match.start()].rstrip(" .-") or body
+            time_of_day = cue.upper()
+            break
+
+        return {
+            "scene_number": seq_number,
+            "heading": line,
+            "int_ext": int_ext,
+            "location": location or None,
+            "time_of_day": time_of_day,
+            "sequence_number": seq_number,
+            "sequence_label": seq_label,
         }
 
     def _build_scene(self, block: ParsedSceneBlock) -> ScriptScene:
@@ -227,9 +289,10 @@ class CIDScriptSceneParserService:
             production_needs=production_needs,
             dramatic_objective=dramatic_objective,
             conflict=conflict,
-            emotional_tone=emotional_tone,
             visual_anchors=visual_anchors,
             forbidden_elements=forbidden_elements,
+            sequence_number=block.sequence_number,
+            sequence_label=block.sequence_label,
         )
 
     def _extract_scene_layers(self, lines: Iterable[str]) -> tuple[list[str], list[str], list[str]]:
@@ -383,7 +446,8 @@ class CIDScriptSceneParserService:
 
         for chunk in groups:
             first = chunk[0]
-            sequence_number = len(sequences) + 1
+            raw_seq_number = first.sequence_number
+            sequence_number = raw_seq_number if raw_seq_number is not None else len(sequences) + 1
             sequences.append(
                 ScriptSequence(
                     sequence_id=f"seq_{sequence_number:03d}",

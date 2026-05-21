@@ -65,6 +65,8 @@ class ScriptScene(BaseModel):
     emotional_tone: str | None = None
     visual_anchors: list[str] = Field(default_factory=list)
     forbidden_elements: list[str] = Field(default_factory=list)
+    sequence_number: int | None = None
+    sequence_label: str | None = None
 
     @field_validator(
         "heading",

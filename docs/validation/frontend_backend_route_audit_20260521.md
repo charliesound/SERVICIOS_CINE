@@ -647,14 +647,14 @@ _None_
 |------|------|------|---------|-------|-------|-------|
 | BreakdownPage | BreakdownPage.tsx | LOW | ✅ | ✅ | ✅ | ✅ |
 | ScriptAnalysisProPage | ScriptAnalysisProPage.tsx | LOW | ✅ | ✅ | ✅ | ✅ |
-| BudgetEstimatorPage | BudgetEstimatorPage.tsx | MEDIUM | ✅ | ✅ | ❌ | ❌ |
+| BudgetEstimatorPage | BudgetEstimatorPage.tsx | MEDIUM | ✅ | ✅ | ❌ | ✅ |
 | StoryboardBuilderPage | StoryboardBuilderPage.tsx | LOW | ✅ | ✅ | ✅ | ✅ |
 | ProjectDashboardPage | ProjectDashboardPage.tsx | LOW | ✅ | ✅ | ✅ | ❌ |
 | ProjectMembersPage | ProjectMembersPage.tsx | LOW | ✅ | ✅ | ✅ | ❌ |
-| ProjectFundingPage | ProjectFundingPage.tsx | HIGH | ❌ | ❌ | ❌ | ❌ |
-| EditorialAssemblyPage | EditorialAssemblyPage.tsx | MEDIUM | ✅ | ✅ | ❌ | ❌ |
-| ProducerPitchPackPage | ProducerPitchPackPage.tsx | MEDIUM | ✅ | ✅ | ❌ | ❌ |
-| DistributionPackPage | DistributionPackPage.tsx | MEDIUM | ✅ | ✅ | ❌ | ❌ |
+| ProjectFundingPage | ProjectFundingPage.tsx | MEDIUM | ✅ | ✅ | ❌ | ✅ |
+| EditorialAssemblyPage | EditorialAssemblyPage.tsx | LOW | ✅ | ✅ | ✅ | ✅ |
+| ProducerPitchPackPage | ProducerPitchPackPage.tsx | MEDIUM | ✅ | ✅ | ❌ | ✅ |
+| DistributionPackPage | DistributionPackPage.tsx | MEDIUM | ✅ | ✅ | ❌ | ✅ |
 | CommercialCrmPage | CommercialCrmPage.tsx | LOW | ✅ | ✅ | ✅ | ❌ |
 | ChangeRequestsPage | ChangeRequestsPage.tsx | LOW | ✅ | ✅ | ✅ | ❌ |
 | ReviewsOverviewPage | ReviewsOverviewPage.tsx | LOW | ✅ | ✅ | ✅ | ❌ |
@@ -669,5 +669,5 @@ _None_
 - **Missing backend (critical):** 0
 - **Missing backend (allowlisted):** 1
 - **Prefix/double-prefix issues:** 0
-- **Pages with HIGH empty-state risk:** 1
+- **Pages with HIGH empty-state risk:** 0
 - **Pages with MEDIUM empty-state risk:** 4

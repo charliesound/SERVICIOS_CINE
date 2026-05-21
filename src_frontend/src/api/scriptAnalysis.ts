@@ -29,11 +29,14 @@ export const scriptAnalysisApi = {
     return data
   },
 
-  getModuleStatus: async (projectId: string): Promise<{
-    module_key: string
-    enabled: boolean
+  getModuleStatus: async (projectId: string): Promise<Array<{
+    module_name: string
     status: string
-  }> => {
+    source_script_version_id: string | null
+    affected_by_change_report_id: string | null
+    summary: string | null
+    updated_at: string | null
+}>> => {
     const { data } = await api.get(`/projects/${projectId}/module-status`)
     return data
   },

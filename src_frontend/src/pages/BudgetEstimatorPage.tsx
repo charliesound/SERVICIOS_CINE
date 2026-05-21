@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { DollarSign, Download, RefreshCw, AlertTriangle } from 'lucide-react'
+import { AlertCircle, DollarSign, Download, RefreshCw, AlertTriangle } from 'lucide-react'
 import { budgetsApi } from '@/api/budget'
 import type { BudgetEstimate, BudgetLine } from '@/api/budget'
 
@@ -29,6 +29,7 @@ export default function BudgetEstimatorPage() {
   const [budget, setBudget] = useState<BudgetEstimate | null>(null)
   const [lines, setLines] = useState<BudgetLine[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     loadBudget()
@@ -36,6 +37,7 @@ export default function BudgetEstimatorPage() {
 
   async function loadBudget() {
     try {
+      setError(null)
       setIsLoading(true)
       const { budget: activeBudget } = await budgetsApi.getActive(projectId)
       if (activeBudget) {
@@ -44,20 +46,23 @@ export default function BudgetEstimatorPage() {
         setLines(budgetLines)
       }
     } catch (_e) {
-      } finally {
+      setError('No se pudo cargar el presupuesto.')
+    } finally {
       setIsLoading(false)
     }
   }
 
   async function generateBudget() {
     try {
+      setError(null)
       setIsLoading(true)
       const { budget: newBudget } = await budgetsApi.generate(projectId, { level: 'medium' })
       setBudget(newBudget)
       const { lines: budgetLines } = await budgetsApi.get(projectId, newBudget.id)
       setLines(budgetLines)
     } catch (_e) {
-      } finally {
+      setError('No se pudo generar el presupuesto.')
+    } finally {
       setIsLoading(false)
     }
   }
@@ -65,13 +70,15 @@ export default function BudgetEstimatorPage() {
   async function recalculateBudget(level: string) {
     if (!budget) return
     try {
+      setError(null)
       setIsLoading(true)
       const { budget: recalculated } = await budgetsApi.recalculate(projectId, budget.id, { level })
       setBudget(recalculated)
       const { lines: budgetLines } = await budgetsApi.get(projectId, recalculated.id)
       setLines(budgetLines)
     } catch (_e) {
-      } finally {
+      setError('No se pudo recalcular el presupuesto.')
+    } finally {
       setIsLoading(false)
     }
   }
@@ -79,9 +86,11 @@ export default function BudgetEstimatorPage() {
   async function activateBudget() {
     if (!budget) return
     try {
+      setError(null)
       await budgetsApi.activate(projectId, budget.id)
       loadBudget()
     } catch (_e) {
+      setError('No se pudo activar el presupuesto.')
     }
   }
 
@@ -89,6 +98,27 @@ export default function BudgetEstimatorPage() {
     return (
       <div className="flex items-center justify-center p-12">
         <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+
+  if (error && !budget) {
+    return (
+      <div className="space-y-6">
+        <h1 className="heading-lg">Presupuesto Estimado</h1>
+        <div className="card">
+          <div className="text-center p-12">
+            <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400" />
+            <h2 className="heading-md mb-2">Error al cargar</h2>
+            <p className="text-slate-400 mb-6">{error}</p>
+            <button onClick={() => { setError(null); loadBudget() }} className="btn-primary">
+              Reintentar
+            </button>
+            <Link to={`/projects/${projectId}/dashboard`} className="btn-secondary ml-3">
+              Volver al proyecto
+            </Link>
+          </div>
+        </div>
       </div>
     )
   }

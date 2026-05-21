@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Clapperboard, Download, Layers, RefreshCw, Scissors } from 'lucide-react'
+import { AlertCircle, Clapperboard, Download, Layers, RefreshCw, Scissors } from 'lucide-react'
 import { editorialApi, projectsApi } from '@/api'
 import type { AssemblyCut, EditorialFCPXMLStatus, EditorialRecommendedTake, EditorialTake, DavinciPlatformExportRequest } from '@/api/editorial'
 
@@ -115,7 +115,60 @@ export default function EditorialAssemblyPage() {
   }
 
   if (loading) {
-    return <div className="text-sm text-slate-400">Cargando estado editorial...</div>
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="heading-lg text-white flex items-center gap-3">
+          <Clapperboard className="h-6 w-6 text-amber-400" />
+          Premontaje / Assembly
+        </h1>
+        <div className="card">
+          <div className="text-center p-12">
+            <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400" />
+            <h2 className="heading-md mb-2">Error al cargar</h2>
+            <p className="text-slate-400 mb-6">{error}</p>
+            <button onClick={loadState} className="btn-primary">
+              Reintentar
+            </button>
+            <Link to={`/projects/${projectId}/dashboard`} className="btn-secondary ml-3">
+              Volver al proyecto
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const isEmpty = !assembly && takes.length === 0 && recommended.length === 0
+
+  if (isEmpty) {
+    return (
+      <div className="space-y-6">
+        <h1 className="heading-lg text-white flex items-center gap-3">
+          <Clapperboard className="h-6 w-6 text-amber-400" />
+          Premontaje / Assembly
+        </h1>
+        <div className="card">
+          <div className="text-center p-12">
+            <Scissors className="w-16 h-16 mx-auto mb-4 text-slate-500" />
+            <h2 className="heading-md mb-2">Sin datos editoriales</h2>
+            <p className="text-slate-400 mb-6">
+              Aún no hay material editorial cargado. Sube media o analiza el guion para comenzar.
+            </p>
+            <Link to={`/projects/${projectId}/dashboard`} className="btn-primary">
+              Ir al proyecto
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

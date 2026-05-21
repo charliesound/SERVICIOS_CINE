@@ -1,12 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { AlertCircle, ArrowLeft, Briefcase, Loader2, WalletCards } from 'lucide-react'
 import FundingOpportunitiesDashboard from '@/components/FundingOpportunitiesDashboard'
 import ProjectFundingPanel from '@/components/ProjectFundingPanel'
-import { ArrowLeft, Briefcase, WalletCards } from 'lucide-react'
+import { projectsApi } from '@/api'
 
 export default function ProjectFundingPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const [activeTab, setActiveTab] = useState<'opportunities' | 'private'>('opportunities')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!projectId) return
+    setLoading(true)
+    setError(null)
+    projectsApi.get(projectId)
+      .then(() => setLoading(false))
+      .catch(() => {
+        setError('No se pudo cargar el proyecto.')
+        setLoading(false)
+      })
+  }, [projectId])
 
   if (!projectId) {
     return (
@@ -15,6 +30,34 @@ export default function ProjectFundingPage() {
         <Link to="/projects" className="mt-4 text-blue-400 hover:underline">
           Volver a proyectos
         </Link>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900">
+        <div className="max-w-lg mx-auto pt-24 text-center">
+          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+          <h2 className="text-xl font-semibold text-white mb-2">Error al cargar</h2>
+          <p className="text-slate-400 mb-6">{error}</p>
+          <div className="flex justify-center gap-3">
+            <button onClick={() => { setError(null); setLoading(true); projectsApi.get(projectId!).then(() => setLoading(false)).catch(() => { setError('No se pudo cargar el proyecto.'); setLoading(false) }) }} className="btn-primary">
+              Reintentar
+            </button>
+            <Link to="/projects" className="btn-secondary">
+              Volver a proyectos
+            </Link>
+          </div>
+        </div>
       </div>
     )
   }

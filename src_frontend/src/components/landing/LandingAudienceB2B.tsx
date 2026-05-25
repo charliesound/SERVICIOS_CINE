@@ -20,8 +20,8 @@ const items = [
     accent: 'cyan',
   },
   {
-    title: 'Post, delivery y distribución',
-    text: 'Para áreas que necesitan trazabilidad, QC y continuidad desde el origen hasta la entrega final.',
+    title: 'Pitch, financiación y partners',
+    text: 'Para áreas que necesitan trazabilidad, viabilidad y continuidad desde el guion hasta la presentación.',
     accent: 'emerald',
   },
 ]

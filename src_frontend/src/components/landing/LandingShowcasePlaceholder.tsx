@@ -66,7 +66,7 @@ export default function LandingShowcasePlaceholder({ variant }: LandingShowcaseP
               </ul>
             </div>
             <div className="landing-business-card landing-business-card-wide">
-              <p>Review to delivery</p>
+              <p>Review to pitch</p>
               <div className="landing-business-track">
                 <span />
                 <span />

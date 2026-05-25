@@ -86,7 +86,7 @@ export default function LandingHeroCinematic({
               Lo que el sistema interpreta
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-200">
-              "Guion analizado, escenas conectadas, prompts coherentes, frames por seccion y revision antes de delivery."
+              "Guion analizado, escenas conectadas, prompts coherentes, frames por seccion y revision antes de pitch."
             </p>
           </div>
         </div>

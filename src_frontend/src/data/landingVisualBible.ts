@@ -38,16 +38,16 @@ export const landingVisualBible: LandingVisualSpec[] = [
     narrativePurpose:
       'Mostrar que AILinkCinema convierte un guion o briefing narrativo en un centro de control cinematografico conectado con pipeline real.',
     sourceText:
-      'AILinkCinema combina creatividad visual, lienzo colaborativo e inteligencia artificial con un sistema real de produccion audiovisual. Desde la idea inicial hasta la entrega final, CID conecta guion, storyboard, planificacion, doblaje, sonido, VFX, montaje y distribucion en un mismo flujo de trabajo.',
+      'AILinkCinema combina creatividad visual, analisis de guion e inteligencia artificial con un sistema real de preproduccion cinematografica. Desde la idea inicial hasta el pitch, CID conecta guion, storyboard, visual bible, presupuesto y planificacion en un mismo flujo de trabajo.',
     visualConcept:
       'Centro operativo oscuro con guion analizado, escenas conectadas, revisiones visuales y supervision de pipeline dentro de un producto real.',
     continuityRules: [
-      'Mantener paneles de guion, storyboard y delivery en el mismo encuadre.',
+      'Mantener paneles de guion, storyboard y pitch en el mismo encuadre.',
       'Evitar paisajes bonitos sin contexto de producto.',
       'La interfaz debe sentirse como software real, no como decoracion futurista.',
     ],
     positivePrompt:
-      'premium cinematic SaaS interface, dark charcoal background, warm amber highlights, film production control center, realistic cinematic lighting, glass UI panels, high-end audiovisual workflow, professional studio environment, hero product screen showing screenplay analysis, connected scene cards, prompt orchestration, storyboard frames and delivery checkpoints, the image must clearly communicate a real platform that turns script text into a controlled visual production pipeline',
+      'premium cinematic SaaS interface, dark charcoal background, warm amber highlights, film preproduction control center, realistic cinematic lighting, glass UI panels, high-end audiovisual workflow, professional studio environment, hero product screen showing screenplay analysis, connected scene cards, prompt orchestration, storyboard frames and pitch checkpoints, the image must clearly communicate a real platform that turns script text into a controlled visual preproduction pipeline',
     negativePrompt: commonNegativePrompt,
     imagePath: '/landing-media/landing-hero-main-v3.webp',
     status: 'needs_regeneration',
@@ -236,7 +236,7 @@ export const landingVisualBible: LandingVisualSpec[] = [
       'Debe convivir con la paleta oscura premium del resto de la landing.',
     ],
     positivePrompt:
-      'premium cinematic SaaS interface, dark charcoal background, warm amber highlights, film production control center, realistic cinematic lighting, glass UI panels, high-end audiovisual workflow, professional studio environment, executive production dashboard with script module, storyboard review, planning checkpoints, version approvals and delivery status, the image must clearly communicate a B2B production system for film teams',
+      'premium cinematic SaaS interface, dark charcoal background, warm amber highlights, film preproduction control center, realistic cinematic lighting, glass UI panels, high-end audiovisual workflow, professional studio environment, executive preproduction dashboard with script module, storyboard review, planning checkpoints, version approvals and pitch readiness status, the image must clearly communicate a B2B preproduction system for film teams',
     negativePrompt: commonNegativePrompt,
     imagePath: '/landing-media/landing-producers-studios-v3.webp',
     status: 'needs_regeneration',
@@ -267,18 +267,18 @@ export const landingVisualBible: LandingVisualSpec[] = [
     section: 'Delivery / QC final',
     role: 'delivery',
     narrativePurpose:
-      'Cerrar el discurso demostrando que el flujo llega a aprobacion final, QC y entrega del paquete audiovisual.',
+      'Cerrar el discurso demostrando que el flujo llega a dossier, pitch y validacion de materiales de preproduccion.',
     sourceText:
-      'Entrar en fases avanzadas con mas control sobre voz, QC, stems, trazabilidad y compliance. Validamos, revisamos y entregamos. Seguridad, legalidad, control de cambios y handoff limpio para cada siguiente fase.',
+      'Entrar en decisiones de viabilidad y presentacion con mas control sobre materiales, tono, coste y narrativa. Validamos, revisamos y presentamos. Seguridad, legalidad y control de cambios para cada siguiente fase.',
     visualConcept:
-      'Sala de finishing oscura con control de calidad, aprobacion final y handoff de deliverables.',
+      'Sala de revision oscura con control de calidad, aprobacion final y preparacion de dossier.',
     continuityRules: [
       'Debe sentirse fase final del pipeline.',
       'Monitores o checkpoints de validacion tienen que ser visibles.',
       'Evitar habitaciones vacias sin contexto.',
     ],
     positivePrompt:
-      'premium cinematic SaaS interface, dark charcoal background, warm amber highlights, film production control center, realistic cinematic lighting, glass UI panels, high-end audiovisual workflow, professional studio environment, finishing and delivery suite with quality control monitors, approval status, package validation and final handoff, the image must clearly communicate the end of the audiovisual pipeline',
+      'premium cinematic SaaS interface, dark charcoal background, warm amber highlights, film preproduction control center, realistic cinematic lighting, glass UI panels, high-end audiovisual workflow, professional studio environment, pitch and dossier suite with quality control monitors, approval status, material validation and final presentation readiness, the image must clearly communicate the end of the preproduction pipeline',
     negativePrompt: commonNegativePrompt,
     imagePath: '/landing-media/landing-delivery-final-v3.webp',
     status: 'needs_regeneration',

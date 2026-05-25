@@ -22,7 +22,7 @@ export default function PricingPage() {
   const { isAuthenticated, user } = useAuthStore()
   const cidTarget = getPrimaryCIDTarget(user)
   const description =
-    'Precios de AILinkCinema para CID, modulos independientes y desarrollo a medida aplicado a produccion, postproduccion y delivery audiovisual.'
+    'Precios de AILinkCinema para CID Core, modulos independientes y desarrollo a medida aplicado a preproduccion cinematografica.'
 
   useSeo({
     title: 'Precios de software IA para cine',

@@ -13,9 +13,9 @@ const ABSOLUTE_URL_PATTERN = /^https?:\/\//i
 const STRUCTURED_DATA_SCRIPT_ID = 'app-seo-structured-data'
 
 export const SEO_SITE_NAME = 'AILinkCinema'
-export const SEO_DEFAULT_TITLE = 'AILinkCinema | IA para cine y produccion audiovisual'
+export const SEO_DEFAULT_TITLE = 'AILinkCinema | IA para preproduccion cinematografica'
 export const SEO_DEFAULT_DESCRIPTION =
-  'Software y soluciones de inteligencia artificial para cine, television y publicidad: guion, storyboard, produccion, doblaje, postproduccion y delivery.'
+  'Software de inteligencia artificial para preproduccion cinematografica: guion, analisis, storyboard, visual bible, presupuesto, pitch y planificacion.'
 export const SEO_DEFAULT_IMAGE_PATH = '/assets/cid-storyboard-1.png'
 
 function trimTrailingSlash(value: string) {

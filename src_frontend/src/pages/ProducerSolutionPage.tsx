@@ -282,7 +282,7 @@ export default function ProducerSolutionPage() {
                   CID como centro de <span className="text-gradient-amber">control de produccion</span>
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-slate-400">
-                  Un sistema integral que conecta las decisiones de produccion con la realidad operativa de todos los departamentos.
+                  Un sistema integral que conecta viabilidad, presupuesto, financiacion y planificacion antes del rodaje.
                 </p>
               </div>
             </LandingReveal>

@@ -36,22 +36,22 @@ export default function LandingPage() {
   const solutionsTarget = '/solutions'
   const requestDemoTarget = '/pricing'
    const description =
-     'AILinkCinema: inteligencia artificial para cine, television y publicidad. Desde guion hasta entrega final con CID, el sistema de produccion audiovisual completo.'
+     'AILinkCinema: inteligencia artificial para preproduccion cinematografica. CID conecta guion, analisis, storyboard, visual bible, presupuesto, pitch y planificacion.'
 
   useSeo({
-    title: 'Inteligencia artificial para cine y produccion audiovisual',
+    title: 'Inteligencia artificial para preproduccion cinematografica',
     description,
     path: '/',
     robots: 'index, follow',
     keywords: [
       'ia para cine',
       'software audiovisual',
-      'produccion audiovisual',
+      'preproduccion cinematografica',
       'storyboard con ia',
       'desglose de guion',
-      'postproduccion audiovisual',
-      'doblaje',
-      'delivery audiovisual',
+      'visual bible',
+      'presupuesto cinematografico',
+      'pitch audiovisual',
     ],
     structuredData: [
       {
@@ -78,7 +78,7 @@ export default function LandingPage() {
         operatingSystem: 'Web',
         url: buildAbsoluteUrl('/solutions/cid'),
         description:
-          'Plataforma premium para coordinar guion, storyboard, produccion, doblaje, postproduccion, distribucion y entrega dentro del pipeline audiovisual.',
+          'Plataforma premium para coordinar guion, analisis, storyboard, visual bible, presupuesto, pitch y planificacion dentro de un flujo de preproduccion cinematografica.',
       },
     ],
   })

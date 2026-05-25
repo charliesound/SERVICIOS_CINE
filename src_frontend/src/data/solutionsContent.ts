@@ -189,9 +189,9 @@ export const standaloneSolutions: SolutionEntry[] = [
     icon: Sparkles,
     priceLabel: 'Desde 99 EUR/mes',
     description:
-      'Apoyo en VFX, generacion de assets visuales, mejora de planos, referencias y elementos para postproduccion.',
+      'Apoyo en VFX, generacion de assets visuales, mejora de planos, referencias y elementos para desarrollo visual.',
     heroDescription:
-      'Una capa de apoyo visual para postproduccion, referencias y mejora de materiales donde se necesita mas capacidad de iteracion.',
+      'Una capa de apoyo visual para referencias, look development y mejora de materiales donde se necesita mas capacidad de iteracion.',
     bullets: ['Assets visuales y referencias', 'Mejora de planos', 'Apoyo a fases de VFX y enhancement'],
     includedInCid: true,
     ctaLabel: 'Ver VFX & Enhancement AI',

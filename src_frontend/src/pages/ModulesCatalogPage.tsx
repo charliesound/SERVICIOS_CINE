@@ -126,7 +126,7 @@ export default function ModulesCatalogPage() {
 
   useSeo({
     title: 'Módulos CID | Suite modular vendible',
-    description: 'Explora la suite modular de CID y activa módulos de IA para desarrollo, producción, financiación, postproducción y distribución.',
+    description: 'Explora la suite modular de CID Core y activa módulos de IA para desarrollo, guion, storyboard, presupuesto, financiación, pitch y planificación.',
     path: '/modules',
     robots: 'noindex, nofollow',
   })

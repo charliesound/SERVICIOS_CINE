@@ -27,8 +27,8 @@ const items = [
   },
   {
     icon: Layers,
-    title: 'De la idea al delivery',
-    text: 'Guion, storyboard, concept art, producción, doblaje, sonido, VFX, montaje y entrega. Todo conectado en un mismo sistema operativo.',
+    title: 'De la idea al pitch',
+    text: 'Guion, analisis, storyboard, visual bible, presupuesto y planificacion. Todo conectado en un mismo sistema operativo.',
   },
   {
     icon: Eye,
@@ -58,7 +58,7 @@ export default function LandingDiferencial() {
             <span className="text-gradient-amber">Un sistema de producción.</span>
           </h2>
           <p className="mt-4 text-lg leading-8 text-slate-400">
-            La mayoría de herramientas de IA generan contenido. CID organiza, conecta y controla todo el flujo de producción audiovisual.
+            La mayoría de herramientas de IA generan contenido. CID organiza, conecta y controla el flujo de preproducción cinematográfica.
           </p>
         </div>
 

@@ -8,7 +8,7 @@ const problems = [
   {
     icon: AlertTriangle,
     title: 'Flujos desconectados',
-    text: 'Guion, storyboard, producción y post suelen operar en entornos separados. Cada fase pierde contexto de la anterior.',
+    text: 'Guion, analisis, storyboard, presupuesto y pitch suelen operar en entornos separados. Cada fase pierde contexto de la anterior.',
   },
   {
     icon: Cpu,
@@ -73,8 +73,8 @@ export default function LandingProblemSolution() {
                 Centro operativo inteligente para producción audiovisual
               </h3>
               <p className="mt-3 max-w-2xl text-base leading-7 text-slate-300">
-                CID conecta guion, análisis, storyboard, concept art y delivery en un mismo flujo. 
-                No es un generador de imágenes: es un sistema de producción asistido por IA, 
+                CID conecta guion, análisis, storyboard, concept art, presupuesto y pitch en un mismo flujo. 
+                No es un generador de imágenes: es un sistema de preproducción asistido por IA, 
                 con trazabilidad, control de versiones y supervisión por departamento.
               </p>
             </div>

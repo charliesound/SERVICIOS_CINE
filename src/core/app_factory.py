@@ -241,11 +241,13 @@ def _register_routers(app: FastAPI, settings) -> None:
     app.include_router(matcher_router, tags=["matcher"])
 
     # ── Editorial / script / members / change-governance ─────────────────
+    from routes.editorial_assembly_routes import router as editorial_assembly_router
     from routes.editorial_routes import router as editorial_router
     from routes.script_version_routes import router as script_version_router
     from routes.project_member_routes import router as project_member_router
     from routes.change_governance_routes import router as change_governance_router
 
+    app.include_router(editorial_assembly_router, tags=["editorial-assembly"])
     app.include_router(editorial_router, tags=["editorial"])
     app.include_router(script_version_router, tags=["script-versioning"])
     app.include_router(project_member_router, tags=["project-members"])

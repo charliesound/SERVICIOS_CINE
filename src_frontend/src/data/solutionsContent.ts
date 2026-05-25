@@ -29,6 +29,7 @@ export interface SolutionEntry {
   title: string
   shortTitle: string
   type: 'Producto completo' | 'Modulo independiente'
+  productStatus?: 'core' | 'lab'
   icon: LucideIcon
   priceLabel: string
   description: string
@@ -47,9 +48,9 @@ export const cidProduct = {
   icon: Film,
   priceLabel: 'Setup inicial desde 1.500 EUR + desde 299 EUR/mes',
   description:
-    'Solucion integral para desarrollar una produccion audiovisual con todos los departamentos conectados en un mismo flujo de trabajo.',
+    'Solucion integral de preproduccion cinematografica para conectar guion, analisis, storyboard, visual bible, presupuesto y pitch en un mismo flujo de trabajo.',
   heroDescription:
-    'CID es el producto principal de AILinkCinema: una plataforma premium que organiza guion, analisis, storyboard, presupuesto, produccion, postproduccion, distribucion y entrega en una sola experiencia.',
+    'CID es el producto principal de AILinkCinema: una plataforma premium que organiza guion, analisis cinematografico, storyboard, visual bible, presupuesto, documentos y pitch dentro de una sola experiencia de preproduccion.',
   pricing: {
     headline: 'Modelo de precio',
     setup: 'Setup inicial desde 1.500 EUR',
@@ -65,8 +66,8 @@ export const cidProduct = {
     'Script & Breakdown AI',
     'Storyboard AI Studio',
     'Production Planner AI',
-    'DubbingTake Studio AI',
-    'Sound Post AI',
+    'Budget & Funding',
+    'Pitch & Visual Bible',
     'Promo Video AI',
     'VFX & Enhancement AI',
   ],
@@ -74,9 +75,9 @@ export const cidProduct = {
     'Guion y desarrollo',
     'Analisis y desglose',
     'Storyboard y previz',
-    'Planificacion y produccion',
-    'Doblaje, sonido y post',
-    'Distribucion y entrega',
+    'Visual bible y tono',
+    'Presupuesto y documentacion',
+    'Pitch y previs basica',
   ],
 }
 
@@ -135,6 +136,7 @@ export const standaloneSolutions: SolutionEntry[] = [
     title: 'DubbingTake Studio AI',
     shortTitle: 'DubbingTake Studio AI',
     type: 'Modulo independiente',
+    productStatus: 'lab',
     icon: Mic2,
     priceLabel: 'Desde 79 EUR/mes',
     description:
@@ -142,7 +144,7 @@ export const standaloneSolutions: SolutionEntry[] = [
     heroDescription:
       'Construida para equipos que necesitan orden, trazabilidad y control de calidad en procesos de doblaje y revision de voces.',
     bullets: ['Control de takes y sesiones', 'QC y sincronias', 'Organizacion por voces y revision'],
-    includedInCid: true,
+    includedInCid: false,
     ctaLabel: 'Ver DubbingTake Studio AI',
   },
   {
@@ -151,6 +153,7 @@ export const standaloneSolutions: SolutionEntry[] = [
     title: 'Sound Post AI',
     shortTitle: 'Sound Post AI',
     type: 'Modulo independiente',
+    productStatus: 'lab',
     icon: AudioWaveform,
     priceLabel: 'Desde 79 EUR/mes',
     description:
@@ -158,7 +161,7 @@ export const standaloneSolutions: SolutionEntry[] = [
     heroDescription:
       'Una solucion pensada para mantener control en fases de audio, limpieza y preparacion de materiales para post y entrega.',
     bullets: ['Limpieza y preparacion de audio', 'Spotting y stems', 'Materiales organizados para post y delivery'],
-    includedInCid: true,
+    includedInCid: false,
     ctaLabel: 'Ver Sound Post AI',
   },
   {

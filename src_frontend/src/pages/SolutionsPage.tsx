@@ -12,7 +12,8 @@ import {
    publicLegalLinks,
    solutionsMarketingNotes,
    solutionsPageHighlights,
- } from '@/data/solutionsContent'
+  } from '@/data/solutionsContent'
+import { CID_CORE_FUTURE_PRODUCTS, isCidCoreCustomerVisibleSolution } from '@/config/cidCoreScope'
 import { useSeo } from '@/hooks/useSeo'
 import { getPrimaryCIDTarget, useAuthStore } from '@/store'
 import { buildAbsoluteUrl, buildBreadcrumbStructuredData } from '@/utils/seo'
@@ -20,15 +21,16 @@ import { buildAbsoluteUrl, buildBreadcrumbStructuredData } from '@/utils/seo'
 export default function SolutionsPage() {
   const { isAuthenticated, user } = useAuthStore()
   const cidTarget = getPrimaryCIDTarget(user)
+  const visibleSolutions = allSolutions.filter((solution) => isCidCoreCustomerVisibleSolution(solution.slug))
   const description =
-    'Catalogo de soluciones IA para cine y audiovisual: CID, desglose de guion, storyboard, planificacion de produccion, doblaje, sonido, promo video y VFX.'
+    'Catalogo de soluciones IA para cine con foco en preproduccion: CID, desglose de guion, storyboard, planificacion, pitch, promo video y VFX.'
 
   useSeo({
     title: 'Soluciones IA para cine y audiovisual',
     description,
     path: '/solutions',
     robots: 'index, follow',
-    keywords: ['soluciones ia cine', 'software produccion audiovisual', 'storyboard ai', 'desglose de guion', 'doblaje audiovisual'],
+    keywords: ['soluciones ia cine', 'software preproduccion cinematografica', 'storyboard ai', 'desglose de guion', 'pitch audiovisual'],
     structuredData: [
       buildBreadcrumbStructuredData([
         { name: 'Inicio', path: '/' },
@@ -42,7 +44,7 @@ export default function SolutionsPage() {
         description,
         mainEntity: {
           '@type': 'ItemList',
-          itemListElement: allSolutions.map((solution, index) => ({
+          itemListElement: visibleSolutions.map((solution, index) => ({
             '@type': 'ListItem',
             position: index + 1,
             name: solution.title,
@@ -109,7 +111,7 @@ export default function SolutionsPage() {
          <SolutionHero
            eyebrow="AILinkCinema / Soluciones"
            title="Soluciones IA para cine y audiovisual"
-           description="Catalogo de soluciones IA para cine y audiovisual: CID, desglose de guion, storyboard, planificacion de produccion, doblaje, sonido, promo video y VFX."
+            description="Catalogo de soluciones IA para cine con foco en preproduccion: CID, desglose de guion, storyboard, planificacion, pitch, promo video y VFX."
            primaryLabel="Explorar CID"
            primaryTo="/solutions/cid"
            secondaryLabel="Ver precios"
@@ -127,9 +129,23 @@ export default function SolutionsPage() {
                </p>
              </div>
 
-             <SolutionGrid solutions={allSolutions} />
-           </div>
-         </section>
+              <SolutionGrid solutions={visibleSolutions} />
+
+              <div className="mt-10 rounded-[1.6rem] border border-cyan-400/20 bg-cyan-400/8 p-6 text-sm text-cyan-50">
+                <p className="font-semibold text-cyan-100">Laboratorios y futuros productos fuera de CID Core</p>
+                <p className="mt-2 text-cyan-100/80">
+                  Doblaje, sound post y restoration se mantienen como lineas separadas para producto futuro y no forman parte del catalogo visible de CID Core.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {CID_CORE_FUTURE_PRODUCTS.map((product) => (
+                    <span key={product} className="landing-pill border-cyan-300/20 text-cyan-100">
+                      {product}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
 
          <section className="relative border-y border-white/10 bg-[#09111c]/80 py-28">
            <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">

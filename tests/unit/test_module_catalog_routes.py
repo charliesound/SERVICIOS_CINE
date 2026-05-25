@@ -44,10 +44,19 @@ def test_catalog_endpoint_returns_visible_modules(test_app):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["total"] == 14
+    assert body["total"] == 13
     keys = {module["key"] for module in body["modules"]}
     assert "core" in keys
     assert "funding_grants" in keys
+    assert "sound_post_ai" not in keys
+
+    from core.config import get_settings
+    from services.module_catalog_service import module_catalog_service
+
+    assert get_settings().feature_cid_core_scope is True
+    internal_keys = {module.key for module in module_catalog_service.get_module_catalog()}
+    assert len(internal_keys) == 14
+    assert "sound_post_ai" in internal_keys
 
 
 def test_module_detail_endpoint_returns_module(test_app):

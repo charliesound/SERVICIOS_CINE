@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store'
 import type { ModuleInfo } from '@/types'
 import { getApiErrorMessage } from '@/utils/apiErrors'
 import ModuleCard, { type ModuleCardAction } from '@/components/modules/ModuleCard'
+import { CID_CORE_FUTURE_PRODUCTS } from '@/config/cidCoreScope'
 
 type ModuleViewModel = ModuleInfo & {
   enabled: boolean | null
@@ -215,13 +216,13 @@ export default function ModulesCatalogPage() {
               Suite modular CID
             </div>
             <h1 className="mt-6 text-4xl font-semibold tracking-tight text-white md:text-5xl">Módulos CID</h1>
-            <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-200">
-              Activa y combina módulos de IA para desarrollo, producción, financiación, postproducción y distribución.
-            </p>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-400">
-              Esta primera capa convierte CID en una suite vendible por módulos: ves lo disponible en tu plan, lo que requiere upgrade y qué piezas necesitan activación comercial o dependencias previas.
-            </p>
-          </div>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-200">
+              Activa los módulos visibles de CID Core para guion, storyboard, visual bible, presupuesto, financiación, pitch y previs básica.
+              </p>
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-400">
+              Esta capa comercial prioriza el alcance de preproducción cinematográfica. Los laboratorios de dubbing, sound post y restoration se mantienen fuera del catálogo visible al cliente.
+              </p>
+            </div>
 
           <div className="grid gap-4 sm:grid-cols-3 xl:min-w-[440px]">
             <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.045] p-4">
@@ -262,6 +263,20 @@ export default function ModulesCatalogPage() {
           </div>
         </div>
       ) : null}
+
+      <section className="rounded-[1.8rem] border border-cyan-400/20 bg-cyan-500/8 p-6 md:p-7 text-sm text-cyan-50">
+        <p className="font-semibold text-cyan-100">Fuera de CID Core</p>
+        <p className="mt-2 max-w-3xl text-cyan-100/80">
+          Dubbing, sound post y restoration se conservan como laboratorios o futuros productos separados. No se muestran al cliente final dentro del catálogo modular de CID Core.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {CID_CORE_FUTURE_PRODUCTS.map((product) => (
+            <span key={product} className="landing-pill border-cyan-300/20 text-cyan-100">
+              {product}
+            </span>
+          ))}
+        </div>
+      </section>
 
       {!myModulesError && myModulesQuery.isLoading ? (
         <section className="space-y-4">

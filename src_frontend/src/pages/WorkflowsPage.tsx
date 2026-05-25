@@ -3,6 +3,7 @@ import { useWorkflowCatalog, usePresets } from '@/hooks'
 import { useAuthStore } from '@/store'
 import { Search, Image, Video, Mic, FlaskConical, Bookmark, GitBranch, Sparkles } from 'lucide-react'
 import clsx from 'clsx'
+import { isCidCoreVisibleWorkflowCategory } from '@/config/cidCoreScope'
 
 const categoryIcons: Record<string, typeof Image> = {
   still: Image,
@@ -26,13 +27,14 @@ export default function WorkflowsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   const filteredWorkflows = workflows?.filter(w => {
+    if (!isCidCoreVisibleWorkflowCategory(w.category)) return false
     const matchesSearch = w.name.toLowerCase().includes(search.toLowerCase()) ||
                           w.description.toLowerCase().includes(search.toLowerCase())
     const matchesCategory = !selectedCategory || w.category === selectedCategory
     return matchesSearch && matchesCategory
   }) || []
 
-  const categories = [...new Set(workflows?.map(w => w.category) || [])]
+  const categories = [...new Set((workflows?.map(w => w.category) || []).filter((category) => isCidCoreVisibleWorkflowCategory(category)))]
 
   return (
     <div className="space-y-8">
@@ -43,7 +45,7 @@ export default function WorkflowsPage() {
             <GitBranch className="w-6 h-6 text-amber-400" />
             Workflows
           </h1>
-          <p className="text-slate-400 mt-1">Explore AI generation pipelines</p>
+          <p className="text-slate-400 mt-1">Explora pipelines visibles dentro de CID Core</p>
         </div>
       </div>
 

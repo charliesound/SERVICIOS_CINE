@@ -10,6 +10,7 @@ import {
   publicLegalLinks,
   solutionsMarketingNotes,
 } from '@/data/solutionsContent'
+import { isCidCoreLabSolution } from '@/config/cidCoreScope'
 import { useSeo } from '@/hooks/useSeo'
 import { getPrimaryCIDTarget, useAuthStore } from '@/store'
 import { buildAbsoluteUrl, buildBreadcrumbStructuredData } from '@/utils/seo'
@@ -19,6 +20,7 @@ export default function SolutionDetailPage() {
   const solution = slug ? getSolutionBySlug(slug) : null
   const { isAuthenticated, user } = useAuthStore()
   const cidTarget = getPrimaryCIDTarget(user)
+  const isLabSolution = solution ? isCidCoreLabSolution(solution.slug) : false
 
   if (!solution) {
     return <Navigate to="/solutions" replace />
@@ -28,7 +30,7 @@ export default function SolutionDetailPage() {
     title: solution.title,
     description: solution.description,
     path: solution.path,
-    robots: 'index, follow',
+    robots: isLabSolution ? 'noindex, nofollow' : 'index, follow',
     keywords: [solution.title, 'modulo audiovisual', 'software para cine', 'pipeline audiovisual'],
     structuredData: [
       buildBreadcrumbStructuredData([
@@ -105,24 +107,35 @@ export default function SolutionDetailPage() {
 
       <main>
         <SolutionHero
-          eyebrow={solution.type}
+          eyebrow={isLabSolution ? 'Laboratorio interno / futuro producto' : solution.type}
           title={solution.title}
-          description={solution.heroDescription}
-          primaryLabel="Ver precios"
-          primaryTo="/pricing"
-          secondaryLabel="Ver CID"
-          secondaryTo="/solutions/cid"
+          description={isLabSolution ? 'Esta solucion se mantiene fuera del alcance comercial de CID Core. La ruta sigue viva para referencia interna y futura definicion de producto, pero no se ofrece hoy dentro del catalogo visible al cliente.' : solution.heroDescription}
+          primaryLabel={isLabSolution ? 'Explorar CID Core' : 'Ver precios'}
+          primaryTo={isLabSolution ? '/solutions/cid' : '/pricing'}
+          secondaryLabel={isLabSolution ? 'Volver a soluciones' : 'Ver CID'}
+          secondaryTo={isLabSolution ? '/solutions' : '/solutions/cid'}
           highlights={solution.bullets}
         />
 
         <section className="relative pb-24">
           <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
+            {isLabSolution ? (
+              <div className="mb-8 rounded-[1.4rem] border border-amber-300/20 bg-amber-300/10 px-5 py-4 text-sm leading-7 text-amber-50">
+                <p className="font-semibold text-amber-100">Fuera de CID Core</p>
+                <p className="mt-2 text-amber-100/80">
+                  Este modulo se conserva como laboratorio interno y futuro producto separado. Sus endpoints y materiales no se eliminan, pero no se comercializa dentro de CID Core.
+                </p>
+              </div>
+            ) : null}
+
             <PricingModelBlock
               title={solution.shortTitle}
               priceLines={[solution.priceLabel]}
               description={solution.description}
               bullets={[
-                solution.includedInCid ? 'Tambien puede quedar incluido dentro de CID.' : 'Puede formar parte del ecosistema AILinkCinema.',
+                isLabSolution
+                  ? 'Se mantiene como linea separada para roadmap futuro y laboratorio interno.'
+                  : solution.includedInCid ? 'Tambien puede quedar incluido dentro de CID.' : 'Puede formar parte del ecosistema AILinkCinema.',
                 ...solutionsMarketingNotes.slice(0, 2),
               ]}
             />
@@ -145,7 +158,9 @@ export default function SolutionDetailPage() {
                 <p className="solution-eyebrow text-cyan-200">Modelo comercial</p>
                 <h2 className="mt-3 text-3xl font-semibold text-white">Puede contratarse por separado o entrar dentro de un despliegue CID.</h2>
                 <p className="mt-4 text-sm leading-7 text-slate-300">
-                  AILinkCinema estructura la oferta para que el cliente pueda entrar por un modulo puntual y ampliar despues a una solucion mas completa si el proyecto lo necesita.
+                  {isLabSolution
+                    ? 'Esta superficie queda reservada para definicion futura de producto. La recomendacion actual es entrar por CID Core y tratar este laboratorio como una linea separada.'
+                    : 'AILinkCinema estructura la oferta para que el cliente pueda entrar por un modulo puntual y ampliar despues a una solucion mas completa si el proyecto lo necesita.'}
                 </p>
                 <div className="mt-6 flex gap-3 flex-wrap">
                   <Link to="/solutions" className="landing-cta-secondary inline-flex">Ver todas las soluciones</Link>

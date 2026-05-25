@@ -173,9 +173,9 @@ export default function ProjectDashboardPage() {
       {/* Commercial Description */}
       <section className="space-y-4">
         <p className="text-slate-400 max-w-lg">
-          CID acompaña el proyecto desde el guion hasta la venta y la postproducción, 
-          organizando análisis, presupuesto, financiación, pitch, distribución, CRM y 
-          premontaje DaVinci.
+          CID Core acompaña el proyecto desde el guion hasta la previs básica,
+          organizando análisis cinematográfico, storyboard, presupuesto,
+          financiación, dossier y documentación de producción.
         </p>
       </section>
 

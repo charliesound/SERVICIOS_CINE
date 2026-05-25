@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { Layers3, Sparkles } from 'lucide-react'
+import { isCidCoreVisiblePipelineMode } from '@/config/cidCoreScope'
 import type { PipelineMode } from '@/services/pipelineApi'
 
 interface PipelinePromptBoxProps {
@@ -23,6 +25,9 @@ const options: Array<{ value: PipelineMode; label: string; hint: string }> = [
   { value: 'pitch', label: 'Pitch', hint: 'Deck audiovisual' },
 ]
 
+const visibleOptions = options.filter((option) => isCidCoreVisiblePipelineMode(option.value))
+const fallbackOptions = visibleOptions.length > 0 ? visibleOptions : options
+
 export default function PipelinePromptBox({
   prompt,
   mode,
@@ -34,6 +39,16 @@ export default function PipelinePromptBox({
   onProjectIdChange,
   onGenerate,
 }: PipelinePromptBoxProps) {
+  const selectedMode = fallbackOptions.some((option) => option.value === mode)
+    ? mode
+    : fallbackOptions[0].value
+
+  useEffect(() => {
+    if (selectedMode !== mode) {
+      onModeChange(selectedMode)
+    }
+  }, [mode, onModeChange, selectedMode])
+
   return (
     <section className="card card-hover overflow-hidden border-amber-500/10 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.12),transparent_28%),linear-gradient(180deg,rgba(15,23,42,0.96),rgba(2,6,23,0.96))]">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -78,11 +93,11 @@ export default function PipelinePromptBox({
             </label>
             <select
               id="pipeline-mode"
-              value={mode}
+              value={selectedMode}
               onChange={(event) => onModeChange(event.target.value as PipelineMode)}
               className="input"
             >
-              {options.map((option) => (
+              {fallbackOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label} - {option.hint}
                 </option>

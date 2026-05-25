@@ -1,38 +1,36 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, LogOut, ShieldCheck, ArrowRight, ChevronRight, Film, FileSearch, Clapperboard, LayoutTemplate, Mic2, AudioWaveform, MonitorPlay, Sparkles, Waypoints } from 'lucide-react'
+import { LayoutDashboard, LogOut, ShieldCheck, ArrowRight, ChevronRight, Film, FileSearch, Clapperboard, LayoutTemplate, MonitorPlay, Sparkles, Waypoints } from 'lucide-react'
 import LandingAmbientScene from '@/components/landing/LandingAmbientScene'
 import { useSeo } from '@/hooks/useSeo'
 import { getPrimaryCIDTarget, useAuthStore } from '@/store'
 import { buildAbsoluteUrl, buildBreadcrumbStructuredData } from '@/utils/seo'
+import { CID_CORE_FUTURE_PRODUCTS } from '@/config/cidCoreScope'
 
 const pipelinePhases = [
   { name: 'Guion', icon: FileSearch, description: 'Desarrollo y analisis' },
   { name: 'Desglose', icon: FileSearch, description: 'Tecnico y produccion' },
   { name: 'Storyboard', icon: Clapperboard, description: 'Previz y visual' },
+  { name: 'Visual Bible', icon: Clapperboard, description: 'Look and tone' },
   { name: 'Planificacion', icon: LayoutTemplate, description: 'Rodaje y recursos' },
-  { name: 'Produccion', icon: Film, description: 'Rodaje y ejecucion' },
-  { name: 'Post', icon: AudioWaveform, description: 'Sonido y VFX' },
-  { name: 'Entrega', icon: MonitorPlay, description: 'Distribucion y delivery' },
+  { name: 'Presupuesto', icon: Film, description: 'Escenario de produccion' },
+  { name: 'Pitch', icon: MonitorPlay, description: 'Dossier y previs basica' },
 ]
 
 const departments = [
   { name: 'Desarrollo', icon: FileSearch, items: ['Guion', 'Analisis', 'Desglose'] },
   { name: 'Direccion y previsión', icon: Clapperboard, items: ['Storyboard', 'Referencias visuales', 'Planificacion creativa'] },
   { name: 'Produccion', icon: Film, items: ['Plan de rodaje', 'Recursos', 'Coordinacion', 'Logistica'] },
-  { name: 'Sonido y doblaje', icon: Mic2, items: ['Takes', 'Limpieza', 'Sincronia', 'QC', 'Entregables'] },
-  { name: 'Postproduccion', icon: Sparkles, items: ['Montaje', 'VFX', 'Finishing', 'Revision'] },
-  { name: 'Marketing y distribucion', icon: MonitorPlay, items: ['Teasers', 'Piezas promocionales', 'Materiales de entrega'] },
+  { name: 'Pitch y dossier', icon: MonitorPlay, items: ['Visual bible', 'Dossier', 'Presupuesto', 'Previs basica'] },
 ]
 
 const modules = [
   { name: 'Script & Breakdown AI', icon: FileSearch, description: 'Analisis y desglose tecnico' },
   { name: 'Storyboard AI Studio', icon: Clapperboard, description: 'Previz y referencias visuales' },
   { name: 'Production Planner AI', icon: LayoutTemplate, description: 'Planificacion de rodaje' },
-  { name: 'DubbingTake Studio AI', icon: Mic2, description: 'Gestion de doblaje y QC' },
-  { name: 'Sound Post AI', icon: AudioWaveform, description: 'Sonido y entregables' },
+  { name: 'Budget & Funding', icon: Film, description: 'Presupuesto, ayudas y viabilidad' },
   { name: 'Promo Video AI', icon: MonitorPlay, description: 'Piezas promocionales' },
-  { name: 'VFX & Enhancement AI', icon: Sparkles, description: 'VFX y apoyo de post' },
+  { name: 'Pitch & Visual Bible', icon: Sparkles, description: 'Dossier, lookbook y presentacion' },
 ]
 
 const useCases = [
@@ -51,7 +49,7 @@ export default function CIDProductPage() {
 
   useSeo({
     title: 'CID - El sistema para desarrollar y producir cine con IA',
-    description: 'CID conecta creatividad, planificacion y produccion en un flujo de trabajo real. Desde la idea inicial hasta la entrega final, todos los departamentos trabajan coordinados dentro de un mismo sistema.',
+    description: 'CID conecta guion, analisis cinematografico, storyboard, visual bible, presupuesto y pitch en un flujo de preproduccion real.',
     path: '/solutions/cid',
     robots: 'index, follow',
     keywords: ['CID cine inteligente digital', 'sistema produccion audiovisual', 'software IA cine', 'pipeline audiovisual completo'],
@@ -68,7 +66,7 @@ export default function CIDProductPage() {
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
         url: buildAbsoluteUrl('/solutions/cid'),
-        description: 'Sistema completo de produccion audiovisual que une creatividad, canvas colaborativo, IA y departamentos reales en un flujo conectado.',
+        description: 'Sistema de preproduccion cinematografica que une guion, analisis, storyboard, visual bible, presupuesto y pitch en un flujo conectado.',
         offers: {
           '@type': 'Offer',
           priceCurrency: 'EUR',
@@ -144,11 +142,11 @@ export default function CIDProductPage() {
               </h1>
 
               <p className="mt-6 max-w-3xl text-lg font-medium leading-8 text-slate-100 md:text-2xl md:leading-10">
-                CID conecta creatividad, planificacion y produccion en un flujo de trabajo real. Desde la idea inicial hasta la entrega final, todos los departamentos trabajan coordinados dentro de un mismo sistema.
+                CID conecta guion, analisis cinematografico, storyboard, visual bible, presupuesto y pitch en un flujo de trabajo de preproduccion real.
               </p>
 
               <div className="mt-5 inline-flex max-w-3xl rounded-[1.4rem] border border-cyan-300/15 bg-cyan-300/10 px-4 py-3 text-sm leading-7 text-cyan-50 backdrop-blur-xl md:text-base">
-                No es una herramienta creativa. Es un sistema de produccion audiovisual.
+                 No es una herramienta aislada. Es un sistema de preproduccion cinematografica.
               </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -175,7 +173,7 @@ export default function CIDProductPage() {
               <p className="editorial-kicker text-amber-300">El problema</p>
               <h2 className="mt-6 font-display text-5xl text-white md:text-6xl">La produccion audiovisual esta fragmentada</h2>
               <p className="mt-8 text-lg leading-9 text-slate-300 md:text-xl md:leading-10">
-                Guion, desglose, storyboard, planificacion, rodaje, sonido, postproduccion y entrega funcionan como piezas separadas. Esto genera perdidas de tiempo, errores de coordinacion y sobrecostes.
+                 Guion, desglose, storyboard, visual bible, presupuesto y pitch suelen vivir en herramientas separadas. Eso genera perdida de continuidad, retrasos y decisiones de preproduccion menos trazables.
               </p>
               <p className="mt-6 text-base leading-8 text-slate-400">
                 Las herramientas actuales no siempre resuelven el problema: algunas son creativas pero no productivas; otras son tecnicas pero desconectadas del proceso creativo.
@@ -191,7 +189,7 @@ export default function CIDProductPage() {
               <p className="editorial-kicker text-amber-300">La solucion</p>
               <h2 className="mt-6 font-display text-5xl text-white md:text-6xl">CID unifica el proceso completo</h2>
               <p className="mt-8 text-lg leading-9 text-slate-300 md:text-xl md:leading-10">
-                CID conecta creatividad, planificacion y produccion en un flujo de trabajo real. Desde la idea inicial hasta la entrega final, todos los departamentos trabajan coordinados dentro de un mismo sistema.
+                 CID unifica la preproduccion cinematografica: del guion a las secuencias, del storyboard al dossier, del presupuesto a una previs basica lista para presentar y alinear al equipo.
               </p>
             </div>
           </div>
@@ -258,7 +256,7 @@ export default function CIDProductPage() {
               <p className="editorial-kicker text-amber-300">Modulos incluidos</p>
               <h2 className="mt-4 font-display text-4xl text-white md:text-6xl">Herramientas especializadas dentro de CID</h2>
               <p className="mt-4 text-base leading-7 text-slate-400">
-                CID incluye modulos que pueden funcionar por separado o conectados dentro del sistema completo.
+                 CID Core agrupa solo los modulos que hoy sirven al flujo de preproduccion del cliente final.
               </p>
             </div>
 
@@ -275,7 +273,26 @@ export default function CIDProductPage() {
             </div>
 
             <div className="mt-8 rounded-[1.4rem] border border-cyan-300/15 bg-cyan-300/10 px-5 py-4 text-sm leading-7 text-cyan-50">
-              Cada herramienta esta diseñada para un departamento real y funciona de forma coordinada con el resto del sistema.
+               Los flujos de doblaje, sound post y restoration se mantienen fuera de CID Core como lineas separadas de producto.
+            </div>
+          </div>
+        </section>
+
+        <section className="relative py-20">
+          <div className="mx-auto max-w-7xl px-5 md:px-6 lg:px-8">
+            <div className="rounded-[1.7rem] border border-cyan-300/20 bg-cyan-300/8 p-8">
+              <p className="editorial-kicker text-cyan-200">Laboratorio y futuro producto</p>
+              <h2 className="mt-4 font-display text-3xl text-white md:text-5xl">Fuera del alcance de CID Core</h2>
+              <p className="mt-4 max-w-3xl text-base leading-8 text-cyan-50/80">
+                Doblaje, sound post y restoration se conservan como lineas separadas para laboratorio interno o futuro producto. Se mantienen las rutas y endpoints internos, pero no forman parte del recorrido comercial de CID Core.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                {CID_CORE_FUTURE_PRODUCTS.map((product) => (
+                  <span key={product} className="landing-pill border-cyan-300/20 text-cyan-100">
+                    {product}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -375,7 +392,7 @@ export default function CIDProductPage() {
                   <div className="mt-6 space-y-3">
                     <p className="text-sm leading-7 text-slate-300">Setup inicial desde 1.500 EUR</p>
                     <p className="text-sm leading-7 text-slate-300">Cuota mensual desde 299 EUR/mes</p>
-                    <p className="text-sm leading-7 text-slate-300">Incluye todos los modulos</p>
+                     <p className="text-sm leading-7 text-slate-300">Incluye el alcance comercial actual de CID Core</p>
                   </div>
                   <p className="mt-6 text-sm leading-7 text-slate-400">
                     Requiere demo y diagnostico previo para adaptar el flujo a la produccion real.
@@ -385,7 +402,7 @@ export default function CIDProductPage() {
                 <div className="solution-card">
                   <p className="solution-eyebrow text-cyan-200">Incluye</p>
                   <div className="mt-4 flex flex-wrap gap-2.5">
-                    {['Script & Breakdown AI', 'Storyboard AI Studio', 'Production Planner AI', 'DubbingTake Studio AI', 'Sound Post AI', 'Promo Video AI', 'VFX & Enhancement AI'].map((mod) => (
+                     {['Script & Breakdown AI', 'Storyboard AI Studio', 'Production Planner AI', 'Budget & Funding', 'Pitch & Visual Bible', 'Promo Video AI'].map((mod) => (
                       <span key={mod} className="landing-pill text-slate-200">
                         {mod}
                       </span>
@@ -402,10 +419,9 @@ export default function CIDProductPage() {
                   { name: 'Script & Breakdown AI', price: 'Desde 49 EUR/mes' },
                   { name: 'Storyboard AI Studio', price: 'Desde 59 EUR/mes' },
                   { name: 'Production Planner AI', price: 'Desde 69 EUR/mes' },
-                  { name: 'DubbingTake Studio AI', price: 'Desde 79 EUR/mes' },
-                  { name: 'Sound Post AI', price: 'Desde 79 EUR/mes' },
-                  { name: 'Promo Video AI', price: 'Desde 89 EUR/mes' },
-                  { name: 'VFX & Enhancement AI', price: 'Desde 99 EUR/mes' },
+                   { name: 'Budget & Funding', price: 'Incluido en CID Core' },
+                   { name: 'Promo Video AI', price: 'Desde 89 EUR/mes' },
+                   { name: 'Pitch & Visual Bible', price: 'Incluido en CID Core' },
                 ].map((mod) => (
                   <div key={mod.name} className="solution-card rounded-[1.7rem] p-6">
                     <h3 className="text-lg font-semibold text-white">{mod.name}</h3>
@@ -480,7 +496,7 @@ export default function CIDProductPage() {
           <div>
             <p className="font-display text-3xl text-white">AILinkCinema / CID</p>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
-              Sistema completo para desarrollo, produccion, post y entrega con todos los modulos conectados.
+               Sistema de preproduccion cinematografica para guion, analisis, storyboard, visual bible, presupuesto, pitch y previs basica.
             </p>
           </div>
 

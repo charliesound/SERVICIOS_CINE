@@ -6,7 +6,13 @@ from typing import Optional
 
 import yaml
 
+from core.config import get_settings
 from services.plan_limits_service import plan_limits_service
+
+
+CID_CORE_HIDDEN_MODULE_KEYS = {
+    "sound_post_ai",
+}
 
 
 class ModuleCatalogError(Exception):
@@ -186,7 +192,14 @@ class ModuleCatalogService:
         return list(self._modules.values())
 
     def get_visible_modules(self) -> list[ModuleDefinition]:
-        return [module for module in self.get_module_catalog() if module.visible_in_catalog]
+        modules = [module for module in self.get_module_catalog() if module.visible_in_catalog]
+        if get_settings().feature_cid_core_scope:
+            modules = [
+                module
+                for module in modules
+                if module.key not in CID_CORE_HIDDEN_MODULE_KEYS
+            ]
+        return modules
 
     def get_module_by_key(self, module_key: str) -> ModuleDefinition:
         module = self._modules.get(module_key)

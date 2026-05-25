@@ -145,6 +145,7 @@ class NLEExportRequest(BaseModel):
     destination_root_path: Optional[str] = None
     include_relink_report: bool = True
     timeline: Optional[AssemblyTimeline] = None
+    media_assets: list[EditorialMediaAsset] = Field(default_factory=list)
 
 
 class NLEExportResult(BaseModel):
@@ -152,6 +153,8 @@ class NLEExportResult(BaseModel):
     export_format: str
     file_name: str
     file_bytes_b64: str
+    artifact_path: Optional[str] = None
+    artifact_url: Optional[str] = None
     warnings: list[str] = Field(default_factory=list)
     manifest: dict[str, Any] = Field(default_factory=dict)
 

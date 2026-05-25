@@ -71,4 +71,64 @@ def test_resolve_route_returns_fcpxml_contract(test_app):
     body = response.json()
     assert body["nle_type"] == "resolve"
     assert body["export_format"] == "fcpxml"
-    assert body["manifest"]["status"] == "contract_ready"
+    assert body["manifest"]["status"] == "resolve_fcpxml_ready"
+
+
+def test_resolve_route_exports_real_fcpxml_with_relink_report(test_app):
+    payload = {
+        "nle_type": "resolve",
+        "target_platform": "linux",
+        "destination_root_path": "/mnt/editorial/export",
+        "media_assets": [
+            {
+                "id": "video-1",
+                "file_name": "A001_C001.mov",
+                "file_path": "/media/A001_C001.mov",
+                "asset_type": "video",
+                "duration_frames": 48,
+            },
+            {
+                "id": "audio-1",
+                "file_name": "S001_T001.wav",
+                "file_path": "/media/S001_T001.wav",
+                "asset_type": "audio",
+                "duration_frames": 48,
+            },
+        ],
+        "timeline": {
+            "id": "assembly-1",
+            "project_id": "project-1",
+            "name": "Assembly",
+            "fps": 24.0,
+            "total_duration_frames": 48,
+            "sequences": [
+                {
+                    "id": "seq-1",
+                    "name": "Scene 1",
+                    "scene_number": 1,
+                    "clips": [
+                        {
+                            "id": "clip-1",
+                            "take_id": "take-1-1-1",
+                            "clip_name": "S1_SH1_TK1",
+                            "source_media_asset_id": "video-1",
+                            "audio_media_asset_id": "audio-1",
+                            "timeline_in": 0,
+                            "timeline_out": 48,
+                            "duration_frames": 48,
+                            "fps": 24.0,
+                        }
+                    ],
+                }
+            ],
+        },
+    }
+
+    with TestClient(test_app) as client:
+        response = client.post("/api/projects/project-1/editorial/export/resolve", json=payload)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["manifest"]["validation"]["valid"] is True
+    assert body["manifest"]["relink_report"]["resolved_media_count"] == 2
+    assert body["artifact_path"] == "/mnt/editorial/export/Assembly_assembly.fcpxml"

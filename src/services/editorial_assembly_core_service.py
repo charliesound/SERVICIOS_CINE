@@ -148,10 +148,16 @@ class EditorialAssemblyCoreService:
                 )
             )
             if audio_asset:
+                timecode_offset_frames = self._timecode_offset_frames(
+                    camera_asset.start_timecode if camera_asset else "00:00:00:00",
+                    sound_report.timecode_start,
+                    camera_report.fps,
+                )
                 sync_candidates.append(
                     SyncCandidate(
                         audio_asset_id=audio_asset.id,
                         audio_filename=audio_asset.file_name,
+                        timecode_offset_frames=timecode_offset_frames,
                         sync_confidence=0.9 if camera_asset else 0.65,
                         sync_method="scene_take_report_match",
                     )
@@ -187,6 +193,7 @@ class EditorialAssemblyCoreService:
             camera_asset = assets_by_id.get(decision.camera_asset_id)
             if camera_asset is None:
                 continue
+            audio_asset = assets_by_id.get(decision.sound_asset_id) if decision.sound_asset_id else None
             duration = camera_asset.duration_frames or max(1, int((camera_asset.fps or fps) * 4))
             clip = AssemblyClip(
                 id=f"clip-{decision.take_id}",
@@ -199,6 +206,12 @@ class EditorialAssemblyCoreService:
                 duration_frames=duration,
                 fps=camera_asset.fps or fps,
                 start_tc=camera_asset.start_timecode,
+                timecode_offset_frames=self._timecode_offset_frames(
+                    camera_asset.start_timecode,
+                    audio_asset.start_timecode if audio_asset else None,
+                    camera_asset.fps or fps,
+                ),
+                assigned_tracks=self._assigned_tracks(audio_asset),
             )
             sequences.setdefault(decision.scene_number, []).append(clip)
             cursor += duration
@@ -331,6 +344,29 @@ class EditorialAssemblyCoreService:
         if director_note and director_note.is_preferred:
             score += 0.15
         return min(score, 1.0)
+
+    def _timecode_offset_frames(self, video_tc: str | None, audio_tc: str | None, fps: float) -> int:
+        if not video_tc or not audio_tc:
+            return 0
+        return self._timecode_to_frames(audio_tc, fps) - self._timecode_to_frames(video_tc, fps)
+
+    def _timecode_to_frames(self, timecode: str, fps: float) -> int:
+        parts = timecode.split(":")
+        if len(parts) != 4:
+            return 0
+        try:
+            hours, minutes, seconds, frames = [int(part) for part in parts]
+        except ValueError:
+            return 0
+        fps_int = max(1, int(round(fps or 24.0)))
+        return ((hours * 3600) + (minutes * 60) + seconds) * fps_int + frames
+
+    def _assigned_tracks(self, audio_asset: EditorialMediaAsset | None) -> list[str]:
+        if audio_asset is None:
+            return ["V1"]
+        channels = max(1, int(audio_asset.channels or 1))
+        audio_tracks = [f"A{index}" for index in range(1, min(channels, 8) + 1)]
+        return ["V1", *audio_tracks]
 
     def _recommended_reason(
         self,

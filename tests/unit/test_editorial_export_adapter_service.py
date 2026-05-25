@@ -23,6 +23,7 @@ def _timeline():
         take_id="take-1-1-1",
         clip_name="S1_SH1_TK1",
         source_media_asset_id="video-1",
+        audio_media_asset_id="audio-1",
         duration_frames=48,
         timeline_out=48,
     )
@@ -47,18 +48,41 @@ def test_adapters_exist_and_resolve_is_primary():
 
 
 def test_resolve_adapter_exports_fcpxml():
-    from schemas.editorial_assembly_schema import NLEExportRequest
+    from schemas.editorial_assembly_schema import EditorialMediaAsset, NLEExportRequest
     from services.editorial_export_adapter_service import editorial_export_adapter_service
+    from services.fcpxml_validation_service import fcpxml_validation_service
 
     result = editorial_export_adapter_service.export(
-        NLEExportRequest(nle_type="resolve"),
+        NLEExportRequest(
+            nle_type="resolve",
+            target_platform="linux",
+            destination_root_path="/mnt/editorial/export",
+            media_assets=[
+                EditorialMediaAsset(
+                    id="video-1",
+                    file_name="A001_C001.mov",
+                    file_path="/media/A001_C001.mov",
+                    asset_type="video",
+                ),
+                EditorialMediaAsset(
+                    id="audio-1",
+                    file_name="S001_T001.wav",
+                    file_path="/media/S001_T001.wav",
+                    asset_type="audio",
+                ),
+            ],
+        ),
         _timeline(),
     )
 
     payload = base64.b64decode(result.file_bytes_b64)
     assert result.export_format == "fcpxml"
     assert b"<fcpxml" in payload
-    assert result.manifest["status"] == "contract_ready"
+    assert fcpxml_validation_service.validate(payload)["valid"] is True
+    assert result.manifest["status"] == "resolve_fcpxml_ready"
+    assert result.manifest["validation"]["valid"] is True
+    assert result.manifest["relink_report"]["resolved_media_count"] == 2
+    assert result.artifact_path == "/mnt/editorial/export/Assembly_assembly.fcpxml"
 
 
 def test_premiere_and_avid_are_controlled_stubs():

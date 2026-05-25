@@ -102,3 +102,69 @@ def test_build_neutral_assembly_and_relink_report():
     assert report.resolved_media_count == 1
     assert report.path_mappings["/source/A001_C001.mov"] == "/dest/A001_C001.mov"
     assert missing[0].role == "audio"
+
+
+def test_build_neutral_assembly_orders_clips_and_sets_dual_system_tracks():
+    from schemas.editorial_assembly_schema import EditorialMediaAsset, TakeDecision
+    from services.editorial_assembly_core_service import editorial_assembly_core_service
+
+    assets = [
+        EditorialMediaAsset(
+            id="video-2",
+            file_name="A001_C002.mov",
+            file_path="/source/A001_C002.mov",
+            asset_type="video",
+            duration_frames=24,
+            start_timecode="01:00:00:00",
+        ),
+        EditorialMediaAsset(
+            id="video-1",
+            file_name="A001_C001.mov",
+            file_path="/source/A001_C001.mov",
+            asset_type="video",
+            duration_frames=24,
+            start_timecode="01:00:10:00",
+        ),
+        EditorialMediaAsset(
+            id="audio-1",
+            file_name="S001_T001.wav",
+            file_path="/source/S001_T001.wav",
+            asset_type="audio",
+            channels=2,
+            start_timecode="01:00:10:12",
+        ),
+    ]
+    decisions = [
+        TakeDecision(
+            take_id="take-2-1-1",
+            scene_number=2,
+            shot_number=1,
+            take_number=1,
+            score=0.9,
+            is_recommended=True,
+            camera_asset_id="video-2",
+        ),
+        TakeDecision(
+            take_id="take-1-1-1",
+            scene_number=1,
+            shot_number=1,
+            take_number=1,
+            score=0.9,
+            is_recommended=True,
+            camera_asset_id="video-1",
+            sound_asset_id="audio-1",
+        ),
+    ]
+
+    timeline = editorial_assembly_core_service.build_neutral_assembly(
+        project_id="project-1",
+        take_decisions=decisions,
+        media_assets=assets,
+    )
+
+    first_clip = timeline.sequences[0].clips[0]
+    assert [sequence.scene_number for sequence in timeline.sequences] == [1, 2]
+    assert first_clip.clip_name == "S1_SH1_TK1"
+    assert first_clip.audio_media_asset_id == "audio-1"
+    assert first_clip.timecode_offset_frames == 12
+    assert first_clip.assigned_tracks == ["V1", "A1", "A2"]

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 import json
 import os
 import sys
@@ -122,8 +124,7 @@ class TestExtractVisualBibleMetadata:
 
 
 class TestPersistSchedulerSuccessAssetsMergesVisualBible:
-    @pytest.mark.asyncio
-    async def test_asset_metadata_contains_visual_bible(self):
+    def test_asset_metadata_contains_visual_bible(self):
         from services.job_tracking_service import JobTrackingService
 
         svc = JobTrackingService()
@@ -151,6 +152,19 @@ class TestPersistSchedulerSuccessAssetsMergesVisualBible:
             "visual_bible_applied": True,
             "visual_bible_id": "vb-integration-1",
             "visual_bible_preset": "noir_classic",
+            "prompt": "grounded prompt",
+            "negative_prompt": "no watermark",
+            "checkpoint": "Realistic_Vision_V2.0.safetensors",
+            "seed": 123,
+            "steps": 20,
+            "cfg": 7.0,
+            "sampler_name": "euler",
+            "scheduler": "normal",
+            "width": 1024,
+            "height": 576,
+            "source_scene_heading": "INT. CASA ABANDONADA - NOCHE",
+            "source_action_summary": "Marta enters with a flashlight.",
+            "source_dialogue_summary": "MARTA: ¿Hay alguien ahí?",
         }
 
         with (
@@ -159,14 +173,14 @@ class TestPersistSchedulerSuccessAssetsMergesVisualBible:
             patch.object(svc, "_create_thumbnail_webp", return_value={}),
             patch.object(svc, "upsert_job_asset", new_callable=AsyncMock) as mock_upsert,
         ):
-            assets = await svc.persist_scheduler_success_assets(
+            assets = asyncio.run(svc.persist_scheduler_success_assets(
                 db,
                 job_id="job-1",
                 prompt_id="prompt-1",
                 backend_base_url="http://backend",
                 history_entry=history_entry,
                 source_metadata=source_metadata,
-            )
+            ))
 
         mock_upsert.assert_awaited_once()
         _call_kwargs = mock_upsert.call_args.kwargs
@@ -177,11 +191,15 @@ class TestPersistSchedulerSuccessAssetsMergesVisualBible:
         assert meta["visual_bible"]["visual_bible_id"] == "vb-integration-1"
         assert meta["visual_bible"]["visual_bible_preset"] == "noir_classic"
         assert meta["visual_bible"]["source"] == "render_job_metadata"
+        assert meta["prompt"] == "grounded prompt"
+        assert meta["seed"] == 123
+        assert meta["width"] == 1024
+        assert meta["height"] == 576
+        assert meta["source_scene_heading"] == "INT. CASA ABANDONADA - NOCHE"
         assert meta["prompt_id"] == "prompt-1"
         assert meta["node_id"] == "node_1"
 
-    @pytest.mark.asyncio
-    async def test_no_visual_bible_does_not_add_key(self):
+    def test_no_visual_bible_does_not_add_key(self):
         from services.job_tracking_service import JobTrackingService
 
         svc = JobTrackingService()
@@ -209,22 +227,21 @@ class TestPersistSchedulerSuccessAssetsMergesVisualBible:
             patch.object(svc, "_create_thumbnail_webp", return_value={}),
             patch.object(svc, "upsert_job_asset", new_callable=AsyncMock) as mock_upsert,
         ):
-            await svc.persist_scheduler_success_assets(
+            asyncio.run(svc.persist_scheduler_success_assets(
                 db,
                 job_id="job-1",
                 prompt_id="prompt-1",
                 backend_base_url="http://backend",
                 history_entry=history_entry,
                 source_metadata={"storyboard_shot_id": "shot-1"},
-            )
+            ))
 
         mock_upsert.assert_awaited_once()
         _call_kwargs = mock_upsert.call_args.kwargs
         meta = _call_kwargs["metadata_json"]
         assert "visual_bible" not in meta
 
-    @pytest.mark.asyncio
-    async def test_non_storyboard_job_no_visual_bible(self):
+    def test_non_storyboard_job_no_visual_bible(self):
         from services.job_tracking_service import JobTrackingService
 
         svc = JobTrackingService()
@@ -252,14 +269,14 @@ class TestPersistSchedulerSuccessAssetsMergesVisualBible:
             patch.object(svc, "_create_thumbnail_webp", return_value={}),
             patch.object(svc, "upsert_job_asset", new_callable=AsyncMock) as mock_upsert,
         ):
-            await svc.persist_scheduler_success_assets(
+            asyncio.run(svc.persist_scheduler_success_assets(
                 db,
                 job_id="job-1",
                 prompt_id="prompt-1",
                 backend_base_url="http://backend",
                 history_entry=history_entry,
                 source_metadata=None,
-            )
+            ))
 
         mock_upsert.assert_awaited_once()
         _call_kwargs = mock_upsert.call_args.kwargs

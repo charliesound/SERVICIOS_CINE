@@ -54,6 +54,45 @@ def test_hand_drawn_storyboard_render_payload_not_using_realistic_preset() -> No
     assert "photorealistic" in payload["negative_prompt"].lower()
 
 
+def test_render_payload_grounds_visual_context_from_scene() -> None:
+    service = StoryboardService()
+    payload = service._build_render_prompt_payload(
+        project=SimpleNamespace(id="proj-1", name="Project", description=""),
+        scene={
+            "heading": "INT. CASA ABANDONADA - NOCHE",
+            "int_ext": "INT",
+            "location": "CASA ABANDONADA",
+            "time_of_day": "NOCHE",
+            "action_blocks": [
+                "MARTA entra con una linterna.",
+                "La casa está en silencio.",
+                "El suelo cruje bajo sus pies.",
+                "Una sombra cruza al fondo del pasillo.",
+                "Marta se queda quieta.",
+            ],
+            "dialogue_blocks": [{"character": "MARTA", "text": "¿Hay alguien ahí?"}],
+            "characters_detected": ["MARTA"],
+            "props": ["linterna"],
+            "visual_anchors": ["abandoned hallway", "flashlight beam"],
+            "emotional_tone": "silent tense",
+        },
+        shot_payload={"shot_type": "MS", "description": "Marta entra con una linterna.", "metadata_json": {"atmosphere": "silent tense", "shot_objective": "advance_story_information"}},
+        style_preset="hand_drawn_storyboard",
+        shot_id="shot-1",
+        scene_number=1,
+    )
+    prompt = payload["prompt"].lower()
+    assert "abandoned" in prompt
+    assert "interior at night" in prompt
+    assert "marta holding a flashlight" in prompt
+    assert "medium shot" in prompt
+    assert "silent tense atmosphere" in prompt
+    assert "creaking floorboards" in prompt
+    assert "shadow crossing" in prompt
+    assert "freezes in place" in prompt
+    assert "hand drawn storyboard style" in prompt
+
+
 def test_cinematic_realistic_keeps_legacy_behavior() -> None:
     service = StoryboardService()
     payload = service._build_render_prompt_payload(

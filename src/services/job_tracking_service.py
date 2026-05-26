@@ -480,6 +480,40 @@ class JobTrackingService:
                 meta["workflow_fallback_report"] = fallback_str
         return meta
 
+    @staticmethod
+    def _extract_render_prompt_metadata(source_metadata: Any) -> dict[str, Any]:
+        if not source_metadata or not isinstance(source_metadata, dict):
+            return {}
+        keys = (
+            "prompt",
+            "negative_prompt",
+            "checkpoint",
+            "width",
+            "height",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "seed",
+            "model_family",
+            "style_preset",
+            "storyboard_style_preset",
+            "scene_heading",
+            "source_scene_heading",
+            "source_action_summary",
+            "source_dialogue_summary",
+            "shot_objective",
+            "atmosphere",
+            "location",
+            "time_of_day",
+            "int_ext",
+        )
+        meta: dict[str, Any] = {}
+        for key in keys:
+            if source_metadata.get(key) is not None:
+                meta[key] = source_metadata.get(key)
+        return meta
+
     async def persist_scheduler_success_assets(
         self,
         db: AsyncSession,
@@ -575,6 +609,9 @@ class JobTrackingService:
                     wp_meta = self._extract_workflow_profile_metadata(source_metadata)
                     if wp_meta:
                         metadata_json.update(wp_meta)
+                    render_meta = self._extract_render_prompt_metadata(source_metadata)
+                    if render_meta:
+                        metadata_json.update(render_meta)
 
                     asset = await self.upsert_job_asset(
                         db,

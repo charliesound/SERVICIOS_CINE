@@ -770,6 +770,25 @@ class StoryboardService:
                         },
                         "missing_nodes": [],
                         "workflow_key": "still_storyboard_frame",
+                        "prompt": prompt_payload.get("prompt"),
+                        "negative_prompt": prompt_payload.get("negative_prompt"),
+                        "checkpoint": prompt_payload.get("checkpoint"),
+                        "width": prompt_payload.get("width"),
+                        "height": prompt_payload.get("height"),
+                        "steps": prompt_payload.get("steps"),
+                        "cfg": prompt_payload.get("cfg"),
+                        "sampler_name": prompt_payload.get("sampler_name"),
+                        "scheduler": prompt_payload.get("scheduler"),
+                        "seed": prompt_payload.get("seed"),
+                        "scene_heading": prompt_payload.get("scene_heading"),
+                        "source_scene_heading": prompt_payload.get("source_scene_heading"),
+                        "source_action_summary": prompt_payload.get("source_action_summary"),
+                        "source_dialogue_summary": prompt_payload.get("source_dialogue_summary"),
+                        "shot_objective": prompt_payload.get("shot_objective"),
+                        "atmosphere": prompt_payload.get("atmosphere"),
+                        "location": prompt_payload.get("location"),
+                        "time_of_day": prompt_payload.get("time_of_day"),
+                        "int_ext": prompt_payload.get("int_ext"),
                     },
                 )
                 if response.status.value == "queued" and queue_item is not None:
@@ -821,6 +840,24 @@ class StoryboardService:
                                 meta = {}
                         meta["render_job_id"] = rj["job_id"]
                         meta["render_status"] = "render_pending"
+                        meta["workflow_key"] = "still_storyboard_frame"
+                        meta["workflow_profile_requested"] = profile_info["workflow_profile_requested"]
+                        meta["workflow_profile_executed"] = profile_info["workflow_profile_requested"]
+                        meta["positive_prompt"] = prompt_payload.get("prompt")
+                        meta["negative_prompt"] = prompt_payload.get("negative_prompt")
+                        meta["checkpoint"] = prompt_payload.get("checkpoint")
+                        meta["width"] = prompt_payload.get("width")
+                        meta["height"] = prompt_payload.get("height")
+                        meta["steps"] = prompt_payload.get("steps")
+                        meta["cfg"] = prompt_payload.get("cfg")
+                        meta["sampler_name"] = prompt_payload.get("sampler_name")
+                        meta["scheduler"] = prompt_payload.get("scheduler")
+                        meta["seed"] = prompt_payload.get("seed")
+                        meta["source_scene_heading"] = prompt_payload.get("source_scene_heading")
+                        meta["source_action_summary"] = prompt_payload.get("source_action_summary")
+                        meta["source_dialogue_summary"] = prompt_payload.get("source_dialogue_summary")
+                        meta["shot_objective"] = prompt_payload.get("shot_objective")
+                        meta["atmosphere"] = prompt_payload.get("atmosphere")
                         shot.metadata_json = json.dumps(meta, ensure_ascii=False, default=str)
 
                 await db.commit()
@@ -1407,6 +1444,86 @@ class StoryboardService:
             return excerpt
         return excerpt[: max_length - 1].rstrip() + "..."
 
+    def _scene_dialogue_summary(self, scene: dict[str, Any], *, max_length: int = 180) -> str:
+        dialogue_lines = self._dialogue_lines(scene)
+        if not dialogue_lines:
+            return ""
+        summary = " ".join(dialogue_lines[:2]).strip()
+        if len(summary) <= max_length:
+            return summary
+        return summary[: max_length - 1].rstrip() + "..."
+
+    def _shot_type_prompt_label(self, shot_type: str) -> str:
+        mapping = {
+            "MS": "medium shot",
+            "CU": "close-up",
+            "ECU": "extreme close-up",
+            "WS": "wide shot",
+            "LS": "long shot",
+            "OTS": "over-the-shoulder shot",
+            "POV": "point of view shot",
+            "TRACKING": "tracking shot",
+        }
+        return mapping.get(shot_type.upper(), f"{shot_type.lower()} shot")
+
+    def _build_grounded_render_fragments(
+        self,
+        *,
+        location: str,
+        int_ext: str,
+        time_of_day: str,
+        main_character: str,
+        shot_type: str,
+        action_line: str,
+        script_excerpt: str,
+        shot_objective: str,
+        atmosphere: str,
+        style_preset: str,
+        visual_elements: list[str],
+    ) -> list[str]:
+        combined = f"{action_line} {script_excerpt}".lower()
+        normalized_time = {
+            "NOCHE": "night",
+            "NIGHT": "night",
+            "DIA": "day",
+            "DÍA": "day",
+            "DAY": "day",
+            "TARDE": "afternoon",
+        }.get(time_of_day.upper(), time_of_day.lower())
+        spatial_context = location.lower()
+        if int_ext == "INT":
+            spatial_context = f"{spatial_context} interior"
+        elif int_ext == "EXT":
+            spatial_context = f"{spatial_context} exterior"
+
+        fragments: list[str] = [
+            "cinematic storyboard frame",
+            self._shot_type_prompt_label(shot_type),
+            f"{spatial_context} at {normalized_time}",
+            f"{main_character} as the primary visual subject",
+        ]
+        if any(token in combined for token in ("linterna", "flashlight")):
+            fragments.append(f"{main_character} holding a flashlight")
+        if any(token in combined for token in ("silencio", "silent", "quiet")):
+            fragments.append("silent tense atmosphere")
+        elif atmosphere:
+            fragments.append(f"{atmosphere} atmosphere")
+        if any(token in combined for token in ("cruje", "creaking", "floor")):
+            fragments.append("creaking floorboards")
+        if "sombra" in combined and any(token in combined for token in ("pasillo", "hallway", "fondo")):
+            fragments.append("a shadow crossing at the far end of the hallway")
+        elif "shadow" in combined:
+            fragments.append("a shadow crossing in the background")
+        if any(token in combined for token in ("quieta", "freeze", "freezes", "becomes still")):
+            fragments.append(f"{main_character} freezes in place")
+        if visual_elements:
+            fragments.append(", ".join(self._normalize_text_list(visual_elements[:3])))
+        fragments.append(f"frame designed to {shot_objective.replace('_', ' ')}")
+        if style_preset:
+            readable_style = style_preset.replace('_', ' ')
+            fragments.append(f"{readable_style} style" if readable_style.endswith("storyboard") else f"{readable_style} storyboard style")
+        return self._normalize_text_list(fragments)
+
     def _build_enriched_negative_prompt(self, base_negative: str | None) -> str:
         tokens = self._normalize_text_list(
             [
@@ -1919,12 +2036,44 @@ class StoryboardService:
         elif not isinstance(metadata_payload, dict):
             metadata_payload = {}
         scene_heading = scene.get("heading") or "Scene"
+        int_ext = str(scene.get("int_ext") or scene.get("scene_type") or "").strip().upper()
         location = scene.get("location") or "unknown location"
         time_of_day = scene.get("time_of_day") or "unspecified time"
         shot_type = shot_payload.get("shot_type") or "MS"
         style_cfg = self.build_storyboard_visual_style_prompt(style_preset)
         tone = shot_payload.get("visual_style") or style_cfg["positive_style_prompt"]
         project_context = str(project.description or "").strip()
+        action_line = str(
+            shot_payload.get("description")
+            or shot_payload.get("narrative_text")
+            or scene.get("action_summary")
+            or ""
+        ).strip()
+        script_excerpt = self._scene_script_excerpt(scene)
+        if not action_line:
+            action_line = script_excerpt or scene_heading
+        dialogue_summary = self._scene_dialogue_summary(scene)
+        shot_objective = str(
+            metadata_payload.get("shot_objective")
+            or shot_payload.get("shot_plan_reason")
+            or scene.get("dramatic_objective")
+            or "advance story information"
+        ).strip()
+        atmosphere = str(
+            metadata_payload.get("atmosphere")
+            or shot_payload.get("visual_style")
+            or scene.get("emotional_tone")
+            or "cinematic tension"
+        ).strip()
+        characters = self._normalize_text_list(
+            list(scene.get("characters_detected") or []) + list(scene.get("characters") or [])
+        )
+        main_character = ", ".join(characters[:1]) if characters else "main character"
+        visual_elements = self._normalize_text_list(
+            list(scene.get("visual_anchors") or [])
+            + list(scene.get("props") or [])
+            + [str(metadata_payload.get("composition_notes") or "")]
+        )
         primary_prompt = (
             metadata_payload.get("positive_prompt")
             or shot_payload.get("positive_prompt")
@@ -1933,15 +2082,30 @@ class StoryboardService:
             or shot_payload.get("description")
             or scene_heading
         )
+        grounded_fragments = self._build_grounded_render_fragments(
+            location=str(location),
+            int_ext=int_ext,
+            time_of_day=str(time_of_day),
+            main_character=main_character,
+            shot_type=str(shot_type),
+            action_line=action_line,
+            script_excerpt=script_excerpt,
+            shot_objective=shot_objective,
+            atmosphere=atmosphere,
+            style_preset=style_preset,
+            visual_elements=visual_elements,
+        )
         prompt_parts = [
             tone,
-            f"{shot_type} shot",
-            primary_prompt,
+            ", ".join(grounded_fragments),
             f"Scene heading: {scene_heading}",
-            f"Location: {location}",
-            f"Time of day: {time_of_day}",
+            f"Action context: {action_line}",
             f"Project: {project.name}",
         ]
+        if dialogue_summary:
+            prompt_parts.append(f"Dialogue context: {dialogue_summary}")
+        if primary_prompt and primary_prompt not in action_line:
+            prompt_parts.append(f"Additional prompt context: {primary_prompt}")
         if shot_payload.get("lens"):
             prompt_parts.append(f"Lens: {shot_payload['lens']}")
         if shot_payload.get("lighting"):
@@ -1980,6 +2144,16 @@ class StoryboardService:
             "scheduler": "normal",
             "filename_prefix": f"storyboard_{str(project.id)[:8]}_{int(scene_number or 0):03d}_{shot_id[:8]}",
             "style_preset": style_preset,
+            "scene_heading": scene_heading,
+            "source_scene_heading": scene_heading,
+            "source_action_summary": action_line,
+            "source_dialogue_summary": dialogue_summary,
+            "source_script_excerpt": script_excerpt,
+            "shot_objective": shot_objective,
+            "atmosphere": atmosphere,
+            "location": location,
+            "time_of_day": time_of_day,
+            "int_ext": int_ext,
             "workflow_profile_requested": metadata_payload.get("workflow_profile_requested") or "storyboard_safe",
             "storyboard_workflow_profile_info": metadata_payload.get("storyboard_workflow_profile_info") or {},
             "sheet_template": metadata_payload.get("sheet_template"),

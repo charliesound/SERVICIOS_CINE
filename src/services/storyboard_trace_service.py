@@ -334,11 +334,33 @@ class StoryboardTraceService:
             asset_meta.get("prompt_spec"),
             job_meta.get("prompt_spec"),
         )
+        job_prompt = self._first_dict(job_meta.get("prompt"))
         return PromptTrace(
             original_narrative=self._safe_text(getattr(shot, "narrative_text", None)),
+            source_scene_heading=self._safe_text(
+                shot_meta.get("source_scene_heading")
+                or shot_meta.get("scene_heading")
+                or asset_meta.get("source_scene_heading")
+                or asset_meta.get("scene_heading")
+                or job_prompt.get("source_scene_heading")
+                or job_prompt.get("scene_heading")
+            ),
+            source_action_summary=self._safe_text(
+                shot_meta.get("source_action_summary")
+                or shot_meta.get("script_excerpt_used")
+                or asset_meta.get("source_action_summary")
+                or job_prompt.get("source_action_summary")
+            ),
+            source_dialogue_summary=self._safe_text(
+                shot_meta.get("source_dialogue_summary")
+                or asset_meta.get("source_dialogue_summary")
+                or job_prompt.get("source_dialogue_summary")
+            ),
             positive_prompt_enriched=self._safe_text(
                 prompt_spec.get("positive_prompt")
                 or shot_meta.get("positive_prompt")
+                or asset_meta.get("prompt")
+                or job_prompt.get("prompt")
                 or shot_meta.get("prompt_safe_description_en")
                 or asset_meta.get("positive_prompt")
                 or job_meta.get("prompt")
@@ -346,6 +368,8 @@ class StoryboardTraceService:
             negative_prompt_enriched=self._safe_text(
                 prompt_spec.get("negative_prompt")
                 or shot_meta.get("negative_prompt")
+                or asset_meta.get("negative_prompt")
+                or job_prompt.get("negative_prompt")
                 or asset_meta.get("negative_prompt")
             ),
             prompt_summary=self._safe_text(shot_meta.get("prompt_summary") or asset_meta.get("prompt_summary")),
@@ -389,15 +413,18 @@ class StoryboardTraceService:
         job_meta: dict[str, Any],
     ) -> ModelTrace:
         prompt_spec = self._first_dict(shot_meta.get("prompt_spec"), asset_meta.get("prompt_spec"), job_meta.get("prompt_spec"))
+        job_prompt = self._first_dict(job_meta.get("prompt"))
         return ModelTrace(
-            model_family=self._safe_text(shot_meta.get("model_family") or asset_meta.get("model_family") or job_meta.get("model_family")),
-            checkpoint=self._safe_text(prompt_spec.get("checkpoint") or shot_meta.get("checkpoint") or asset_meta.get("checkpoint") or job_meta.get("checkpoint")),
+            model_family=self._safe_text(shot_meta.get("model_family") or asset_meta.get("model_family") or job_meta.get("model_family") or job_prompt.get("model_family")),
+            checkpoint=self._safe_text(prompt_spec.get("checkpoint") or shot_meta.get("checkpoint") or asset_meta.get("checkpoint") or job_meta.get("checkpoint") or job_prompt.get("checkpoint")),
             loras=self._safe_dict_list(prompt_spec.get("loras") or shot_meta.get("loras") or asset_meta.get("loras")),
-            sampler=self._safe_text(prompt_spec.get("sampler_name") or prompt_spec.get("sampler") or asset_meta.get("sampler_name") or shot_meta.get("sampler_name")),
-            scheduler=self._safe_text(prompt_spec.get("scheduler") or asset_meta.get("scheduler") or shot_meta.get("scheduler")),
-            steps=self._safe_int(prompt_spec.get("steps") or asset_meta.get("steps") or shot_meta.get("steps")),
-            cfg=self._safe_float(prompt_spec.get("cfg") or prompt_spec.get("cfg_scale") or asset_meta.get("cfg") or shot_meta.get("cfg")),
-            seed=self._safe_int(prompt_spec.get("seed") or asset_meta.get("seed") or shot_meta.get("seed")),
+            sampler=self._safe_text(prompt_spec.get("sampler_name") or prompt_spec.get("sampler") or asset_meta.get("sampler_name") or shot_meta.get("sampler_name") or job_prompt.get("sampler_name") or job_prompt.get("sampler")),
+            scheduler=self._safe_text(prompt_spec.get("scheduler") or asset_meta.get("scheduler") or shot_meta.get("scheduler") or job_prompt.get("scheduler")),
+            steps=self._safe_int(prompt_spec.get("steps") or asset_meta.get("steps") or shot_meta.get("steps") or job_prompt.get("steps")),
+            cfg=self._safe_float(prompt_spec.get("cfg") or prompt_spec.get("cfg_scale") or asset_meta.get("cfg") or shot_meta.get("cfg") or job_prompt.get("cfg")),
+            seed=self._safe_int(prompt_spec.get("seed") or asset_meta.get("seed") or shot_meta.get("seed") or job_prompt.get("seed")),
+            width=self._safe_int(asset_meta.get("width") or shot_meta.get("width") or job_prompt.get("width")),
+            height=self._safe_int(asset_meta.get("height") or shot_meta.get("height") or job_prompt.get("height")),
         )
 
     def _build_asset_trace(

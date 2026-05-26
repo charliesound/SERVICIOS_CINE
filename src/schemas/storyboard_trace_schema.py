@@ -8,6 +8,9 @@ from pydantic import BaseModel, Field
 
 class PromptTrace(BaseModel):
     original_narrative: str | None = None
+    source_scene_heading: str | None = None
+    source_action_summary: str | None = None
+    source_dialogue_summary: str | None = None
     positive_prompt_enriched: str | None = None
     negative_prompt_enriched: str | None = None
     prompt_summary: str | None = None
@@ -34,6 +37,8 @@ class ModelTrace(BaseModel):
     steps: int | None = None
     cfg: float | None = None
     seed: int | None = None
+    width: int | None = None
+    height: int | None = None
 
 
 class AssetTrace(BaseModel):

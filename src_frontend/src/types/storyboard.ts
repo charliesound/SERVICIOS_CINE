@@ -290,6 +290,9 @@ export interface DirtyShot extends StoryboardShot {
 
 export interface PromptTrace {
   original_narrative?: string | null
+  source_scene_heading?: string | null
+  source_action_summary?: string | null
+  source_dialogue_summary?: string | null
   positive_prompt_enriched?: string | null
   negative_prompt_enriched?: string | null
   prompt_summary?: string | null
@@ -316,6 +319,8 @@ export interface ModelTrace {
   steps?: number | null
   cfg?: number | null
   seed?: number | null
+  width?: number | null
+  height?: number | null
 }
 
 export interface AssetTrace {

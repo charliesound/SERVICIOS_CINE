@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import sys
@@ -111,6 +112,11 @@ def _objects():
         updated_at=now,
         metadata_json=json.dumps({
             "render_job_id": "render-job-1",
+            "source_scene_heading": "INT. CASA ABANDONADA - NOCHE",
+            "source_action_summary": "MARTA entra con una linterna. Una sombra cruza al fondo del pasillo.",
+            "source_dialogue_summary": "MARTA: ¿Hay alguien ahí?",
+            "width": 1024,
+            "height": 576,
             "prompt_spec": {
                 "positive_prompt": "cinematic corridor shot",
                 "negative_prompt": "watermark",
@@ -142,6 +148,16 @@ def _objects():
             "storage_path": "/mnt/private/frame.png",
             "storyboard_shot_id": "shot-1",
             "workflow_key": "still_storyboard_frame",
+            "prompt": "cinematic corridor shot",
+            "negative_prompt": "watermark",
+            "checkpoint": "Realistic_Vision_V2.0.safetensors",
+            "seed": 123,
+            "steps": 20,
+            "cfg": 7.0,
+            "sampler_name": "euler",
+            "scheduler": "normal",
+            "width": 1024,
+            "height": 576,
             "workflow_profile": {"requested": "storyboard_safe", "executed": "storyboard_safe"},
             "workflow_fallback_report": {"fallback_applied": False, "reason": "none"},
         }),
@@ -155,8 +171,7 @@ def _objects():
     return shot, asset, job, [previous, shot]
 
 
-@pytest.mark.asyncio
-async def test_shot_trace_returns_prompt_workflow_asset_and_version(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_shot_trace_returns_prompt_workflow_asset_and_version(monkeypatch: pytest.MonkeyPatch) -> None:
     shot, asset, job, versions = _objects()
     db = _TraceDb(shot=shot, asset=asset, job=job, versions=versions)
 
@@ -165,13 +180,18 @@ async def test_shot_trace_returns_prompt_workflow_asset_and_version(monkeypatch:
 
     monkeypatch.setattr("services.storyboard_trace_service.storyboard_service._get_project_for_tenant", fake_project)
 
-    trace = await storyboard_trace_service.get_shot_trace(db, "proj-1", "shot-1", _tenant())
+    trace = asyncio.run(storyboard_trace_service.get_shot_trace(db, "proj-1", "shot-1", _tenant()))
 
     assert trace.prompt_trace.positive_prompt_enriched == "cinematic corridor shot"
+    assert trace.prompt_trace.source_scene_heading == "INT. CASA ABANDONADA - NOCHE"
+    assert "linterna" in (trace.prompt_trace.source_action_summary or "").lower()
+    assert "marta" in (trace.prompt_trace.source_dialogue_summary or "").lower()
     assert trace.workflow_trace.workflow_key == "still_storyboard_frame"
     assert trace.model_trace.model_family == "sdxl"
     assert trace.model_trace.checkpoint == "checkpoint.safetensors"
     assert trace.model_trace.seed == 123
+    assert trace.model_trace.width == 1024
+    assert trace.model_trace.height == 576
     assert trace.render_job_id == "render-job-1"
     assert trace.asset_trace.media_asset_id == "asset-1"
     assert trace.version_trace.current_version == 2
@@ -182,8 +202,7 @@ async def test_shot_trace_returns_prompt_workflow_asset_and_version(monkeypatch:
     assert "storage_path" not in trace.model_dump_json()
 
 
-@pytest.mark.asyncio
-async def test_project_trace_summary_returns_metrics(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_project_trace_summary_returns_metrics(monkeypatch: pytest.MonkeyPatch) -> None:
     shot, asset, _job, _versions = _objects()
     db = _TraceDb(shot=shot, asset=asset)
 
@@ -192,7 +211,7 @@ async def test_project_trace_summary_returns_metrics(monkeypatch: pytest.MonkeyP
 
     monkeypatch.setattr("services.storyboard_trace_service.storyboard_service._get_project_for_tenant", fake_project)
 
-    summary = await storyboard_trace_service.get_project_trace_summary(db, "proj-1", _tenant())
+    summary = asyncio.run(storyboard_trace_service.get_project_trace_summary(db, "proj-1", _tenant()))
 
     assert summary.total_shots == 1
     assert summary.shots_with_prompt == 1
@@ -204,8 +223,7 @@ async def test_project_trace_summary_returns_metrics(monkeypatch: pytest.MonkeyP
     assert summary.checkpoints == ["checkpoint.safetensors"]
 
 
-@pytest.mark.asyncio
-async def test_asset_trace_inverse_finds_linked_shot(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_asset_trace_inverse_finds_linked_shot(monkeypatch: pytest.MonkeyPatch) -> None:
     shot, asset, job, versions = _objects()
     db = _TraceDb(shot=shot, asset=asset, job=job, versions=versions)
 
@@ -214,7 +232,7 @@ async def test_asset_trace_inverse_finds_linked_shot(monkeypatch: pytest.MonkeyP
 
     monkeypatch.setattr("services.storyboard_trace_service.storyboard_service._get_project_for_tenant", fake_project)
 
-    trace = await storyboard_trace_service.get_asset_trace(db, "proj-1", "asset-1", _tenant())
+    trace = asyncio.run(storyboard_trace_service.get_asset_trace(db, "proj-1", "asset-1", _tenant()))
 
     assert trace.shot_id == "shot-1"
     assert trace.asset_trace.media_asset_id == "asset-1"

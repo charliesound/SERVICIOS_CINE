@@ -125,11 +125,14 @@ function StoryboardTracePanelInner({ projectId, shotId, compact = false }: Story
           {!isTraceLoading && !traceError && trace && (
             <>
               <div className="space-y-1.5">
+                <p><span className="text-slate-500">Scene heading:</span> {traceValue(trace.prompt_trace?.source_scene_heading)}</p>
+                <p><span className="text-slate-500">Action:</span> {shortTraceValue(trace.prompt_trace?.source_action_summary)}</p>
+                <p><span className="text-slate-500">Dialogue:</span> {shortTraceValue(trace.prompt_trace?.source_dialogue_summary)}</p>
                 <p><span className="text-slate-500">Prompt:</span> {shortTraceValue(trace.prompt_trace?.positive_prompt_enriched || trace.prompt_trace?.original_narrative)}</p>
                 <p><span className="text-slate-500">Workflow:</span> {traceValue(trace.workflow_trace?.workflow_key)} · {traceValue(trace.workflow_trace?.workflow_profile_executed || trace.workflow_trace?.workflow_profile)}</p>
                 <p><span className="text-slate-500">Fallback:</span> {trace.workflow_trace?.fallback_applied ? traceValue(trace.workflow_trace?.fallback_reason) : 'No'}</p>
                 <p><span className="text-slate-500">Modelo:</span> {traceValue(trace.model_trace?.model_family)} · {traceValue(trace.model_trace?.checkpoint)}</p>
-                <p><span className="text-slate-500">Parámetros:</span> seed {traceValue(trace.model_trace?.seed)} · steps {traceValue(trace.model_trace?.steps)} · cfg {traceValue(trace.model_trace?.cfg)} · sampler {traceValue(trace.model_trace?.sampler)}</p>
+                <p><span className="text-slate-500">Parámetros:</span> seed {traceValue(trace.model_trace?.seed)} · steps {traceValue(trace.model_trace?.steps)} · cfg {traceValue(trace.model_trace?.cfg)} · sampler {traceValue(trace.model_trace?.sampler)} · scheduler {traceValue(trace.model_trace?.scheduler)} · {traceValue(trace.model_trace?.width)}x{traceValue(trace.model_trace?.height)}</p>
                 <p><span className="text-slate-500">Render job:</span> {traceValue(trace.render_job_id)}</p>
                 <p><span className="text-slate-500">Media asset:</span> {traceValue(trace.asset_trace?.media_asset_id)}</p>
                 <p><span className="text-slate-500">Versión:</span> v{traceValue(trace.version_trace?.current_version)} {trace.version_trace?.has_previous_versions ? '· hay indicios de versiones anteriores' : '· sin versiones anteriores detectadas'}</p>

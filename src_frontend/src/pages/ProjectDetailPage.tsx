@@ -16,6 +16,7 @@ import { ActionProgressPanel, type ActionProgressState } from '@/components/Acti
 import { AuthenticatedStoryboardShotImage } from '@/components/storyboard/AuthenticatedStoryboardShotImage'
 import { StoryboardSheetExportPanel } from '@/components/storyboard/StoryboardSheetExportPanel'
 import { StoryboardSequenceSelectorModal, type StoryboardSelectionValue } from '@/components/storyboard/StoryboardSequenceSelectorModal'
+import { StoryboardTracePanel } from '@/components/storyboard/StoryboardTracePanel'
 import type { ScriptUploadResult, StoryboardSceneCandidate, StoryboardSequence, StoryboardShot } from '@/types/storyboard'
 import ConceptArtDryRunPanel from '@/components/concept-art/ConceptArtDryRunPanel'
 import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/storyboardText'
@@ -1618,6 +1619,7 @@ export default function ProjectDetailPage() {
                             >
                               Ver imagen
                             </button>
+                            <StoryboardTracePanel projectId={projectId || ''} shotId={shot.shot_id} compact />
                           </div>
                         </div>
                       ))}

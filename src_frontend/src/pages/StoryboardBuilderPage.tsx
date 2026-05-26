@@ -9,6 +9,7 @@ import { StoryboardSequenceSelectorModal } from '@/components/storyboard/Storybo
 import type { StoryboardSelectionValue } from '@/components/storyboard/StoryboardSequenceSelectorModal'
 import DirectorFeedbackPanel from '@/components/storyboard/DirectorFeedbackPanel'
 import { StoryboardSheetExportPanel } from '@/components/storyboard/StoryboardSheetExportPanel'
+import { StoryboardTracePanel } from '@/components/storyboard/StoryboardTracePanel'
 import { ActionProgressPanel } from '@/components/ActionProgressPanel'
 import type { ActionProgressState } from '@/components/ActionProgressPanel'
 import type {
@@ -1348,6 +1349,7 @@ export default function StoryboardBuilderPage() {
                                 <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
                                 <p className="text-slate-200 line-clamp-3">{displayText}</p>
                                 <p><span className="text-slate-500">Validación:</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
+                                <StoryboardTracePanel projectId={projectId || shot.project_id} shotId={shot.id} compact />
                               </div>
                             </div>
                           )
@@ -1378,6 +1380,7 @@ export default function StoryboardBuilderPage() {
                               <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
                               <p className="text-slate-200 line-clamp-3">{displayText}</p>
                               <p><span className="text-slate-500">Validación:</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
+                              <StoryboardTracePanel projectId={projectId || shot.project_id} shotId={shot.id} compact />
                             </div>
                           </div>
                         )

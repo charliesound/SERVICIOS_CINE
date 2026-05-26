@@ -35,8 +35,8 @@ export default function LandingPage() {
   const exploreCidTarget = '/solutions/cid'
   const solutionsTarget = '/solutions'
   const requestDemoTarget = '/pricing'
-   const description =
-     'AILinkCinema: inteligencia artificial para preproduccion cinematografica. CID conecta guion, analisis, storyboard, visual bible, presupuesto, pitch y planificacion.'
+  const description =
+    'AILinkCinema: inteligencia artificial para preproduccion cinematografica. CID conecta guion, analisis, storyboard, visual bible, character bible, raccord visual, presupuesto, pitch y planificacion en un sistema con creditos GPU.'
 
   useSeo({
     title: 'Inteligencia artificial para preproduccion cinematografica',
@@ -48,10 +48,17 @@ export default function LandingPage() {
       'software audiovisual',
       'preproduccion cinematografica',
       'storyboard con ia',
-      'desglose de guion',
+      'analisis de guion con ia',
       'visual bible',
+      'character bible',
+      'biblia visual para cine',
+      'raccord visual',
+      'produccion audiovisual con inteligencia artificial',
       'presupuesto cinematografico',
       'pitch audiovisual',
+      'herramientas ia para productoras',
+      'pitching cinematografico',
+      'desglose de guion',
     ],
     structuredData: [
       {
@@ -78,7 +85,21 @@ export default function LandingPage() {
         operatingSystem: 'Web',
         url: buildAbsoluteUrl('/solutions/cid'),
         description:
-          'Plataforma premium para coordinar guion, analisis, storyboard, visual bible, presupuesto, pitch y planificacion dentro de un flujo de preproduccion cinematografica.',
+          'Sistema de preproduccion cinematografica con IA que convierte un guion en analisis, storyboard, biblia visual, Character Bible, control de raccord, dossier y materiales de pitching.',
+        offers: {
+          '@type': 'AggregateOffer',
+          priceCurrency: 'EUR',
+          lowPrice: '99',
+          highPrice: '3500',
+          offerCount: 5,
+          offers: [
+            { '@type': 'Offer', name: 'CID Starter', price: '99', priceCurrency: 'EUR' },
+            { '@type': 'Offer', name: 'CID Pro', price: '299', priceCurrency: 'EUR' },
+            { '@type': 'Offer', name: 'CID Studio', price: '799', priceCurrency: 'EUR' },
+            { '@type': 'Offer', name: 'CID Premium', price: '1490', priceCurrency: 'EUR' },
+            { '@type': 'Offer', name: 'CID Enterprise', price: '3500', priceCurrency: 'EUR' },
+          ],
+        },
       },
     ],
   })

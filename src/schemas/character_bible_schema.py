@@ -101,3 +101,61 @@ class CharacterBibleResolveResult(BaseModel):
     applied_reference_ids: list[str] = Field(default_factory=list)
     unresolved_props: list[str] = Field(default_factory=list)
     trace_metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class CharacterBibleEntryCreate(BaseModel):
+    character_id: str
+    character_name: str
+    approved_reference_asset_id: str | None = None
+    wardrobe_notes: str | None = None
+    hair_makeup_notes: str | None = None
+    key_props: list[str] = Field(default_factory=list)
+    continuity_rules: list[str] = Field(default_factory=list)
+    negative_constraints: list[str] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class CharacterBibleEntryUpdate(BaseModel):
+    character_name: str | None = None
+    approved_reference_asset_id: str | None = None
+    wardrobe_notes: str | None = None
+    hair_makeup_notes: str | None = None
+    key_props: list[str] | None = None
+    continuity_rules: list[str] | None = None
+    negative_constraints: list[str] | None = None
+    notes: str | None = None
+
+
+class LookVariantCreate(BaseModel):
+    look_id: str
+    look_name: str
+    narrative_phase: str | None = None
+    wardrobe_notes: str | None = None
+    hair_makeup_notes: str | None = None
+    key_props: list[str] = Field(default_factory=list)
+    continuity_rules: list[str] = Field(default_factory=list)
+    negative_constraints: list[str] = Field(default_factory=list)
+    scene_ids: list[str] = Field(default_factory=list)
+
+
+class ReferenceAssetCreate(BaseModel):
+    asset_id: str
+    asset_type: ApprovedAssetType
+    asset_api_url: str | None = None
+    asset_file_name: str | None = None
+    reference_id: str | None = None
+    description: str | None = None
+    is_primary: bool = False
+    sort_order: int = 0
+    notes: str | None = None
+
+
+class CharacterBibleListResponse(BaseModel):
+    entries: list[CharacterBibleEntry]
+    total: int
+
+
+class TraceResponse(BaseModel):
+    character_id: str
+    character_name: str
+    trace_metadata: dict[str, Any] = Field(default_factory=dict)

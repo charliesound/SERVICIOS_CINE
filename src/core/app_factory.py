@@ -293,9 +293,11 @@ def _register_routers(app: FastAPI, settings) -> None:
 
     from routes.project_visual_bible_routes import router as project_visual_bible_router
     from routes.storyboard_presentation_routes import router as storyboard_presentation_router
+    from routes.character_bible_routes import router as character_bible_router
 
     app.include_router(project_visual_bible_router, tags=["project-visual-bible"])
     app.include_router(storyboard_presentation_router, tags=["storyboard-presentation"])
+    app.include_router(character_bible_router, tags=["character-bible"])
 
     # ── ComfySearch / Solutions / Dubbing / App Registry ─────────────────
     from routes.comfysearch_routes import router as comfysearch_router

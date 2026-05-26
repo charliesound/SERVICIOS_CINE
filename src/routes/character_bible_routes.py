@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from dependencies.tenant_context import get_tenant_context, TenantContext
 from models.core import Project
-from models.storage import MediaAsset
+from models.storage import MediaAsset, MediaAssetStatus
 from schemas.character_bible_schema import (
     ApprovedReferenceAsset,
     CharacterBibleEntry,
@@ -116,16 +116,30 @@ async def add_reference(
     if any(p in payload.asset_id for p in ("/", "\\", "..")):
         raise HTTPException(status_code=400, detail="Invalid asset_id format")
 
-    # Validate that asset_id corresponds to an existing MediaAsset in this project
+    # Validate that asset_id corresponds to an existing active MediaAsset in this project
     result = await db.execute(
         select(MediaAsset).where(
             MediaAsset.id == payload.asset_id,
             MediaAsset.project_id == project_id,
             MediaAsset.organization_id == str(tenant.organization_id),
+            MediaAsset.status == MediaAssetStatus.INDEXED,
         )
     )
     media_asset = result.scalar_one_or_none()
     if not media_asset:
+        # Check if asset exists but is inactive to give a better message
+        inactive_check = await db.execute(
+            select(MediaAsset.id).where(
+                MediaAsset.id == payload.asset_id,
+                MediaAsset.project_id == project_id,
+                MediaAsset.organization_id == str(tenant.organization_id),
+            )
+        )
+        if inactive_check.scalar_one_or_none():
+            raise HTTPException(
+                status_code=400,
+                detail="media asset exists but is not active (status != indexed) in this project",
+            )
         raise HTTPException(
             status_code=400,
             detail="asset_id does not match any media asset in this project",

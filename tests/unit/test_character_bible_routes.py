@@ -47,21 +47,34 @@ class _FakeResult:
 
 class _FakeMediaAsset:
     """Minimal stub matching MediaAsset columns used by the route."""
-    def __init__(self, asset_id: str):
+    def __init__(self, asset_id: str, status: str = "indexed"):
         self.id = asset_id
         self.file_name = f"file_{asset_id}.png"
+        self.status = status
 
 
 class _FakeDb:
-    def __init__(self, project_exists: bool = True, media_asset_exists: bool = False):
+    def __init__(
+        self,
+        project_exists: bool = True,
+        media_asset_exists: bool = False,
+        media_asset_active: bool = True,
+    ):
         self.project_exists = project_exists
         self.media_asset_exists = media_asset_exists
+        self.media_asset_active = media_asset_active
 
     async def execute(self, stmt):
         sql_str = str(stmt)
         if "media_assets" in sql_str:
             if self.media_asset_exists:
-                return _FakeResult(row=_FakeMediaAsset(asset_id="asset_face_v2"))
+                if not self.media_asset_active and "status" in sql_str:
+                    # Inactive: query with status filter returns no match
+                    return _FakeResult(row=None)
+                if not self.media_asset_active:
+                    # Inactive: query without status filter returns inactive asset
+                    return _FakeResult(row=_FakeMediaAsset(asset_id="asset_face_v2", status="deleted"))
+                return _FakeResult(row=_FakeMediaAsset(asset_id="asset_face_v2", status="indexed"))
             return _FakeResult(row=None)
         if "projects" in sql_str and self.project_exists:
             return _FakeResult(row=object())
@@ -74,6 +87,10 @@ async def override_db():
 
 async def override_db_with_media():
     yield _FakeDb(project_exists=True, media_asset_exists=True)
+
+
+async def override_db_with_inactive_media():
+    yield _FakeDb(project_exists=True, media_asset_exists=True, media_asset_active=False)
 
 
 async def override_db_no_project():
@@ -226,6 +243,21 @@ class TestCharacterBibleRoutes:
         assert response.status_code == 400
         data = response.json()
         assert "media asset" in data["detail"].lower() or "asset_id" in data["detail"].lower()
+
+    def test_add_reference_inactive_media_asset(self, client):
+        app = client.app
+        app.dependency_overrides[get_db] = override_db_with_inactive_media
+        client.put(
+            "/api/projects/proj_test_01/character-bible/char_marta",
+            json={"character_id": "char_marta", "character_name": "Marta"},
+        )
+        response = client.post(
+            "/api/projects/proj_test_01/character-bible/char_marta/references",
+            json={"asset_id": "asset_face_v2", "asset_type": "face_sheet"},
+        )
+        assert response.status_code == 400
+        data = response.json()
+        assert "inactive" in data["detail"].lower() or "not active" in data["detail"].lower()
 
     def test_add_reference_empty_asset_id(self, client):
         app = client.app

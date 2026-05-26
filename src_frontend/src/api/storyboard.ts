@@ -20,6 +20,8 @@ import type {
   StoryboardScopeResponse,
   StoryboardSequence,
   StoryboardSequenceDetail,
+  StoryboardTraceRecord,
+  StoryboardTraceSummary,
 } from '@/types/storyboard'
 
 export const storyboardApi = {
@@ -108,6 +110,21 @@ export const storyboardApi = {
 
   getSequenceStoryboard: async (projectId: string, sequenceId: string): Promise<StoryboardSequenceDetail> => {
     const { data } = await api.get<StoryboardSequenceDetail>(`/projects/${projectId}/storyboard/sequences/${sequenceId}`)
+    return data
+  },
+
+  getShotTrace: async (projectId: string, shotId: string): Promise<StoryboardTraceRecord> => {
+    const { data } = await api.get<StoryboardTraceRecord>(`/projects/${projectId}/storyboard/shots/${shotId}/trace`)
+    return data
+  },
+
+  getProjectTraceSummary: async (projectId: string): Promise<StoryboardTraceSummary> => {
+    const { data } = await api.get<StoryboardTraceSummary>(`/projects/${projectId}/storyboard/trace`)
+    return data
+  },
+
+  getAssetTrace: async (projectId: string, assetId: string): Promise<StoryboardTraceRecord> => {
+    const { data } = await api.get<StoryboardTraceRecord>(`/projects/${projectId}/storyboard/assets/${assetId}/trace`)
     return data
   },
 

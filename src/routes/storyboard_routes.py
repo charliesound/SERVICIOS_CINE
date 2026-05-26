@@ -52,6 +52,7 @@ from schemas.cid_sequence_first_schema import (
     SequenceStoryboardPlan,
 )
 from schemas.storyboard_schema import StoryboardSequencePlanRequest, StoryboardSequencePlanResponse
+from schemas.storyboard_trace_schema import StoryboardTraceRecord, StoryboardTraceSummary
 from services.cid_script_to_prompt_pipeline_service import (
     analyze_full_script,
     prepare_sequence_storyboard,
@@ -65,6 +66,7 @@ from services.storyboard_export_service import storyboard_export_service
 from services.storyboard_frame_service import storyboard_frame_service
 from services.storyboard_layout_engine import storyboard_layout_engine
 from services.storyboard_pdf_export_service import storyboard_pdf_export_service
+from services.storyboard_trace_service import storyboard_trace_service
 
 
 router = APIRouter(
@@ -514,6 +516,49 @@ async def get_storyboard(
         scene_number=scene_number,
         version=version,
         shots=[StoryboardShotResponse.model_validate(shot, from_attributes=True) for shot in shots],
+    )
+
+
+@router.get("/{project_id}/storyboard/trace", response_model=StoryboardTraceSummary)
+async def get_storyboard_trace_summary(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> StoryboardTraceSummary:
+    return await storyboard_trace_service.get_project_trace_summary(
+        db,
+        project_id=project_id,
+        tenant=tenant,
+    )
+
+
+@router.get("/{project_id}/storyboard/shots/{shot_id}/trace", response_model=StoryboardTraceRecord)
+async def get_storyboard_shot_trace(
+    project_id: str,
+    shot_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> StoryboardTraceRecord:
+    return await storyboard_trace_service.get_shot_trace(
+        db,
+        project_id=project_id,
+        shot_id=shot_id,
+        tenant=tenant,
+    )
+
+
+@router.get("/{project_id}/storyboard/assets/{asset_id}/trace", response_model=StoryboardTraceRecord)
+async def get_storyboard_asset_trace(
+    project_id: str,
+    asset_id: str,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> StoryboardTraceRecord:
+    return await storyboard_trace_service.get_asset_trace(
+        db,
+        project_id=project_id,
+        asset_id=asset_id,
+        tenant=tenant,
     )
 
 

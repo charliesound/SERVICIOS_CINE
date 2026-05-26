@@ -288,6 +288,106 @@ export interface DirtyShot extends StoryboardShot {
   isDirty: boolean
 }
 
+export interface PromptTrace {
+  original_narrative?: string | null
+  positive_prompt_enriched?: string | null
+  negative_prompt_enriched?: string | null
+  prompt_summary?: string | null
+  display_description_es?: string | null
+}
+
+export interface WorkflowTrace {
+  workflow_key?: string | null
+  workflow_profile?: string | null
+  workflow_profile_requested?: string | null
+  workflow_profile_executed?: string | null
+  fallback_applied: boolean
+  fallback_reason?: string | null
+  missing_nodes: string[]
+  missing_models: string[]
+}
+
+export interface ModelTrace {
+  model_family?: string | null
+  checkpoint?: string | null
+  loras: Array<Record<string, unknown>>
+  sampler?: string | null
+  scheduler?: string | null
+  steps?: number | null
+  cfg?: number | null
+  seed?: number | null
+}
+
+export interface AssetTrace {
+  media_asset_id?: string | null
+  file_name?: string | null
+  file_size?: number | null
+  mime_type?: string | null
+  thumbnail_url?: string | null
+  image_url?: string | null
+  association_method?: string | null
+  association_confidence?: number | null
+  association_reason?: string | null
+  repaired_at?: string | null
+}
+
+export interface VersionHistoryItem {
+  version: number
+  shot_id: string
+  created_at?: string | null
+  prompt?: string | null
+  is_active: boolean
+}
+
+export interface VersionTrace {
+  current_version: number
+  total_versions: number
+  has_previous_versions: boolean
+  previous_versions: VersionHistoryItem[]
+}
+
+export interface StoryboardTraceRecord {
+  project_id: string
+  organization_id: string
+  shot_id?: string | null
+  sequence_id?: string | null
+  sequence_order?: number | null
+  scene_number?: number | null
+  shot_type?: string | null
+  visual_mode?: string | null
+  generation_mode?: string | null
+  generation_job_id?: string | null
+  render_job_id?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  prompt_trace: PromptTrace
+  workflow_trace: WorkflowTrace
+  model_trace: ModelTrace
+  asset_trace: AssetTrace
+  version_trace: VersionTrace
+  available_fields: string[]
+  missing_fields: string[]
+}
+
+export interface StoryboardTraceSummary {
+  project_id: string
+  organization_id: string
+  total_shots: number
+  traced_shots: number
+  shots_with_prompt: number
+  shots_with_workflow: number
+  shots_with_model: number
+  shots_with_asset: number
+  shots_with_render_job: number
+  shots_with_previous_versions: number
+  workflow_fallback_count: number
+  workflow_keys: string[]
+  workflow_profiles: string[]
+  model_families: string[]
+  checkpoints: string[]
+  missing_field_counts: Record<string, number>
+}
+
 // --- Director Feedback Types ---
 
 export type FeedbackCategory =

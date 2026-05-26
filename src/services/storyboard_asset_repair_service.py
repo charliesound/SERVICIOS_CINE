@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import json
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import select
@@ -57,12 +59,28 @@ class StoryboardAssetRepairService:
                 continue
 
             best_match = candidates[0]
+            matched_by = str(getattr(best_match, "_matched_by", "unknown") or "unknown")
+            match_score = int(getattr(best_match, "_match_score", 0) or 0)
+            association_method = (
+                "direct_metadata_link"
+                if matched_by == "metadata_json.storyboard_shot_id"
+                else "repair_service"
+            )
+            meta["asset_association"] = {
+                "association_method": association_method,
+                "association_confidence": min(1.0, match_score / 100.0),
+                "association_reason": matched_by,
+                "repaired_at": datetime.now(timezone.utc).isoformat(),
+            }
             shot.asset_id = best_match.id
+            shot.metadata_json = json.dumps(meta, ensure_ascii=False, default=str)
             db.add(shot)
             repaired.append({
                 "shot_id": shot_id,
                 "asset_id": str(best_match.id),
-                "matched_by": best_match.get("_matched_by", "unknown"),
+                "matched_by": matched_by,
+                "association_method": association_method,
+                "association_confidence": min(1.0, match_score / 100.0),
             })
 
         await db.commit()
@@ -89,6 +107,7 @@ class StoryboardAssetRepairService:
         result = await db.execute(
             select(MediaAsset).where(
                 MediaAsset.project_id == project_id,
+                MediaAsset.organization_id == tenant.organization_id,
                 MediaAsset.asset_type == MediaAssetType.IMAGE,
             )
         )
@@ -100,6 +119,7 @@ class StoryboardAssetRepairService:
             score, reason = self._score_asset_match(asset, shot_id, shot_meta)
             if score > 0:
                 asset._matched_by = reason  # type: ignore[attr-defined]
+                asset._match_score = score  # type: ignore[attr-defined]
                 scored.append((score, asset, reason))
 
         scored.sort(key=lambda item: item[0], reverse=True)
@@ -134,13 +154,15 @@ class StoryboardAssetRepairService:
         shot_job_id = shot_meta.get("generation_job_id") or shot_meta.get("render_job_id")
         if meta_job_id and shot_job_id and str(meta_job_id) == str(shot_job_id):
             score += 50
-            reason = "shared_job_id"
+            if not reason:
+                reason = "shared_job_id"
 
         asset_job_id = getattr(asset, "job_id", None)
         shot_render_job = shot_meta.get("render_job_id") or shot_meta.get("generation_job_id")
         if asset_job_id and shot_render_job and str(asset_job_id) == str(shot_render_job):
             score += 40
-            reason = "asset.job_id_matches_shot_meta"
+            if not reason:
+                reason = "asset.job_id_matches_shot_meta"
 
         segment = shot_id[:8] if len(shot_id) >= 8 else shot_id
         file_name = getattr(asset, "file_name", "") or ""

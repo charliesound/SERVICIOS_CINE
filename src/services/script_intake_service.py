@@ -151,7 +151,10 @@ class ScriptIntakeService:
                     "scene_number": heading["scene_number"] or (len(scenes) + 1),
                     "scene_id": f"scene_{len(scenes) + 1:03d}",
                     "heading": heading["heading"],
+                    "normalized_heading": heading["heading"],
                     "int_ext": heading["int_ext"],
+                    "scene_type": heading["int_ext"],
+                    "interior_exterior": heading["int_ext"],
                     "location": heading["location"],
                     "time_of_day": heading["time_of_day"],
                     "action_blocks": [],
@@ -300,6 +303,7 @@ class ScriptIntakeService:
                 "scene_id": scene.get("scene_id"),
                 "heading": scene.get("heading"),
                 "int_ext": scene.get("int_ext"),
+                "scene_type": scene.get("scene_type") or scene.get("int_ext"),
                 "location": scene.get("location"),
                 "time_of_day": scene.get("time_of_day"),
                 "characters": scene.get("characters_detected", []),
@@ -315,11 +319,13 @@ class ScriptIntakeService:
     def build_department_breakdown(
         self,
         breakdowns: list[dict[str, Any]],
+        total_sequences: int = 0,
     ) -> dict[str, Any]:
         characters = set()
         locations = set()
         props = set()
         ext_count = 0
+        int_count = 0
         night_count = 0
         high_action_count = 0
 
@@ -329,6 +335,8 @@ class ScriptIntakeService:
             props.update(bd.get("props_detected", []))
             if bd.get("int_ext") == "EXT":
                 ext_count += 1
+            if bd.get("int_ext") == "INT":
+                int_count += 1
             if bd.get("time_of_day") in {"NIGHT", "NOCHE"}:
                 night_count += 1
             if "high_action" in bd.get("complexity_flags", []):
@@ -339,8 +347,10 @@ class ScriptIntakeService:
         return {
             "summary": {
                 "total_scenes": total_scenes,
+                "total_sequences": total_sequences,
                 "total_characters": len(characters),
                 "total_locations": len(locations),
+                "int_scenes": int_count,
                 "ext_scenes": ext_count,
                 "night_scenes": night_count,
             },
@@ -599,18 +609,6 @@ class AnalysisService:
                 db, job=job, percent=35, stage="Clasificando documento y escenas", code="classifying_document"
             )
 
-        breakdowns = self.script_intake.build_scene_breakdowns(scenes)
-        if job:
-            await job_tracking_service.update_progress(
-                db, job=job, percent=50, stage="Extrayendo escenas y desglose", code="extracting_scenes"
-            )
-
-        department_breakdown = self.script_intake.build_department_breakdown(breakdowns)
-        if job:
-            await job_tracking_service.update_progress(
-                db, job=job, percent=65, stage="Analizando desglose por departamentos", code="analyzing_breakdown"
-            )
-
         document_payload = document_context or {}
         persisted_structured_payload = structured_payload or {}
 
@@ -618,6 +616,21 @@ class AnalysisService:
         sequences = [sequence.model_dump() for sequence in llm_output.sequences] if llm_output and llm_output.sequences else self.script_intake.build_sequence_blocks(scenes)
         if heuristic_sequences and heuristic_has_explicit_sequences and len(heuristic_sequences) >= len(sequences):
             sequences = heuristic_sequences
+
+        breakdowns = self.script_intake.build_scene_breakdowns(scenes)
+        if job:
+            await job_tracking_service.update_progress(
+                db, job=job, percent=50, stage="Extrayendo escenas y desglose", code="extracting_scenes"
+            )
+
+        department_breakdown = self.script_intake.build_department_breakdown(
+            breakdowns,
+            total_sequences=len(sequences),
+        )
+        if job:
+            await job_tracking_service.update_progress(
+                db, job=job, percent=65, stage="Analizando desglose por departamentos", code="analyzing_breakdown"
+            )
         if job:
             await job_tracking_service.update_progress(
                 db, job=job, percent=80, stage="Construyendo payload estructurado", code="building_structured_payload"

@@ -58,13 +58,22 @@ def test_sec_prefixed_headings_create_scenes_and_explicit_sequences() -> None:
 
     assert len(scenes) == 2
     assert [scene["scene_number"] for scene in scenes] == [1, 3]
+    assert scenes[0]["normalized_heading"] == "INT. CASA ABANDONADA - NOCHE"
     assert scenes[0]["heading"] == "INT. CASA ABANDONADA - NOCHE"
     assert scenes[0]["int_ext"] == "INT"
+    assert scenes[0]["scene_type"] == "INT"
+    assert scenes[0]["interior_exterior"] == "INT"
     assert scenes[0]["location"] == "CASA ABANDONADA"
+    assert scenes[0]["location"] != "Sec 1 INT. CASA ABANDONADA"
     assert scenes[0]["time_of_day"] == "NOCHE"
     assert scenes[0]["source_sequence_number"] == 1
+    assert scenes[0]["source_sequence_label"] == "Sec 1"
+    assert scenes[1]["normalized_heading"] == "EXT. BOSQUE - NOCHE"
     assert scenes[1]["heading"] == "EXT. BOSQUE - NOCHE"
+    assert scenes[1]["scene_type"] == "EXT"
+    assert scenes[1]["location"] == "BOSQUE"
     assert scenes[1]["source_sequence_number"] == 3
+    assert scenes[1]["source_sequence_label"] == "Sec 3"
     assert scenes[0]["characters_detected"] == ["MARTA"]
     assert scenes[0]["dialogue_blocks"][0]["character"] == "MARTA"
     assert "¿Hay alguien ahí?" in scenes[0]["dialogue_blocks"][0]["text"]
@@ -76,9 +85,13 @@ def test_sec_prefixed_headings_create_scenes_and_explicit_sequences() -> None:
     assert sequences[1]["sequence_id"] == "seq_003"
 
     breakdowns = service.build_scene_breakdowns(scenes)
-    departments = service.build_department_breakdown(breakdowns)
+    departments = service.build_department_breakdown(breakdowns, total_sequences=len(sequences))
     assert departments["summary"]["total_scenes"] == 2
+    assert departments["summary"]["total_sequences"] == 2
     assert departments["summary"]["total_characters"] >= 1
+    assert departments["summary"]["total_locations"] >= 2
+    assert departments["summary"]["int_scenes"] == 1
+    assert departments["summary"]["ext_scenes"] == 1
     assert departments["summary"]["night_scenes"] == 2
 
 

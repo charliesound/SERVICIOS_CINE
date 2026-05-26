@@ -51,7 +51,7 @@
         respond 404
     }
     handle /openapi.json {
-        respond 404
+        reverse_proxy backend:8000
     }
     handle /n8n {
         respond 404

@@ -1,29 +1,42 @@
+export type ImageState =
+  | 'render_pending'
+  | 'planned'
+  | 'no_asset'
+  | 'render_failed'
+  | 'render_succeeded';
+
 export interface StoryboardShot {
-  id: string
-  project_id: string
-  organization_id: string
-  sequence_id?: string
-  sequence_order: number
-  scene_number?: number
-  scene_heading?: string
-  narrative_text?: string
-  asset_id?: string
-  shot_type?: string
-  visual_mode?: string
-  generation_mode?: string
-  generation_job_id?: string
-  version: number
-  is_active: boolean
-  metadata_json?: Record<string, unknown> | null
-  asset_file_name?: string
-  asset_mime_type?: string
-  thumbnail_url?: string
-  image_url?: string
-  preview_url?: string
-  render_job_id?: string
-  render_status?: string
-  created_at: string
-  updated_at: string
+  id: string;
+  project_id: string;
+  organization_id: string;
+  sequence_id?: string;
+  sequence_order: number;
+  scene_number?: number;
+  scene_heading?: string;
+  narrative_text?: string;
+  asset_id?: string;
+  shot_type?: string;
+  visual_mode?: string;
+  generation_mode?: string;
+  generation_job_id?: string;
+  version: number;
+  is_active: boolean;
+  metadata_json?: Record<string, unknown> | null;
+  asset_file_name?: string;
+  asset_mime_type?: string;
+  thumbnail_url?: string;
+  image_url?: string;
+  preview_url?: string;
+  render_job_id?: string;
+  render_status?: string;
+  // New fields
+  normalized_sequence_id?: string;
+  is_current_version?: boolean;
+  current_asset_id?: string;
+  has_image?: boolean;
+  image_state?: ImageState;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CinematicShotMetadata {

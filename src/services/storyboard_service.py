@@ -220,15 +220,12 @@ class StoryboardService:
         scene_number: Optional[int] = None,
     ) -> tuple[list[StoryboardShot], Optional[int]]:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
+        analysis_data = await self._get_analysis_payload(db, project)
+        sequences = self._sequence_blocks_from_analysis(analysis_data)
+
         if sequence_id:
-            try:
-                analysis_data = await self._get_analysis_payload(db, project)
-                sequence_id = self._canonical_sequence_id(
-                    self._sequence_blocks_from_analysis(analysis_data),
-                    sequence_id,
-                )
-            except HTTPException:
-                pass
+            sequence_id = self._canonical_sequence_id(sequences, sequence_id)
+
         query = select(StoryboardShot).where(
             StoryboardShot.project_id == project_id,
             StoryboardShot.organization_id == str(project.organization_id),
@@ -248,6 +245,20 @@ class StoryboardService:
         )
         result = await db.execute(query)
         shots = list(result.scalars().all())
+
+        # Determine latest versions per (sequence, scene)
+        versions: dict[tuple[str, int], int] = {}
+        for shot in shots:
+            sid = shot.sequence_id or ""
+            sn = shot.scene_number
+            v = int(getattr(shot, "version", 1) or 1)
+            versions[(sid, sn)] = max(versions.get((sid, sn), 0), v)
+
+        for shot in shots:
+            sid = shot.sequence_id or ""
+            sn = shot.scene_number
+            v = int(getattr(shot, "version", 1) or 1)
+            shot.is_current_version = (v == versions.get((sid, sn), 0))
 
         # Populate asset URLs and compute render_status from MediaAsset + metadata
         asset_ids = [s.asset_id for s in shots if s.asset_id]

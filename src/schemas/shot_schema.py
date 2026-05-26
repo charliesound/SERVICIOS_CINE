@@ -57,6 +57,12 @@ class StoryboardShotResponse(BaseModel):
     preview_url: Optional[str] = None
     render_job_id: Optional[str] = None
     render_status: str = 'no_asset'
+    # New fields
+    normalized_sequence_id: Optional[str] = None
+    is_current_version: bool = False
+    current_asset_id: Optional[str] = None
+    has_image: bool = False
+    image_state: str = 'planned'
     created_at: datetime
     updated_at: datetime
 

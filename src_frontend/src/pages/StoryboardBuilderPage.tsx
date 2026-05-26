@@ -69,13 +69,6 @@ function getShotSequenceLabel(shot: StoryboardShot): string | null {
   return String(label)
 }
 
-function hasShotMetadataImageFallback(shot: StoryboardShot): boolean {
-  const metadata = (shot.metadata_json || {}) as Record<string, unknown>
-  return ['rendered_image_path', 'output_path', 'image_path', 'storage_path'].some((key) => {
-    const value = metadata[key]
-    return typeof value === 'string' && value.trim().length > 0
-  })
-}
 
 export default function StoryboardBuilderPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -191,7 +184,7 @@ export default function StoryboardBuilderPage() {
         narrative_text: current?.narrative_text || shot.narrative_text,
         sequence_id: current?.sequence_id || shot.sequence_id,
         sequence_title: current?.sequence_title || getShotSequenceLabel(shot),
-        storyboard_status: shot.asset_id || shot.thumbnail_url || shot.image_url || hasShotMetadataImageFallback(shot) ? 'generated' : current?.storyboard_status || 'without_image',
+        storyboard_status: shot.asset_id ? 'generated' : (shot.has_image === true ? 'generated' : (current?.storyboard_status ?? 'without_image')),
         asset_id: shot.asset_id || null,
         thumbnail_url: shot.thumbnail_url || null,
         preview_url: shot.preview_url || null,

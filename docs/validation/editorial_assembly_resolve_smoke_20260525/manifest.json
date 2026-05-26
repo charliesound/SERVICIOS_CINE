@@ -91,7 +91,7 @@
   "director_notes_count": 6,
   "export_manifest": {
     "artifact_path_kind": "suggested_destination",
-    "assembly_cut_id": "assembly-ab84da5697b8",
+    "assembly_cut_id": "assembly-a62dbf2bd21b",
     "clip_count": 6,
     "compatible_services": [
       "fcpxml_export_service",
@@ -100,7 +100,7 @@
     ],
     "destination_root_path": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525",
     "fps": 24.0,
-    "generated_at": "2026-05-26T07:01:07.883386+00:00",
+    "generated_at": "2026-05-26T07:30:54.733454+00:00",
     "missing_media": [],
     "missing_media_count": 0,
     "nle_type": "resolve",
@@ -133,7 +133,7 @@
       "fcpxml"
     ],
     "target_platform": "linux",
-    "timeline_id": "assembly-ab84da5697b8",
+    "timeline_id": "assembly-a62dbf2bd21b",
     "validation": {
       "asset_count": 12,
       "clip_count": 6,
@@ -162,7 +162,7 @@
       "sound_reports": 6
     },
     "project_id": "editorial-resolve-smoke-20260525",
-    "report_id": "report-ae160019f1a0",
+    "report_id": "report-3e38804f9f40",
     "warnings": []
   },
   "manifest_path": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/manifest.json",

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import uuid
+import unicodedata
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -36,6 +37,45 @@ class ScriptIntakeService:
         raw = re.sub(r"[^a-z0-9áéíóúñ/\s]", " ", raw)
         raw = re.sub(r"\s+", " ", raw).strip()
         return raw
+
+    def _strip_accents(self, value: str) -> str:
+        return "".join(
+            char for char in unicodedata.normalize("NFKD", value) if not unicodedata.combining(char)
+        )
+
+    def _location_summary_key(self, value: str | None) -> str:
+        normalized = self._normalize_location(value)
+        return self._strip_accents(normalized)
+
+    def _summarize_locations(self, breakdowns: list[dict[str, Any]]) -> list[str]:
+        canonical_locations: dict[str, str] = {}
+        heading_keys: set[str] = set()
+
+        for breakdown in breakdowns:
+            heading_location = str(breakdown.get("location") or "").strip()
+            heading_key = self._location_summary_key(heading_location)
+            if heading_key:
+                canonical_locations.setdefault(heading_key, heading_location)
+                heading_keys.add(heading_key)
+
+        for breakdown in breakdowns:
+            detected_locations = [
+                str(location).strip()
+                for location in breakdown.get("locations_detected", [])
+                if str(location).strip()
+            ]
+
+            for detected in detected_locations:
+                detected_key = self._location_summary_key(detected)
+                if not detected_key:
+                    continue
+                if detected_key in heading_keys:
+                    continue
+                if any(detected_key in heading_key for heading_key in heading_keys):
+                    continue
+                canonical_locations.setdefault(detected_key, detected)
+
+        return sorted(canonical_locations.values())
 
     def _scene_markers(self, scene: dict[str, Any]) -> dict[str, Any]:
         action_text = " ".join(scene.get("action_blocks", [])).lower()
@@ -322,16 +362,15 @@ class ScriptIntakeService:
         total_sequences: int = 0,
     ) -> dict[str, Any]:
         characters = set()
-        locations = set()
         props = set()
         ext_count = 0
         int_count = 0
         night_count = 0
         high_action_count = 0
+        summarized_locations = self._summarize_locations(breakdowns)
 
         for bd in breakdowns:
             characters.update(bd.get("characters", []))
-            locations.update(bd.get("locations_detected", []))
             props.update(bd.get("props_detected", []))
             if bd.get("int_ext") == "EXT":
                 ext_count += 1
@@ -349,7 +388,7 @@ class ScriptIntakeService:
                 "total_scenes": total_scenes,
                 "total_sequences": total_sequences,
                 "total_characters": len(characters),
-                "total_locations": len(locations),
+                "total_locations": len(summarized_locations),
                 "int_scenes": int_count,
                 "ext_scenes": ext_count,
                 "night_scenes": night_count,
@@ -360,8 +399,8 @@ class ScriptIntakeService:
                     "flags": [],
                 },
                 "produccion": {
-                    "notes": f"Producir {total_scenes} escenas, {len(locations)} ubicaciones",
-                    "flags": ["multiple_locations" if len(locations) > 3 else "single_location"],
+                    "notes": f"Producir {total_scenes} escenas, {len(summarized_locations)} ubicaciones",
+                    "flags": ["multiple_locations" if len(summarized_locations) > 3 else "single_location"],
                 },
                 "cast": {
                     "characters": list(characters),
@@ -369,9 +408,9 @@ class ScriptIntakeService:
                     "notes": f"{len(characters)} personajes requiere casting",
                 },
                 "localizaciones": {
-                    "locations": list(locations),
-                    "estimated_days": max(1, len(locations)),
-                    "notes": f"{len(locations)} ubicaciones diferentes",
+                    "locations": summarized_locations,
+                    "estimated_days": max(1, len(summarized_locations)),
+                    "notes": f"{len(summarized_locations)} ubicaciones diferentes",
                 },
                 "arte": {
                     "props": list(props),

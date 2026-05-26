@@ -93,6 +93,38 @@ def test_sec_prefixed_headings_create_scenes_and_explicit_sequences() -> None:
     assert departments["summary"]["int_scenes"] == 1
     assert departments["summary"]["ext_scenes"] == 1
     assert departments["summary"]["night_scenes"] == 2
+    assert departments["departments"]["localizaciones"]["locations"] == ["BOSQUE", "CASA ABANDONADA"]
+
+
+def test_heading_location_wins_over_generic_action_location_in_summary() -> None:
+    service = ScriptIntakeService()
+    breakdowns = [
+        {
+            "location": "CASA ABANDONADA",
+            "locations_detected": ["casa", "CASA ABANDONADA"],
+            "characters": ["MARTA"],
+            "props_detected": [],
+            "int_ext": "INT",
+            "time_of_day": "NOCHE",
+            "complexity_flags": [],
+            "dialogue_count": 1,
+        },
+        {
+            "location": "BOSQUE",
+            "locations_detected": ["BOSQUE"],
+            "characters": ["MARTA"],
+            "props_detected": [],
+            "int_ext": "EXT",
+            "time_of_day": "NOCHE",
+            "complexity_flags": [],
+            "dialogue_count": 0,
+        },
+    ]
+
+    department_breakdown = service.build_department_breakdown(breakdowns, total_sequences=2)
+
+    assert department_breakdown["summary"]["total_locations"] == 2
+    assert department_breakdown["departments"]["localizaciones"]["locations"] == ["BOSQUE", "CASA ABANDONADA"]
 
 
 def test_sec_prefixed_screenplay_is_classified_as_probable_script() -> None:

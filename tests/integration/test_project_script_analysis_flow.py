@@ -311,9 +311,13 @@ class ProjectScriptAnalysisFlowIntegrationTest(unittest.TestCase):
             self.assertIn("MARTA", payload["breakdowns"][0]["characters"])
             self.assertEqual(payload["summary"]["summary"]["total_sequences"], 2)
             self.assertEqual(payload["summary"]["summary"]["int_scenes"], 1)
-            self.assertGreaterEqual(payload["metadata"]["total_locations"], 2)
+            self.assertEqual(payload["metadata"]["total_locations"], 2)
             self.assertEqual(payload["summary"]["summary"]["ext_scenes"], 1)
             self.assertEqual(payload["summary"]["summary"]["night_scenes"], 2)
+            self.assertEqual(payload["summary"]["departments"]["localizaciones"]["locations"], ["BOSQUE", "CASA ABANDONADA"])
+            job_types = [row[0] for row in connection.execute("SELECT job_type FROM project_jobs WHERE project_id = ?", (PROJECT_SEC_PREFIX_ID,)).fetchall()]
+            self.assertIn("analyze", job_types)
+            self.assertNotIn("render:analyze", job_types)
         finally:
             connection.close()
 

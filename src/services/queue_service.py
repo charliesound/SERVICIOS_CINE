@@ -125,6 +125,13 @@ class QueueService:
     def _queue_job_type(self, item: QueueItem) -> str:
         return f"render:{item.task_type}"
 
+    def _is_invalid_render_payload(self, item: QueueItem) -> bool:
+        if not item:
+            return False
+        is_render_backend = item.backend in self._config.MAX_CONCURRENT
+        prompt_inputs = item.prompt or {}
+        return is_render_backend and (not item.workflow_key or not prompt_inputs)
+
     def _parse_datetime(self, value: Optional[str]) -> Optional[datetime]:
         if not value:
             return None
@@ -399,6 +406,25 @@ class QueueService:
                 self._job_map[item.job_id] = item
                 summary["loaded"] += 1
 
+                if self._is_invalid_render_payload(item):
+                    item.status = QueueStatus.FAILED
+                    item.error = "invalid_payload: missing prompt/workflow_key"
+                    item.completed_at = datetime.utcnow()
+                    self._completed[item.job_id] = item
+                    self._record_transition(
+                        item,
+                        "startup_failed",
+                        recovery_reason="invalid_payload",
+                    )
+                    logger.warning(
+                        "Queue recovery marked invalid render job as failed job_id=%s backend=%s task_type=%s",
+                        item.job_id,
+                        item.backend,
+                        item.task_type,
+                    )
+                    summary["failed"] += 1
+                    continue
+
                 if item.status in {QueueStatus.QUEUED, QueueStatus.SCHEDULED}:
                     recovery_tag = "startup_requeue"
                     if item.status == QueueStatus.SCHEDULED:
@@ -610,7 +636,13 @@ class QueueService:
         if not item:
             return False
 
-        if item.retry_count < item.max_retries:
+        if self._is_invalid_render_payload(item):
+            item.status = QueueStatus.FAILED
+            item.error = error or "invalid_payload: missing prompt/workflow_key"
+            item.completed_at = datetime.utcnow()
+            self._completed[job_id] = item
+            self._record_transition(item, "failed")
+        elif item.retry_count < item.max_retries:
             item.retry_count += 1
             item.status = QueueStatus.QUEUED
             item.error = error

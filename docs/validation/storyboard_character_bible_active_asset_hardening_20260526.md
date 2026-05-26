@@ -1,7 +1,7 @@
 # CHARACTER.BIBLE.2E.1 — Active asset validation + concurrency documentation
 
-**Fecha:** 2026-05-26  
-**Rama/commit base:** `cid-dev-stable-character-bible-persistence-assets-20260526` (994a31f)  
+**Fecha:** 2026-05-26
+**Rama/commit base:** `cid-dev-stable-character-bible-persistence-assets-20260526` (994a31f)
 **Auditoría posterior:** Post-CHARACTER.BIBLE.2E
 
 ---

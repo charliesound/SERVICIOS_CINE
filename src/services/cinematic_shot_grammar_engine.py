@@ -18,6 +18,7 @@ from schemas.cinematic_grammar_schema import (
     SceneType,
     ShotPriority,
 )
+from schemas.director_notes_schema import DirectorNotesBundle, DirectorNotesResolveResult
 
 _SHOT_TYPE_BY_ROLE: dict[str, CinematicShotType] = {
     "WS": CinematicShotType.LONG_SHOT,
@@ -436,6 +437,8 @@ class CinematicShotGrammarEngine:
         scene_text: str,
         coverage_pattern: CoveragePattern,
         character_names: list[str] | None = None,
+        director_notes_result: DirectorNotesResolveResult | None = None,
+        director_notes_bundle: DirectorNotesBundle | None = None,
     ) -> OrderedShotPlan:
         template = _PATTERNS.get(coverage_pattern, _PATTERNS[CoveragePattern.CLASSIC_COVERAGE])
         beats = self._detect_beats(scene_text)
@@ -467,6 +470,7 @@ class CinematicShotGrammarEngine:
         shots = self.apply_continuity_notes(shots)
         char_names = character_names if character_names else self._extract_character_names(scene_text)
         shots = self._apply_visual_raccord(shots, scene_text, char_names)
+        shots = self._apply_director_notes(shots, director_notes_result, director_notes_bundle)
         shots = self.assign_priorities(shots)
         rules = _CONTINUITY_RULES_BY_PATTERN.get(coverage_pattern, [])
         return OrderedShotPlan(
@@ -597,6 +601,132 @@ class CinematicShotGrammarEngine:
     def assign_priorities(self, shots: list[CinematicShotSpec]) -> list[CinematicShotSpec]:
         return shots
 
+    def _apply_director_notes(
+        self,
+        shots: list[CinematicShotSpec],
+        director_notes_result: DirectorNotesResolveResult | None,
+        bundle: DirectorNotesBundle | None,
+    ) -> list[CinematicShotSpec]:
+        if not director_notes_result and not bundle:
+            return shots
+
+        char_name: str | None = None
+        wardrobe: str | None = None
+        location_name: str | None = None
+        location_lighting: str | None = None
+        location_atmosphere: str | None = None
+        prop_must_appear: list[str] = []
+        wants_ecu = False
+
+        if bundle:
+            for c in bundle.characters:
+                char_name = c.character_name or char_name
+                if c.wardrobe:
+                    wardrobe = c.wardrobe
+            for loc in bundle.locations:
+                location_name = loc.location_name or location_name
+                if loc.lighting:
+                    location_lighting = loc.lighting
+                if loc.atmosphere:
+                    location_atmosphere = loc.atmosphere
+            for p in bundle.props:
+                if p.must_appear:
+                    prop_must_appear.append(p.prop_name)
+            for s in bundle.shots:
+                if s.shot_type_override and "extreme_close_up" in s.shot_type_override:
+                    wants_ecu = True
+
+        char_note = f"{char_name} must remain visually consistent across all shots per Director Notes." if char_name else None
+        set_note = f"Per Director Notes: {location_name}." if location_name else None
+        loc_ref = location_name.lower().replace(" ", "_") if location_name else None
+        lighting_note = f"Per Director Notes: {location_lighting}." if location_lighting else None
+        atmos_note = f"Per Director Notes: {location_atmosphere}." if location_atmosphere else None
+
+        has_prop_insert = any(
+            s.shot_type == CinematicShotType.INSERT or s.coverage_role == EditorialRole.INSERT
+            for s in shots
+        )
+        has_ecu = any(s.shot_type == CinematicShotType.EXTREME_CLOSE_UP for s in shots)
+
+        result: list[CinematicShotSpec] = []
+        for shot in shots:
+            updates: dict[str, Any] = {}
+            if director_notes_result or bundle:
+                if char_note:
+                    updates["character_continuity_note"] = char_note
+                if wardrobe:
+                    updates["wardrobe_continuity_note"] = f"Per Director Notes: {wardrobe}."
+            if set_note:
+                updates["set_continuity_note"] = set_note
+                updates["location_reference_id"] = loc_ref
+            if lighting_note:
+                updates["lighting_continuity_note"] = lighting_note
+            if atmos_note:
+                updates["atmosphere_continuity_note"] = atmos_note
+            if director_notes_result:
+                if director_notes_result.prompt_blocks.visual_raccord_block:
+                    updates["visual_raccord_note"] = director_notes_result.prompt_blocks.visual_raccord_block
+                if "reference_mode" in director_notes_result.cinematic_grammar_overrides:
+                    mode = director_notes_result.cinematic_grammar_overrides["reference_mode"]
+                    if isinstance(mode, str):
+                        try:
+                            updates["reference_mode"] = ReferenceMode(mode)
+                        except ValueError:
+                            pass
+            if updates:
+                shot = shot.model_copy(update=updates)
+            result.append(shot)
+
+        if prop_must_appear:
+            if not has_prop_insert:
+                prop_names = ", ".join(prop_must_appear)
+                result.append(CinematicShotSpec(
+                    shot_number=len(result) + 1,
+                    coverage_pattern=result[0].coverage_pattern,
+                    shot_type=CinematicShotType.INSERT,
+                    coverage_role=EditorialRole.INSERT,
+                    beat_type=BeatType.ACTION,
+                    dramatic_function=CinematicFunction.ATMOSPHERE,
+                    edit_role=EditorialRole.INSERT,
+                    priority=ShotPriority.MUST_HAVE,
+                    prompt_intent=f"Director Notes must-appear prop: {prop_names}",
+                    cinematic_grammar_version="v0.1",
+                ))
+            else:
+                modified: list[CinematicShotSpec] = []
+                prop_names = ", ".join(prop_must_appear)
+                for s in result:
+                    if s.shot_type == CinematicShotType.INSERT and s.priority != ShotPriority.MUST_HAVE:
+                        s = s.model_copy(update={
+                            "priority": ShotPriority.MUST_HAVE,
+                            "prompt_intent": f"Director Notes must-appear prop: {prop_names}",
+                        })
+                    modified.append(s)
+                result = modified
+
+        if wants_ecu and not has_ecu:
+            result.append(CinematicShotSpec(
+                shot_number=len(result) + 1,
+                coverage_pattern=result[0].coverage_pattern,
+                shot_type=CinematicShotType.EXTREME_CLOSE_UP,
+                coverage_role=EditorialRole.REACTION,
+                beat_type=BeatType.REACTION,
+                dramatic_function=CinematicFunction.REACTION,
+                edit_role=EditorialRole.REACTION,
+                camera_angle="frontal",
+                lens_suggestion="macro 100mm",
+                movement="static",
+                priority=ShotPriority.MUST_HAVE,
+                prompt_intent="Director Notes: extreme close-up of character's gaze",
+                cinematic_grammar_version="v0.1",
+            ))
+
+        for i, s in enumerate(result, start=1):
+            if s.shot_number != i:
+                s = s.model_copy(update={"shot_number": i})
+
+        return result
+
     def plan_scene_coverage(self, request: CinematicGrammarRequest) -> CinematicGrammarResult:
         scene_type = (
             request.scene_type_hint
@@ -605,7 +735,20 @@ class CinematicShotGrammarEngine:
         )
         _, confidence = self.detect_scene_type_and_confidence(request.scene_text)
         coverage_pattern = self.select_coverage_pattern(scene_type)
-        plan = self.build_ordered_shot_plan(request.scene_text, coverage_pattern, character_names=request.character_names)
+        if request.director_notes_result and request.director_notes_result.cinematic_grammar_overrides.get("coverage_pattern"):
+            try:
+                coverage_pattern = CoveragePattern(
+                    request.director_notes_result.cinematic_grammar_overrides["coverage_pattern"]
+                )
+            except ValueError:
+                pass
+        plan = self.build_ordered_shot_plan(
+            request.scene_text,
+            coverage_pattern,
+            character_names=request.character_names,
+            director_notes_result=request.director_notes_result,
+            director_notes_bundle=request.director_notes_bundle,
+        )
         return CinematicGrammarResult(
             plan=plan,
             scene_text=request.scene_text,

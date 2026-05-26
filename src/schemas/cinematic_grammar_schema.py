@@ -5,6 +5,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from schemas.director_notes_schema import (
+    DirectorNotesBundle,
+    DirectorNotesResolveResult,
+)
+
 
 class CinematicShotType(str, Enum):
     EXTREME_LONG_SHOT = "extreme_long_shot"
@@ -174,6 +179,8 @@ class CinematicGrammarRequest(BaseModel):
     character_names: list[str] = Field(default_factory=list)
     beats: list[BeatType] = Field(default_factory=list)
     reference_mode: ReferenceMode = ReferenceMode.FILMIC
+    director_notes_result: DirectorNotesResolveResult | None = None
+    director_notes_bundle: DirectorNotesBundle | None = None
 
 
 class CinematicGrammarResult(BaseModel):

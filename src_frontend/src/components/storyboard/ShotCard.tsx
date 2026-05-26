@@ -18,12 +18,21 @@ const RENDER_STATUS_CONFIG: Record<string, { label: string; color: string; icon:
   no_asset: { label: 'Sin imagen', color: 'text-slate-500 bg-white/5', icon: AlertTriangle },
 }
 
+function hasStoryboardImageCandidate(shot: DirtyShot): boolean {
+  const metadata = (shot.metadata_json || {}) as Record<string, unknown>
+  const metadataPath = ['rendered_image_path', 'output_path', 'image_path', 'storage_path'].some((key) => {
+    const value = metadata[key]
+    return typeof value === 'string' && value.trim().length > 0
+  })
+  return Boolean(shot.asset_id || shot.thumbnail_url || shot.image_url || shot.preview_url || metadataPath)
+}
+
 export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: ShotCardProps) {
   const [localText, setLocalText] = useState(shot.narrative_text || getStoryboardShotDisplayText(shot, getStoryboardUiLocale()))
   const renderStatus = shot.render_status || 'no_asset'
   const statusCfg = RENDER_STATUS_CONFIG[renderStatus] || RENDER_STATUS_CONFIG.no_asset
   const StatusIcon = statusCfg.icon
-  const hasImage = Boolean(shot.thumbnail_url || shot.image_url || shot.preview_url)
+  const hasImage = hasStoryboardImageCandidate(shot)
 
   const handleTextBlur = () => {
     if (localText !== shot.narrative_text) {

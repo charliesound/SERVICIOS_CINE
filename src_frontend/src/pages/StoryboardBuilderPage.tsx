@@ -5,6 +5,8 @@ import { storyboardApi } from '@/api/storyboard'
 import { AuthenticatedStoryboardShotImage } from '@/components/storyboard/AuthenticatedStoryboardShotImage'
 import { ShotCard } from '@/components/storyboard/ShotCard'
 import { AssetPickerModal } from '@/components/storyboard/AssetPickerModal'
+import { StoryboardSequenceSelectorModal } from '@/components/storyboard/StoryboardSequenceSelectorModal'
+import type { StoryboardSelectionValue } from '@/components/storyboard/StoryboardSequenceSelectorModal'
 import DirectorFeedbackPanel from '@/components/storyboard/DirectorFeedbackPanel'
 import { StoryboardSheetExportPanel } from '@/components/storyboard/StoryboardSheetExportPanel'
 import { ActionProgressPanel } from '@/components/ActionProgressPanel'
@@ -18,6 +20,7 @@ import type {
   StoryboardAutoExportItem,
   StoryboardCreditEstimate,
   StoryboardGeneratePayload,
+  StoryboardSceneCandidate,
   StoryboardSelectionMode,
   StoryboardSequence,
   StoryboardShot,
@@ -47,6 +50,31 @@ function resolveSequenceAlias(sequenceId: string, sequences: StoryboardSequence[
   return sequences.find((sequence) => sequence.sequence_number === number) || null
 }
 
+function dedupeList(items: Array<string | null | undefined> = []): string[] {
+  const seen = new Set<string>()
+  return items.filter((item): item is string => {
+    const key = item?.trim().toLowerCase()
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function getShotSequenceLabel(shot: StoryboardShot): string | null {
+  const metadata = (shot.metadata_json || {}) as Record<string, unknown>
+  const label = metadata.sequence_label || metadata.sequence_title || metadata.sequence_number || shot.sequence_id
+  if (label == null || label === '') return null
+  return String(label)
+}
+
+function hasShotMetadataImageFallback(shot: StoryboardShot): boolean {
+  const metadata = (shot.metadata_json || {}) as Record<string, unknown>
+  return ['rendered_image_path', 'output_path', 'image_path', 'storage_path'].some((key) => {
+    const value = metadata[key]
+    return typeof value === 'string' && value.trim().length > 0
+  })
+}
+
 export default function StoryboardBuilderPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const storyboardLocale = getStoryboardUiLocale()
@@ -58,8 +86,10 @@ export default function StoryboardBuilderPage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null)
   const [sequences, setSequences] = useState<StoryboardSequence[]>([])
-  const [selectedMode] = useState<StoryboardSelectionMode>('FULL_SCRIPT')
+  const [selectedMode, setSelectedMode] = useState<StoryboardSelectionMode>('FULL_SCRIPT')
   const [selectedSequenceId, setSelectedSequenceId] = useState<string>('')
+  const [sequenceSelectorOpen, setSequenceSelectorOpen] = useState(false)
+  const [sequenceSelectorError, setSequenceSelectorError] = useState<string | null>(null)
   const [stylePreset, setStylePreset] = useState('hand_drawn_storyboard')
   const [shotsPerScene] = useState(3)
   const [directorLensId] = useState<string>('')
@@ -71,6 +101,7 @@ export default function StoryboardBuilderPage() {
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null)
 
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isPlanningSequence, setIsPlanningSequence] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<FullScriptAnalysisResult | null>(null)
   const [shotPlan, setShotPlan] = useState<SequenceStoryboardPlan | null>(null)
   const [activeTab, setActiveTab] = useState<'analyze' | 'sequences' | 'characters' | 'shots'>('analyze')
@@ -130,12 +161,57 @@ export default function StoryboardBuilderPage() {
     [sequences, selectedSequenceId]
   )
 
+  const selectorScenes = useMemo<StoryboardSceneCandidate[]>(() => {
+    const byScene = new Map<number, StoryboardSceneCandidate>()
+
+    for (const sequence of sequences) {
+      for (const sceneNumber of sequence.included_scenes || []) {
+        if (!byScene.has(sceneNumber)) {
+          byScene.set(sceneNumber, {
+            scene_number: sceneNumber,
+            scene_heading: `${sequence.title || `Secuencia ${sequence.sequence_number}`}`,
+            sequence_id: sequence.sequence_id,
+            sequence_title: sequence.title,
+            storyboard_status: sequence.storyboard_status === 'generated' ? 'generated' : 'pending',
+            source: 'options',
+          })
+        }
+      }
+    }
+
+    for (const shot of shots) {
+      const sceneNumber = Number(shot.scene_number || shot.sequence_order || 0)
+      if (!sceneNumber) continue
+      const current = byScene.get(sceneNumber)
+      byScene.set(sceneNumber, {
+        scene_number: sceneNumber,
+        scene_heading: current?.scene_heading || shot.scene_heading || getShotSequenceLabel(shot) || `Secuencia ${shot.sequence_id || sceneNumber}`,
+        narrative_text: current?.narrative_text || shot.narrative_text,
+        sequence_id: current?.sequence_id || shot.sequence_id,
+        sequence_title: current?.sequence_title || getShotSequenceLabel(shot),
+        storyboard_status: shot.asset_id || shot.thumbnail_url || shot.image_url || hasShotMetadataImageFallback(shot) ? 'generated' : current?.storyboard_status || 'without_image',
+        asset_id: shot.asset_id || null,
+        thumbnail_url: shot.thumbnail_url || null,
+        preview_url: shot.preview_url || null,
+        asset_file_name: shot.asset_file_name || null,
+        source: current?.source || 'parsed',
+      })
+    }
+
+    return Array.from(byScene.values()).sort((a, b) => a.scene_number - b.scene_number)
+  }, [sequences, shots])
+
   const filteredShots = useMemo(() => {
-    if (selectedMode === 'SEQUENCE' && selectedSequenceId) {
+    if (selectedSequenceId) {
       return shots.filter((shot) => shot.sequence_id === selectedSequenceId)
     }
     return shots
-  }, [shots, selectedMode, selectedSequenceId])
+  }, [shots, selectedSequenceId])
+
+  const sequenceCharacters = useMemo(
+    () => dedupeList(sequences.flatMap((sequence) => sequence.characters || [])),
+    [sequences]
+  )
 
   const orderedCinematicShots = useMemo(() => {
     let safe = [...filteredShots]
@@ -291,6 +367,97 @@ export default function StoryboardBuilderPage() {
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  const handlePlanSequenceFromList = async (sequenceId = selectedSequenceId) => {
+    if (!projectId || !sequenceId) {
+      setSequenceSelectorError('Selecciona una secuencia antes de planificar el storyboard.')
+      setSequenceSelectorOpen(true)
+      return
+    }
+
+    const canonicalSequence = resolveSequenceAlias(sequenceId, sequences)
+    const requestedSequenceId = canonicalSequence?.sequence_id || sequenceId
+
+    setIsPlanningSequence(true)
+    setError(null)
+    setSequenceSelectorError(null)
+    try {
+      const plan = await storyboardApi.planSequence(projectId, requestedSequenceId)
+      setShotPlan(plan)
+      setSelectedSequenceId(plan.sequence_id || requestedSequenceId)
+      setSelectedMode('SEQUENCE')
+      setActiveTab('sequences')
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || 'Error planificando la secuencia')
+    } finally {
+      setIsPlanningSequence(false)
+    }
+  }
+
+  const handleGenerateSelection = async (selection: StoryboardSelectionValue) => {
+    if (!projectId) return
+    setIsGenerating(true)
+    setError(null)
+    setRegenerationProgress(null)
+    setAutoExportResponse(null)
+    try {
+      const canonicalSequence = selection.sequenceId
+        ? resolveSequenceAlias(selection.sequenceId, sequences)
+        : null
+      const payload: StoryboardGeneratePayload = {
+        mode: selection.mode,
+        generation_mode: selection.mode,
+        sequence_id: selection.mode === 'SEQUENCE' ? (canonicalSequence?.sequence_id || selection.sequenceId || undefined) : undefined,
+        sequence_ids: selection.sequenceIds,
+        scene_start: selection.sceneStart ?? undefined,
+        scene_end: selection.sceneEnd ?? undefined,
+        scene_numbers: selection.sceneNumbers,
+        style_preset: stylePreset,
+        visual_mode: stylePreset,
+        shots_per_scene: shotsPerScene,
+        overwrite: selection.overwrite,
+        director_lens_id: useCinematicIntelligence ? (directorLensId || undefined) : undefined,
+        montage_profile_id: useMontageIntelligence ? (montageProfileId || undefined) : undefined,
+        use_cinematic_intelligence: useCinematicIntelligence,
+        use_montage_intelligence: useMontageIntelligence,
+        validate_prompts: validatePrompts,
+        auto_export_sheet: autoExportSheet,
+        auto_export_formats: ['png', 'pdf'],
+      }
+      const job = await storyboardApi.generate(projectId, payload)
+      if (job.sequence_id) {
+        setSelectedSequenceId(resolveSequenceAlias(job.sequence_id, sequences)?.sequence_id || job.sequence_id)
+      } else if (selection.mode === 'SEQUENCE' && selection.sequenceId) {
+        setSelectedSequenceId(canonicalSequence?.sequence_id || selection.sequenceId)
+      }
+      setSelectedMode(selection.mode)
+      if (job.auto_exports && job.auto_exports.length > 0) {
+        setAutoExportResponse(job.auto_exports)
+      }
+      await Promise.all([fetchShots(), fetchSequences()])
+      setActiveTab('shots')
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || 'Error generating storyboard')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleConfirmSequenceSelection = (selection: StoryboardSelectionValue) => {
+    if (selection.mode === 'SEQUENCE' && !selection.sequenceId) {
+      setSequenceSelectorError('Selecciona una secuencia antes de generar el storyboard.')
+      return
+    }
+
+    const canonicalSequence = selection.sequenceId ? resolveSequenceAlias(selection.sequenceId, sequences) : null
+    setSequenceSelectorOpen(false)
+    setSequenceSelectorError(null)
+    setSelectedMode(selection.mode)
+    if (selection.mode === 'SEQUENCE' && selection.sequenceId) {
+      setSelectedSequenceId(canonicalSequence?.sequence_id || selection.sequenceId)
+    }
+    void handleGenerateWithEstimate(() => handleGenerateSelection(selection))
   }
 
   const handleGenerate = async (regenerateSequence = false) => {
@@ -813,6 +980,123 @@ export default function StoryboardBuilderPage() {
           </div>
         )}
 
+        {/* TAB 2: Sequence selection */}
+        {activeTab === 'sequences' && (
+          <div className="space-y-6">
+            <section className="card bg-dark-200/80 border border-white/5 p-6 space-y-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Seleccionar secuencia</h2>
+                  <p className="text-sm text-slate-400 mt-1">
+                    {sequences.length} secuencias disponibles · {selectorScenes.length} escenas detectadas · {sequenceCharacters.length} personajes
+                  </p>
+                  {currentSequence && (
+                    <p className="text-xs text-amber-300 mt-2">
+                      Secuencia seleccionada: Secuencia {currentSequence.sequence_number} — {currentSequence.title}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSequenceSelectorError(null)
+                      setSequenceSelectorOpen(true)
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10"
+                  >
+                    <ListChecks className="w-4 h-4" />
+                    Seleccionar secuencia
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePlanSequenceFromList(selectedSequenceId)}
+                    disabled={!selectedSequenceId || isPlanningSequence}
+                    className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-300 hover:bg-cyan-500/20 disabled:opacity-40"
+                  >
+                    {isPlanningSequence ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                    Planificar storyboard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => selectedSequenceId && handleGenerateWithEstimate(() => handleGenerateSequence(selectedSequenceId))}
+                    disabled={!selectedSequenceId || isGenerating || isEstimatingCredits}
+                    className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/20 disabled:opacity-40"
+                  >
+                    {isGenerating || isEstimatingCredits ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    Generar storyboard de esta secuencia
+                  </button>
+                </div>
+              </div>
+
+              {sequences.length === 0 ? (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200">
+                  No hay secuencias disponibles. Analiza el guion completo para construir el mapa narrativo.
+                </div>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {sequences.map((sequence) => {
+                    const selected = selectedSequenceId === sequence.sequence_id
+                    return (
+                      <button
+                        key={sequence.sequence_id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSequenceId(sequence.sequence_id)
+                          setSelectedMode('SEQUENCE')
+                          setShotPlan(null)
+                        }}
+                        className={`rounded-2xl border p-4 text-left transition-colors ${selected ? 'border-amber-400/50 bg-amber-500/10' : 'border-white/10 bg-[#0a1016] hover:border-white/20'}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-400">Secuencia {sequence.sequence_number}</p>
+                            <h3 className="mt-1 text-sm font-semibold text-white">{sequence.title}</h3>
+                          </div>
+                          <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] text-slate-300">{sequence.storyboard_status}</span>
+                        </div>
+                        <p className="mt-3 text-xs text-slate-400 line-clamp-3">{sequence.summary || 'Sin resumen disponible.'}</p>
+                        <div className="mt-3 flex flex-wrap gap-1">
+                          {sequence.location && <span className="rounded bg-cyan-400/10 px-1.5 py-0.5 text-[10px] text-cyan-300">{sequence.location}</span>}
+                          {sequence.characters.slice(0, 5).map((character) => (
+                            <span key={character} className="rounded bg-amber-400/10 px-1.5 py-0.5 text-[10px] text-amber-300">{character}</span>
+                          ))}
+                        </div>
+                        <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+                          <span>{sequence.included_scenes.length} escenas</span>
+                          <span>{sequence.estimated_shots || 0} planos estimados</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </section>
+
+            {shotPlan && selectedSequenceId && (
+              <section className="card bg-dark-200/80 border border-cyan-500/20 p-6 space-y-4">
+                <h3 className="text-base font-semibold text-cyan-300 flex items-center gap-2">
+                  <Eye className="w-4 h-4" /> Plan de storyboard: {shotPlan.sequence_title}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  <span className="text-cyan-400 font-medium">{shotPlan.shot_plan.length} planos</span> planificados para esta secuencia.
+                </p>
+                <div className="grid gap-2">
+                  {shotPlan.shot_plan.map((shot) => (
+                    <div key={shot.shot_number} className="rounded-xl border border-white/10 bg-[#0a1016] p-3">
+                      <div className="flex items-center justify-between gap-3 mb-1">
+                        <span className="text-xs font-bold text-cyan-400">Plano {shot.shot_number} · {shot.shot_type}</span>
+                        <span className="text-[10px] text-slate-500">{shot.framing} · {shot.camera_angle}</span>
+                      </div>
+                      <p className="text-xs text-slate-300">{shot.action || shot.prompt_brief}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
         {/* TAB Personajes */}
         {activeTab === 'characters' && (
           <div className="space-y-6">
@@ -1058,8 +1342,8 @@ export default function StoryboardBuilderPage() {
                                 />
                               </div>
                               <div className="p-2 space-y-1 text-xs text-slate-300 border-t border-white/10">
-                                <p><span className="text-slate-500">Secuencia:</span> {shot.sequence_id || 'n/a'}</p>
-                                <p><span className="text-slate-500">Escena:</span> {shot.scene_number ?? 'n/a'}</p>
+                                <p><span className="text-slate-500">Secuencia:</span> {getShotSequenceLabel(shot) || shot.sequence_id || 'n/a'}</p>
+                                <p><span className="text-slate-500">Escena fuente:</span> {shot.scene_number ?? 'n/a'}</p>
                                 <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
                                 <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
                                 <p className="text-slate-200 line-clamp-3">{displayText}</p>
@@ -1088,8 +1372,8 @@ export default function StoryboardBuilderPage() {
                               />
                             </div>
                             <div className="p-2 space-y-1 text-xs text-slate-300">
-                              <p><span className="text-slate-500">Secuencia:</span> {shot.sequence_id || 'n/a'}</p>
-                              <p><span className="text-slate-500">Escena:</span> {shot.scene_number ?? 'n/a'}</p>
+                              <p><span className="text-slate-500">Secuencia:</span> {getShotSequenceLabel(shot) || shot.sequence_id || 'n/a'}</p>
+                              <p><span className="text-slate-500">Escena fuente:</span> {shot.scene_number ?? 'n/a'}</p>
                               <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
                               <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
                               <p className="text-slate-200 line-clamp-3">{displayText}</p>
@@ -1130,8 +1414,20 @@ export default function StoryboardBuilderPage() {
                         <div className="p-3 bg-dark-300/60 border border-amber-500/20 rounded-lg text-xs text-slate-300 space-y-1.5 max-h-64 overflow-y-auto">
                           {(() => {
                             const meta = shot.metadata_json as CinematicShotMetadata
+                            const rawMeta = (shot.metadata_json || {}) as Record<string, unknown>
+                            const promptSpec = rawMeta.prompt_spec as Record<string, unknown> | undefined
+                            const positivePrompt = typeof promptSpec?.positive_prompt === 'string' ? promptSpec.positive_prompt : null
+                            const workflowProfile = rawMeta.workflow_profile_executed || rawMeta.workflow_profile_requested || rawMeta.workflow_profile
+                            const workflowKey = rawMeta.workflow_key || (rawMeta.workflow as Record<string, unknown> | undefined)?.workflow_key
                             return (
                               <>
+                                <p><span className="text-amber-400">Versión:</span> {shot.version}</p>
+                                {shot.asset_id && <p><span className="text-amber-400">Asset:</span> {shot.asset_id}</p>}
+                                {shot.render_job_id && <p><span className="text-amber-400">Render job:</span> {shot.render_job_id}</p>}
+                                {workflowProfile && <p><span className="text-amber-400">Workflow profile:</span> {String(workflowProfile)}</p>}
+                                {workflowKey && <p><span className="text-amber-400">Workflow:</span> {String(workflowKey)}</p>}
+                                {rawMeta.model_family && <p><span className="text-amber-400">Modelo:</span> {String(rawMeta.model_family)}</p>}
+                                {rawMeta.beat_type && <p><span className="text-amber-400">Beat:</span> {String(rawMeta.beat_type)}</p>}
                                 {meta.source_scope && <p><span className="text-amber-400">Scope:</span> {meta.source_scope}</p>}
                                 {meta.sequence_title && <p><span className="text-amber-400">Secuencia:</span> {meta.sequence_title}</p>}
                                 {meta.shot_plan_reason && <p><span className="text-amber-400">Razón:</span> {meta.shot_plan_reason}</p>}
@@ -1157,6 +1453,7 @@ export default function StoryboardBuilderPage() {
                                 {meta.script_visual_alignment && (
                                   <p><span className="text-cyan-400">Alignment:</span> {String((meta.script_visual_alignment as Record<string, unknown>).alignment_score || '')}</p>
                                 )}
+                                {positivePrompt && <p><span className="text-cyan-400">Prompt:</span> {positivePrompt.substring(0, 160)}</p>}
                               </>
                             )
                           })()}
@@ -1240,6 +1537,19 @@ export default function StoryboardBuilderPage() {
             </div>
           </div>
         )}
+
+        <StoryboardSequenceSelectorModal
+          open={sequenceSelectorOpen}
+          isLoading={isGenerating || isPlanningSequence || isEstimatingCredits}
+          error={sequenceSelectorError}
+          scenes={selectorScenes}
+          sequences={sequences}
+          onClose={() => {
+            setSequenceSelectorOpen(false)
+            setSequenceSelectorError(null)
+          }}
+          onConfirm={handleConfirmSequenceSelection}
+        />
 
         <AssetPickerModal isOpen={pickerOpen} projectId={projectId || ''}
           currentAssetId={shots.find((s) => s.id === selectedShotId)?.asset_id}

@@ -29,6 +29,7 @@ import type {
 import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/storyboardText'
 import { deriveCharacterBreakdown } from '@/utils/characterBreakdown'
 import { CharacterBreakdownPanel } from '@/components/storyboard/CharacterBreakdownPanel'
+import { CharacterBiblePanel } from '@/components/storyboard/CharacterBiblePanel'
 
 function toDirtyShot(shot: StoryboardShot): DirtyShot {
   return { ...shot, isDirty: false }
@@ -1113,27 +1114,38 @@ export default function StoryboardBuilderPage() {
               </p>
             </section>
             {sequences.length > 0 ? (
-              <CharacterBreakdownPanel
-                sequences={sequences}
-                onFilterByCharacter={(character) => {
-                  setCharacterFilter(character)
-                  setActiveTab('shots')
-                }}
-                onSelectSequencesByCharacter={(seqIds) => {
-                  const found = sequences.find((s) => seqIds.includes(s.sequence_id))
-                  if (found) {
-                    setSelectedSequenceId(found.sequence_id)
+              <div className="space-y-6">
+                <CharacterBreakdownPanel
+                  sequences={sequences}
+                  onFilterByCharacter={(character) => {
+                    setCharacterFilter(character)
                     setActiveTab('shots')
-                  }
-                }}
-              />
+                  }}
+                  onSelectSequencesByCharacter={(seqIds) => {
+                    const found = sequences.find((s) => seqIds.includes(s.sequence_id))
+                    if (found) {
+                      setSelectedSequenceId(found.sequence_id)
+                      setActiveTab('shots')
+                    }
+                  }}
+                />
+                {projectId && (
+                  <CharacterBiblePanel
+                    projectId={projectId}
+                    suggestedCharacters={deriveCharacterBreakdown(sequences).map((entry) => entry.character)}
+                  />
+                )}
+              </div>
             ) : (
-              <div className="text-center py-10">
-                <p className="text-slate-400 mb-4">No hay datos de personajes. Analiza el guion completo primero.</p>
-                <button onClick={handleAnalyzeFullScript} disabled={isAnalyzing}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300">
-                  <FileText className="w-4 h-4" /> Analizar guion completo
-                </button>
+              <div className="space-y-6">
+                {projectId && <CharacterBiblePanel projectId={projectId} />}
+                <div className="text-center py-10">
+                  <p className="text-slate-400 mb-4">No hay datos de personajes. Analiza el guion completo primero.</p>
+                  <button onClick={handleAnalyzeFullScript} disabled={isAnalyzing}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300">
+                    <FileText className="w-4 h-4" /> Analizar guion completo
+                  </button>
+                </div>
               </div>
             )}
           </div>

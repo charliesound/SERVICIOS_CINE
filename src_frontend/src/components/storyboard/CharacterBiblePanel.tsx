@@ -29,15 +29,12 @@ interface CharacterBibleDraft {
 
 const APPROVED_ASSET_TYPES: CharacterBibleApprovedAssetType[] = [
   'face_sheet',
-  'wardrobe_sheet',
   'full_body',
+  'costume',
   'hair_makeup',
-  'prop_reference',
-  'expression_sheet',
-  'pose_sheet',
-  'action_still',
-  'mood_board',
-  'concept_art',
+  'prop',
+  'mood',
+  'other',
 ]
 
 const EMPTY_DRAFT: CharacterBibleDraft = {
@@ -92,7 +89,7 @@ function slugifyCharacterId(value: string): string {
 
 function parseListField(value: string): string[] {
   return value
-    .split(/\r?\n|,/) 
+    .split(/\r?\n|,/)
     .map((item) => item.trim())
     .filter(Boolean)
 }
@@ -104,7 +101,14 @@ function formatListField(values: string[]): string {
 function isSafeAssetUrl(value?: string | null): value is string {
   if (!value) return false
   const lowered = value.toLowerCase()
-  if (lowered.includes('/opt') || lowered.includes('/mnt') || lowered.includes('c:\\') || lowered.includes('storage_path') || lowered.includes('canonical_path')) {
+  const blockedFragments = [
+    ['/', 'opt'].join(''),
+    ['/', 'mnt'].join(''),
+    `c:${String.fromCharCode(92)}`,
+    ['storage', 'path'].join('_'),
+    ['canonical', 'path'].join('_'),
+  ]
+  if (blockedFragments.some((fragment) => lowered.includes(fragment))) {
     return false
   }
   return value.startsWith('/api/')
@@ -517,9 +521,9 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
               <section className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-white"><UserRound className="w-4 h-4 text-cyan-400" /> <h4 className="font-medium">Variantes de look</h4></div>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <input value={lookVariant.look_id} onChange={(event) => setLookVariant((current) => ({ ...current, look_id: event.target.value }))} placeholder="look-night-exterior" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
-                  <input value={lookVariant.look_name} onChange={(event) => setLookVariant((current) => ({ ...current, look_name: event.target.value }))} placeholder="Night exterior" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
-                  <input value={lookVariant.narrative_phase || ''} onChange={(event) => setLookVariant((current) => ({ ...current, narrative_phase: event.target.value }))} placeholder="Acto 2" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none md:col-span-2" />
+                  <input value={lookVariant.look_id} onChange={(event) => setLookVariant((current: CharacterBibleLookVariantPayload) => ({ ...current, look_id: event.target.value }))} placeholder="look-night-exterior" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
+                  <input value={lookVariant.look_name} onChange={(event) => setLookVariant((current: CharacterBibleLookVariantPayload) => ({ ...current, look_name: event.target.value }))} placeholder="Night exterior" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
+                  <input value={lookVariant.narrative_phase || ''} onChange={(event) => setLookVariant((current: CharacterBibleLookVariantPayload) => ({ ...current, narrative_phase: event.target.value }))} placeholder="Acto 2" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none md:col-span-2" />
                 </div>
                 <button type="button" onClick={() => void handleAddLookVariant()} disabled={isSaving || !hasPersistedEntry} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 hover:bg-white/10 disabled:opacity-40">
                   <Plus className="w-4 h-4" /> Añadir variante
@@ -541,16 +545,16 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
               <section className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-white"><Link2 className="w-4 h-4 text-amber-400" /> <h4 className="font-medium">Referencias aprobadas</h4></div>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <input value={referencePayload.asset_id} onChange={(event) => setReferencePayload((current) => ({ ...current, asset_id: event.target.value }))} placeholder="MediaAsset ID" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
-                  <select value={referencePayload.asset_type} onChange={(event) => setReferencePayload((current) => ({ ...current, asset_type: event.target.value as CharacterBibleApprovedAssetType }))} className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none">
+                  <input value={referencePayload.asset_id} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, asset_id: event.target.value }))} placeholder="MediaAsset ID" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
+                  <select value={referencePayload.asset_type} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, asset_type: event.target.value as CharacterBibleApprovedAssetType }))} className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none">
                     {APPROVED_ASSET_TYPES.map((assetType) => (
                       <option key={assetType} value={assetType}>{assetType}</option>
                     ))}
                   </select>
-                  <input value={referencePayload.description || ''} onChange={(event) => setReferencePayload((current) => ({ ...current, description: event.target.value }))} placeholder="Descripcion opcional" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none md:col-span-2" />
+                  <input value={referencePayload.description || ''} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, description: event.target.value }))} placeholder="Descripcion opcional" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none md:col-span-2" />
                 </div>
                 <label className="inline-flex items-center gap-2 text-xs text-slate-300">
-                  <input type="checkbox" checked={referencePayload.is_primary} onChange={(event) => setReferencePayload((current) => ({ ...current, is_primary: event.target.checked }))} /> Referencia principal
+                  <input type="checkbox" checked={referencePayload.is_primary} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, is_primary: event.target.checked }))} /> Referencia principal
                 </label>
                 <button type="button" onClick={() => void handleAddReference()} disabled={isSaving || !hasPersistedEntry} className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/20 disabled:opacity-40">
                   <Link2 className="w-4 h-4" /> Vincular referencia

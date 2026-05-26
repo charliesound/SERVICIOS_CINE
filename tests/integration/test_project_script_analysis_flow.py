@@ -35,6 +35,23 @@ from routes.auth_routes import create_access_token
 ORG_ID = "org-script-analysis-flow-0000001"
 USER_ID = "user-script-analysis-flow-000001"
 PROJECT_ID = "project-script-analysis-flow-001"
+PROJECT_SEC_PREFIX_ID = "project-script-analysis-sec-002"
+PROJECT_EMPTY_ID = "project-script-analysis-empty-003"
+
+
+SEC_PREFIXED_SCRIPT = """Sec 1 INT. CASA ABANDONADA - NOCHE
+
+MARTA entra con una linterna. La casa está en silencio. El suelo cruje bajo sus pies.
+
+MARTA
+¿Hay alguien ahí?
+
+Una sombra cruza al fondo del pasillo. Marta se queda quieta.
+
+Sec 3 EXT. BOSQUE - NOCHE
+
+Marta sale corriendo de la casa. La linterna parpadea. Detrás de ella, una figura aparece en la puerta.
+"""
 
 
 def _auth_headers(user_id: str, email: str) -> dict[str, str]:
@@ -148,6 +165,30 @@ def _seed_test_data() -> None:
                 "script_text": _build_long_script(),
             },
         )
+        _insert_row(
+            connection,
+            "projects",
+            {
+                "id": PROJECT_SEC_PREFIX_ID,
+                "organization_id": ORG_ID,
+                "name": "Guion Secuencias",
+                "description": "Proyecto de regresion para prefijos Sec/Seq.",
+                "status": "development",
+                "script_text": SEC_PREFIXED_SCRIPT,
+            },
+        )
+        _insert_row(
+            connection,
+            "projects",
+            {
+                "id": PROJECT_EMPTY_ID,
+                "organization_id": ORG_ID,
+                "name": "Guion Vacio",
+                "description": "Proyecto para validar error claro en scripts vacios.",
+                "status": "development",
+                "script_text": "",
+            },
+        )
         connection.commit()
     finally:
         connection.close()
@@ -223,6 +264,56 @@ class ProjectScriptAnalysisFlowIntegrationTest(unittest.TestCase):
             self.assertLessEqual(len(row[0]), 10000)
         finally:
             connection.close()
+
+    def test_sec_prefixed_script_analysis_detects_scenes_sequences_and_character(self) -> None:
+        analyze = self.client.post(
+            f"/api/projects/{PROJECT_SEC_PREFIX_ID}/analyze",
+            headers=self.headers,
+        )
+        self.assertEqual(analyze.status_code, 200)
+        analyze_json = analyze.json()
+        self.assertEqual(analyze_json["doc_type"], "script")
+        self.assertGreaterEqual(analyze_json["confidence_score"], 0.55)
+
+        analysis_summary = analyze_json["structured_payload"]["analysis_summary"]
+        self.assertEqual(analysis_summary["status"], "completed")
+        self.assertGreaterEqual(analysis_summary["scenes_count"], 2)
+        self.assertGreaterEqual(len(analysis_summary["department_breakdown"]["departments"]["cast"]["characters"]), 1)
+
+        summary = self.client.get(
+            f"/api/projects/{PROJECT_SEC_PREFIX_ID}/analysis/summary",
+            headers=self.headers,
+        )
+        self.assertEqual(summary.status_code, 200)
+        summary_json = summary.json()
+        self.assertEqual(summary_json["status"], "completed")
+        self.assertGreaterEqual(summary_json["scenes_count"], 2)
+        self.assertGreaterEqual(summary_json["sequences_count"], 2)
+
+        connection = sqlite3.connect(str(TEST_DB_PATH))
+        try:
+            row = connection.execute(
+                "SELECT breakdown_json FROM production_breakdowns WHERE project_id = ?",
+                (PROJECT_SEC_PREFIX_ID,),
+            ).fetchone()
+            self.assertIsNotNone(row)
+            payload = __import__("json").loads(row[0])
+            self.assertEqual(payload["scenes"][0]["heading"], "INT. CASA ABANDONADA - NOCHE")
+            self.assertEqual(payload["scenes"][0]["source_sequence_number"], 1)
+            self.assertEqual(payload["scenes"][1]["source_sequence_number"], 3)
+            self.assertIn("MARTA", payload["breakdowns"][0]["characters"])
+            self.assertGreaterEqual(payload["metadata"]["total_locations"], 2)
+            self.assertEqual(payload["summary"]["summary"]["night_scenes"], 2)
+        finally:
+            connection.close()
+
+    def test_empty_script_returns_clear_error_instead_of_completed_analysis(self) -> None:
+        analyze = self.client.post(
+            f"/api/projects/{PROJECT_EMPTY_ID}/analyze",
+            headers=self.headers,
+        )
+        self.assertEqual(analyze.status_code, 400)
+        self.assertIn("Project has no script text to analyze", analyze.text)
 
 
 if __name__ == "__main__":

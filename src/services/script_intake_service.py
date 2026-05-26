@@ -17,6 +17,8 @@ from services.script_document_classifier import SCENE_HEADING_RE
 
 
 class ScriptIntakeService:
+    _SEQUENCE_PREFIXES = {"SEC", "SECUENCIA", "SEQ"}
+    _SCENE_PREFIXES = {"ESCENA"}
     _TIME_OF_DAY = (
         "DAY", "NIGHT", "MORNING", "EVENING", "AFTERNOON", "DAWN", "DUSK",
         "CONTINUOUS", "LATER", "MOMENTS LATER", "DIA", "DÍA", "NOCHE", "MANANA", "MAÑANA", "TARDE",
@@ -128,12 +130,14 @@ class ScriptIntakeService:
         scenes = []
         current_scene = None
         action_buffer = []
+        current_character: str | None = None
 
         for raw_line in lines:
             line = raw_line.strip()
             if not line:
                 if current_scene:
                     action_buffer.append(line)
+                current_character = None
                 continue
 
             heading = self._parse_scene_heading(line)
@@ -153,18 +157,24 @@ class ScriptIntakeService:
                     "action_blocks": [],
                     "dialogue_blocks": [],
                     "characters_detected": [],
+                    "source_sequence_number": heading.get("sequence_number"),
+                    "source_sequence_label": heading.get("sequence_label"),
                 }
+                current_character = None
                 continue
 
             if current_scene is None:
                 continue
 
             if self._is_character_cue(line):
-                char_name = re.sub(r"^\(([^)]+)\).*$", r"\1", line).strip()
-                current_scene["characters_detected"].append(char_name)
+                char_name = line.strip()
+                if char_name not in current_scene["characters_detected"]:
+                    current_scene["characters_detected"].append(char_name)
+                current_character = char_name
+            elif current_character:
                 current_scene["dialogue_blocks"].append({
-                    "character": char_name,
-                    "text": line[len(char_name) + 2:].strip() if len(char_name) + 2 < len(line) else ""
+                    "character": current_character,
+                    "text": line,
                 })
             else:
                 action_buffer.append(line)
@@ -183,7 +193,7 @@ class ScriptIntakeService:
             return None
 
         match = re.match(
-            r"^\s*(?:(?P<number>\d{1,4})\s*[\.:\)-]?\s+)?(?P<int_ext>INT\.?\s*/\s*EXT\.?|EXT\.?\s*/\s*INT\.?|INT\.?|INTERIOR|EXT\.?|EXTERIOR|I/E\.?)\s+(?P<body>.+?)\s*$",
+            r"^\s*(?:(?P<number>\d{1,4})\s*[\.:\)-]?\s+)?(?:(?P<prefix>SEC(?:UENCIA)?|SEQ|ESCENA)\.?\s*(?P<prefix_number>\d{1,4})\s+)?(?P<int_ext>INT\.?\s*/\s*EXT\.?|EXT\.?\s*/\s*INT\.?|INT\.?|INTERIOR|EXT\.?|EXTERIOR|I/E\.?)\s+(?P<body>.+?)\s*$",
             line,
             re.IGNORECASE,
         )
@@ -197,6 +207,23 @@ class ScriptIntakeService:
                 scene_number = int(number_group)
             except ValueError:
                 scene_number = 0
+
+        sequence_number = 0
+        sequence_label: str | None = None
+        prefix_group = (match.group("prefix") or "").strip().upper()
+        prefix_number_group = match.group("prefix_number")
+        if prefix_number_group:
+            try:
+                prefix_number = int(prefix_number_group)
+            except ValueError:
+                prefix_number = 0
+            if prefix_group in self._SEQUENCE_PREFIXES:
+                sequence_number = prefix_number
+                sequence_label = f"Sec {prefix_number}"
+                if scene_number == 0:
+                    scene_number = prefix_number
+            elif prefix_group in self._SCENE_PREFIXES and scene_number == 0:
+                scene_number = prefix_number
 
         int_ext_raw = (match.group("int_ext") or "INT").upper().replace(" ", "").rstrip(".")
         body = (match.group("body") or "").strip()
@@ -215,12 +242,20 @@ class ScriptIntakeService:
             time_of_day = self._detect_time_of_day(tod)
             break
 
+        normalized_int_ext = "INT/EXT" if ("INT/EXT" in int_ext_raw or "EXT/INT" in int_ext_raw or "I/E" in int_ext_raw) else int_ext_raw
+        display_int_ext = f"{normalized_int_ext}." if normalized_int_ext in {"INT", "EXT"} else normalized_int_ext
+        normalized_heading = f"{display_int_ext} {body}".strip()
+        if number_group and not prefix_group:
+            normalized_heading = line.strip()
+
         return {
             "scene_number": scene_number or 0,
-            "heading": line,
-            "int_ext": "INT/EXT" if ("INT/EXT" in int_ext_raw or "EXT/INT" in int_ext_raw or "I/E" in int_ext_raw) else int_ext_raw,
+            "heading": normalized_heading,
+            "int_ext": normalized_int_ext,
             "location": location,
             "time_of_day": time_of_day,
+            "sequence_number": sequence_number or None,
+            "sequence_label": sequence_label,
         }
 
     def _detect_time_of_day(self, text: str) -> str:
@@ -247,6 +282,9 @@ class ScriptIntakeService:
             for loc in self._LOCATION_KEYWORDS:
                 if loc in combined:
                     locations.append(loc)
+            heading_location = str(scene.get("location") or "").strip()
+            if heading_location:
+                locations.append(heading_location)
 
             complexity_flags = []
             if len(scene.get("characters_detected", [])) > 5:
@@ -364,8 +402,22 @@ class ScriptIntakeService:
         )
         groups: list[list[dict[str, Any]]] = []
         for scene in working_scenes:
+            explicit_sequence_number = self._coerce_source_sequence_number(scene)
             if not groups:
                 groups.append([scene])
+                continue
+            if explicit_sequence_number:
+                matching_group = next(
+                    (
+                        group for group in groups
+                        if self._coerce_source_sequence_number(group[0]) == explicit_sequence_number
+                    ),
+                    None,
+                )
+                if matching_group is not None:
+                    matching_group.append(scene)
+                else:
+                    groups.append([scene])
                 continue
             best_index = -1
             best_score = -10
@@ -408,7 +460,8 @@ class ScriptIntakeService:
 
         sequence_blocks: list[dict[str, Any]] = []
         for chunk in groups:
-            sequence_number = len(sequence_blocks) + 1
+            explicit_sequence_number = self._coerce_source_sequence_number(chunk[0])
+            sequence_number = explicit_sequence_number or (len(sequence_blocks) + 1)
             included_scene_numbers = [self._coerce_scene_number(scene) for scene in chunk]
             scene_start = min(included_scene_numbers) if included_scene_numbers else 0
             scene_end = max(included_scene_numbers) if included_scene_numbers else 0
@@ -421,7 +474,7 @@ class ScriptIntakeService:
                 }
             )
             first_scene = chunk[0]
-            source_label = f"Secuencia {sequence_number}"
+            source_label = str(chunk[0].get("source_sequence_label") or f"Secuencia {sequence_number}")
             location_hint = str(first_scene.get("location") or "").strip() or None
             display_name = self._format_sequence_display_name(sequence_number, included_scene_numbers, location_hint)
             title = display_name
@@ -486,6 +539,15 @@ class ScriptIntakeService:
             return int(match.group(1))
         return 0
 
+    def _coerce_source_sequence_number(self, scene: dict[str, Any]) -> int:
+        value = scene.get("source_sequence_number")
+        if value is not None:
+            try:
+                return int(value)
+            except Exception:
+                return 0
+        return 0
+
     def _sequence_arc(self, scenes: list[dict[str, Any]]) -> str:
         text = " ".join(" ".join(scene.get("action_blocks", [])) for scene in scenes).lower()
         if any(token in text for token in ("fight", "run", "chase", "crash", "scream")):
@@ -519,13 +581,19 @@ class AnalysisService:
         structured_payload: dict[str, Any] | None = None,
         job: Optional[ProjectJob] = None,
     ) -> dict[str, Any]:
+        normalized_script = (script_text or "").strip()
         if job:
             await job_tracking_service.update_progress(
                 db, job=job, percent=10, stage="Validando proyecto y documento", code="validating_project"
             )
 
         llm_output = await self._run_llm_analysis_or_none(script_text)
-        scenes = [scene.model_dump() for scene in llm_output.scenes] if llm_output and llm_output.scenes else self.script_intake.parse_script(script_text)
+        heuristic_scenes = self.script_intake.parse_script(script_text)
+        llm_scenes = [scene.model_dump() for scene in llm_output.scenes] if llm_output and llm_output.scenes else []
+        heuristic_has_explicit_sequences = any(scene.get("source_sequence_number") for scene in heuristic_scenes)
+        scenes = llm_scenes or heuristic_scenes
+        if heuristic_has_explicit_sequences and len(heuristic_scenes) >= len(llm_scenes):
+            scenes = heuristic_scenes
         if job:
             await job_tracking_service.update_progress(
                 db, job=job, percent=35, stage="Clasificando documento y escenas", code="classifying_document"
@@ -546,16 +614,28 @@ class AnalysisService:
         document_payload = document_context or {}
         persisted_structured_payload = structured_payload or {}
 
+        heuristic_sequences = self.script_intake.build_sequence_blocks(heuristic_scenes)
         sequences = [sequence.model_dump() for sequence in llm_output.sequences] if llm_output and llm_output.sequences else self.script_intake.build_sequence_blocks(scenes)
+        if heuristic_sequences and heuristic_has_explicit_sequences and len(heuristic_sequences) >= len(sequences):
+            sequences = heuristic_sequences
         if job:
             await job_tracking_service.update_progress(
                 db, job=job, percent=80, stage="Construyendo payload estructurado", code="building_structured_payload"
             )
 
+        warnings: list[str] = []
+        analysis_status = "completed"
+        if not normalized_script:
+            analysis_status = "basic_empty"
+            warnings.append("Script vacio. No hay texto para analizar.")
+        elif not scenes:
+            analysis_status = "degraded"
+            warnings.append("No se detectaron escenas. Revisa formato de encabezados o parser.")
+
         analysis_data = {
             "project_id": project_id,
             "organization_id": organization_id,
-            "status": "completed",
+            "status": analysis_status,
             "document": document_payload,
             "structured_payload": persisted_structured_payload,
             "summary": department_breakdown,
@@ -568,6 +648,7 @@ class AnalysisService:
             "breakdowns": breakdowns,
             "department_breakdown": department_breakdown,
             "sequences": sequences,
+            "warnings": warnings,
             "metadata": {
                 "total_scenes": len(scenes),
                 "total_characters": department_breakdown["summary"]["total_characters"],
@@ -576,6 +657,7 @@ class AnalysisService:
                 "confidence_score": document_payload.get("confidence_score"),
                 "source_kind": document_payload.get("source_kind"),
                 "analysis_engine": "ollama" if llm_output else "heuristic",
+                "warning_count": len(warnings),
             },
         }
 
@@ -598,13 +680,13 @@ class AnalysisService:
             organization_id=organization_id,
             script_text=script_text[:10000] if script_text else None,
             breakdown_json=json.dumps(analysis_data, ensure_ascii=False),
-            status="completed",
+            status=analysis_status,
         )
 
         if existing:
             existing.script_text = breakdown.script_text
             existing.breakdown_json = breakdown.breakdown_json
-            existing.status = "completed"
+            existing.status = analysis_status
             breakdown_id = existing.id
         else:
             db.add(breakdown)
@@ -618,7 +700,7 @@ class AnalysisService:
 
         return {
             "breakdown_id": breakdown_id,
-            "status": "completed",
+            "status": analysis_status,
             "project_id": project_id,
             "organization_id": organization_id,
             "document": document_payload,
@@ -629,6 +711,7 @@ class AnalysisService:
             "locations_count": department_breakdown["summary"]["total_locations"],
             "breakdowns": breakdowns[:10],
             "department_breakdown": department_breakdown,
+            "warnings": warnings,
         }
 
     async def get_summary(
@@ -664,6 +747,7 @@ class AnalysisService:
             "locations_count": breakdown_data.get("metadata", {}).get("total_locations", 0),
             "summary": breakdown_data.get("summary")
             or breakdown_data.get("department_breakdown", {}),
+            "warnings": breakdown_data.get("warnings", []),
             "structured_payload": breakdown_data.get("structured_payload", {}),
             "sequences_count": len(breakdown_data.get("sequences", [])),
             "generated_at": breakdown.created_at.isoformat() if breakdown.created_at else None,

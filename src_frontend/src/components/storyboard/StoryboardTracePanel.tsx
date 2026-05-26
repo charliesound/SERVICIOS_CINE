@@ -1,12 +1,45 @@
-import { useState } from 'react'
+import { Component, ReactNode, useState } from 'react'
 import { Copy, GitBranch, Loader2 } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import type { StoryboardTraceRecord } from '@/types/storyboard'
 
 interface StoryboardTracePanelProps {
-  projectId: string
-  shotId: string
+  projectId?: string | null
+  shotId?: string | null
   compact?: boolean
+}
+
+interface TraceBoundaryProps {
+  children: ReactNode
+}
+
+interface TraceBoundaryState {
+  hasError: boolean
+}
+
+class StoryboardTraceErrorBoundary extends Component<TraceBoundaryProps, TraceBoundaryState> {
+  state: TraceBoundaryState = { hasError: false }
+
+  static getDerivedStateFromError(): TraceBoundaryState {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: unknown) {
+    if (import.meta.env.DEV) {
+      console.warn('[StoryboardTracePanel] render failed:', error)
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-lg border border-white/10 bg-dark-300/40 px-3 py-2 text-[11px] text-slate-500">
+          Trazabilidad no disponible
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 function traceValue(value: unknown): string {
@@ -20,7 +53,7 @@ function shortTraceValue(value: unknown, maxLength = 160): string {
   return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
 }
 
-export function StoryboardTracePanel({ projectId, shotId, compact = false }: StoryboardTracePanelProps) {
+function StoryboardTracePanelInner({ projectId, shotId, compact = false }: StoryboardTracePanelProps) {
   const [traceOpen, setTraceOpen] = useState(false)
   const [traceDetailOpen, setTraceDetailOpen] = useState(false)
   const [trace, setTrace] = useState<StoryboardTraceRecord | null>(null)
@@ -31,7 +64,11 @@ export function StoryboardTracePanel({ projectId, shotId, compact = false }: Sto
   const handleToggleTrace = async () => {
     const nextOpen = !traceOpen
     setTraceOpen(nextOpen)
-    if (!nextOpen || trace || isTraceLoading || !projectId || !shotId) return
+    if (!nextOpen || trace || isTraceLoading) return
+    if (!projectId || !shotId) {
+      setTraceError('Trazabilidad no disponible')
+      return
+    }
 
     setIsTraceLoading(true)
     setTraceError(null)
@@ -47,7 +84,7 @@ export function StoryboardTracePanel({ projectId, shotId, compact = false }: Sto
   }
 
   const handleCopyPrompt = async () => {
-    const prompt = trace?.prompt_trace.positive_prompt_enriched || trace?.prompt_trace.original_narrative || ''
+    const prompt = trace?.prompt_trace?.positive_prompt_enriched || trace?.prompt_trace?.original_narrative || ''
     if (!prompt) {
       setCopyStatus('Prompt no disponible')
       return
@@ -88,14 +125,14 @@ export function StoryboardTracePanel({ projectId, shotId, compact = false }: Sto
           {!isTraceLoading && !traceError && trace && (
             <>
               <div className="space-y-1.5">
-                <p><span className="text-slate-500">Prompt:</span> {shortTraceValue(trace.prompt_trace.positive_prompt_enriched || trace.prompt_trace.original_narrative)}</p>
-                <p><span className="text-slate-500">Workflow:</span> {traceValue(trace.workflow_trace.workflow_key)} · {traceValue(trace.workflow_trace.workflow_profile_executed || trace.workflow_trace.workflow_profile)}</p>
-                <p><span className="text-slate-500">Fallback:</span> {trace.workflow_trace.fallback_applied ? traceValue(trace.workflow_trace.fallback_reason) : 'No'}</p>
-                <p><span className="text-slate-500">Modelo:</span> {traceValue(trace.model_trace.model_family)} · {traceValue(trace.model_trace.checkpoint)}</p>
-                <p><span className="text-slate-500">Parámetros:</span> seed {traceValue(trace.model_trace.seed)} · steps {traceValue(trace.model_trace.steps)} · cfg {traceValue(trace.model_trace.cfg)} · sampler {traceValue(trace.model_trace.sampler)}</p>
+                <p><span className="text-slate-500">Prompt:</span> {shortTraceValue(trace.prompt_trace?.positive_prompt_enriched || trace.prompt_trace?.original_narrative)}</p>
+                <p><span className="text-slate-500">Workflow:</span> {traceValue(trace.workflow_trace?.workflow_key)} · {traceValue(trace.workflow_trace?.workflow_profile_executed || trace.workflow_trace?.workflow_profile)}</p>
+                <p><span className="text-slate-500">Fallback:</span> {trace.workflow_trace?.fallback_applied ? traceValue(trace.workflow_trace?.fallback_reason) : 'No'}</p>
+                <p><span className="text-slate-500">Modelo:</span> {traceValue(trace.model_trace?.model_family)} · {traceValue(trace.model_trace?.checkpoint)}</p>
+                <p><span className="text-slate-500">Parámetros:</span> seed {traceValue(trace.model_trace?.seed)} · steps {traceValue(trace.model_trace?.steps)} · cfg {traceValue(trace.model_trace?.cfg)} · sampler {traceValue(trace.model_trace?.sampler)}</p>
                 <p><span className="text-slate-500">Render job:</span> {traceValue(trace.render_job_id)}</p>
-                <p><span className="text-slate-500">Media asset:</span> {traceValue(trace.asset_trace.media_asset_id)}</p>
-                <p><span className="text-slate-500">Versión:</span> v{trace.version_trace.current_version} {trace.version_trace.has_previous_versions ? '· hay indicios de versiones anteriores' : '· sin versiones anteriores detectadas'}</p>
+                <p><span className="text-slate-500">Media asset:</span> {traceValue(trace.asset_trace?.media_asset_id)}</p>
+                <p><span className="text-slate-500">Versión:</span> v{traceValue(trace.version_trace?.current_version)} {trace.version_trace?.has_previous_versions ? '· hay indicios de versiones anteriores' : '· sin versiones anteriores detectadas'}</p>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -131,5 +168,13 @@ export function StoryboardTracePanel({ projectId, shotId, compact = false }: Sto
         </div>
       )}
     </div>
+  )
+}
+
+export function StoryboardTracePanel(props: StoryboardTracePanelProps) {
+  return (
+    <StoryboardTraceErrorBoundary>
+      <StoryboardTracePanelInner {...props} />
+    </StoryboardTraceErrorBoundary>
   )
 }

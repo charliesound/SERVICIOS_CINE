@@ -100,3 +100,4 @@ class CharacterBibleResolveResult(BaseModel):
     continuity_block: str | None = None
     applied_reference_ids: list[str] = Field(default_factory=list)
     unresolved_props: list[str] = Field(default_factory=list)
+    trace_metadata: dict[str, Any] = Field(default_factory=dict)

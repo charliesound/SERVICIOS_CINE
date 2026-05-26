@@ -17,61 +17,65 @@ from services.character_bible_service import CharacterBibleService
 
 
 @pytest.fixture
-def service() -> CharacterBibleService:
-    return CharacterBibleService()
+def service(tmp_path) -> CharacterBibleService:
+    return CharacterBibleService(data_dir=tmp_path)
 
 
 class TestCreateEntry:
-    def test_create_entry(self, service):
+    @pytest.mark.asyncio
+    async def test_create_entry(self, service):
         payload = CharacterBibleEntryCreate(
             character_id="char_marta",
             character_name="Marta",
             wardrobe_notes="Jeans oscuros",
         )
-        entry = service.create_or_update_entry("proj_1", payload)
+        entry = await service.create_or_update_entry("proj_1", payload)
         assert entry.character_id == "char_marta"
         assert entry.project_id == "proj_1"
         assert entry.version == 1
         assert entry.created_at is not None
         assert entry.updated_at is not None
 
-    def test_update_existing_entry(self, service):
+    @pytest.mark.asyncio
+    async def test_update_existing_entry(self, service):
         payload = CharacterBibleEntryCreate(
             character_id="char_marta",
             character_name="Marta",
             wardrobe_notes="Jeans oscuros",
         )
-        service.create_or_update_entry("proj_1", payload)
+        await service.create_or_update_entry("proj_1", payload)
         payload2 = CharacterBibleEntryCreate(
             character_id="char_marta",
             character_name="Marta Updated",
             wardrobe_notes="Jeans claros",
         )
-        entry = service.create_or_update_entry("proj_1", payload2)
+        entry = await service.create_or_update_entry("proj_1", payload2)
         assert entry.version == 2
         assert entry.wardrobe_notes == "Jeans claros"
         assert entry.character_name == "Marta Updated"
 
 
 class TestUpdateEntry:
-    def test_partial_update(self, service):
+    @pytest.mark.asyncio
+    async def test_partial_update(self, service):
         payload = CharacterBibleEntryCreate(
             character_id="char_marta",
             character_name="Marta",
             wardrobe_notes="Jeans oscuros",
             key_props=["flashlight"],
         )
-        service.create_or_update_entry("proj_1", payload)
+        await service.create_or_update_entry("proj_1", payload)
         update = CharacterBibleEntryUpdate(wardrobe_notes="Jeans claros")
-        entry = service.update_entry("proj_1", "char_marta", update)
+        entry = await service.update_entry("proj_1", "char_marta", update)
         assert entry is not None
         assert entry.wardrobe_notes == "Jeans claros"
         assert entry.key_props == ["flashlight"]
         assert entry.version == 2
 
-    def test_update_nonexistent_returns_none(self, service):
+    @pytest.mark.asyncio
+    async def test_update_nonexistent_returns_none(self, service):
         update = CharacterBibleEntryUpdate(character_name="Ghost")
-        assert service.update_entry("proj_1", "char_ghost", update) is None
+        assert await service.update_entry("proj_1", "char_ghost", update) is None
 
 
 class TestListEntries:
@@ -79,24 +83,27 @@ class TestListEntries:
         entries = service.list_entries("proj_empty")
         assert entries == []
 
-    def test_list_entries(self, service):
+    @pytest.mark.asyncio
+    async def test_list_entries(self, service):
         p1 = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
         p2 = CharacterBibleEntryCreate(character_id="c2", character_name="C2")
-        service.create_or_update_entry("proj_1", p1)
-        service.create_or_update_entry("proj_1", p2)
+        await service.create_or_update_entry("proj_1", p1)
+        await service.create_or_update_entry("proj_1", p2)
         entries = service.list_entries("proj_1")
         assert len(entries) == 2
 
-    def test_list_project_isolation(self, service):
+    @pytest.mark.asyncio
+    async def test_list_project_isolation(self, service):
         p = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
-        service.create_or_update_entry("proj_a", p)
+        await service.create_or_update_entry("proj_a", p)
         assert service.list_entries("proj_b") == []
 
 
 class TestGetEntry:
-    def test_get_existing(self, service):
+    @pytest.mark.asyncio
+    async def test_get_existing(self, service):
         payload = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
-        service.create_or_update_entry("proj_1", payload)
+        await service.create_or_update_entry("proj_1", payload)
         entry = service.get_entry("proj_1", "c1")
         assert entry is not None
         assert entry.character_name == "C1"
@@ -106,42 +113,46 @@ class TestGetEntry:
 
 
 class TestAddLookVariant:
-    def test_add_variant(self, service):
+    @pytest.mark.asyncio
+    async def test_add_variant(self, service):
         payload = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
-        service.create_or_update_entry("proj_1", payload)
+        await service.create_or_update_entry("proj_1", payload)
         variant = LookVariantCreate(
             look_id="look_night",
             look_name="Night Look",
             wardrobe_notes="Dark clothes",
             key_props=["flashlight"],
         )
-        result = service.add_look_variant("proj_1", "c1", variant)
+        result = await service.add_look_variant("proj_1", "c1", variant)
         assert result is not None
         assert result.look_id == "look_night"
         entry = service.get_entry("proj_1", "c1")
         assert entry is not None
         assert len(entry.look_variants) == 1
 
-    def test_add_variant_nonexistent_character(self, service):
+    @pytest.mark.asyncio
+    async def test_add_variant_nonexistent_character(self, service):
         variant = LookVariantCreate(look_id="l1", look_name="L1")
-        assert service.add_look_variant("proj_1", "ghost", variant) is None
+        assert await service.add_look_variant("proj_1", "ghost", variant) is None
 
-    def test_duplicate_look_id_returns_existing(self, service):
+    @pytest.mark.asyncio
+    async def test_duplicate_look_id_returns_existing(self, service):
         payload = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
-        service.create_or_update_entry("proj_1", payload)
+        await service.create_or_update_entry("proj_1", payload)
         v1 = LookVariantCreate(look_id="look_night", look_name="Night")
         v2 = LookVariantCreate(look_id="look_night", look_name="Night Dup")
-        result1 = service.add_look_variant("proj_1", "c1", v1)
-        result2 = service.add_look_variant("proj_1", "c1", v2)
+        result1 = await service.add_look_variant("proj_1", "c1", v1)
+        result2 = await service.add_look_variant("proj_1", "c1", v2)
         assert result1 is not None
         assert result2 is not None
         assert result2.look_name == "Night"
 
 
 class TestAddReference:
-    def test_add_reference(self, service):
+    @pytest.mark.asyncio
+    async def test_add_reference(self, service):
         payload = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
-        service.create_or_update_entry("proj_1", payload)
+        await service.create_or_update_entry("proj_1", payload)
         ref = ReferenceAssetCreate(
             asset_id="asset_001",
             asset_type=ApprovedAssetType.FACE_SHEET,
@@ -149,7 +160,7 @@ class TestAddReference:
             description="Face reference",
             is_primary=True,
         )
-        result = service.add_reference("proj_1", "c1", ref)
+        result = await service.add_reference("proj_1", "c1", ref)
         assert result is not None
         assert result.asset_id == "asset_001"
         assert result.is_primary is True
@@ -157,30 +168,33 @@ class TestAddReference:
         assert entry is not None
         assert len(entry.approved_references) == 1
 
-    def test_add_reference_sanitizes_absolute_path(self, service):
+    @pytest.mark.asyncio
+    async def test_add_reference_sanitizes_absolute_path(self, service):
         payload = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
-        service.create_or_update_entry("proj_1", payload)
+        await service.create_or_update_entry("proj_1", payload)
         ref = ReferenceAssetCreate(
             asset_id="asset_bad",
             asset_type=ApprovedAssetType.FACE_SHEET,
             asset_api_url="/opt/storage/face.png",
         )
-        result = service.add_reference("proj_1", "c1", ref)
+        result = await service.add_reference("proj_1", "c1", ref)
         assert result is not None
         assert result.asset_api_url is None
 
-    def test_add_reference_nonexistent_character(self, service):
+    @pytest.mark.asyncio
+    async def test_add_reference_nonexistent_character(self, service):
         ref = ReferenceAssetCreate(
             asset_id="asset_001",
             asset_type=ApprovedAssetType.FACE_SHEET,
         )
-        assert service.add_reference("proj_1", "ghost", ref) is None
+        assert await service.add_reference("proj_1", "ghost", ref) is None
 
 
 class TestResolve:
-    def test_resolve_existing(self, service):
+    @pytest.mark.asyncio
+    async def test_resolve_existing(self, service):
         payload = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
-        service.create_or_update_entry("proj_1", payload)
+        await service.create_or_update_entry("proj_1", payload)
         req = CharacterBibleResolveRequest(project_id="proj_1", character_id="c1")
         result = service.resolve("proj_1", "c1", req)
         assert result is not None
@@ -192,9 +206,10 @@ class TestResolve:
 
 
 class TestTrace:
-    def test_get_trace(self, service):
+    @pytest.mark.asyncio
+    async def test_get_trace(self, service):
         payload = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
-        service.create_or_update_entry("proj_1", payload)
+        await service.create_or_update_entry("proj_1", payload)
         trace = service.get_trace("proj_1", "c1")
         assert trace is not None
         assert trace["character_id"] == "c1"
@@ -235,27 +250,30 @@ class TestSanitizeAssetUrl:
 
 
 class TestProjectIsolation:
-    def test_entries_isolated_by_project(self, service):
+    @pytest.mark.asyncio
+    async def test_entries_isolated_by_project(self, service):
         p1 = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
         p2 = CharacterBibleEntryCreate(character_id="c1", character_name="C1 Diff")
-        service.create_or_update_entry("proj_a", p1)
-        service.create_or_update_entry("proj_b", p2)
+        await service.create_or_update_entry("proj_a", p1)
+        await service.create_or_update_entry("proj_b", p2)
         assert service.get_entry("proj_a", "c1").character_name == "C1"
         assert service.get_entry("proj_b", "c1").character_name == "C1 Diff"
 
 
 class TestNoAbsolutePathsInEntry:
-    def test_entry_no_absolute_paths(self, service):
+    @pytest.mark.asyncio
+    async def test_entry_no_absolute_paths(self, service):
         payload = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
-        entry = service.create_or_update_entry("proj_1", payload)
+        entry = await service.create_or_update_entry("proj_1", payload)
         dumped = entry.model_dump_json()
         assert "/opt/" not in dumped
         assert "/mnt/" not in dumped
         assert "C:" not in dumped
 
-    def test_trace_no_absolute_paths(self, service):
+    @pytest.mark.asyncio
+    async def test_trace_no_absolute_paths(self, service):
         payload = CharacterBibleEntryCreate(character_id="c1", character_name="C1")
-        service.create_or_update_entry("proj_1", payload)
+        await service.create_or_update_entry("proj_1", payload)
         trace = service.get_trace("proj_1", "c1")
         assert trace is not None
         dumped = str(trace)

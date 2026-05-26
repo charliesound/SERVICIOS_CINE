@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import asyncio
+import json
+import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from schemas.character_bible_schema import (
@@ -17,6 +21,11 @@ from schemas.character_bible_schema import (
 from services.character_bible_resolver_service import CharacterBibleResolver
 
 
+_logger = logging.getLogger(__name__)
+
+DEFAULT_DATA_DIR = Path("data/character_bible")
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -31,12 +40,49 @@ def _sanitize_asset_url(url: str | None) -> str | None:
 
 
 class CharacterBibleService:
-    def __init__(self) -> None:
+    def __init__(self, data_dir: Path | None = None) -> None:
         self._store: dict[str, dict[str, CharacterBibleEntry]] = {}
         self._resolver = CharacterBibleResolver()
+        self._data_dir = data_dir or DEFAULT_DATA_DIR
+        self._lock = asyncio.Lock()
+        self._load_all()
 
-    def _key(self, project_id: str, character_id: str) -> str:
-        return f"{project_id}::{character_id}"
+    # ------------------------------------------------------------------
+    # File-backed persistence
+    # ------------------------------------------------------------------
+
+    def _path_for(self, project_id: str) -> Path:
+        return self._data_dir / f"{project_id}.json"
+
+    def _load_all(self) -> None:
+        if not self._data_dir.exists():
+            return
+        for f in sorted(self._data_dir.glob("*.json")):
+            try:
+                raw = f.read_text("utf-8")
+                data = json.loads(raw)
+                for char_id, entry_data in data.items():
+                    entry = CharacterBibleEntry(**entry_data)
+                    self._store.setdefault(entry.project_id, {})[char_id] = entry
+            except Exception:
+                _logger.exception("Failed to load character bible data from %s", f)
+
+    async def _save(self, project_id: str) -> None:
+        async with self._lock:
+            entries = self._store.get(project_id, {})
+            data = {
+                char_id: entry.model_dump(mode="json")
+                for char_id, entry in entries.items()
+            }
+            path = self._path_for(project_id)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), "utf-8")
+            tmp.replace(path)
+
+    # ------------------------------------------------------------------
+    # Read operations (sync)
+    # ------------------------------------------------------------------
 
     def get_entry(self, project_id: str, character_id: str) -> CharacterBibleEntry | None:
         return self._store.get(project_id, {}).get(character_id)
@@ -44,7 +90,36 @@ class CharacterBibleService:
     def list_entries(self, project_id: str) -> list[CharacterBibleEntry]:
         return list(self._store.get(project_id, {}).values())
 
-    def create_or_update_entry(
+    def resolve(
+        self,
+        project_id: str,
+        character_id: str,
+        resolve_request: CharacterBibleResolveRequest,
+    ) -> CharacterBibleResolveResult | None:
+        entry = self.get_entry(project_id, character_id)
+        if not entry:
+            return None
+        return self._resolver._resolve_single(entry, resolve_request)
+
+    def get_trace(self, project_id: str, character_id: str) -> dict[str, Any] | None:
+        entry = self.get_entry(project_id, character_id)
+        if not entry:
+            return None
+        default_req = CharacterBibleResolveRequest(
+            project_id=project_id, character_id=character_id,
+        )
+        result = self._resolver._resolve_single(entry, default_req)
+        return {
+            "character_id": character_id,
+            "character_name": entry.character_name,
+            "trace_metadata": result.trace_metadata,
+        }
+
+    # ------------------------------------------------------------------
+    # Write operations (async — persist to disk)
+    # ------------------------------------------------------------------
+
+    async def create_or_update_entry(
         self,
         project_id: str,
         payload: CharacterBibleEntryCreate,
@@ -83,9 +158,10 @@ class CharacterBibleService:
             )
 
         self._store.setdefault(project_id, {})[payload.character_id] = entry
+        await self._save(project_id)
         return entry
 
-    def update_entry(
+    async def update_entry(
         self,
         project_id: str,
         character_id: str,
@@ -108,9 +184,10 @@ class CharacterBibleService:
 
         entry = existing.model_copy(update=updates)
         self._store[project_id][character_id] = entry
+        await self._save(project_id)
         return entry
 
-    def add_look_variant(
+    async def add_look_variant(
         self,
         project_id: str,
         character_id: str,
@@ -142,9 +219,10 @@ class CharacterBibleService:
             "updated_at": _now(),
         })
         self._store[project_id][character_id] = updated
+        await self._save(project_id)
         return variant
 
-    def add_reference(
+    async def add_reference(
         self,
         project_id: str,
         character_id: str,
@@ -172,33 +250,20 @@ class CharacterBibleService:
             "updated_at": _now(),
         })
         self._store[project_id][character_id] = updated
+        await self._save(project_id)
         return ref
 
-    def resolve(
-        self,
-        project_id: str,
-        character_id: str,
-        resolve_request: CharacterBibleResolveRequest,
-    ) -> CharacterBibleResolveResult | None:
-        entry = self.get_entry(project_id, character_id)
-        if not entry:
-            return None
-        return self._resolver._resolve_single(entry, resolve_request)
+    # ------------------------------------------------------------------
+    # Testing / lifecycle
+    # ------------------------------------------------------------------
 
-    def get_trace(self, project_id: str, character_id: str) -> dict[str, Any] | None:
-        entry = self.get_entry(project_id, character_id)
-        if not entry:
-            return None
+    def reset(self) -> None:
+        """Clear all in-memory entries. Used for test isolation."""
+        self._store.clear()
 
-        default_req = CharacterBibleResolveRequest(
-            project_id=project_id, character_id=character_id,
-        )
-        result = self._resolver._resolve_single(entry, default_req)
-        return {
-            "character_id": character_id,
-            "character_name": entry.character_name,
-            "trace_metadata": result.trace_metadata,
-        }
+    # ------------------------------------------------------------------
+    # Validation helpers
+    # ------------------------------------------------------------------
 
     def _validate_asset_id_format(self, asset_id: str) -> bool:
         if not asset_id or not asset_id.strip():

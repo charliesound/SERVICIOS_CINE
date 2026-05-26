@@ -18,6 +18,7 @@ os.environ.setdefault("HEALTHCHECK_DB_ENABLED", "false")
 
 from dependencies.tenant_context import get_tenant_context, TenantContext
 from routes.character_bible_routes import router as character_bible_router
+from services.character_bible_service import character_bible_service
 
 
 def _get_db_dependency():
@@ -44,12 +45,24 @@ class _FakeResult:
         return self._row
 
 
+class _FakeMediaAsset:
+    """Minimal stub matching MediaAsset columns used by the route."""
+    def __init__(self, asset_id: str):
+        self.id = asset_id
+        self.file_name = f"file_{asset_id}.png"
+
+
 class _FakeDb:
-    def __init__(self, project_exists: bool = True):
+    def __init__(self, project_exists: bool = True, media_asset_exists: bool = False):
         self.project_exists = project_exists
+        self.media_asset_exists = media_asset_exists
 
     async def execute(self, stmt):
         sql_str = str(stmt)
+        if "media_assets" in sql_str:
+            if self.media_asset_exists:
+                return _FakeResult(row=_FakeMediaAsset(asset_id="asset_face_v2"))
+            return _FakeResult(row=None)
         if "projects" in sql_str and self.project_exists:
             return _FakeResult(row=object())
         return _FakeResult(row=None)
@@ -57,6 +70,10 @@ class _FakeDb:
 
 async def override_db():
     yield _FakeDb(project_exists=True)
+
+
+async def override_db_with_media():
+    yield _FakeDb(project_exists=True, media_asset_exists=True)
 
 
 async def override_db_no_project():
@@ -69,6 +86,7 @@ async def override_tenant() -> TenantContext:
 
 @pytest.fixture
 def app() -> FastAPI:
+    character_bible_service.reset()
     application = FastAPI()
     application.dependency_overrides[get_tenant_context] = override_tenant
     application.include_router(character_bible_router)
@@ -175,7 +193,7 @@ class TestCharacterBibleRoutes:
 
     def test_add_reference(self, client):
         app = client.app
-        app.dependency_overrides[get_db] = override_db
+        app.dependency_overrides[get_db] = override_db_with_media
         client.put(
             "/api/projects/proj_test_01/character-bible/char_marta",
             json={"character_id": "char_marta", "character_name": "Marta"},
@@ -192,6 +210,22 @@ class TestCharacterBibleRoutes:
         assert response.status_code == 200
         data = response.json()
         assert data["asset_id"] == "asset_face_v2"
+        assert data["asset_file_name"] == "file_asset_face_v2.png"
+
+    def test_add_reference_invalid_media_asset(self, client):
+        app = client.app
+        app.dependency_overrides[get_db] = override_db
+        client.put(
+            "/api/projects/proj_test_01/character-bible/char_marta",
+            json={"character_id": "char_marta", "character_name": "Marta"},
+        )
+        response = client.post(
+            "/api/projects/proj_test_01/character-bible/char_marta/references",
+            json={"asset_id": "nonexistent_asset", "asset_type": "face_sheet"},
+        )
+        assert response.status_code == 400
+        data = response.json()
+        assert "media asset" in data["detail"].lower() or "asset_id" in data["detail"].lower()
 
     def test_add_reference_empty_asset_id(self, client):
         app = client.app

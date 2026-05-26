@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from dependencies.tenant_context import get_tenant_context, TenantContext
 from models.core import Project
+from models.storage import MediaAsset
 from schemas.character_bible_schema import (
     ApprovedReferenceAsset,
     CharacterBibleEntry,
@@ -81,7 +82,7 @@ async def create_or_update_character_bible_entry(
     await _get_project_or_404(project_id, tenant, db)
     if payload.character_id != character_id:
         raise HTTPException(status_code=400, detail="character_id in path and body must match")
-    entry = character_bible_service.create_or_update_entry(project_id, payload)
+    entry = await character_bible_service.create_or_update_entry(project_id, payload)
     return entry
 
 
@@ -94,7 +95,7 @@ async def add_look_variant(
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> CharacterLookVariant:
     await _get_project_or_404(project_id, tenant, db)
-    variant = character_bible_service.add_look_variant(project_id, character_id, payload)
+    variant = await character_bible_service.add_look_variant(project_id, character_id, payload)
     if variant is None:
         raise HTTPException(status_code=404, detail="Character bible entry not found")
     return variant
@@ -109,11 +110,34 @@ async def add_reference(
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> ApprovedReferenceAsset:
     await _get_project_or_404(project_id, tenant, db)
+
     if not payload.asset_id.strip():
         raise HTTPException(status_code=400, detail="asset_id must not be empty")
     if any(p in payload.asset_id for p in ("/", "\\", "..")):
         raise HTTPException(status_code=400, detail="Invalid asset_id format")
-    ref = character_bible_service.add_reference(project_id, character_id, payload)
+
+    # Validate that asset_id corresponds to an existing MediaAsset in this project
+    result = await db.execute(
+        select(MediaAsset).where(
+            MediaAsset.id == payload.asset_id,
+            MediaAsset.project_id == project_id,
+            MediaAsset.organization_id == str(tenant.organization_id),
+        )
+    )
+    media_asset = result.scalar_one_or_none()
+    if not media_asset:
+        raise HTTPException(
+            status_code=400,
+            detail="asset_id does not match any media asset in this project",
+        )
+
+    # Auto-populate asset_api_url from MediaAsset if not provided by caller
+    if not payload.asset_api_url:
+        payload.asset_api_url = f"/api/media-assets/{media_asset.id}/download"
+    if not payload.asset_file_name:
+        payload.asset_file_name = media_asset.file_name or media_asset.id
+
+    ref = await character_bible_service.add_reference(project_id, character_id, payload)
     if ref is None:
         raise HTTPException(status_code=404, detail="Character bible entry not found")
     return ref

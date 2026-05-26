@@ -8,6 +8,7 @@ export * from './ingest'
 export * from './document'
 export * from './reports'
 export * from './modules'
+export * from './characterBible'
 export type {
   SignupType,
   CIDProgram,

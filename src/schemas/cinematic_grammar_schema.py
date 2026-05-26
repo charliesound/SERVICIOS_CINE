@@ -5,6 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from schemas.character_bible_schema import CharacterBibleResolveResult
 from schemas.director_notes_schema import (
     DirectorNotesBundle,
     DirectorNotesResolveResult,
@@ -162,6 +163,10 @@ class CinematicShotSpec(BaseModel):
     axis_continuity_note: str | None = None
     movement_direction_note: str | None = None
     visual_raccord_note: str | None = None
+    approved_reference_asset_ids: list[str] = Field(default_factory=list)
+    look_variant_applied: str | None = None
+    character_lock_applied: str | None = None
+    character_negative_constraints: str | None = None
     cinematic_grammar_version: str = "v0.1"
 
 
@@ -181,6 +186,7 @@ class CinematicGrammarRequest(BaseModel):
     reference_mode: ReferenceMode = ReferenceMode.FILMIC
     director_notes_result: DirectorNotesResolveResult | None = None
     director_notes_bundle: DirectorNotesBundle | None = None
+    character_bible_results: list[CharacterBibleResolveResult] | None = None
 
 
 class CinematicGrammarResult(BaseModel):
@@ -189,3 +195,4 @@ class CinematicGrammarResult(BaseModel):
     detected_scene_type: SceneType
     confidence: float
     cinematic_grammar_version: str = "v0.1"
+    character_bible_metadata: dict[str, Any] = Field(default_factory=dict)

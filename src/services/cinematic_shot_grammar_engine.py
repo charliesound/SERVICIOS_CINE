@@ -18,6 +18,7 @@ from schemas.cinematic_grammar_schema import (
     SceneType,
     ShotPriority,
 )
+from schemas.character_bible_schema import CharacterBibleResolveResult
 from schemas.director_notes_schema import DirectorNotesBundle, DirectorNotesResolveResult
 
 _SHOT_TYPE_BY_ROLE: dict[str, CinematicShotType] = {
@@ -439,6 +440,7 @@ class CinematicShotGrammarEngine:
         character_names: list[str] | None = None,
         director_notes_result: DirectorNotesResolveResult | None = None,
         director_notes_bundle: DirectorNotesBundle | None = None,
+        character_bible_results: list[CharacterBibleResolveResult] | None = None,
     ) -> OrderedShotPlan:
         template = _PATTERNS.get(coverage_pattern, _PATTERNS[CoveragePattern.CLASSIC_COVERAGE])
         beats = self._detect_beats(scene_text)
@@ -470,6 +472,7 @@ class CinematicShotGrammarEngine:
         shots = self.apply_continuity_notes(shots)
         char_names = character_names if character_names else self._extract_character_names(scene_text)
         shots = self._apply_visual_raccord(shots, scene_text, char_names)
+        shots = self._apply_character_bible(shots, character_bible_results)
         shots = self._apply_director_notes(shots, director_notes_result, director_notes_bundle)
         shots = self.assign_priorities(shots)
         rules = _CONTINUITY_RULES_BY_PATTERN.get(coverage_pattern, [])
@@ -601,6 +604,89 @@ class CinematicShotGrammarEngine:
     def assign_priorities(self, shots: list[CinematicShotSpec]) -> list[CinematicShotSpec]:
         return shots
 
+    def _apply_character_bible(
+        self,
+        shots: list[CinematicShotSpec],
+        character_bible_results: list[CharacterBibleResolveResult] | None,
+    ) -> list[CinematicShotSpec]:
+        if not character_bible_results:
+            return shots
+
+        resolved = [r for r in character_bible_results if r.primary_reference is not None]
+        unresolved = [r for r in character_bible_results if r.primary_reference is None and r.character_id]
+
+        if not resolved:
+            return shots
+
+        all_note_parts: list[str] = []
+        all_props: list[str] = []
+        all_negative_constraints: list[str] = []
+        all_ref_ids: list[str] = []
+        main_char_name: str | None = None
+
+        for result in resolved:
+            char_name = result.character_name or result.character_id
+            if main_char_name is None:
+                main_char_name = char_name
+
+            lock_block = result.prompt_lock_block
+            if lock_block:
+                all_note_parts.append(f"{char_name}: {lock_block}")
+
+            if result.prompt_negative_block:
+                all_negative_constraints.append(result.prompt_negative_block)
+
+            asset_ids = result.trace_metadata.get("approved_reference_asset_ids", [])
+            for aid in asset_ids:
+                if aid not in all_ref_ids:
+                    all_ref_ids.append(aid)
+
+            if result.unresolved_props:
+                all_props.extend(result.unresolved_props)
+
+        combined_note = "; ".join(all_note_parts) if all_note_parts else None
+        combined_negative = " | ".join(all_negative_constraints) if all_negative_constraints else None
+        character_lock_source = (
+            "character_bible" if not any(
+                r.trace_metadata.get("director_notes_override_applied")
+                for r in resolved
+            ) else "director_notes"
+        )
+        first_look = next(
+            (r.trace_metadata.get("look_variant_applied") for r in resolved
+             if r.trace_metadata.get("look_variant_applied")),
+            None,
+        )
+
+        result_shots: list[CinematicShotSpec] = []
+        for shot in shots:
+            updates: dict[str, Any] = {}
+            if combined_note:
+                updates["character_continuity_note"] = (
+                    f"{shot.character_continuity_note}; {combined_note}"
+                    if shot.character_continuity_note
+                    else combined_note
+                )
+            if all_ref_ids:
+                updates["approved_reference_asset_ids"] = list(all_ref_ids)
+            if first_look:
+                updates["look_variant_applied"] = first_look
+            updates["character_lock_applied"] = character_lock_source
+            if combined_negative:
+                updates["character_negative_constraints"] = combined_negative
+            if main_char_name:
+                updates["character_reference_id"] = main_char_name
+            if all_props:
+                prop_text = ", ".join(sorted(set(all_props)))
+                updates["prop_continuity_note"] = (
+                    f"{shot.prop_continuity_note}; Unresolved props: {prop_text}"
+                    if shot.prop_continuity_note
+                    else f"Unresolved props: {prop_text}"
+                )
+            result_shots.append(shot.model_copy(update=updates))
+
+        return result_shots
+
     def _apply_director_notes(
         self,
         shots: list[CinematicShotSpec],
@@ -656,6 +742,8 @@ class CinematicShotGrammarEngine:
                     updates["character_continuity_note"] = char_note
                 if wardrobe:
                     updates["wardrobe_continuity_note"] = f"Per Director Notes: {wardrobe}."
+                if char_note or wardrobe:
+                    updates["character_lock_applied"] = "director_notes"
             if set_note:
                 updates["set_continuity_note"] = set_note
                 updates["location_reference_id"] = loc_ref
@@ -748,13 +836,39 @@ class CinematicShotGrammarEngine:
             character_names=request.character_names,
             director_notes_result=request.director_notes_result,
             director_notes_bundle=request.director_notes_bundle,
+            character_bible_results=request.character_bible_results,
         )
+
+        cb_metadata: dict[str, Any] = {}
+        if request.character_bible_results:
+            resolved_ids = [
+                r.character_id for r in request.character_bible_results
+                if r.primary_reference is not None
+            ]
+            unresolved_ids = [
+                r.character_id for r in request.character_bible_results
+                if r.primary_reference is None and r.character_id
+            ]
+            look_variants: list[str] = []
+            for r in request.character_bible_results:
+                lv = r.trace_metadata.get("look_variant_applied")
+                if lv and lv not in look_variants:
+                    look_variants.append(lv)
+            cb_metadata = {
+                "character_count": len(request.character_bible_results),
+                "resolved_characters": resolved_ids,
+                "unresolved_characters": unresolved_ids,
+                "look_variants_applied": look_variants,
+                "character_bible_active": True,
+            }
+
         return CinematicGrammarResult(
             plan=plan,
             scene_text=request.scene_text,
             detected_scene_type=scene_type,
             confidence=confidence,
             cinematic_grammar_version="v0.1",
+            character_bible_metadata=cb_metadata,
         )
 
 

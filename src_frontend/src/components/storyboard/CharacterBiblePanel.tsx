@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, GitBranch, Link2, Loader2, Plus, Save, Shield, Sparkles, UserRound } from 'lucide-react'
+import { CheckCircle2, ChevronLeft, ChevronRight, GitBranch, Image, Link2, Loader2, Plus, Save, Shield, Sparkles, UserRound } from 'lucide-react'
 import { characterBibleApi } from '@/api/characterBible'
+import { storyboardApi } from '@/api/storyboard'
 import type {
   CharacterBibleApprovedAssetType,
   CharacterBibleEntry,
@@ -11,6 +12,7 @@ import type {
   CharacterBibleTraceResponse,
   CharacterBibleUpsertPayload,
 } from '@/types/characterBible'
+import type { ProjectImageAssetItem, ProjectImageAssetPaginationMeta } from '@/types/storyboard'
 
 interface CharacterBiblePanelProps {
   projectId: string
@@ -142,6 +144,12 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
   const [referencePayload, setReferencePayload] = useState<CharacterBibleReferencePayload>(EMPTY_REFERENCE)
   const [resolveResult, setResolveResult] = useState<CharacterBibleResolveResponse | null>(null)
   const [traceResult, setTraceResult] = useState<CharacterBibleTraceResponse | null>(null)
+  const [availableAssets, setAvailableAssets] = useState<ProjectImageAssetItem[]>([])
+  const [selectedAsset, setSelectedAsset] = useState<ProjectImageAssetItem | null>(null)
+  const [assetsMeta, setAssetsMeta] = useState<ProjectImageAssetPaginationMeta | null>(null)
+  const [isAssetSelectorOpen, setIsAssetSelectorOpen] = useState(false)
+  const [isAssetsLoading, setIsAssetsLoading] = useState(false)
+  const [assetsError, setAssetsError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -158,7 +166,30 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
     [entries, selectedCharacterId]
   )
 
+  const selectedReferencePreview = useMemo(() => {
+    if (selectedAsset) return selectedAsset
+    if (!referencePayload.asset_id) return null
+
+    return availableAssets.find((asset) => asset.asset_id === referencePayload.asset_id) || null
+  }, [availableAssets, referencePayload.asset_id, selectedAsset])
+
   const hasPersistedEntry = Boolean(selectedEntry)
+
+  const fetchAssets = async (page = 1) => {
+    setIsAssetsLoading(true)
+    setAssetsError(null)
+
+    try {
+      const response = await storyboardApi.getImageAssets(projectId, page, 12)
+      setAvailableAssets(response.items)
+      setAssetsMeta(response.meta)
+      setSelectedAsset((current) => response.items.find((asset) => asset.asset_id === current?.asset_id) || current)
+    } catch (loadError) {
+      setAssetsError(parseApiError(loadError, 'No se pudieron cargar los assets del proyecto'))
+    } finally {
+      setIsAssetsLoading(false)
+    }
+  }
 
   const loadCharacterBible = async (preferredCharacterId?: string) => {
     setIsLoading(true)
@@ -292,10 +323,12 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
       await characterBibleApi.addCharacterBibleReference(projectId, selectedCharacterId, {
         ...referencePayload,
         asset_id: referencePayload.asset_id.trim(),
+        asset_file_name: selectedReferencePreview?.file_name || referencePayload.asset_file_name || null,
         description: referencePayload.description?.trim() || null,
         notes: referencePayload.notes?.trim() || null,
       })
       setReferencePayload(EMPTY_REFERENCE)
+      setSelectedAsset(null)
       await loadCharacterBible(selectedCharacterId)
       setSuccess('Referencia vinculada correctamente')
     } catch (saveError) {
@@ -351,6 +384,25 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleToggleAssetSelector = async () => {
+    const nextOpen = !isAssetSelectorOpen
+    setIsAssetSelectorOpen(nextOpen)
+
+    if (nextOpen && availableAssets.length === 0 && !isAssetsLoading) {
+      await fetchAssets(1)
+    }
+  }
+
+  const handleSelectAsset = (asset: ProjectImageAssetItem) => {
+    setSelectedAsset(asset)
+    setReferencePayload((current: CharacterBibleReferencePayload) => ({
+      ...current,
+      asset_id: asset.asset_id,
+      asset_file_name: asset.file_name,
+    }))
+    setSuccess('Asset seleccionado. Puedes vincularlo como referencia aprobada.')
   }
 
   return (
@@ -556,9 +608,121 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 <label className="inline-flex items-center gap-2 text-xs text-slate-300">
                   <input type="checkbox" checked={referencePayload.is_primary} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, is_primary: event.target.checked }))} /> Referencia principal
                 </label>
-                <button type="button" onClick={() => void handleAddReference()} disabled={isSaving || !hasPersistedEntry} className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/20 disabled:opacity-40">
-                  <Link2 className="w-4 h-4" /> Vincular referencia
-                </button>
+                <div className="flex flex-wrap gap-3">
+                  <button type="button" onClick={() => void handleAddReference()} disabled={isSaving || !hasPersistedEntry} className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/20 disabled:opacity-40">
+                    <Link2 className="w-4 h-4" /> Vincular referencia
+                  </button>
+                  <button type="button" onClick={() => void handleToggleAssetSelector()} disabled={isSaving} className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-300 hover:bg-cyan-500/20 disabled:opacity-40">
+                    <Image className="w-4 h-4" /> Seleccionar asset existente
+                  </button>
+                </div>
+
+                {selectedReferencePreview && (
+                  <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-sm text-slate-200">
+                    <p className="font-medium text-white">Asset seleccionado</p>
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      {isSafeAssetUrl(selectedReferencePreview.thumbnail_url) && (
+                        <img
+                          src={selectedReferencePreview.thumbnail_url}
+                          alt={selectedReferencePreview.file_name}
+                          className="h-20 w-20 rounded-lg border border-white/10 object-cover"
+                          loading="lazy"
+                        />
+                      )}
+                      <div className="space-y-1 text-xs text-slate-400">
+                        <p>file_name: {selectedReferencePreview.file_name}</p>
+                        <p>asset_id: {selectedReferencePreview.asset_id}</p>
+                        {isSafeAssetUrl(selectedReferencePreview.preview_url) && (
+                          <a href={selectedReferencePreview.preview_url} target="_blank" rel="noreferrer" className="inline-flex text-cyan-300 hover:text-cyan-200">
+                            {selectedReferencePreview.preview_url}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {isAssetSelectorOpen && (
+                  <div className="rounded-xl border border-white/10 bg-dark-300/40 p-4 space-y-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-white">Assets existentes del proyecto</p>
+                        <p className="text-xs text-slate-400">Selecciona un asset visual ya disponible en el proyecto o usa el campo manual de MediaAsset ID.</p>
+                      </div>
+                      <button type="button" onClick={() => void fetchAssets(assetsMeta?.page || 1)} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-200 hover:bg-white/5">
+                        {isAssetsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Image className="w-3.5 h-3.5" />} Recargar assets
+                      </button>
+                    </div>
+
+                    {assetsError && (
+                      <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+                        {assetsError}
+                      </div>
+                    )}
+
+                    {isAssetsLoading ? (
+                      <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-6 text-sm text-slate-300">
+                        <Loader2 className="w-4 h-4 animate-spin text-amber-400" /> Cargando assets...
+                      </div>
+                    ) : availableAssets.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-white/10 px-3 py-6 text-sm text-slate-500">
+                        Empty assets: no hay assets visuales disponibles en este proyecto. Puedes seguir vinculando referencias mediante MediaAsset ID manual.
+                      </div>
+                    ) : (
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {availableAssets.map((asset) => {
+                          const safeThumbnailUrl = isSafeAssetUrl(asset.thumbnail_url) ? asset.thumbnail_url : null
+                          const safePreviewUrl = isSafeAssetUrl(asset.preview_url) ? asset.preview_url : null
+                          const isSelected = referencePayload.asset_id === asset.asset_id
+
+                          return (
+                            <button
+                              key={asset.asset_id}
+                              type="button"
+                              onClick={() => handleSelectAsset(asset)}
+                              className={`rounded-xl border p-3 text-left transition-colors ${isSelected ? 'border-amber-400/40 bg-amber-500/10' : 'border-white/10 bg-black/20 hover:border-white/20'}`}
+                            >
+                              <div className="flex gap-3">
+                                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/20">
+                                  {safeThumbnailUrl ? (
+                                    <img src={safeThumbnailUrl} alt={asset.file_name} className="h-full w-full object-cover" loading="lazy" />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-slate-500">
+                                      <Image className="w-5 h-5" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium text-white">{asset.file_name}</p>
+                                  <p className="mt-1 truncate text-[11px] text-slate-500">{asset.asset_id}</p>
+                                  <p className="mt-2 text-[11px] text-slate-400">{safePreviewUrl ? 'Preview segura disponible' : 'Sin preview segura'}</p>
+                                  <span className="mt-2 inline-flex rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-300">
+                                    Usar como referencia
+                                  </span>
+                                </div>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {assetsMeta && assetsMeta.total_pages > 1 && (
+                      <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-400">
+                        <span>Pagina {assetsMeta.page} de {assetsMeta.total_pages} ({assetsMeta.total_items} assets)</span>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => void fetchAssets(assetsMeta.page - 1)} disabled={!assetsMeta.has_prev || isAssetsLoading} className="rounded-lg border border-white/10 px-2 py-1 text-slate-200 hover:bg-white/5 disabled:opacity-40">
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button type="button" onClick={() => void fetchAssets(assetsMeta.page + 1)} disabled={!assetsMeta.has_next || isAssetsLoading} className="rounded-lg border border-white/10 px-2 py-1 text-slate-200 hover:bg-white/5 disabled:opacity-40">
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {selectedEntry?.approved_references.length ? (
                   <div className="space-y-2">
                     {selectedEntry.approved_references.map((reference) => (
@@ -571,11 +735,15 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                         <p className="mt-1 text-xs text-slate-500">asset_id: {reference.asset_id}</p>
                         {reference.description && <p className="mt-1 text-xs text-slate-400">{reference.description}</p>}
                         {reference.thumbnail_url && isSafeAssetUrl(reference.thumbnail_url) && (
-                          <a href={reference.thumbnail_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-cyan-300 hover:text-cyan-200">thumbnail_url</a>
+                          <div className="mt-2 flex flex-wrap items-center gap-3">
+                            <img src={reference.thumbnail_url} alt={reference.asset_file_name || reference.asset_id} className="h-16 w-16 rounded-lg border border-white/10 object-cover" loading="lazy" />
+                            <a href={reference.thumbnail_url} target="_blank" rel="noreferrer" className="inline-flex text-xs text-cyan-300 hover:text-cyan-200">thumbnail_url</a>
+                          </div>
                         )}
-                        {isSafeAssetUrl(reference.asset_api_url) && (
+                        {!reference.thumbnail_url && isSafeAssetUrl(reference.asset_api_url) && (
                           <a href={reference.asset_api_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-cyan-300 hover:text-cyan-200">{reference.asset_api_url}</a>
                         )}
+                        {!reference.thumbnail_url && !isSafeAssetUrl(reference.asset_api_url) && <p className="mt-2 text-xs text-slate-500">asset_id fallback: {reference.asset_id}</p>}
                       </div>
                     ))}
                   </div>

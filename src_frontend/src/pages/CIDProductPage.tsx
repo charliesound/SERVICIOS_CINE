@@ -48,11 +48,11 @@ export default function CIDProductPage() {
   const [activePricing, setActivePricing] = useState<'setup' | 'modules'>('setup')
 
   useSeo({
-    title: 'CID - El sistema para desarrollar y producir cine con IA',
-    description: 'CID conecta guion, analisis cinematografico, storyboard, visual bible, presupuesto y pitch en un flujo de preproduccion real.',
+    title: 'CID — Cinematic Intelligence Director | Preproduccion cinematografica con IA',
+    description: 'CID — Cinematic Intelligence Director conecta guion, analisis cinematografico, storyboard, visual bible, Character Bible, presupuesto y pitch en un flujo de preproduccion real.',
     path: '/solutions/cid',
     robots: 'index, follow',
-    keywords: ['CID cine inteligente digital', 'sistema produccion audiovisual', 'software IA cine', 'pipeline audiovisual completo'],
+    keywords: ['cid cinematic intelligence director', 'sistema produccion audiovisual', 'software IA cine', 'pipeline audiovisual completo'],
     structuredData: [
       buildBreadcrumbStructuredData([
         { name: 'Inicio', path: '/' },
@@ -62,11 +62,11 @@ export default function CIDProductPage() {
       {
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
-        name: 'CID - Cine Inteligente Digital',
+        name: 'CID - Cinematic Intelligence Director',
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
         url: buildAbsoluteUrl('/solutions/cid'),
-        description: 'Sistema de preproduccion cinematografica que une guion, analisis, storyboard, visual bible, presupuesto y pitch en un flujo conectado.',
+        description: 'Sistema de preproduccion cinematografica con IA que une guion, analisis, storyboard, visual bible, Character Bible, presupuesto y pitch en un flujo conectado.',
         offers: {
           '@type': 'Offer',
           priceCurrency: 'EUR',
@@ -134,19 +134,19 @@ export default function CIDProductPage() {
             <div className="relative z-10 max-w-4xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.28em] text-amber-200">
                 <Sparkles className="h-3.5 w-3.5" />
-                CID — Sistema de produccion
+                CID — Cinematic Intelligence Director
               </div>
 
               <h1 className="mt-7 max-w-5xl font-display text-5xl font-semibold leading-[0.88] tracking-[-0.04em] text-white sm:text-6xl md:text-7xl xl:text-[6.1rem]">
-                CID — El sistema para desarrollar y producir cine con inteligencia artificial
+                CID — Cinematic Intelligence Director by AILinkCinema
               </h1>
 
               <p className="mt-6 max-w-3xl text-lg font-medium leading-8 text-slate-100 md:text-2xl md:leading-10">
-                CID conecta guion, analisis cinematografico, storyboard, visual bible, presupuesto y pitch en un flujo de trabajo de preproduccion real.
+                CID es el Director de Inteligencia Cinematografica de AILinkCinema. Convierte un guion en analisis, desglose, storyboard, visual bible, Character Bible, presupuesto y pitch dentro de un flujo real de preproduccion.
               </p>
 
               <div className="mt-5 inline-flex max-w-3xl rounded-[1.4rem] border border-cyan-300/15 bg-cyan-300/10 px-4 py-3 text-sm leading-7 text-cyan-50 backdrop-blur-xl md:text-base">
-                 No es una herramienta aislada. Es un sistema de preproduccion cinematografica.
+                  No es un generador de imagenes. Es un sistema de preproduccion cinematografica con IA.
               </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">

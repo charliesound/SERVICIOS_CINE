@@ -31,13 +31,13 @@ export const landingContent = {
   },
   hero: {
     eyebrow: 'AILinkCinema / Inteligencia Artificial para Cine',
-    title: 'IA diseñada para preparar cine',
+    title: 'AILinkCinema presenta CID — Cinematic Intelligence Director',
     subtitle:
-      'AILinkCinema combina creatividad visual, analisis de guion e inteligencia artificial con un sistema real de preproduccion cinematografica.',
+      'El sistema de preproduccion cinematografica con IA que convierte un guion en analisis, desglose, storyboard, biblia visual, Character Bible, raccord, presupuesto, dossier y ruta de produccion.',
     differentialLine:
       'Desde la idea inicial hasta el pitch, CID conecta guion, analisis, storyboard, visual bible, presupuesto y planificacion en un mismo flujo de trabajo.',
     description:
-      'AILinkCinema transforma la creatividad cinematografica en un sistema de preproduccion claro con IA aplicada.',
+      'CID transforma un guion en una ruta visual y productiva completa.',
     chips: ['Guion + Analisis', 'IA aplicada', 'Preproduccion real'],
     proof: [
       { label: 'Creatividad + Canvas', text: 'Lienzo colaborativo para storyboard, previz y desarrollo visual conectado al pipeline.' },
@@ -54,9 +54,9 @@ export const landingContent = {
     heroCore: {
       eyebrow: 'El lienzo que conecta la preproduccion',
       title: 'CID',
-      subtitle: 'El producto que une creatividad, analisis e IA con preproduccion cinematografica real',
+      subtitle: 'CID — Cinematic Intelligence Director by AILinkCinema',
       description:
-        'CID conecta el lienzo creativo con guion, analisis, desglose, storyboard, visual bible, presupuesto, planificacion y pitch en un flujo real.',
+        'CID es el Director de Inteligencia Cinematografica de AILinkCinema y conecta guion, analisis, desglose, storyboard, visual bible, presupuesto, planificacion y pitch en un flujo real.',
       phases: ['Idea', 'Guion', 'Analisis', 'Storyboard', 'Visual bible', 'Presupuesto', 'Pitch'],
     },
   },
@@ -90,10 +90,10 @@ export const landingContent = {
   },
   cid: {
     eyebrow: 'CID / Sistema de preproduccion',
-    badge: 'CID - Creatividad conectada con preproduccion real',
+    badge: 'CID — Cinematic Intelligence Director',
     title: 'El sistema que conecta la parte creativa con las decisiones clave de preproduccion cinematografica.',
     description:
-      'CID une el lienzo creativo, la inteligencia artificial y la ejecucion tecnica en un flujo conectado que respeta el pipeline cinematografico.',
+      'CID une el lienzo creativo, la inteligencia artificial y la ejecucion tecnica en un flujo conectado que respeta el pipeline cinematografico. No es un generador de imagenes: es un sistema de preproduccion cinematografica con IA.',
     priceLine: 'Setup inicial desde 1.500 EUR y cuota mensual desde 299 EUR/mes.',
     supportLine: 'Incluye los modulos CID Core adaptados al flujo real del proyecto antes de entrar en produccion.',
     departmentLine: 'Guion, visual bible, presupuesto, pitch y planificacion conectados en un mismo sistema.',
@@ -197,7 +197,7 @@ export const landingContent = {
     tagline:
       'CID convierte un guion en una ruta visual y productiva completa.',
     subtitle:
-      'Analiza la historia, organiza escenas, genera storyboards, crea biblias visuales, controla el raccord y prepara materiales de presentación para producción, financiación y pitching.',
+      'CID es el Director de Inteligencia Cinematografica de AILinkCinema: analiza la historia, organiza escenas, genera storyboards, crea biblias visuales, controla el raccord y prepara materiales de presentacion para produccion, financiacion y pitching.',
     plans: [
       {
         id: 'starter',

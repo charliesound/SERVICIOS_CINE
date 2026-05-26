@@ -305,7 +305,7 @@ export default function DemoCIDPage() {
             <div>
               <p className="text-xl font-bold tracking-tight text-white md:text-2xl landing-brand-name">AILinkCinema</p>
               <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-amber-400/60 md:text-[11px]">
-                CID &mdash; Cine Inteligente Digital
+                CID &mdash; Cinematic Intelligence Director
               </p>
             </div>
           </Link>

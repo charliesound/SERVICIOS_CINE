@@ -36,7 +36,7 @@ export default function LandingPage() {
   const solutionsTarget = '/solutions'
   const requestDemoTarget = '/pricing'
   const description =
-    'AILinkCinema: inteligencia artificial para preproduccion cinematografica. CID conecta guion, analisis, storyboard, visual bible, character bible, raccord visual, presupuesto, pitch y planificacion en un sistema con creditos GPU.'
+    'AILinkCinema presenta CID — Cinematic Intelligence Director. El sistema de preproduccion cinematografica con IA que convierte un guion en analisis, desglose, storyboard, biblia visual, Character Bible, raccord, presupuesto, dossier y ruta de produccion.'
 
   useSeo({
     title: 'Inteligencia artificial para preproduccion cinematografica',
@@ -80,12 +80,12 @@ export default function LandingPage() {
       {
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
-        name: 'CID - Cine Inteligente Digital',
+        name: 'CID - Cinematic Intelligence Director',
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
         url: buildAbsoluteUrl('/solutions/cid'),
         description:
-          'Sistema de preproduccion cinematografica con IA que convierte un guion en analisis, storyboard, biblia visual, Character Bible, control de raccord, dossier y materiales de pitching.',
+          'Sistema de preproduccion cinematografica con IA que convierte un guion en analisis, desglose, storyboard, biblia visual, Character Bible, control de raccord, presupuesto, dossier y ruta de produccion.',
         offers: {
           '@type': 'AggregateOffer',
           priceCurrency: 'EUR',
@@ -150,7 +150,7 @@ export default function LandingPage() {
             <div>
               <p className="text-xl font-bold tracking-tight text-white md:text-2xl landing-brand-name">AILinkCinema</p>
               <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-amber-400/60 md:text-[11px]">
-                CID &mdash; Cine Inteligente Digital
+                CID &mdash; Cinematic Intelligence Director
               </p>
             </div>
           </Link>
@@ -217,7 +217,7 @@ export default function LandingPage() {
         <LandingHeroCinematic
           content={{
             eyebrow: landingContent.hero.eyebrow,
-            title: 'Cine Inteligente Digital',
+            title: 'AILinkCinema presenta CID — Cinematic Intelligence Director',
             subtitle: landingContent.hero.subtitle,
           }}
           exploreCidTarget={exploreCidTarget}

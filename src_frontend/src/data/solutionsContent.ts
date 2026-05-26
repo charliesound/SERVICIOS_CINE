@@ -42,15 +42,15 @@ export interface SolutionEntry {
 export const cidProduct = {
   slug: 'cid' as const,
   path: '/solutions/cid',
-  title: 'CID - Cine Inteligente Digital',
+  title: 'CID - Cinematic Intelligence Director',
   shortTitle: 'CID',
   type: 'Producto completo' as const,
   icon: Film,
   priceLabel: 'Setup inicial desde 1.500 EUR + desde 299 EUR/mes',
   description:
-    'Solucion integral de preproduccion cinematografica para conectar guion, analisis, storyboard, visual bible, presupuesto y pitch en un mismo flujo de trabajo.',
+    'Solucion integral de preproduccion cinematografica con IA para conectar guion, analisis, storyboard, visual bible, Character Bible, presupuesto y pitch en un mismo flujo de trabajo.',
   heroDescription:
-    'CID es el producto principal de AILinkCinema: una plataforma premium que organiza guion, analisis cinematografico, storyboard, visual bible, presupuesto, documentos y pitch dentro de una sola experiencia de preproduccion.',
+    'CID es el producto principal de AILinkCinema: Cinematic Intelligence Director, una plataforma premium que organiza guion, analisis cinematografico, storyboard, visual bible, Character Bible, presupuesto, documentos y pitch dentro de una sola experiencia de preproduccion.',
   pricing: {
     headline: 'Modelo de precio',
     setup: 'Setup inicial desde 1.500 EUR',

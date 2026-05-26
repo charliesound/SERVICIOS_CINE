@@ -38,6 +38,10 @@ interface AnalysisResult {
   scenes?: Array<Record<string, unknown>>
   cinematic_context_used?: boolean
   analysis_provider?: string
+  analysis_engine?: string | null
+  analysis_model?: string | null
+  fallback_used?: boolean | null
+  fallback_reason?: string | null
 }
 
 interface Shot {
@@ -480,6 +484,11 @@ export default function ProjectDetailPage() {
           characters_count: Number(summary.characters_count || 0),
           locations_count: Number(summary.locations_count || 0),
           sequences_count: Number(summary.sequences_count || 0),
+          analysis_engine: summary.analysis_engine ? String(summary.analysis_engine) : null,
+          analysis_provider: summary.analysis_provider ? String(summary.analysis_provider) : undefined,
+          analysis_model: summary.analysis_model ? String(summary.analysis_model) : null,
+          fallback_used: typeof summary.fallback_used === 'boolean' ? summary.fallback_used : null,
+          fallback_reason: summary.fallback_reason ? String(summary.fallback_reason) : null,
           summary: (summary.summary as Record<string, unknown>) || {},
           scenes: scenesRaw.scenes,
         })
@@ -495,6 +504,21 @@ export default function ProjectDetailPage() {
           doc_type: String(result.doc_type || 'unknown'),
           confidence_score: typeof result.confidence_score === 'number' ? result.confidence_score : null,
           structured_payload: (result.structured_payload as Record<string, unknown>) || {},
+          analysis_engine: typeof (result.structured_payload as Record<string, unknown>)?.analysis_summary === 'object'
+            ? String((((result.structured_payload as Record<string, unknown>).analysis_summary as Record<string, unknown>).analysis_engine) || '') || null
+            : null,
+          analysis_provider: typeof (result.structured_payload as Record<string, unknown>)?.analysis_summary === 'object'
+            ? String((((result.structured_payload as Record<string, unknown>).analysis_summary as Record<string, unknown>).analysis_provider) || '') || undefined
+            : undefined,
+          analysis_model: typeof (result.structured_payload as Record<string, unknown>)?.analysis_summary === 'object'
+            ? String((((result.structured_payload as Record<string, unknown>).analysis_summary as Record<string, unknown>).analysis_model) || '') || null
+            : null,
+          fallback_used: typeof ((result.structured_payload as Record<string, unknown>)?.analysis_summary as Record<string, unknown> | undefined)?.fallback_used === 'boolean'
+            ? Boolean((((result.structured_payload as Record<string, unknown>).analysis_summary as Record<string, unknown>).fallback_used))
+            : null,
+          fallback_reason: typeof (result.structured_payload as Record<string, unknown>)?.analysis_summary === 'object'
+            ? String((((result.structured_payload as Record<string, unknown>).analysis_summary as Record<string, unknown>).fallback_reason) || '') || null
+            : null,
         })
         return
       }
@@ -1400,7 +1424,7 @@ export default function ProjectDetailPage() {
                   </div>
                   <h3 className="font-semibold">Resumen del analisis</h3>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                   <div className="p-4 bg-white/5 rounded-xl">
                     <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Fuente</p>
                     <p className="text-white font-semibold capitalize">
@@ -1417,8 +1441,25 @@ export default function ProjectDetailPage() {
                       {analysisData.characters_count ?? '—'}
                     </p>
                   </div>
+                  </div>
                 </div>
-              </div>
+
+                <div className="card bg-dark-200/80 border border-white/5 p-6">
+                  <h4 className="text-sm font-semibold mb-4 text-gray-300">Motor de análisis</h4>
+                  {analysisData.analysis_engine || analysisData.analysis_provider || analysisData.analysis_model || analysisData.fallback_used != null ? (
+                    <div className="grid gap-3 md:grid-cols-4 text-sm text-slate-300">
+                      <p><span className="text-slate-500">Motor:</span> {analysisData.analysis_engine || 'Motor no informado'}</p>
+                      <p><span className="text-slate-500">Provider:</span> {analysisData.analysis_provider || 'Motor no informado'}</p>
+                      <p><span className="text-slate-500">Modelo:</span> {analysisData.analysis_model || 'Motor no informado'}</p>
+                      <p><span className="text-slate-500">Fallback:</span> {analysisData.fallback_used == null ? 'Motor no informado' : analysisData.fallback_used ? 'Sí' : 'No'}</p>
+                      {analysisData.fallback_reason && (
+                        <p className="md:col-span-4"><span className="text-slate-500">Motivo:</span> {analysisData.fallback_reason}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500">Motor no informado</p>
+                  )}
+                </div>
 
               {analysisData.source === 'breakdown' || analysisData.source === 'cinematic_script_analysis' || analysisData.source === 'fallback_script_breakdown' ? (
                 <>

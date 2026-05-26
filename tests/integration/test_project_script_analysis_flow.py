@@ -279,6 +279,11 @@ class ProjectScriptAnalysisFlowIntegrationTest(unittest.TestCase):
         self.assertEqual(analysis_summary["status"], "completed")
         self.assertGreaterEqual(analysis_summary["scenes_count"], 2)
         self.assertGreaterEqual(len(analysis_summary["department_breakdown"]["departments"]["cast"]["characters"]), 1)
+        self.assertIn(analysis_summary["analysis_engine"], {"ollama", "heuristic"})
+        self.assertIn("analysis_provider", analysis_summary)
+        self.assertIn("analysis_model", analysis_summary)
+        self.assertIn("fallback_used", analysis_summary)
+        self.assertIn("fallback_reason", analysis_summary)
 
         summary = self.client.get(
             f"/api/projects/{PROJECT_SEC_PREFIX_ID}/analysis/summary",
@@ -289,6 +294,11 @@ class ProjectScriptAnalysisFlowIntegrationTest(unittest.TestCase):
         self.assertEqual(summary_json["status"], "completed")
         self.assertGreaterEqual(summary_json["scenes_count"], 2)
         self.assertGreaterEqual(summary_json["sequences_count"], 2)
+        self.assertIn(summary_json["analysis_engine"], {"ollama", "heuristic"})
+        self.assertIn("analysis_provider", summary_json)
+        self.assertIn("analysis_model", summary_json)
+        self.assertIn("fallback_used", summary_json)
+        self.assertIn("fallback_reason", summary_json)
 
         connection = sqlite3.connect(str(TEST_DB_PATH))
         try:

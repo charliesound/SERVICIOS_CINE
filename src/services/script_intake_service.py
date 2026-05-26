@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import uuid
 import unicodedata
@@ -15,6 +16,10 @@ from models.production import ProductionBreakdown
 from services.llm.llm_service import ScriptAnalysisLLMOutput, llm_service
 from services.job_tracking_service import job_tracking_service
 from services.script_document_classifier import SCENE_HEADING_RE
+from services.ollama_client_service import OllamaClientService
+
+
+logger = logging.getLogger(__name__)
 
 
 class ScriptIntakeService:
@@ -610,14 +615,27 @@ class AnalysisService:
     def __init__(self):
         self.script_intake = ScriptIntakeService()
 
-    async def _run_llm_analysis_or_none(self, script_text: str) -> ScriptAnalysisLLMOutput | None:
+    async def _run_llm_analysis_or_none(self, script_text: str) -> tuple[ScriptAnalysisLLMOutput | None, dict[str, Any]]:
+        settings = llm_service._settings()
+        requested_provider = str(settings.get("provider", "ollama")).strip().lower()
+        requested_model = OllamaClientService.get_model_for_task("script_analysis", settings)
+        trace = {
+            "analysis_provider": requested_provider,
+            "analysis_model": requested_model if requested_provider == "ollama" else None,
+            "fallback_used": False,
+            "fallback_reason": None,
+        }
         if not llm_service.is_enabled_for("script_analysis_provider"):
-            return None
+            trace["fallback_used"] = True
+            trace["fallback_reason"] = "provider_disabled_or_not_ollama"
+            return None, trace
         try:
-            return await llm_service.analyze_script(script_text)
+            return await llm_service.analyze_script(script_text), trace
         except Exception as exc:
             if llm_service.should_fallback(exc):
-                return None
+                trace["fallback_used"] = True
+                trace["fallback_reason"] = f"ollama_error:{type(exc).__name__}"
+                return None, trace
             raise
 
     async def run_analysis(
@@ -636,7 +654,7 @@ class AnalysisService:
                 db, job=job, percent=10, stage="Validando proyecto y documento", code="validating_project"
             )
 
-        llm_output = await self._run_llm_analysis_or_none(script_text)
+        llm_output, engine_trace = await self._run_llm_analysis_or_none(script_text)
         heuristic_scenes = self.script_intake.parse_script(script_text)
         llm_scenes = [scene.model_dump() for scene in llm_output.scenes] if llm_output and llm_output.scenes else []
         heuristic_has_explicit_sequences = any(scene.get("source_sequence_number") for scene in heuristic_scenes)
@@ -677,12 +695,33 @@ class AnalysisService:
 
         warnings: list[str] = []
         analysis_status = "completed"
+        analysis_engine = "ollama" if llm_output else "heuristic"
+        if engine_trace.get("fallback_used") and not llm_output:
+            analysis_engine = "heuristic"
         if not normalized_script:
             analysis_status = "basic_empty"
             warnings.append("Script vacio. No hay texto para analizar.")
         elif not scenes:
             analysis_status = "degraded"
             warnings.append("No se detectaron escenas. Revisa formato de encabezados o parser.")
+
+        analysis_trace = {
+            "analysis_engine": analysis_engine,
+            "analysis_provider": engine_trace.get("analysis_provider"),
+            "analysis_model": engine_trace.get("analysis_model") if llm_output else engine_trace.get("analysis_model"),
+            "fallback_used": bool(engine_trace.get("fallback_used")),
+            "fallback_reason": engine_trace.get("fallback_reason"),
+        }
+
+        logger.info(
+            "script_analysis_engine project_id=%s requested_provider=%s engine=%s model=%s fallback_used=%s fallback_reason=%s",
+            project_id,
+            engine_trace.get("analysis_provider"),
+            analysis_trace["analysis_engine"],
+            analysis_trace.get("analysis_model"),
+            analysis_trace["fallback_used"],
+            analysis_trace.get("fallback_reason"),
+        )
 
         analysis_data = {
             "project_id": project_id,
@@ -695,7 +734,8 @@ class AnalysisService:
             "llm_summary": llm_output.summary if llm_output else "",
             "production_needs": llm_output.production_needs if llm_output else [],
             "storyboard_suggestions": llm_output.storyboard_suggestions if llm_output else [],
-            "analysis_engine": "ollama" if llm_output else "heuristic",
+            "analysis_engine": analysis_trace["analysis_engine"],
+            **analysis_trace,
             "scenes": scenes,
             "breakdowns": breakdowns,
             "department_breakdown": department_breakdown,
@@ -708,7 +748,11 @@ class AnalysisService:
                 "doc_type": document_payload.get("doc_type"),
                 "confidence_score": document_payload.get("confidence_score"),
                 "source_kind": document_payload.get("source_kind"),
-                "analysis_engine": "ollama" if llm_output else "heuristic",
+                "analysis_engine": analysis_trace["analysis_engine"],
+                "analysis_provider": analysis_trace["analysis_provider"],
+                "analysis_model": analysis_trace["analysis_model"],
+                "fallback_used": analysis_trace["fallback_used"],
+                "fallback_reason": analysis_trace["fallback_reason"],
                 "warning_count": len(warnings),
             },
         }
@@ -764,6 +808,7 @@ class AnalysisService:
             "breakdowns": breakdowns[:10],
             "department_breakdown": department_breakdown,
             "warnings": warnings,
+            **analysis_trace,
         }
 
     async def get_summary(
@@ -797,6 +842,11 @@ class AnalysisService:
             "scenes_count": breakdown_data.get("metadata", {}).get("total_scenes", 0),
             "characters_count": breakdown_data.get("metadata", {}).get("total_characters", 0),
             "locations_count": breakdown_data.get("metadata", {}).get("total_locations", 0),
+            "analysis_engine": breakdown_data.get("analysis_engine") or breakdown_data.get("metadata", {}).get("analysis_engine"),
+            "analysis_provider": breakdown_data.get("analysis_provider") or breakdown_data.get("metadata", {}).get("analysis_provider"),
+            "analysis_model": breakdown_data.get("analysis_model") or breakdown_data.get("metadata", {}).get("analysis_model"),
+            "fallback_used": breakdown_data.get("fallback_used") if "fallback_used" in breakdown_data else breakdown_data.get("metadata", {}).get("fallback_used"),
+            "fallback_reason": breakdown_data.get("fallback_reason") or breakdown_data.get("metadata", {}).get("fallback_reason"),
             "summary": breakdown_data.get("summary")
             or breakdown_data.get("department_breakdown", {}),
             "warnings": breakdown_data.get("warnings", []),

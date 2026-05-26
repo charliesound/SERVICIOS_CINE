@@ -1,0 +1,132 @@
+{
+  "created_at": "2026-05-26T07:01:07.882716Z",
+  "fps": 24.0,
+  "id": "assembly-ab84da5697b8",
+  "name": "CID Editorial Resolve Smoke",
+  "project_id": "editorial-resolve-smoke-20260525",
+  "sequences": [
+    {
+      "clips": [
+        {
+          "assigned_tracks": [
+            "V1",
+            "A1",
+            "A2"
+          ],
+          "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-10",
+          "clip_name": "S1_SH1_TK1",
+          "duration_frames": 360,
+          "fps": 24.0,
+          "id": "clip-take-1-1-1",
+          "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-2",
+          "start_tc": "01:00:00:00",
+          "take_id": "take-1-1-1",
+          "timecode_offset_frames": 0,
+          "timeline_in": 0,
+          "timeline_out": 360
+        },
+        {
+          "assigned_tracks": [
+            "V1",
+            "A1",
+            "A2"
+          ],
+          "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-11",
+          "clip_name": "S1_SH1_TK2",
+          "duration_frames": 288,
+          "fps": 24.0,
+          "id": "clip-take-1-1-2",
+          "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-6",
+          "start_tc": "01:00:15:00",
+          "take_id": "take-1-1-2",
+          "timecode_offset_frames": 0,
+          "timeline_in": 360,
+          "timeline_out": 648
+        },
+        {
+          "assigned_tracks": [
+            "V1",
+            "A1",
+            "A2"
+          ],
+          "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-12",
+          "clip_name": "S1_SH2_TK1",
+          "duration_frames": 432,
+          "fps": 24.0,
+          "id": "clip-take-1-2-1",
+          "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-3",
+          "start_tc": "01:00:27:00",
+          "take_id": "take-1-2-1",
+          "timecode_offset_frames": 0,
+          "timeline_in": 648,
+          "timeline_out": 1080
+        },
+        {
+          "assigned_tracks": [
+            "V1",
+            "A1",
+            "A2"
+          ],
+          "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-7",
+          "clip_name": "S1_SH2_TK2",
+          "duration_frames": 360,
+          "fps": 24.0,
+          "id": "clip-take-1-2-2",
+          "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-4",
+          "start_tc": "01:00:45:00",
+          "take_id": "take-1-2-2",
+          "timecode_offset_frames": 0,
+          "timeline_in": 1080,
+          "timeline_out": 1440
+        }
+      ],
+      "id": "seq-1",
+      "name": "Scene 1",
+      "scene_number": 1
+    },
+    {
+      "clips": [
+        {
+          "assigned_tracks": [
+            "V1",
+            "A1",
+            "A2"
+          ],
+          "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-8",
+          "clip_name": "S2_SH1_TK1",
+          "duration_frames": 480,
+          "fps": 24.0,
+          "id": "clip-take-2-1-1",
+          "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-1",
+          "start_tc": "01:01:10:00",
+          "take_id": "take-2-1-1",
+          "timecode_offset_frames": 0,
+          "timeline_in": 1440,
+          "timeline_out": 1920
+        },
+        {
+          "assigned_tracks": [
+            "V1",
+            "A1",
+            "A2"
+          ],
+          "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-9",
+          "clip_name": "S2_SH1_TK2",
+          "duration_frames": 432,
+          "fps": 24.0,
+          "id": "clip-take-2-1-2",
+          "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-5",
+          "start_tc": "01:01:30:00",
+          "take_id": "take-2-1-2",
+          "timecode_offset_frames": 0,
+          "timeline_in": 1920,
+          "timeline_out": 2352
+        }
+      ],
+      "id": "seq-2",
+      "name": "Scene 2",
+      "scene_number": 2
+    }
+  ],
+  "total_duration_frames": 2352
+}

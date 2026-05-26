@@ -283,7 +283,14 @@ class EditorialAssemblyCoreService:
         sound_reports: list[SoundReportEntry],
     ) -> SoundReportEntry | None:
         for report in sound_reports:
-            if report.scene == camera_report.scene and report.take == camera_report.take:
+            if (
+                report.scene == camera_report.scene
+                and report.shot == camera_report.shot
+                and report.take == camera_report.take
+            ):
+                return report
+        for report in sound_reports:
+            if report.shot is None and report.scene == camera_report.scene and report.take == camera_report.take:
                 return report
         return None
 

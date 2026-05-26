@@ -1,0 +1,193 @@
+{
+  "camera_assets_count": 6,
+  "camera_reports_count": 6,
+  "clip_count": 6,
+  "clips": [
+    {
+      "assigned_tracks": [
+        "V1",
+        "A1",
+        "A2"
+      ],
+      "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-10",
+      "clip_name": "S1_SH1_TK1",
+      "duration_frames": 360,
+      "scene_number": 1,
+      "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-2",
+      "take_id": "take-1-1-1",
+      "timecode_offset_frames": 0
+    },
+    {
+      "assigned_tracks": [
+        "V1",
+        "A1",
+        "A2"
+      ],
+      "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-11",
+      "clip_name": "S1_SH1_TK2",
+      "duration_frames": 288,
+      "scene_number": 1,
+      "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-6",
+      "take_id": "take-1-1-2",
+      "timecode_offset_frames": 0
+    },
+    {
+      "assigned_tracks": [
+        "V1",
+        "A1",
+        "A2"
+      ],
+      "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-12",
+      "clip_name": "S1_SH2_TK1",
+      "duration_frames": 432,
+      "scene_number": 1,
+      "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-3",
+      "take_id": "take-1-2-1",
+      "timecode_offset_frames": 0
+    },
+    {
+      "assigned_tracks": [
+        "V1",
+        "A1",
+        "A2"
+      ],
+      "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-7",
+      "clip_name": "S1_SH2_TK2",
+      "duration_frames": 360,
+      "scene_number": 1,
+      "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-4",
+      "take_id": "take-1-2-2",
+      "timecode_offset_frames": 0
+    },
+    {
+      "assigned_tracks": [
+        "V1",
+        "A1",
+        "A2"
+      ],
+      "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-8",
+      "clip_name": "S2_SH1_TK1",
+      "duration_frames": 480,
+      "scene_number": 2,
+      "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-1",
+      "take_id": "take-2-1-1",
+      "timecode_offset_frames": 0
+    },
+    {
+      "assigned_tracks": [
+        "V1",
+        "A1",
+        "A2"
+      ],
+      "audio_media_asset_id": "asset-editorial-resolve-smoke-20260525-9",
+      "clip_name": "S2_SH1_TK2",
+      "duration_frames": 432,
+      "scene_number": 2,
+      "source_media_asset_id": "asset-editorial-resolve-smoke-20260525-5",
+      "take_id": "take-2-1-2",
+      "timecode_offset_frames": 0
+    }
+  ],
+  "director_notes_count": 6,
+  "export_manifest": {
+    "artifact_path_kind": "suggested_destination",
+    "assembly_cut_id": "assembly-ab84da5697b8",
+    "clip_count": 6,
+    "compatible_services": [
+      "fcpxml_export_service",
+      "fcpxml_validation_service",
+      "davinci_platform_package_service"
+    ],
+    "destination_root_path": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525",
+    "fps": 24.0,
+    "generated_at": "2026-05-26T07:01:07.883386+00:00",
+    "missing_media": [],
+    "missing_media_count": 0,
+    "nle_type": "resolve",
+    "offline_media_count": 0,
+    "project_id": "editorial-resolve-smoke-20260525",
+    "project_name": "CID Editorial Resolve Smoke",
+    "relink_report": {
+      "missing_media_count": 0,
+      "offline_media_count": 0,
+      "path_mappings": {
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S01_SH01_TK01_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH01_TK01_CAM.mov",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S01_SH01_TK02_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH01_TK02_CAM.mov",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S01_SH02_TK01_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH02_TK01_CAM.mov",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S01_SH02_TK02_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH02_TK02_CAM.mov",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S02_SH01_TK01_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S02_SH01_TK01_CAM.mov",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S02_SH01_TK02_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S02_SH01_TK02_CAM.mov",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S01_SH01_TK01_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH01_TK01_SOUND.wav",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S01_SH01_TK02_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH01_TK02_SOUND.wav",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S01_SH02_TK01_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH02_TK01_SOUND.wav",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S01_SH02_TK02_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH02_TK02_SOUND.wav",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S02_SH01_TK01_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S02_SH01_TK01_SOUND.wav",
+        "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S02_SH01_TK02_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S02_SH01_TK02_SOUND.wav"
+      },
+      "resolved_media_count": 12
+    },
+    "resolved_media_count": 12,
+    "sequence_count": 2,
+    "status": "resolve_fcpxml_ready",
+    "supported_formats": [
+      "fcpxml"
+    ],
+    "target_platform": "linux",
+    "timeline_id": "assembly-ab84da5697b8",
+    "validation": {
+      "asset_count": 12,
+      "clip_count": 6,
+      "errors": [],
+      "fps": 24.0,
+      "valid": true,
+      "warnings": []
+    },
+    "warnings": [
+      "dual_system_audio_export_partial",
+      "dual_system_audio_export_partial",
+      "dual_system_audio_export_partial",
+      "dual_system_audio_export_partial",
+      "dual_system_audio_export_partial",
+      "dual_system_audio_export_partial"
+    ]
+  },
+  "fcpxml_path": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/CID_Editorial_Resolve_Smoke_assembly.fcpxml",
+  "fcpxml_size_bytes": 4528,
+  "fixture_root": "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428",
+  "import_report": {
+    "imported_counts": {
+      "camera_reports": 6,
+      "director_notes": 6,
+      "script_notes": 6,
+      "sound_reports": 6
+    },
+    "project_id": "editorial-resolve-smoke-20260525",
+    "report_id": "report-ae160019f1a0",
+    "warnings": []
+  },
+  "manifest_path": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/manifest.json",
+  "media_roots": [
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound"
+  ],
+  "output_dir": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525",
+  "relink_report_path": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/media_relink_report.json",
+  "script_notes_count": 6,
+  "sequence_count": 2,
+  "slate_matches_count": 6,
+  "sound_assets_count": 6,
+  "sound_reports_count": 6,
+  "status": "ok",
+  "sync_candidates_count": 6,
+  "take_decisions_count": 6,
+  "timeline_path": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/neutral_timeline.json",
+  "total_duration_frames": 2352,
+  "warnings": [
+    "dual_system_audio_export_partial",
+    "dual_system_audio_export_partial",
+    "dual_system_audio_export_partial",
+    "dual_system_audio_export_partial",
+    "dual_system_audio_export_partial",
+    "dual_system_audio_export_partial"
+  ]
+}

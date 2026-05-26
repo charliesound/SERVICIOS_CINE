@@ -1,0 +1,19 @@
+{
+  "missing_media_count": 0,
+  "offline_media_count": 0,
+  "path_mappings": {
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S01_SH01_TK01_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH01_TK01_CAM.mov",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S01_SH01_TK02_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH01_TK02_CAM.mov",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S01_SH02_TK01_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH02_TK01_CAM.mov",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S01_SH02_TK02_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH02_TK02_CAM.mov",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S02_SH01_TK01_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S02_SH01_TK01_CAM.mov",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/camera/S02_SH01_TK02_CAM.mov": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S02_SH01_TK02_CAM.mov",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S01_SH01_TK01_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH01_TK01_SOUND.wav",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S01_SH01_TK02_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH01_TK02_SOUND.wav",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S01_SH02_TK01_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH02_TK01_SOUND.wav",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S01_SH02_TK02_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S01_SH02_TK02_SOUND.wav",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S02_SH01_TK01_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S02_SH01_TK01_SOUND.wav",
+    "/opt/SERVICIOS_CINE/docs/validation/production_real_20260428/media_roots/sound/S02_SH01_TK02_SOUND.wav": "/opt/SERVICIOS_CINE/docs/validation/editorial_assembly_resolve_smoke_20260525/S02_SH01_TK02_SOUND.wav"
+  },
+  "resolved_media_count": 12
+}

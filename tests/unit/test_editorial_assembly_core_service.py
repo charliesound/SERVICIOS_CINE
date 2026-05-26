@@ -60,6 +60,45 @@ def test_match_takes_builds_decision_and_sync_candidate():
     assert sync_candidates[0].audio_asset_id == "audio-1"
 
 
+def test_match_takes_prefers_sound_report_with_matching_shot():
+    from schemas.editorial_assembly_schema import CameraReportEntry, EditorialMediaAsset, SoundReportEntry
+    from services.editorial_assembly_core_service import editorial_assembly_core_service
+
+    video = EditorialMediaAsset(
+        id="video-1",
+        file_name="S01_SH02_TK01_CAM.mov",
+        file_path="/m/S01_SH02_TK01_CAM.mov",
+        asset_type="video",
+    )
+    wrong_audio = EditorialMediaAsset(
+        id="audio-wrong",
+        file_name="S01_SH01_TK01_SOUND.wav",
+        file_path="/m/S01_SH01_TK01_SOUND.wav",
+        asset_type="audio",
+    )
+    right_audio = EditorialMediaAsset(
+        id="audio-right",
+        file_name="S01_SH02_TK01_SOUND.wav",
+        file_path="/m/S01_SH02_TK01_SOUND.wav",
+        asset_type="audio",
+    )
+
+    _, decisions, sync_candidates, _ = editorial_assembly_core_service.match_takes(
+        project_id="project-1",
+        media_assets=[video, wrong_audio, right_audio],
+        camera_reports=[
+            CameraReportEntry(card_or_mag="A001", clip_name=video.file_name, scene=1, shot=2, take=1)
+        ],
+        sound_reports=[
+            SoundReportEntry(sound_roll="S001", file_name=wrong_audio.file_name, scene=1, shot=1, take=1),
+            SoundReportEntry(sound_roll="S001", file_name=right_audio.file_name, scene=1, shot=2, take=1),
+        ],
+    )
+
+    assert decisions[0].sound_asset_id == "audio-right"
+    assert sync_candidates[0].audio_asset_id == "audio-right"
+
+
 def test_build_neutral_assembly_and_relink_report():
     from schemas.editorial_assembly_schema import EditorialMediaAsset, TakeDecision
     from services.editorial_assembly_core_service import editorial_assembly_core_service

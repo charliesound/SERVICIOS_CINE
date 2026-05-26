@@ -37,6 +37,7 @@ class SoundReportEntry(BaseModel):
     sound_roll: str
     file_name: str
     scene: int
+    shot: Optional[int] = None
     take: int
     timecode_start: str = "00:00:00:00"
     tracks_count: int = 1

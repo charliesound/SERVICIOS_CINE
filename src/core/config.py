@@ -73,6 +73,13 @@ class Settings(BaseSettings):
     smtp_from_email: str = "noreply@ailinkcinema.com"
     smtp_tls: bool = True
 
+    # ── n8n Integration ─────────────────────────────────────────────────
+    n8n_enabled: bool = False
+    n8n_base_url: str = "http://127.0.0.1:5678"
+    n8n_webhook_secret: str = ""
+    n8n_default_timeout_seconds: int = 10
+    n8n_test_webhook_path: str = "/webhook/cid-test"
+
     # ── Health ───────────────────────────────────────────────────────────
     healthcheck_db_enabled: bool = True
     healthcheck_redis_enabled: bool = False

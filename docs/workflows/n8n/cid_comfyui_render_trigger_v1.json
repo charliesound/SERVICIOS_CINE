@@ -1,0 +1,182 @@
+{
+  "name": "CID ComfyUI Render Trigger v1",
+  "active": false,
+  "nodes": [
+    {
+      "id": "Webhook_1",
+      "name": "CID Render Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cid-render-trigger",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "Set_1",
+      "name": "Normalize CID Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "name": "trace_id",
+              "value": "={{ $json.trace_id || '{{TRACE_ID}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "project_id",
+              "value": "={{ $json.project_id || '{{PROJECT_ID}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.prompt || 'Storyboard frame placeholder prompt' }}",
+              "type": "string"
+            },
+            {
+              "name": "cid_api_base_url",
+              "value": "={{ '{{CID_API_BASE_URL}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "cid_api_token",
+              "value": "={{ '{{CID_API_TOKEN}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "comfyui_base_url",
+              "value": "={{ '{{COMFYUI_BASE_URL}}' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "Code_1",
+      "name": "Build ComfyUI Prompt Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return [{ json: { trace_id: $json.trace_id, project_id: $json.project_id, cid_callback: `${$json.cid_api_base_url}/api/projects/${$json.project_id}/storyboard`, promptPayload: { client_id: $json.trace_id, prompt: { text_prompt: $json.prompt, metadata: { source: 'cid-n8n-template', trace_id: $json.trace_id, project_id: $json.project_id } } } } } ]"
+      }
+    },
+    {
+      "id": "Http_1",
+      "name": "POST ComfyUI Prompt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        980,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ `${$json.comfyui_base_url || '{{COMFYUI_BASE_URL}}'}/prompt` }}",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "={{ $json.promptPayload.client_id }}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.promptPayload.prompt }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "Respond_1",
+      "name": "Respond to CID",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1240,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"accepted\": true, \"trace_id\": $json.trace_id || '{{TRACE_ID}}', \"project_id\": $json.project_id || '{{PROJECT_ID}}', \"comfyui_base_url\": '{{COMFYUI_BASE_URL}}' } }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "CID Render Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize CID Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize CID Payload": {
+      "main": [
+        [
+          {
+            "node": "Build ComfyUI Prompt Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build ComfyUI Prompt Payload": {
+      "main": [
+        [
+          {
+            "node": "POST ComfyUI Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST ComfyUI Prompt": {
+      "main": [
+        [
+          {
+            "node": "Respond to CID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "pinData": {},
+  "tags": [],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "source_reference": "Adapted from local ComfyUI trigger workflows without carrying credentials or local paths."
+  },
+  "versionId": "cid-comfyui-render-trigger-v1"
+}

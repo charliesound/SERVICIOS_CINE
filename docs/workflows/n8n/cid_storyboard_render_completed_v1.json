@@ -1,0 +1,202 @@
+{
+  "name": "CID Storyboard Render Completed v1",
+  "active": false,
+  "nodes": [
+    {
+      "id": "Webhook_1",
+      "name": "Storyboard Render Completed Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cid-storyboard-render-completed",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "If_1",
+      "name": "Check Event Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.event_type || '' }}",
+              "operation": "equal",
+              "value2": "storyboard.render.succeeded"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Set_1",
+      "name": "Prepare Notification Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        220
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "name": "trace_id",
+              "value": "={{ $json.trace_id || '{{TRACE_ID}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "project_id",
+              "value": "={{ $json.project_id || '{{PROJECT_ID}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "email_target",
+              "value": "={{ '{{EMAIL_PLACEHOLDER}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "telegram_chat_id",
+              "value": "={{ '{{TELEGRAM_CHAT_ID}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "drive_folder_id",
+              "value": "={{ '{{DRIVE_FOLDER_ID}}' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "Set_2",
+      "name": "TODO Email Telegram Drive",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        220
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "name": "next_steps",
+              "value": "={{ ['Attach Email node', 'Attach Telegram node', 'Attach Drive node'] }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "Respond_1",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        220
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true, \"received\": true, \"event_type\": $json.event_type || 'storyboard.render.succeeded', \"trace_id\": $json.trace_id || '{{TRACE_ID}}' } }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "Respond_2",
+      "name": "Respond Invalid Event",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        760,
+        420
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": false, \"received\": true, \"error\": 'Unexpected event_type' } }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Storyboard Render Completed Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Event Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Event Type": {
+      "main": [
+        [
+          {
+            "node": "Prepare Notification Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Invalid Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Notification Payload": {
+      "main": [
+        [
+          {
+            "node": "TODO Email Telegram Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TODO Email Telegram Drive": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "pinData": {},
+  "tags": [],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "source_reference": "Prepared as a future CID event receiver without enabling any critical production action by default."
+  },
+  "versionId": "cid-storyboard-render-completed-v1"
+}

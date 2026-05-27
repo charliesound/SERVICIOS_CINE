@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class GoogleDriveConnectionStatusResponse(BaseModel):
@@ -82,3 +83,44 @@ class GoogleDriveSyncStatusResponse(BaseModel):
     links: list[GoogleDriveFolderLinkResponse]
     states: list[GoogleDriveSyncStateItemResponse]
     last_sync_at: datetime | None = None
+
+
+class N8NStatusResponse(BaseModel):
+    provider: str = "n8n"
+    enabled: bool
+    status: str
+    base_url: str | None = None
+    reachable: bool = False
+    test_webhook_path: str | None = None
+    timeout_seconds: int
+    trace_id: str | None = None
+    error: str | None = None
+
+
+class N8NTestRequest(BaseModel):
+    event_type: str = "cid.integration.test"
+    project_id: str | None = None
+    message: str | None = None
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class N8NTestResponse(BaseModel):
+    sent: bool
+    status: Literal["sent", "skipped", "failed"]
+    trace_id: str
+    event_type: str
+    endpoint_path: str | None = None
+    response_status_code: int | None = None
+    error: str | None = None
+
+
+class IntegrationEventPayload(BaseModel):
+    event_type: str
+    trace_id: str
+    project_id: str | None = None
+    organization_id: str | None = None
+    user_id: str | None = None
+    message: str | None = None
+    payload: dict[str, Any] = Field(default_factory=dict)
+    source: str = "cid"
+    occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

@@ -1,0 +1,155 @@
+{
+  "name": "CID Restoration SUPIR Template v1",
+  "active": false,
+  "nodes": [
+    {
+      "id": "Schedule_1",
+      "name": "Schedule Restoration Queue",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Set_1",
+      "name": "Config Placeholders",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "name": "comfyui_base_url",
+              "value": "={{ '{{COMFYUI_BASE_URL}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "input_folder",
+              "value": "={{ '{{RESTORE_INPUT_FOLDER}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "output_folder",
+              "value": "={{ '{{RESTORE_OUTPUT_FOLDER}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "supir_model",
+              "value": "={{ '{{SUPIR_MODEL_NAME}}' }}",
+              "type": "string"
+            },
+            {
+              "name": "workflow_template_path",
+              "value": "={{ '{{SUPIR_WORKFLOW_TEMPLATE_PATH}}' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "Code_1",
+      "name": "Build Restoration Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return [{ json: { note: 'Replace placeholders before activating', comfyui_base_url: $json.comfyui_base_url, input_folder: $json.input_folder, output_folder: $json.output_folder, workflow_template_path: $json.workflow_template_path, promptPayload: { client_id: 'cid-restoration-template', prompt: { metadata: { mode: 'supir-restoration-template', model: $json.supir_model, input_folder: $json.input_folder, output_folder: $json.output_folder } } } } }]"
+      }
+    },
+    {
+      "id": "Http_1",
+      "name": "POST ComfyUI SUPIR Prompt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1020,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ `${$json.comfyui_base_url}/prompt` }}",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "={{ $json.promptPayload.client_id }}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.promptPayload.prompt }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Restoration Queue": {
+      "main": [
+        [
+          {
+            "node": "Config Placeholders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config Placeholders": {
+      "main": [
+        [
+          {
+            "node": "Build Restoration Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Restoration Payload": {
+      "main": [
+        [
+          {
+            "node": "POST ComfyUI SUPIR Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "pinData": {},
+  "tags": [],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "source_reference": "Adapted from local SUPIR restoration queue workflows with absolute paths and credentials removed."
+  },
+  "versionId": "cid-restoration-supir-template-v1"
+}

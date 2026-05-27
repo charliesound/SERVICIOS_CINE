@@ -1,0 +1,58 @@
+{
+  "name": "CID Test Webhook v1",
+  "active": false,
+  "nodes": [
+    {
+      "id": "Webhook_1",
+      "name": "CID Test Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        280,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cid-test",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "Respond_1",
+      "name": "Respond to CID",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        580,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"received\": true, \"event_type\": $json.event_type || null, \"trace_id\": $json.trace_id || null, \"timestamp\": $now.toISO() } }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "CID Test Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to CID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "pinData": {},
+  "tags": [],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "note": "Importable starter template. Review node settings in the n8n UI if your installed n8n version expects slightly different node defaults."
+  },
+  "versionId": "cid-test-webhook-v1"
+}

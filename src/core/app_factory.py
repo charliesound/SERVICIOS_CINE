@@ -231,6 +231,7 @@ def _register_routers(app: FastAPI, settings) -> None:
     from routes.project_funding_routes import router as project_funding_router
     from routes.project_document_routes import router as project_document_router
     from routes.google_drive_routes import router as google_drive_router
+    from routes.integration_routes import router as integration_router
     from routes.matcher_routes import router as matcher_router
 
     app.include_router(intake_router, tags=["intake"])
@@ -238,6 +239,7 @@ def _register_routers(app: FastAPI, settings) -> None:
     app.include_router(project_funding_router, tags=["project-funding"])
     app.include_router(project_document_router, tags=["project-documents"])
     app.include_router(google_drive_router, tags=["google-drive-integrations"])
+    app.include_router(integration_router, tags=["integrations"])
     app.include_router(matcher_router, tags=["matcher"])
 
     # ── Editorial / script / members / change-governance ─────────────────

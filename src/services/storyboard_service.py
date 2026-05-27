@@ -922,17 +922,20 @@ class StoryboardService:
         return project
 
     async def _get_analysis_payload(self, db: AsyncSession, project: Project) -> dict[str, Any]:
-        result = await db.execute(
-            select(ProductionBreakdown).where(ProductionBreakdown.project_id == str(project.id))
-        )
-        breakdown = result.scalar_one_or_none()
-        if breakdown and breakdown.breakdown_json:
-            try:
-                payload = json.loads(breakdown.breakdown_json)
-                if payload.get("scenes"):
-                    return payload
-            except Exception:
-                pass
+        try:
+            result = await db.execute(
+                select(ProductionBreakdown).where(ProductionBreakdown.project_id == str(project.id))
+            )
+            breakdown = result.scalar_one_or_none()
+            if breakdown and breakdown.breakdown_json:
+                try:
+                    payload = json.loads(breakdown.breakdown_json)
+                    if payload.get("scenes"):
+                        return payload
+                except Exception:
+                    pass
+        except Exception:
+            logger.warning("ProductionBreakdown query failed for project %s, falling back to script_text", project.id, exc_info=True)
         if not project.script_text:
             raise HTTPException(status_code=400, detail="Project has no script text available")
         scenes = script_intake_service.parse_script(project.script_text)

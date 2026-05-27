@@ -68,6 +68,9 @@ Habilitar el primer tramo de render real ComfyUI desde CID reutilizando la cola 
 
 ## Errores aprendidos
 
+- El scheduler NO arranca si `QUEUE_AUTO_START_SCHEDULER=0` (usado en tests de validación visual). En sesiones `--reload` de uvicorn, el proceso hijo hereda esta variable del entorno si fue exportada antes. Síntoma: jobs quedan `queued` para siempre sin dispatch. Solución: arrancar backend en tmux session limpia sin `--reload`, o forzar `QUEUE_AUTO_START_SCHEDULER=1`.
+- El `_running` del queue service es in-memory y se pierde al reiniciar. Si un scheduler anterior dejó un job como `RUNNING` en DB, la recuperación lo marca como `failed`. Pero si otra llamada a `mark_running()` ocurre antes de que el scheduler arranque (p.ej. matcher worker), queda un slot ocupado fantasma hasta reiniciar el proceso.
+
 - Guardar solo `backend /view` como `content_ref` no alcanza para tenancy-safe previews ni para resiliencia ante rotacion de outputs remotos.
 - Mantener `200 OK` en un endpoint async de cola dificulta distinguir enqueue de ejecucion real; `202` deja el contrato mas claro sin romper el body.
 - El root cause del bloqueo real en storyboard SDXL fue mapear `cinematic_storyboard_sdxl` al archivo raw `cinematic_storyboard_sdxl.json` en vez del template API `cinematic_storyboard_sdxl.template.json`; la validacion buscaba `class_type` y por eso reportaba nodos base faltantes.

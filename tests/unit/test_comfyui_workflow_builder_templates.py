@@ -40,6 +40,12 @@ def test_storyboard_safe_template_uses_only_core_nodes() -> None:
     assert classes == CORE_NODES
 
 
+def test_production_storyboard_cinematic_template_uses_only_core_nodes() -> None:
+    template = _load_template("production_storyboard_cinematic_v1.json")
+    classes = {node["class_type"] for node in template["prompt_template"].values()}
+    assert classes == CORE_NODES
+
+
 def test_still_storyboard_frame_remains_supported() -> None:
     runtime = builder.build_runtime_prompt(
         "still_storyboard_frame",

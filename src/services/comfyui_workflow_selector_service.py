@@ -20,14 +20,24 @@ TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "data" / "workflows" / "co
 TEMPLATE_FILE_MAP: dict[WorkflowProfile, str] = {
     WorkflowProfile.smoke_light: "smoke_light.json",
     WorkflowProfile.storyboard_safe: "storyboard_safe.json",
+    WorkflowProfile.production_storyboard_cinematic: "production_storyboard_cinematic_v1.json",
 }
 
 PROFILE_TO_WORKFLOW_KEY: dict[WorkflowProfile, str] = {
     WorkflowProfile.smoke_light: "smoke_light",
     WorkflowProfile.storyboard_safe: "storyboard_safe",
     WorkflowProfile.storyboard_fast: "storyboard_safe",
-    WorkflowProfile.production_quality: "storyboard_safe",
+    WorkflowProfile.production_quality: "production_storyboard_cinematic",
+    WorkflowProfile.production_storyboard_cinematic: "production_storyboard_cinematic",
 }
+
+
+def get_template_filename(profile_name: str | WorkflowProfile) -> str | None:
+    try:
+        profile = profile_name if isinstance(profile_name, WorkflowProfile) else WorkflowProfile(str(profile_name))
+    except ValueError:
+        return None
+    return TEMPLATE_FILE_MAP.get(profile)
 
 
 def load_template(profile: WorkflowProfile) -> dict[str, Any] | None:
@@ -247,5 +257,7 @@ def build_metadata_workflow_profile(
     )
     metadata["workflow_fallback_report"] = fallback_payload
     metadata["missing_nodes"] = list(fallback_payload.get("missing_nodes") or [])
+    metadata["fallback_applied"] = bool(fallback_payload.get("fallback_applied"))
+    metadata["fallback_reason"] = str(fallback_payload.get("reason") or "none")
 
     return metadata

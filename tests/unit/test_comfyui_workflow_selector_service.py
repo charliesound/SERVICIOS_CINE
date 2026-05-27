@@ -23,7 +23,7 @@ CORE_NODES = {
 }
 
 
-def test_selector_downgrades_production_to_storyboard_safe() -> None:
+def test_selector_downgrades_legacy_production_quality_to_new_cinematic_profile() -> None:
     prompt, workflow_key, fallback_report, executed_profile = selector.select_workflow(
         workflow_key="still_text_to_image_pro",
         requested_profile="production_quality",
@@ -32,11 +32,25 @@ def test_selector_downgrades_production_to_storyboard_safe() -> None:
     )
 
     assert isinstance(prompt, dict)
-    assert workflow_key == "storyboard_safe"
-    assert executed_profile == "storyboard_safe"
+    assert workflow_key == "production_storyboard_cinematic"
+    assert executed_profile == "production_storyboard_cinematic"
     assert fallback_report is not None
     assert fallback_report.fallback_applied is True
     assert fallback_report.reason == "profile_not_implemented"
+
+
+def test_selector_supports_production_storyboard_cinematic_profile_directly() -> None:
+    prompt, workflow_key, fallback_report, executed_profile = selector.select_workflow(
+        workflow_key="still_text_to_image_pro",
+        requested_profile="production_storyboard_cinematic",
+        inputs={"prompt": "test prompt"},
+        available_nodes=CORE_NODES,
+    )
+
+    assert isinstance(prompt, dict)
+    assert workflow_key == "production_storyboard_cinematic"
+    assert executed_profile == "production_storyboard_cinematic"
+    assert fallback_report is None
 
 
 def test_selector_downgrades_storyboard_safe_to_smoke_light_when_missing_node(monkeypatch) -> None:

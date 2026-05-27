@@ -13,6 +13,11 @@ STORYBOARD_WORKFLOW_PRESET_MAP: dict[str, str] = {
 }
 
 ALLOWED_STORYBOARD_WORKFLOW_PROFILES: set[str] = {
+    "smoke_light",
+    "storyboard_safe",
+    "storyboard_fast",
+    "production_quality",
+    "production_storyboard_cinematic",
     "storyboard_clean_review",
     "storyboard_client_notes",
     "storyboard_technical",
@@ -26,9 +31,16 @@ DEFAULT_STORYBOARD_WORKFLOW_PROFILE = "storyboard_safe"
 
 
 class StoryboardWorkflowPresetService:
-    def resolve_profile(self, sheet_template: str | None, requested_profile: str | None) -> dict[str, object]:
+    def resolve_profile(
+        self,
+        sheet_template: str | None,
+        requested_profile: str | None,
+        *,
+        style_preset: str | None = None,
+    ) -> dict[str, object]:
         normalized_template = sheet_template.strip() if isinstance(sheet_template, str) and sheet_template.strip() else None
         normalized_requested = requested_profile.strip() if isinstance(requested_profile, str) and requested_profile.strip() else None
+        normalized_style_preset = style_preset.strip().lower() if isinstance(style_preset, str) and style_preset.strip() else None
 
         if normalized_requested:
             if normalized_requested in ALLOWED_STORYBOARD_WORKFLOW_PROFILES:
@@ -67,6 +79,21 @@ class StoryboardWorkflowPresetService:
                 "requested_profile": None,
                 "fallback_applied": True,
                 "reason": f"unknown_sheet_template:{normalized_template}",
+            }
+
+        if normalized_style_preset in {
+            "cinematic_realistic",
+            "moody_noir",
+            "commercial_pitch",
+            "realistic_client_review",
+        }:
+            return {
+                "workflow_profile_requested": "production_storyboard_cinematic",
+                "source": "style_preset",
+                "sheet_template": None,
+                "requested_profile": None,
+                "fallback_applied": False,
+                "reason": f"style_preset_promoted:{normalized_style_preset}",
             }
 
         return {

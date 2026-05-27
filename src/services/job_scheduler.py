@@ -14,7 +14,7 @@ from .comfyui_client_factory import factory, ComfyUIClient
 from .workflow_builder import builder as workflow_builder
 from .job_tracking_service import job_tracking_service
 from .comfyui_node_capability_service import get_instance_capability_snapshot
-from .comfyui_workflow_selector_service import build_metadata_workflow_profile
+from .comfyui_workflow_selector_service import build_metadata_workflow_profile, get_template_filename
 from database import AsyncSessionLocal
 
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +53,51 @@ def _extract_image_asset_path(asset: object) -> Optional[Path]:
     if isinstance(storage_path, str) and storage_path.strip():
         return Path(storage_path)
     return None
+
+
+def _merge_storyboard_runtime_metadata(
+    metadata: dict,
+    runtime_metadata: Optional[dict],
+    *,
+    render_status: str,
+    error_message: Optional[str] = None,
+) -> dict:
+    merged = dict(metadata or {})
+    for key in (
+        "workflow_key",
+        "workflow_template",
+        "workflow_profile_requested",
+        "workflow_profile_executed",
+        "workflow_fallback_report",
+        "fallback_applied",
+        "fallback_reason",
+        "missing_nodes",
+        "checkpoint",
+        "prompt",
+        "negative_prompt",
+        "width",
+        "height",
+        "steps",
+        "cfg",
+        "sampler_name",
+        "scheduler",
+        "seed",
+        "model_family",
+        "continuity_seed",
+        "character_reference_images",
+        "environment_reference_images",
+        "style_reference_images",
+        "visual_bible_reference_pack",
+        "controlnet_hints",
+    ):
+        if runtime_metadata and runtime_metadata.get(key) is not None:
+            merged[key] = runtime_metadata.get(key)
+    merged["render_status"] = render_status
+    if error_message:
+        merged["render_error"] = str(error_message)
+    else:
+        merged.pop("render_error", None)
+    return merged
 
 
 def _apply_storyboard_sketch_postprocess(path: Path) -> bool:
@@ -231,14 +276,16 @@ class JobScheduler:
             "object_info_snapshot_at": capability_snapshot.object_info_snapshot_at,
             "backend": capability_snapshot.backend,
             "backend_base_url": capability_snapshot.base_url,
+            "workflow_template": (
+                get_template_filename(executed_profile)
+                if executed_profile not in {"hardcoded_safety_net", "none"}
+                else "hardcoded_still_storyboard_frame"
+            ),
         }
+        item.metadata.update(workflow_builder.extract_runtime_prompt_metadata(runtime_prompt))
 
         final_checkpoint = (
-            runtime_prompt.get("1", {})
-            .get("inputs", {})
-            .get("ckpt_name")
-            if isinstance(runtime_prompt, dict)
-            else None
+            (item.metadata or {}).get("checkpoint")
         )
         logger.info(
             "Storyboard runtime mapping job_id=%s workflow_key=%s style_preset=%s preset_key=%s checkpoint=%s",
@@ -422,7 +469,11 @@ class JobScheduler:
                             meta = json.loads(shot.metadata_json) if isinstance(shot.metadata_json, str) else dict(shot.metadata_json)
                         except Exception:
                             meta = {}
-                    meta["render_status"] = "render_succeeded"
+                    meta = _merge_storyboard_runtime_metadata(
+                        meta,
+                        item.metadata,
+                        render_status="render_succeeded",
+                    )
                     shot.metadata_json = json.dumps(meta, ensure_ascii=False, default=str)
             style_preset = (item.prompt or {}).get("style_preset")
             if image_asset is not None and _should_force_sketch(style_preset):
@@ -460,9 +511,12 @@ class JobScheduler:
                         meta = json.loads(shot.metadata_json) if isinstance(shot.metadata_json, str) else dict(shot.metadata_json)
                     except Exception:
                         meta = {}
-                meta["render_status"] = status
-                if error_message:
-                    meta["render_error"] = str(error_message)
+                meta = _merge_storyboard_runtime_metadata(
+                    meta,
+                    item.metadata,
+                    render_status=status,
+                    error_message=error_message,
+                )
                 shot.metadata_json = json.dumps(meta, ensure_ascii=False, default=str)
                 await session.commit()
                 logger.info(

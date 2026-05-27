@@ -450,9 +450,12 @@ class JobTrackingService:
         requested = source_metadata.get("workflow_profile_requested")
         executed = source_metadata.get("workflow_profile_executed")
         fallback_str = source_metadata.get("workflow_fallback_report")
+        fallback_applied = source_metadata.get("fallback_applied")
+        fallback_reason = source_metadata.get("fallback_reason")
         available_node_count = source_metadata.get("available_node_count")
         missing_nodes = source_metadata.get("missing_nodes")
         workflow_key = source_metadata.get("workflow_key")
+        workflow_template = source_metadata.get("workflow_template")
         storyboard_style_preset = source_metadata.get("storyboard_style_preset")
         if requested is None and executed is None:
             return {}
@@ -470,6 +473,12 @@ class JobTrackingService:
             meta["missing_nodes"] = [str(node) for node in missing_nodes]
         if workflow_key is not None:
             meta["workflow_key"] = str(workflow_key)
+        if workflow_template is not None:
+            meta["workflow_template"] = str(workflow_template)
+        if fallback_applied is not None:
+            meta["fallback_applied"] = bool(fallback_applied)
+        if fallback_reason is not None:
+            meta["fallback_reason"] = str(fallback_reason)
         if fallback_str is not None:
             if isinstance(fallback_str, str):
                 try:
@@ -498,6 +507,9 @@ class JobTrackingService:
             "model_family",
             "style_preset",
             "storyboard_style_preset",
+            "workflow_template",
+            "fallback_applied",
+            "fallback_reason",
             "scene_heading",
             "source_scene_heading",
             "source_action_summary",
@@ -507,6 +519,12 @@ class JobTrackingService:
             "location",
             "time_of_day",
             "int_ext",
+            "continuity_seed",
+            "character_reference_images",
+            "environment_reference_images",
+            "style_reference_images",
+            "visual_bible_reference_pack",
+            "controlnet_hints",
         )
         meta: dict[str, Any] = {}
         for key in keys:

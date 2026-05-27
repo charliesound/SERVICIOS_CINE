@@ -434,6 +434,7 @@ class StoryboardService:
         profile_info = storyboard_workflow_preset_service.resolve_profile(
             sheet_template=sheet_template,
             requested_profile=workflow_profile,
+            style_preset=style_preset,
         )
 
         job = ProjectJob(
@@ -797,15 +798,6 @@ class StoryboardService:
                         "model_family": model_family,
                         "motion_ready": motion_ready,
                         "image_edit_mode": image_edit_mode,
-                        "workflow_profile_executed": profile_info["workflow_profile_requested"],
-                        "workflow_fallback_report": {
-                            "requested_profile": profile_info["workflow_profile_requested"],
-                            "executed_profile": profile_info["workflow_profile_requested"],
-                            "fallback_applied": bool(profile_info["fallback_applied"]),
-                            "reason": profile_info["reason"],
-                            "missing_nodes": [],
-                            "missing_models": [],
-                        },
                         "missing_nodes": [],
                         "workflow_key": "still_storyboard_frame",
                         "prompt": prompt_payload.get("prompt"),
@@ -880,7 +872,6 @@ class StoryboardService:
                         meta["render_status"] = "render_pending"
                         meta["workflow_key"] = "still_storyboard_frame"
                         meta["workflow_profile_requested"] = profile_info["workflow_profile_requested"]
-                        meta["workflow_profile_executed"] = profile_info["workflow_profile_requested"]
                         meta["positive_prompt"] = prompt_payload.get("prompt")
                         meta["negative_prompt"] = prompt_payload.get("negative_prompt")
                         meta["checkpoint"] = prompt_payload.get("checkpoint")
@@ -2192,11 +2183,20 @@ class StoryboardService:
             "location": location,
             "time_of_day": time_of_day,
             "int_ext": int_ext,
+            "continuity_seed": metadata_payload.get("continuity_seed")
+            or f"{project.id}:{metadata_payload.get('sequence_id') or scene_number}:{shot_id}:{style_preset}:{location}:{shot_type}",
+            "character_reference_images": metadata_payload.get("character_reference_images") or [],
+            "environment_reference_images": metadata_payload.get("environment_reference_images") or [],
+            "style_reference_images": metadata_payload.get("style_reference_images") or [],
+            "visual_bible_reference_pack": metadata_payload.get("visual_bible_reference_pack") or {},
+            "controlnet_hints": metadata_payload.get("controlnet_hints") or {},
             "workflow_profile_requested": metadata_payload.get("workflow_profile_requested") or "storyboard_safe",
             "storyboard_workflow_profile_info": metadata_payload.get("storyboard_workflow_profile_info") or {},
             "sheet_template": metadata_payload.get("sheet_template"),
             "render_quality": metadata_payload.get("render_quality"),
-            "model_family": metadata_payload.get("model_family"),
+            "model_family": metadata_payload.get("model_family") or (
+                "flux" if (metadata_payload.get("workflow_profile_requested") in {"production_storyboard_cinematic", "production_quality"}) else None
+            ),
             "motion_ready": bool(metadata_payload.get("motion_ready", False)),
             "image_edit_mode": bool(metadata_payload.get("image_edit_mode", False)),
         }
@@ -2677,15 +2677,6 @@ class StoryboardService:
                 "sequence_id": source_shot.sequence_id,
                 "storyboard_style_preset": source_shot.visual_mode or "hand_drawn_storyboard",
                 "workflow_profile_requested": "storyboard_safe",
-                "workflow_profile_executed": "storyboard_safe",
-                "workflow_fallback_report": {
-                    "requested_profile": "storyboard_safe",
-                    "executed_profile": "storyboard_safe",
-                    "fallback_applied": False,
-                    "reason": "none",
-                    "missing_nodes": [],
-                    "missing_models": [],
-                },
                 "missing_nodes": [],
                 "workflow_key": "still_storyboard_frame",
             },

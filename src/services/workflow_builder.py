@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional, Any
 from copy import deepcopy
+import hashlib
 import random
 import logging
 
@@ -36,11 +37,28 @@ STORYBOARD_RUNTIME_PRESETS = {
             "scheduler": "normal",
             "denoise": 1.0,
         },
+    },
+    "production_storyboard_cinematic": {
+        "checkpoint": "FLUX/flux1-schnell-fp8.safetensors",
+        "settings": {
+            "width": 1344,
+            "height": 768,
+            "steps": 8,
+            "cfg": 2.5,
+            "sampler_name": "euler",
+            "scheduler": "normal",
+            "denoise": 1.0,
+        },
     }
 }
 DEFAULT_STORYBOARD_NEGATIVE = (
     "blurry, low quality, bad anatomy, deformed hands, extra fingers, duplicate, "
     "cropped, watermark, text, logo, oversaturated, cartoon, anime, plastic skin"
+)
+PRODUCTION_STORYBOARD_NEGATIVE = (
+    "low quality, blurry, noisy image, bad anatomy, deformed hands, extra fingers, duplicate limbs, "
+    "inconsistent character face, broken perspective, muddy composition, unreadable action, flat lighting, "
+    "oversaturated color, cheap CGI look, random props, text, subtitle, logo, watermark, interface overlay"
 )
 
 
@@ -215,7 +233,7 @@ class WorkflowBuilder:
             return inputs
 
         requested_profile = inputs.get("workflow_profile_requested") or inputs.get("workflow_profile")
-        if isinstance(requested_profile, str) and requested_profile.strip() and workflow_key != "still_storyboard_frame":
+        if isinstance(requested_profile, str) and requested_profile.strip():
             prompt, _exec_key, _fallback_report, _exec_profile = self.build_runtime_prompt_with_profile(
                 workflow_key,
                 inputs,
@@ -245,7 +263,9 @@ class WorkflowBuilder:
         )
 
     def _build_still_storyboard_prompt(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        preset_key = str(inputs.get("preset_key") or "storyboard_realistic")
+        storyboard_inputs = dict(inputs)
+        storyboard_inputs.setdefault("seed", self._resolve_storyboard_seed(storyboard_inputs))
+        preset_key = str(storyboard_inputs.get("preset_key") or "storyboard_realistic")
         preset = STORYBOARD_RUNTIME_PRESETS.get(preset_key)
         if preset is None:
             logger.warning(
@@ -255,7 +275,6 @@ class WorkflowBuilder:
             preset_key = "storyboard_sketch"
             preset = STORYBOARD_RUNTIME_PRESETS["storyboard_sketch"]
         settings = preset.get("settings", {})
-        storyboard_inputs = dict(inputs)
         style_preset = str(storyboard_inputs.get("style_preset") or "").strip().lower()
         if style_preset:
             base_prompt = str(storyboard_inputs.get("prompt") or storyboard_inputs.get("text") or "").strip()
@@ -282,6 +301,103 @@ class WorkflowBuilder:
             denoise=float(storyboard_inputs.get("denoise") or settings.get("denoise") or 1.0),
             negative_prompt=str(storyboard_inputs.get("negative_prompt") or DEFAULT_STORYBOARD_NEGATIVE),
         )
+
+    def _stable_hash_to_seed(self, value: str) -> int:
+        digest = hashlib.sha256(value.encode("utf-8")).hexdigest()
+        seed = int(digest[:8], 16)
+        return max(1, seed)
+
+    def _resolve_storyboard_seed(self, inputs: Dict[str, Any]) -> int:
+        explicit_seed = inputs.get("seed")
+        try:
+            if explicit_seed is not None:
+                return max(1, int(explicit_seed))
+        except (TypeError, ValueError):
+            pass
+
+        continuity_seed = str(inputs.get("continuity_seed") or "").strip()
+        if continuity_seed:
+            return self._stable_hash_to_seed(continuity_seed)
+
+        parts = [
+            str(inputs.get("scene_heading") or ""),
+            str(inputs.get("source_scene_heading") or ""),
+            str(inputs.get("source_action_summary") or ""),
+            str(inputs.get("shot_objective") or ""),
+            str(inputs.get("location") or ""),
+            str(inputs.get("time_of_day") or ""),
+            str(inputs.get("style_preset") or ""),
+            str(inputs.get("workflow_profile_requested") or inputs.get("workflow_profile") or "storyboard_safe"),
+        ]
+        source = "|".join(parts)
+        return self._stable_hash_to_seed(source or str(random.randint(1, 2**31 - 1)))
+
+    def _build_production_storyboard_prompt_text(self, inputs: Dict[str, Any]) -> str:
+        base_prompt = str(inputs.get("prompt") or inputs.get("text") or "").strip()
+        scene_heading = str(inputs.get("source_scene_heading") or inputs.get("scene_heading") or "").strip()
+        action = str(inputs.get("source_action_summary") or "").strip()
+        objective = str(inputs.get("shot_objective") or "").strip()
+        atmosphere = str(inputs.get("atmosphere") or "").strip()
+        location = str(inputs.get("location") or "").strip()
+        time_of_day = str(inputs.get("time_of_day") or "").strip()
+        continuity_seed = str(inputs.get("continuity_seed") or "").strip()
+
+        parts = [
+            "cinematic storyboard frame for premium client review",
+            base_prompt,
+            f"scene heading: {scene_heading}" if scene_heading else "",
+            f"action: {action}" if action else "",
+            f"objective: {objective}" if objective else "",
+            f"atmosphere: {atmosphere}" if atmosphere else "",
+            f"location: {location}" if location else "",
+            f"time of day: {time_of_day}" if time_of_day else "",
+            "consistent character identity, clear blocking, production-ready composition, readable silhouette, grounded lighting",
+            f"continuity anchor: {continuity_seed}" if continuity_seed else "",
+        ]
+        return ", ".join(part for part in parts if part)
+
+    def _build_production_storyboard_negative_prompt(self, inputs: Dict[str, Any]) -> str:
+        base_negative = str(inputs.get("negative_prompt") or "").strip()
+        return ", ".join(part for part in [base_negative, PRODUCTION_STORYBOARD_NEGATIVE] if part)
+
+    def _prepare_storyboard_profile_inputs(self, inputs: Dict[str, Any], requested_profile: str) -> Dict[str, Any]:
+        prepared = dict(inputs)
+        prepared.setdefault("workflow_profile_requested", requested_profile)
+        prepared["seed"] = self._resolve_storyboard_seed(prepared)
+        if requested_profile in {"production_storyboard_cinematic", "production_quality"}:
+            prepared.setdefault("checkpoint", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["checkpoint"])
+            prepared.setdefault("width", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["width"])
+            prepared.setdefault("height", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["height"])
+            prepared.setdefault("steps", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["steps"])
+            prepared.setdefault("cfg", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["cfg"])
+            prepared.setdefault("sampler_name", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["sampler_name"])
+            prepared.setdefault("scheduler", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["scheduler"])
+            prepared.setdefault("model_family", "flux")
+            prepared["prompt"] = self._build_production_storyboard_prompt_text(prepared)
+            prepared["negative_prompt"] = self._build_production_storyboard_negative_prompt(prepared)
+        return prepared
+
+    def extract_runtime_prompt_metadata(self, runtime_prompt: Dict[str, Any]) -> Dict[str, Any]:
+        if not isinstance(runtime_prompt, dict):
+            return {}
+        checkpoint = runtime_prompt.get("1", {}).get("inputs", {}).get("ckpt_name")
+        positive_prompt = runtime_prompt.get("2", {}).get("inputs", {}).get("text")
+        negative_prompt = runtime_prompt.get("3", {}).get("inputs", {}).get("text")
+        width = runtime_prompt.get("4", {}).get("inputs", {}).get("width")
+        height = runtime_prompt.get("4", {}).get("inputs", {}).get("height")
+        sampler_inputs = runtime_prompt.get("5", {}).get("inputs", {})
+        return {
+            "checkpoint": checkpoint,
+            "prompt": positive_prompt,
+            "negative_prompt": negative_prompt,
+            "width": width,
+            "height": height,
+            "steps": sampler_inputs.get("steps"),
+            "cfg": sampler_inputs.get("cfg"),
+            "sampler_name": sampler_inputs.get("sampler_name"),
+            "scheduler": sampler_inputs.get("scheduler"),
+            "seed": sampler_inputs.get("seed"),
+        }
 
     def _build_basic_text_to_image_prompt(
         self,
@@ -366,8 +482,28 @@ class WorkflowBuilder:
             return inputs, workflow_key, None, requested_profile
 
         if workflow_key == "still_storyboard_frame":
-            prompt = self._build_still_storyboard_prompt(inputs)
-            return prompt, workflow_key, None, requested_profile
+            storyboard_inputs = self._prepare_storyboard_profile_inputs(inputs, requested_profile)
+            selector_profiles = {
+                "smoke_light",
+                "storyboard_safe",
+                "storyboard_fast",
+                "production_quality",
+                "production_storyboard_cinematic",
+            }
+            fallback_report: Optional[WorkflowFallbackReport] = None
+            executed_profile = requested_profile
+            if requested_profile in selector_profiles:
+                prompt, _exec_key, fallback_report, executed_profile = _selector_select_workflow(
+                    workflow_key=workflow_key,
+                    requested_profile=requested_profile,
+                    inputs=storyboard_inputs,
+                    available_nodes=available_nodes,
+                    skip_node_validation=skip_node_validation,
+                )
+                if prompt is not None:
+                    return prompt, workflow_key, fallback_report, executed_profile
+            prompt = self._build_still_storyboard_prompt(storyboard_inputs)
+            return prompt, workflow_key, fallback_report, "hardcoded_safety_net"
 
         prompt, exec_key, fallback_report, exec_profile = _selector_select_workflow(
             workflow_key=workflow_key,

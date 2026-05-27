@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { Download, ExternalLink, Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check, Upload, X, Users, Wrench } from 'lucide-react'
+import { Download, ExternalLink, Plus, Save, Loader2, ArrowLeft, Film, RefreshCw, Eye, FileText, ListChecks, Sparkles, AlertTriangle, MessageSquare, Check, Upload, X, Users, Wrench, Clock, Image, CheckCircle2 } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import { AuthenticatedStoryboardShotImage } from '@/components/storyboard/AuthenticatedStoryboardShotImage'
 import { ShotCard } from '@/components/storyboard/ShotCard'
@@ -26,6 +26,7 @@ import type {
   StoryboardSequence,
   StoryboardShot,
 } from '@/types/storyboard'
+import { resolveShotRenderState, hasActiveRenderShots } from '@/types/storyboard'
 import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/storyboardText'
 import { deriveCharacterBreakdown } from '@/utils/characterBreakdown'
 import { CharacterBreakdownPanel } from '@/components/storyboard/CharacterBreakdownPanel'
@@ -69,12 +70,9 @@ function getShotSequenceLabel(shot: StoryboardShot): string | null {
   return String(label)
 }
 
-function getShotRenderVisualState(shot: StoryboardShot): string {
-  return shot.image_state || shot.render_status || 'no_asset'
-}
-
 function shouldDisplayShotImage(shot: StoryboardShot): boolean {
-  return shot.has_image === true && getShotRenderVisualState(shot) !== 'render_pending'
+  const st = resolveShotRenderState(shot)
+  return shot.has_image === true && st.state !== 'rendering'
 }
 
 
@@ -270,7 +268,7 @@ export default function StoryboardBuilderPage() {
   }, [filteredShots, sortBy, sortDirection, characterFilter])
 
   const hasPendingRenderShots = useMemo(
-    () => shots.some((shot) => getShotRenderVisualState(shot) === 'render_pending'),
+    () => hasActiveRenderShots(shots),
     [shots]
   )
 
@@ -1391,10 +1389,19 @@ export default function StoryboardBuilderPage() {
                           const metadata = (shot.metadata_json || {}) as Record<string, unknown>
                           const validationScore = metadata.validation_score ?? (metadata.validation_result as Record<string, unknown> | undefined)?.overall_match_score
                           const displayText = getStoryboardShotDisplayText(shot, storyboardLocale)
-                          const visualState = getShotRenderVisualState(shot)
+                          const renderState = resolveShotRenderState(shot)
                           return (
-                            <div key={`filmstrip-${shot.id}`} className="w-56 rounded-lg border border-white/10 bg-black overflow-hidden">
-                              <div className="aspect-video bg-black/40">
+                            <div key={`filmstrip-${shot.id}`} className={`w-56 rounded-lg border border-white/10 bg-black overflow-hidden ${renderState.pulse ? 'animate-pulse border-amber-500/30' : ''}`} title={shot.render_error || renderState.label}>
+                              <div className="aspect-video bg-black/40 relative">
+                                <div className="absolute top-2 left-2 z-10">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${renderState.color} border-current/20`}>
+                                    {renderState.icon === 'check' && <CheckCircle2 className="w-3 h-3" />}
+                                    {renderState.icon === 'clock' && <Clock className="w-3 h-3" />}
+                                    {renderState.icon === 'alert' && <AlertTriangle className="w-3 h-3" />}
+                                    {renderState.icon === 'image' && <Image className="w-3 h-3" />}
+                                    {renderState.label}
+                                  </span>
+                                </div>
                                 {shouldDisplayShotImage(shot) ? (
                                   <AuthenticatedStoryboardShotImage
                                     projectId={projectId || shot.project_id}
@@ -1405,7 +1412,7 @@ export default function StoryboardBuilderPage() {
                                   />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-xs text-slate-500 px-3 text-center">
-                                    {visualState === 'render_pending' ? 'Render encolado' : visualState === 'render_failed' ? 'Render fallido' : 'Sin asset asociado'}
+                                    {renderState.state === 'rendering' ? 'Render encolado' : renderState.state === 'failed' ? 'Render fallido' : 'Sin asset asociado'}
                                   </div>
                                 )}
                               </div>
@@ -1430,10 +1437,19 @@ export default function StoryboardBuilderPage() {
                         const metadata = (shot.metadata_json || {}) as Record<string, unknown>
                         const validationScore = metadata.validation_score ?? (metadata.validation_result as Record<string, unknown> | undefined)?.overall_match_score
                         const displayText = getStoryboardShotDisplayText(shot, storyboardLocale)
-                        const visualState = getShotRenderVisualState(shot)
+                        const renderState = resolveShotRenderState(shot)
                         return (
-                          <div key={`grid-${shot.id}`} className="rounded-lg border border-white/10 bg-dark-300/60 overflow-hidden">
-                            <div className="aspect-video bg-black/30">
+                          <div key={`grid-${shot.id}`} className={`rounded-lg border border-white/10 bg-dark-300/60 overflow-hidden ${renderState.pulse ? 'animate-pulse border-amber-500/30' : ''}`} title={shot.render_error || renderState.label}>
+                            <div className="aspect-video bg-black/30 relative">
+                              <div className="absolute top-2 left-2 z-10">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${renderState.color} border-current/20`}>
+                                  {renderState.icon === 'check' && <CheckCircle2 className="w-3 h-3" />}
+                                  {renderState.icon === 'clock' && <Clock className="w-3 h-3" />}
+                                  {renderState.icon === 'alert' && <AlertTriangle className="w-3 h-3" />}
+                                  {renderState.icon === 'image' && <Image className="w-3 h-3" />}
+                                  {renderState.label}
+                                </span>
+                              </div>
                               {shouldDisplayShotImage(shot) ? (
                                 <AuthenticatedStoryboardShotImage
                                   projectId={projectId || shot.project_id}
@@ -1444,7 +1460,7 @@ export default function StoryboardBuilderPage() {
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center text-xs text-slate-500 px-3 text-center">
-                                  {visualState === 'render_pending' ? 'Render encolado' : visualState === 'render_failed' ? 'Render fallido' : 'Sin asset asociado'}
+                                  {renderState.state === 'rendering' ? 'Render encolado' : renderState.state === 'failed' ? 'Render fallido' : 'Sin asset asociado'}
                                 </div>
                               )}
                             </div>

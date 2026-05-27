@@ -3,6 +3,7 @@ import { Trash2, Image, Clock, AlertTriangle, CheckCircle2, Loader2 } from 'luci
 import { AuthenticatedStoryboardShotImage } from '@/components/storyboard/AuthenticatedStoryboardShotImage'
 import { StoryboardTracePanel } from '@/components/storyboard/StoryboardTracePanel'
 import type { DirtyShot } from '@/types/storyboard'
+import { resolveShotRenderState } from '@/types/storyboard'
 import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/storyboardText'
 
 interface ShotCardProps {
@@ -13,25 +14,11 @@ interface ShotCardProps {
   isSaving: boolean
 }
 
-const RENDER_STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  completed: { label: 'Render completado', color: 'text-green-400 bg-green-500/10', icon: CheckCircle2 },
-  planned: { label: 'Planificado', color: 'text-slate-300 bg-white/5', icon: Clock },
-  render_pending: { label: 'Render pendiente', color: 'text-amber-400 bg-amber-500/10', icon: Clock },
-  no_asset: { label: 'Sin imagen', color: 'text-slate-500 bg-white/5', icon: AlertTriangle },
-  render_failed: { label: 'Render fallido', color: 'text-red-500 bg-red-500/10', icon: AlertTriangle },
-  render_succeeded: { label: 'Imagen generada', color: 'text-green-500 bg-green-500/10', icon: CheckCircle2 }
-}
-
-
-
 
 export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: ShotCardProps) {
   const [localText, setLocalText] = useState(shot.narrative_text || getStoryboardShotDisplayText(shot, getStoryboardUiLocale()))
-  const imageState = shot.image_state || shot.render_status || 'no_asset'
-  const statusCfg = RENDER_STATUS_CONFIG[imageState] || RENDER_STATUS_CONFIG.no_asset
-  const StatusIcon = statusCfg.icon
-  const renderStatus = shot.render_status || imageState
-  const isRenderPending = imageState === 'render_pending'
+  const renderState = resolveShotRenderState(shot)
+  const isRenderPending = renderState.state === 'rendering'
   const hasImage = shot.has_image === true && !isRenderPending
 
   const handleTextBlur = () => {
@@ -70,7 +57,7 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
                 <span className="text-sm text-amber-300/70 text-center">Render pendiente</span>
                 <span className="text-[10px] text-slate-600 mt-1 text-center">Imagen pendiente de generar o asociar</span>
               </>
-            ) : renderStatus === 'render_failed' ? (
+            ) : renderState.state === 'failed' ? (
               <>
                 <AlertTriangle className="w-10 h-10 mb-2 text-red-400/70" />
                 <span className="text-sm text-red-300/80 text-center">Render fallido</span>
@@ -93,14 +80,15 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
         {shot.isDirty && (
           <div className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" title="Unsaved changes" />
         )}
-        {renderStatus !== 'completed' && (
-          <div className="absolute top-2 left-2">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${statusCfg.color} border-current/20`}>
-              <StatusIcon className="w-3 h-3" />
-              {statusCfg.label}
-            </span>
-          </div>
-        )}
+        <div className={`absolute top-2 left-2 ${renderState.pulse ? 'animate-pulse' : ''}`} title={shot.render_error || renderState.label}>
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${renderState.color} border-current/20`}>
+            {renderState.icon === 'check' && <CheckCircle2 className="w-3 h-3" />}
+            {renderState.icon === 'clock' && <Clock className="w-3 h-3" />}
+            {renderState.icon === 'alert' && <AlertTriangle className="w-3 h-3" />}
+            {renderState.icon === 'image' && <Image className="w-3 h-3" />}
+            {renderState.label}
+          </span>
+        </div>
       </div>
 
       <div className="p-4 space-y-3">

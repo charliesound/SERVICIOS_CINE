@@ -537,6 +537,70 @@ export interface StoryboardSheetCreditEstimate {
   credit_policy: string
 }
 
+// --- Render Feedback Types ---
+
+export type RenderFeedbackState =
+  | 'rendering'
+  | 'done'
+  | 'failed'
+  | 'no_render'
+  | 'pending'
+
+export interface RenderFeedbackConfig {
+  state: RenderFeedbackState
+  label: string
+  color: string
+  icon: string
+  pulse: boolean
+}
+
+export function resolveShotRenderState(shot: {
+  render_status?: string | null
+  image_state?: string | null
+  asset_id?: string | null
+  has_image?: boolean | null
+  render_error?: string | null
+}): RenderFeedbackConfig {
+  const status = shot.render_status || shot.image_state || ''
+  const hasAsset = shot.asset_id != null || shot.has_image === true
+
+  if (status === 'render_succeeded' || status === 'completed') {
+    return { state: 'done', label: 'Done', color: 'text-green-400 bg-green-500/10 border-green-500/30', icon: 'check', pulse: false }
+  }
+
+  if (status === 'render_pending' || status === 'queued' || status === 'running' || status === 'rendering') {
+    return { state: 'rendering', label: 'Rendering\u2026', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30', icon: 'clock', pulse: true }
+  }
+
+  if (status === 'render_failed') {
+    return { state: 'failed', label: 'Failed', color: 'text-red-400 bg-red-500/10 border-red-500/30', icon: 'alert', pulse: false }
+  }
+
+  if (hasAsset && (status === '' || status === 'no_asset' || status == null)) {
+    return { state: 'done', label: 'Done', color: 'text-green-400 bg-green-500/10 border-green-500/30', icon: 'check', pulse: false }
+  }
+
+  if (status === 'planned') {
+    return { state: 'pending', label: 'Planned', color: 'text-slate-400 bg-slate-500/10 border-slate-500/30', icon: 'clock', pulse: false }
+  }
+
+  if (status === '' || status === 'no_asset' || status == null) {
+    if (!hasAsset) {
+      return { state: 'no_render', label: 'No render', color: 'text-slate-500 bg-slate-500/5 border-slate-500/20', icon: 'image', pulse: false }
+    }
+    return { state: 'done', label: 'Done', color: 'text-green-400 bg-green-500/10 border-green-500/30', icon: 'check', pulse: false }
+  }
+
+  return { state: 'no_render', label: 'No render', color: 'text-slate-500 bg-slate-500/5 border-slate-500/20', icon: 'image', pulse: false }
+}
+
+export function hasActiveRenderShots(shots: Array<{ render_status?: string | null; image_state?: string | null }>): boolean {
+  return shots.some((s) => {
+    const st = s.render_status || s.image_state || ''
+    return st === 'render_pending' || st === 'queued' || st === 'running' || st === 'rendering'
+  })
+}
+
 export interface StoryboardSheetTemplateMetadata {
   sheet_template: StoryboardSheetTemplate | null
   effective_layout: StoryboardSheetLayoutName

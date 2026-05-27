@@ -217,6 +217,7 @@ export default function ProjectDetailPage() {
   const [storyboardSequences, setStoryboardSequences] = useState<StoryboardSequence[]>([])
   const [isLoadingStoryboardCandidates, setIsLoadingStoryboardCandidates] = useState(false)
   const [storyboardCandidateError, setStoryboardCandidateError] = useState<string | null>(null)
+  const [renderStoryboardImages, setRenderStoryboardImages] = useState(false)
   const [selectedScriptFileName, setSelectedScriptFileName] = useState('')
   const [uploadResult, setUploadResult] = useState<ScriptUploadResult | null>(null)
   const [showAllScenes, setShowAllScenes] = useState(false)
@@ -2261,6 +2262,8 @@ export default function ProjectDetailPage() {
         error={storyboardCandidateError}
         scenes={storyboardCandidates}
         sequences={storyboardSequences}
+        renderImagesOnComplete={renderStoryboardImages}
+        onRenderImagesChange={setRenderStoryboardImages}
         onClose={() => setStoryboardModalOpen(false)}
         onConfirm={confirmGenerateStoryboardSelection}
       />

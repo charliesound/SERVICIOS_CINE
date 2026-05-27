@@ -113,6 +113,7 @@ export default function StoryboardBuilderPage() {
   const [showCreditModal, setShowCreditModal] = useState(false)
   const [pendingGenerateAction, setPendingGenerateAction] = useState<(() => Promise<void>) | null>(null)
   const [autoExportSheet, setAutoExportSheet] = useState(true)
+  const [renderImagesOnComplete, setRenderImagesOnComplete] = useState(false)
   const [autoExportResponse, setAutoExportResponse] = useState<StoryboardAutoExportItem[] | null>(null)
   const [sortBy, setSortBy] = useState<'number' | 'location' | 'characters' | 'status'>('number')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
@@ -120,6 +121,7 @@ export default function StoryboardBuilderPage() {
   const [characterFilter, setCharacterFilter] = useState<string | null>(null)
   const [isRepairing, setIsRepairing] = useState(false)
   const [repairResult, setRepairResult] = useState<string | null>(null)
+  const [isPollingRenderState, setIsPollingRenderState] = useState(false)
 
   const fetchSequences = useCallback(async () => {
     if (!projectId) return
@@ -131,9 +133,10 @@ export default function StoryboardBuilderPage() {
     }
   }, [projectId])
 
-  const fetchShots = useCallback(async () => {
+  const fetchShots = useCallback(async (options?: { silent?: boolean }) => {
     if (!projectId) return
-    setIsLoading(true)
+    const silent = options?.silent === true
+    if (!silent) setIsLoading(true)
     setError(null)
     try {
       const data = await storyboardApi.listShots(projectId)
@@ -142,7 +145,7 @@ export default function StoryboardBuilderPage() {
       setError('Failed to load storyboard shots')
       console.error(err)
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }, [projectId])
 
@@ -258,6 +261,28 @@ export default function StoryboardBuilderPage() {
     return safe
   }, [filteredShots, sortBy, sortDirection, characterFilter])
 
+  const hasPendingRenderShots = useMemo(
+    () => shots.some((shot) => (shot.image_state || shot.render_status) === 'render_pending'),
+    [shots]
+  )
+
+  useEffect(() => {
+    if (!projectId || !hasPendingRenderShots) {
+      setIsPollingRenderState(false)
+      return
+    }
+
+    setIsPollingRenderState(true)
+    const intervalId = window.setInterval(() => {
+      void fetchShots({ silent: true })
+    }, 4000)
+
+    return () => {
+      window.clearInterval(intervalId)
+      setIsPollingRenderState(false)
+    }
+  }, [fetchShots, hasPendingRenderShots, projectId])
+
   const handleScriptFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null
     if (!file) return
@@ -350,6 +375,7 @@ export default function StoryboardBuilderPage() {
         shots_per_scene: shotsPerScene,
         overwrite: true,
         shots_per_sequence_mode: 'auto_cinematic',
+        render: renderImagesOnComplete,
       })
       const resolvedResponseSequence = response.sequence_id
         ? resolveSequenceAlias(response.sequence_id, sequences)?.sequence_id || response.sequence_id
@@ -417,6 +443,7 @@ export default function StoryboardBuilderPage() {
         use_cinematic_intelligence: useCinematicIntelligence,
         use_montage_intelligence: useMontageIntelligence,
         validate_prompts: validatePrompts,
+        render: selection.render,
         auto_export_sheet: autoExportSheet,
         auto_export_formats: ['png', 'pdf'],
       }
@@ -472,6 +499,7 @@ export default function StoryboardBuilderPage() {
         const result = await storyboardApi.regenerateSequence(projectId, selectedSequenceId, {
           style_preset: stylePreset,
           shots_per_scene: shotsPerScene,
+          render: renderImagesOnComplete,
         })
         setRegenerationProgress({
           title: 'Regenerar storyboard',
@@ -508,6 +536,7 @@ export default function StoryboardBuilderPage() {
           use_cinematic_intelligence: useCinematicIntelligence,
           use_montage_intelligence: useMontageIntelligence,
           validate_prompts: validatePrompts,
+          render: renderImagesOnComplete,
           auto_export_sheet: autoExportSheet,
           auto_export_formats: ['png', 'pdf'],
         }
@@ -1024,6 +1053,19 @@ export default function StoryboardBuilderPage() {
                 </div>
               </div>
 
+              <label className="flex items-center gap-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3 text-sm text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={renderImagesOnComplete}
+                  onChange={(e) => setRenderImagesOnComplete(e.target.checked)}
+                  className="w-4 h-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/30"
+                />
+                <div>
+                  <p className="font-medium text-white">Renderizar imágenes al terminar</p>
+                  <p className="text-xs text-slate-400">Si está activado, CID encolará render still al finalizar la generación del storyboard.</p>
+                </div>
+              </label>
+
               {sequences.length === 0 ? (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200">
                   No hay secuencias disponibles. Analiza el guion completo para construir el mapa narrativo.
@@ -1218,6 +1260,11 @@ export default function StoryboardBuilderPage() {
                   retryLabel="Reintentar regeneración"
                 />
               )}
+              {isPollingRenderState && (
+                <div className="px-4 py-2 text-xs bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 inline-flex items-center gap-2">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Actualizando estado de renders...
+                </div>
+              )}
             </section>
 
             <section className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
@@ -1339,13 +1386,19 @@ export default function StoryboardBuilderPage() {
                           return (
                             <div key={`filmstrip-${shot.id}`} className="w-56 rounded-lg border border-white/10 bg-black overflow-hidden">
                               <div className="aspect-video bg-black/40">
-                                <AuthenticatedStoryboardShotImage
-                                  projectId={projectId || shot.project_id}
-                                  shotId={shot.id}
-                                  alt={shot.asset_file_name || `shot-${shot.sequence_order}`}
-                                  className="w-full h-full object-cover"
-                                  fallbackLabel="Sin miniatura"
-                                />
+                                {shot.has_image ? (
+                                  <AuthenticatedStoryboardShotImage
+                                    projectId={projectId || shot.project_id}
+                                    shotId={shot.id}
+                                    alt={shot.asset_file_name || `shot-${shot.sequence_order}`}
+                                    className="w-full h-full object-cover"
+                                    fallbackLabel="Sin miniatura"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-xs text-slate-500 px-3 text-center">
+                                    {(shot.image_state || shot.render_status) === 'render_pending' ? 'Render pendiente' : (shot.image_state || shot.render_status) === 'render_failed' ? 'Render fallido' : 'Sin asset asociado'}
+                                  </div>
+                                )}
                               </div>
                               <div className="p-2 space-y-1 text-xs text-slate-300 border-t border-white/10">
                                 <p><span className="text-slate-500">Secuencia:</span> {getShotSequenceLabel(shot) || shot.sequence_id || 'n/a'}</p>
@@ -1370,13 +1423,19 @@ export default function StoryboardBuilderPage() {
                         return (
                           <div key={`grid-${shot.id}`} className="rounded-lg border border-white/10 bg-dark-300/60 overflow-hidden">
                             <div className="aspect-video bg-black/30">
-                              <AuthenticatedStoryboardShotImage
-                                projectId={projectId || shot.project_id}
-                                shotId={shot.id}
-                                alt={shot.asset_file_name || `shot-${shot.sequence_order}`}
-                                className="w-full h-full object-cover"
-                                fallbackLabel="Sin miniatura"
-                              />
+                              {shot.has_image ? (
+                                <AuthenticatedStoryboardShotImage
+                                  projectId={projectId || shot.project_id}
+                                  shotId={shot.id}
+                                  alt={shot.asset_file_name || `shot-${shot.sequence_order}`}
+                                  className="w-full h-full object-cover"
+                                  fallbackLabel="Sin miniatura"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-xs text-slate-500 px-3 text-center">
+                                  {(shot.image_state || shot.render_status) === 'render_pending' ? 'Render pendiente' : (shot.image_state || shot.render_status) === 'render_failed' ? 'Render fallido' : 'Sin asset asociado'}
+                                </div>
+                              )}
                             </div>
                             <div className="p-2 space-y-1 text-xs text-slate-300">
                               <p><span className="text-slate-500">Secuencia:</span> {getShotSequenceLabel(shot) || shot.sequence_id || 'n/a'}</p>
@@ -1552,6 +1611,8 @@ export default function StoryboardBuilderPage() {
           error={sequenceSelectorError}
           scenes={selectorScenes}
           sequences={sequences}
+          renderImagesOnComplete={renderImagesOnComplete}
+          onRenderImagesChange={setRenderImagesOnComplete}
           onClose={() => {
             setSequenceSelectorOpen(false)
             setSequenceSelectorError(null)

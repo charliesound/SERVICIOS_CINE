@@ -11,6 +11,7 @@ export interface StoryboardSelectionValue {
   sceneEnd?: number | null
   overwrite: boolean
   regenerateExisting: boolean
+  render: boolean
 }
 
 interface StoryboardSequenceSelectorModalProps {
@@ -19,6 +20,8 @@ interface StoryboardSequenceSelectorModalProps {
   error?: string | null
   scenes: StoryboardSceneCandidate[]
   sequences: StoryboardSequence[]
+  renderImagesOnComplete: boolean
+  onRenderImagesChange: (value: boolean) => void
   onClose: () => void
   onConfirm: (selection: StoryboardSelectionValue) => void
 }
@@ -103,6 +106,8 @@ export function StoryboardSequenceSelectorModal({
   error,
   scenes,
   sequences,
+  renderImagesOnComplete,
+  onRenderImagesChange,
   onClose,
   onConfirm,
 }: StoryboardSequenceSelectorModalProps) {
@@ -186,10 +191,10 @@ export function StoryboardSequenceSelectorModal({
 
   const buildSelection = (): StoryboardSelectionValue => {
     if (mode === 'FULL_SCRIPT') {
-      return { mode, overwrite, regenerateExisting }
+      return { mode, overwrite, regenerateExisting, render: renderImagesOnComplete }
     }
     if (mode === 'SEQUENCE') {
-      return { mode, sequenceId: selectedSequenceId || null, overwrite, regenerateExisting }
+      return { mode, sequenceId: selectedSequenceId || null, overwrite, regenerateExisting, render: renderImagesOnComplete }
     }
     if (mode === 'SINGLE_SCENE') {
       return {
@@ -197,6 +202,7 @@ export function StoryboardSequenceSelectorModal({
         sceneNumbers: selectedSingleSceneNumber != null ? [selectedSingleSceneNumber] : [],
         overwrite,
         regenerateExisting,
+        render: renderImagesOnComplete,
       }
     }
     if (mode === 'SCENE_RANGE') {
@@ -206,6 +212,7 @@ export function StoryboardSequenceSelectorModal({
         sceneEnd: Number(rangeEnd || rangeStart || '1'),
         overwrite,
         regenerateExisting,
+        render: renderImagesOnComplete,
       }
     }
     return {
@@ -214,6 +221,7 @@ export function StoryboardSequenceSelectorModal({
       sceneNumbers: selectedSceneNumbersForMulti,
       overwrite,
       regenerateExisting,
+      render: renderImagesOnComplete,
     }
   }
 
@@ -280,6 +288,10 @@ export function StoryboardSequenceSelectorModal({
                 <label className="flex items-center gap-2 text-xs text-gray-300">
                   <input type="checkbox" checked={overwrite} onChange={(event) => setOverwrite(event.target.checked)} />
                   Sobrescribir storyboard previo
+                </label>
+                <label className="flex items-center gap-2 text-xs text-gray-300">
+                  <input type="checkbox" checked={renderImagesOnComplete} onChange={(event) => onRenderImagesChange(event.target.checked)} />
+                  Renderizar imágenes al terminar
                 </label>
               </div>
             </div>

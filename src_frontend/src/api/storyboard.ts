@@ -49,7 +49,7 @@ export const storyboardApi = {
   generateBySequence: async (
     projectId: string,
     sequenceId: string,
-    payload: { style_preset?: string; shots_per_scene?: number; overwrite?: boolean; shots_per_sequence_mode?: string }
+    payload: { style_preset?: string; shots_per_scene?: number; overwrite?: boolean; shots_per_sequence_mode?: string; render?: boolean }
   ): Promise<StoryboardGenerationJob> => {
     const { data } = await api.post<StoryboardGenerationJob>(
       `/projects/${projectId}/storyboard/sequences/${sequenceId}/generate`,
@@ -165,7 +165,7 @@ export const storyboardApi = {
   regenerateSequence: async (
     projectId: string,
     sequenceId: string,
-    payload: Pick<StoryboardGeneratePayload, 'style_preset' | 'shots_per_scene'>
+    payload: Pick<StoryboardGeneratePayload, 'style_preset' | 'shots_per_scene' | 'render'>
   ): Promise<{
     job_id: string
     mode: string

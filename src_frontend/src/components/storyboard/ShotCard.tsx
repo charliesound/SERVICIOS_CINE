@@ -15,6 +15,7 @@ interface ShotCardProps {
 
 const RENDER_STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   completed: { label: 'Render completado', color: 'text-green-400 bg-green-500/10', icon: CheckCircle2 },
+  planned: { label: 'Planificado', color: 'text-slate-300 bg-white/5', icon: Clock },
   render_pending: { label: 'Render pendiente', color: 'text-amber-400 bg-amber-500/10', icon: Clock },
   no_asset: { label: 'Sin imagen', color: 'text-slate-500 bg-white/5', icon: AlertTriangle },
   render_failed: { label: 'Render fallido', color: 'text-red-500 bg-red-500/10', icon: AlertTriangle },
@@ -99,6 +100,8 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500">Shot {shot.sequence_order}</span>
           <div className="flex items-center gap-2">
+            <span className="text-[10px] text-cyan-300">v{shot.version}</span>
+            {shot.generation_job_id && <span className="text-[10px] text-slate-500 font-mono">{shot.generation_job_id.slice(0, 8)}</span>}
             {shot.isDirty && (
               <span className="text-xs text-amber-400">Modified</span>
             )}
@@ -124,6 +127,10 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
 
         {(shot.render_job_id || shot.generation_job_id) && (
           <div className="space-y-1 text-[10px] text-slate-600">
+            <p className="flex items-center gap-1">
+              <span>Última generación:</span>
+              <span className="text-slate-400">{new Date(shot.updated_at).toLocaleString()}</span>
+            </p>
             {shot.render_job_id && (
               <p className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />

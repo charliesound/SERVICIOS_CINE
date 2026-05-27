@@ -251,6 +251,7 @@ export interface StoryboardGeneratePayload {
   use_cinematic_intelligence?: boolean
   use_montage_intelligence?: boolean
   validate_prompts?: boolean
+  render?: boolean
   auto_export_sheet?: boolean
   auto_export_formats?: string[]
 }

@@ -153,6 +153,9 @@ class JobScheduler:
             success, error = await self._execute_job(item)
             if not success:
                 queue_service.mark_failed(item.job_id, error or "Execution failed")
+                updated_item = queue_service.get_status(item.job_id)
+                if updated_item and updated_item.status == QueueStatus.FAILED:
+                    await self._persist_failure(item, "render_failed", error or "Execution failed")
 
     async def _execute_job(self, item: QueueItem) -> tuple[bool, Optional[str]]:
         backend = registry.get_backend(item.backend)
@@ -381,6 +384,7 @@ class JobScheduler:
         # On timeout, leave progress where it was
         queue_service.mark_timeout(item.job_id)
         logger.warning(f"Job {item.job_id} timed out after {elapsed}s")
+        await self._persist_failure(item, "render_failed", "Job timed out")
 
     async def _persist_success_assets(
         self,
@@ -412,6 +416,14 @@ class JobScheduler:
                 shot = await session.get(StoryboardShot, storyboard_shot_id)
                 if shot is not None:
                     shot.asset_id = str(image_asset.id)
+                    meta = {}
+                    if shot.metadata_json:
+                        try:
+                            meta = json.loads(shot.metadata_json) if isinstance(shot.metadata_json, str) else dict(shot.metadata_json)
+                        except Exception:
+                            meta = {}
+                    meta["render_status"] = "render_succeeded"
+                    shot.metadata_json = json.dumps(meta, ensure_ascii=False, default=str)
             style_preset = (item.prompt or {}).get("style_preset")
             if image_asset is not None and _should_force_sketch(style_preset):
                 image_path = _extract_image_asset_path(image_asset)
@@ -426,6 +438,41 @@ class JobScheduler:
                     )
             await session.commit()
 
+    async def _persist_failure(
+        self,
+        item: QueueItem,
+        status: str,
+        error_message: Optional[str] = None,
+    ) -> None:
+        from database import AsyncSessionLocal
+        from models.storyboard import StoryboardShot
+
+        storyboard_shot_id = (item.metadata or {}).get("storyboard_shot_id")
+        if not storyboard_shot_id:
+            return
+
+        async with AsyncSessionLocal() as session:
+            shot = await session.get(StoryboardShot, storyboard_shot_id)
+            if shot is not None:
+                meta = {}
+                if shot.metadata_json:
+                    try:
+                        meta = json.loads(shot.metadata_json) if isinstance(shot.metadata_json, str) else dict(shot.metadata_json)
+                    except Exception:
+                        meta = {}
+                meta["render_status"] = status
+                if error_message:
+                    meta["render_error"] = str(error_message)
+                shot.metadata_json = json.dumps(meta, ensure_ascii=False, default=str)
+                await session.commit()
+                logger.info(
+                    "Persisted render failure for shot_id=%s job_id=%s status=%s error=%s",
+                    storyboard_shot_id,
+                    item.job_id,
+                    status,
+                    error_message,
+                )
+
     async def _check_timeouts(self):
         running_jobs = [
             item
@@ -439,6 +486,7 @@ class JobScheduler:
                 if elapsed > self._job_timeout:
                     logger.warning(f"Job {item.job_id} exceeded timeout")
                     queue_service.mark_timeout(item.job_id)
+                    await self._persist_failure(item, "render_failed", "Job timed out")
 
     async def get_status(self) -> Dict:
         return {

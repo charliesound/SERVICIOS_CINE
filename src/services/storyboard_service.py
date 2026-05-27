@@ -289,11 +289,17 @@ class StoryboardService:
                 shot.image_url = f"/api/projects/{project_id}/storyboard/shots/{shot.id}/image"  # type: ignore[attr-defined]
                 shot.preview_url = shot.image_url  # type: ignore[attr-defined]
                 shot.render_status = "completed"  # type: ignore[attr-defined]
+                shot.has_image = True  # type: ignore[attr-defined]
+                shot.image_state = "render_succeeded"  # type: ignore[attr-defined]
             elif render_job_id:
                 shot.render_job_id = render_job_id  # type: ignore[attr-defined]
                 shot.render_status = render_status_from_meta or "render_pending"  # type: ignore[attr-defined]
+                shot.has_image = False  # type: ignore[attr-defined]
+                shot.image_state = render_status_from_meta or "render_pending"  # type: ignore[attr-defined]
             else:
                 shot.render_status = "no_asset"  # type: ignore[attr-defined]
+                shot.has_image = False  # type: ignore[attr-defined]
+                shot.image_state = "no_asset"  # type: ignore[attr-defined]
 
         version = max((int(getattr(shot, "version", 1) or 1) for shot in shots), default=None)
         return shots, version

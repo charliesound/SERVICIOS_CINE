@@ -46,6 +46,7 @@ class StoryboardGenerateRequest(BaseModel):
     auto_export_formats: list[Literal["png", "pdf"]] = Field(default_factory=lambda: ["png", "pdf"])
     auto_export_template: Optional[str] = None
     auto_export_max_frames: Optional[int] = None
+    render: bool = False
 
 
 class StoryboardAutoExportItem(BaseModel):

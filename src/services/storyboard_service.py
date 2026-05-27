@@ -357,6 +357,7 @@ class StoryboardService:
         motion_ready: bool = False,
         image_edit_mode: bool = False,
         shots_per_sequence_mode: str = "legacy_count",
+        render: bool = False,
     ) -> dict[str, Any]:
         project = await self._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
         analysis_data = await self._get_analysis_payload(db, project)
@@ -681,7 +682,23 @@ class StoryboardService:
             db, job=job, percent=75, stage="Render jobs creados", code="render_job_created"
         )
 
-        has_render_jobs = bool(render_requests) and self._should_enqueue_render(mode=mode, style_preset=style_preset, shots_per_scene=shots_per_scene)
+        explicit_render_requested = bool(render)
+        has_render_jobs = bool(render_requests) and (
+            explicit_render_requested
+            or self._should_enqueue_render(
+                mode=mode,
+                style_preset=style_preset,
+                shots_per_scene=shots_per_scene,
+            )
+        )
+
+        if explicit_render_requested and not render_requests:
+            render_errors.append(
+                {
+                    "storyboard_shot_id": None,
+                    "error": "Render requested but no renderable storyboard shots were created",
+                }
+            )
 
         await job_tracking_service.update_progress(
             db,
@@ -723,7 +740,11 @@ class StoryboardService:
         )
         await db.commit()
 
-        if self._should_enqueue_render(mode=mode, style_preset=style_preset, shots_per_scene=shots_per_scene):
+        if explicit_render_requested or self._should_enqueue_render(
+            mode=mode,
+            style_preset=style_preset,
+            shots_per_scene=shots_per_scene,
+        ):
             max_render_shots = min(shots_per_scene, len(render_requests))
             for request in render_requests[:max_render_shots]:
                 prompt_payload = self._build_render_prompt_payload(

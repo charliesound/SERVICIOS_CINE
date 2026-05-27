@@ -276,6 +276,7 @@ async def generate_storyboard(
         motion_ready=payload.motion_ready,
         image_edit_mode=payload.image_edit_mode,
         shots_per_sequence_mode=payload.shots_per_sequence_mode,
+        render=payload.render,
     )
 
     service_response = {k: result[k] for k in StoryboardJobResponse.model_fields if k in result}
@@ -685,6 +686,7 @@ async def regenerate_storyboard_sequence(
         overwrite=True,
         include_coverage_shots=payload.include_coverage_shots,
         shots_per_sequence_mode=payload.shots_per_sequence_mode,
+        render=payload.render,
     )
     return StoryboardGenerationAuditResponse(
         job_id=result["job_id"],

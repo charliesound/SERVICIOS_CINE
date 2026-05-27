@@ -69,6 +69,14 @@ function getShotSequenceLabel(shot: StoryboardShot): string | null {
   return String(label)
 }
 
+function getShotRenderVisualState(shot: StoryboardShot): string {
+  return shot.image_state || shot.render_status || 'no_asset'
+}
+
+function shouldDisplayShotImage(shot: StoryboardShot): boolean {
+  return shot.has_image === true && getShotRenderVisualState(shot) !== 'render_pending'
+}
+
 
 export default function StoryboardBuilderPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -262,7 +270,7 @@ export default function StoryboardBuilderPage() {
   }, [filteredShots, sortBy, sortDirection, characterFilter])
 
   const hasPendingRenderShots = useMemo(
-    () => shots.some((shot) => (shot.image_state || shot.render_status) === 'render_pending'),
+    () => shots.some((shot) => getShotRenderVisualState(shot) === 'render_pending'),
     [shots]
   )
 
@@ -1383,10 +1391,11 @@ export default function StoryboardBuilderPage() {
                           const metadata = (shot.metadata_json || {}) as Record<string, unknown>
                           const validationScore = metadata.validation_score ?? (metadata.validation_result as Record<string, unknown> | undefined)?.overall_match_score
                           const displayText = getStoryboardShotDisplayText(shot, storyboardLocale)
+                          const visualState = getShotRenderVisualState(shot)
                           return (
                             <div key={`filmstrip-${shot.id}`} className="w-56 rounded-lg border border-white/10 bg-black overflow-hidden">
                               <div className="aspect-video bg-black/40">
-                                {shot.has_image ? (
+                                {shouldDisplayShotImage(shot) ? (
                                   <AuthenticatedStoryboardShotImage
                                     projectId={projectId || shot.project_id}
                                     shotId={shot.id}
@@ -1396,7 +1405,7 @@ export default function StoryboardBuilderPage() {
                                   />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-xs text-slate-500 px-3 text-center">
-                                    {(shot.image_state || shot.render_status) === 'render_pending' ? 'Render pendiente' : (shot.image_state || shot.render_status) === 'render_failed' ? 'Render fallido' : 'Sin asset asociado'}
+                                    {visualState === 'render_pending' ? 'Render encolado' : visualState === 'render_failed' ? 'Render fallido' : 'Sin asset asociado'}
                                   </div>
                                 )}
                               </div>
@@ -1405,6 +1414,7 @@ export default function StoryboardBuilderPage() {
                                 <p><span className="text-slate-500">Escena fuente:</span> {shot.scene_number ?? 'n/a'}</p>
                                 <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
                                 <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
+                                {shot.render_error && <p className="text-red-300/80">{shot.render_error}</p>}
                                 <p className="text-slate-200 line-clamp-3">{displayText}</p>
                                 <p><span className="text-slate-500">Validación:</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
                                 <StoryboardTracePanel projectId={projectId || shot.project_id} shotId={shot.id} compact />
@@ -1420,10 +1430,11 @@ export default function StoryboardBuilderPage() {
                         const metadata = (shot.metadata_json || {}) as Record<string, unknown>
                         const validationScore = metadata.validation_score ?? (metadata.validation_result as Record<string, unknown> | undefined)?.overall_match_score
                         const displayText = getStoryboardShotDisplayText(shot, storyboardLocale)
+                        const visualState = getShotRenderVisualState(shot)
                         return (
                           <div key={`grid-${shot.id}`} className="rounded-lg border border-white/10 bg-dark-300/60 overflow-hidden">
                             <div className="aspect-video bg-black/30">
-                              {shot.has_image ? (
+                              {shouldDisplayShotImage(shot) ? (
                                 <AuthenticatedStoryboardShotImage
                                   projectId={projectId || shot.project_id}
                                   shotId={shot.id}
@@ -1433,7 +1444,7 @@ export default function StoryboardBuilderPage() {
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center text-xs text-slate-500 px-3 text-center">
-                                  {(shot.image_state || shot.render_status) === 'render_pending' ? 'Render pendiente' : (shot.image_state || shot.render_status) === 'render_failed' ? 'Render fallido' : 'Sin asset asociado'}
+                                  {visualState === 'render_pending' ? 'Render encolado' : visualState === 'render_failed' ? 'Render fallido' : 'Sin asset asociado'}
                                 </div>
                               )}
                             </div>
@@ -1442,6 +1453,7 @@ export default function StoryboardBuilderPage() {
                               <p><span className="text-slate-500">Escena fuente:</span> {shot.scene_number ?? 'n/a'}</p>
                               <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
                               <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
+                              {shot.render_error && <p className="text-red-300/80">{shot.render_error}</p>}
                               <p className="text-slate-200 line-clamp-3">{displayText}</p>
                               <p><span className="text-slate-500">Validación:</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
                               <StoryboardTracePanel projectId={projectId || shot.project_id} shotId={shot.id} compact />

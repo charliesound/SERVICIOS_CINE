@@ -27,11 +27,12 @@ const RENDER_STATUS_CONFIG: Record<string, { label: string; color: string; icon:
 
 export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: ShotCardProps) {
   const [localText, setLocalText] = useState(shot.narrative_text || getStoryboardShotDisplayText(shot, getStoryboardUiLocale()))
-  const imageState = shot.image_state || 'no_asset'
+  const imageState = shot.image_state || shot.render_status || 'no_asset'
   const statusCfg = RENDER_STATUS_CONFIG[imageState] || RENDER_STATUS_CONFIG.no_asset
   const StatusIcon = statusCfg.icon
-  const hasImage = shot.has_image === true;
-  const renderStatus = shot.render_status;
+  const renderStatus = shot.render_status || imageState
+  const isRenderPending = imageState === 'render_pending'
+  const hasImage = shot.has_image === true && !isRenderPending
 
   const handleTextBlur = () => {
     if (localText !== shot.narrative_text) {
@@ -63,11 +64,17 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
           </>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 px-4">
-            {renderStatus === 'render_pending' ? (
+            {isRenderPending ? (
               <>
                 <Loader2 className="w-10 h-10 mb-2 animate-spin text-amber-400/60" />
                 <span className="text-sm text-amber-300/70 text-center">Render pendiente</span>
                 <span className="text-[10px] text-slate-600 mt-1 text-center">Imagen pendiente de generar o asociar</span>
+              </>
+            ) : renderStatus === 'render_failed' ? (
+              <>
+                <AlertTriangle className="w-10 h-10 mb-2 text-red-400/70" />
+                <span className="text-sm text-red-300/80 text-center">Render fallido</span>
+                <span className="text-[10px] text-slate-500 mt-1 text-center">Revisa el error o asigna un asset manualmente</span>
               </>
             ) : (
               <>
@@ -143,6 +150,12 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
                 <span className="text-slate-400 font-mono">{shot.generation_job_id.substring(0, 12)}...</span>
               </p>
             )}
+          </div>
+        )}
+
+        {shot.render_error && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
+            {shot.render_error}
           </div>
         )}
 

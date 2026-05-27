@@ -29,6 +29,7 @@ export interface StoryboardShot {
   preview_url?: string;
   render_job_id?: string;
   render_status?: string;
+  render_error?: string | null;
   // New fields
   normalized_sequence_id?: string;
   is_current_version?: boolean;

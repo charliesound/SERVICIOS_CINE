@@ -365,14 +365,14 @@ class WorkflowBuilder:
         prepared.setdefault("workflow_profile_requested", requested_profile)
         prepared["seed"] = self._resolve_storyboard_seed(prepared)
         if requested_profile in {"production_storyboard_cinematic", "production_quality"}:
-            prepared.setdefault("checkpoint", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["checkpoint"])
-            prepared.setdefault("width", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["width"])
-            prepared.setdefault("height", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["height"])
-            prepared.setdefault("steps", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["steps"])
-            prepared.setdefault("cfg", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["cfg"])
-            prepared.setdefault("sampler_name", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["sampler_name"])
-            prepared.setdefault("scheduler", STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["scheduler"])
-            prepared.setdefault("model_family", "flux")
+            prepared["checkpoint"] = STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["checkpoint"]
+            prepared["width"] = STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["width"]
+            prepared["height"] = STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["height"]
+            prepared["steps"] = STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["steps"]
+            prepared["cfg"] = STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["cfg"]
+            prepared["sampler_name"] = STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["sampler_name"]
+            prepared["scheduler"] = STORYBOARD_RUNTIME_PRESETS["production_storyboard_cinematic"]["settings"]["scheduler"]
+            prepared["model_family"] = "flux"
             prepared["prompt"] = self._build_production_storyboard_prompt_text(prepared)
             prepared["negative_prompt"] = self._build_production_storyboard_negative_prompt(prepared)
         return prepared
@@ -386,6 +386,15 @@ class WorkflowBuilder:
         width = runtime_prompt.get("4", {}).get("inputs", {}).get("width")
         height = runtime_prompt.get("4", {}).get("inputs", {}).get("height")
         sampler_inputs = runtime_prompt.get("5", {}).get("inputs", {})
+        model_family: Optional[str] = None
+        if isinstance(checkpoint, str):
+            ckpt_lower = checkpoint.lower()
+            if "flux" in ckpt_lower:
+                model_family = "flux"
+            elif "sdxl" in ckpt_lower or "sd_xl" in ckpt_lower:
+                model_family = "sdxl"
+            elif "wan" in ckpt_lower:
+                model_family = "wan22"
         return {
             "checkpoint": checkpoint,
             "prompt": positive_prompt,
@@ -397,6 +406,7 @@ class WorkflowBuilder:
             "sampler_name": sampler_inputs.get("sampler_name"),
             "scheduler": sampler_inputs.get("scheduler"),
             "seed": sampler_inputs.get("seed"),
+            "model_family": model_family,
         }
 
     def _build_basic_text_to_image_prompt(

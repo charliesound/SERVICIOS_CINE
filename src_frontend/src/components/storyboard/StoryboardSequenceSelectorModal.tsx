@@ -18,10 +18,10 @@ interface StoryboardSequenceSelectorModalProps {
   open: boolean
   isLoading: boolean
   error?: string | null
-  scenes: StoryboardSceneCandidate[]
-  sequences: StoryboardSequence[]
-  renderImagesOnComplete: boolean
-  onRenderImagesChange: (value: boolean) => void
+  scenes?: StoryboardSceneCandidate[]
+  sequences?: StoryboardSequence[]
+  renderImagesOnComplete?: boolean
+  onRenderImagesChange?: (value: boolean) => void
   onClose: () => void
   onConfirm: (selection: StoryboardSelectionValue) => void
 }
@@ -76,7 +76,8 @@ function buildSequencePresentationItems(
     const displayName = sequence.title || `Secuencia ${sequence.sequence_number}`
     const location = sequence.location || firstScene?.scene_heading || null
     const characters = sequence.characters || []
-    const sceneCount = sequence.included_scenes.length || relatedScenes.length
+    const includedScenes = sequence.included_scenes || []
+    const sceneCount = includedScenes.length || relatedScenes.length
     const searchableText = normalizeText([
       sequence.sequence_number,
       displayName,
@@ -104,9 +105,9 @@ export function StoryboardSequenceSelectorModal({
   open,
   isLoading,
   error,
-  scenes,
-  sequences,
-  renderImagesOnComplete,
+  scenes = [],
+  sequences = [],
+  renderImagesOnComplete = false,
   onRenderImagesChange,
   onClose,
   onConfirm,
@@ -160,13 +161,13 @@ export function StoryboardSequenceSelectorModal({
     const next = new Set<number>()
     selectedSequenceIds.forEach((sequenceId) => {
       const match = sequences.find((sequence) => sequence.sequence_id === sequenceId)
-      match?.included_scenes.forEach((sceneNumber) => next.add(sceneNumber))
+      ;(match?.included_scenes || []).forEach((sceneNumber) => next.add(sceneNumber))
     })
     return Array.from(next).sort((a, b) => a - b)
   }, [selectedSequenceIds, sequences])
 
   const visibleSequenceIds = filteredSequenceItems.map((item) => item.sequence.sequence_id)
-  const selectedSequenceCount = selectedSequenceIds.length
+  const selectedSequenceCount = (selectedSequenceIds ?? []).length
 
   if (!open) return null
 
@@ -227,11 +228,11 @@ export function StoryboardSequenceSelectorModal({
 
   const canConfirm = (() => {
     if (isLoading) return false
-    if (mode === 'FULL_SCRIPT') return scenes.length > 0
+    if (mode === 'FULL_SCRIPT') return (scenes ?? []).length > 0
     if (mode === 'SEQUENCE') return !!selectedSequenceId
     if (mode === 'SINGLE_SCENE') return selectedSingleSceneNumber != null
     if (mode === 'SCENE_RANGE') return Number(rangeStart) > 0 && Number(rangeEnd) >= Number(rangeStart)
-    return selectedSequenceIds.length > 0
+    return (selectedSequenceIds ?? []).length > 0
   })()
 
   const primaryButtonLabel = (() => {
@@ -243,11 +244,11 @@ export function StoryboardSequenceSelectorModal({
   })()
 
   const helperStatus = (() => {
-    if (mode === 'SELECTED_SCENES') return `${selectedSequenceCount} secuencias seleccionadas · ${selectedSceneNumbersForMulti.length} escenas cubiertas`
+    if (mode === 'SELECTED_SCENES') return `${selectedSequenceCount} secuencias seleccionadas · ${(selectedSceneNumbersForMulti ?? []).length} escenas cubiertas`
     if (mode === 'SEQUENCE') return selectedSequenceId ? '1 secuencia seleccionada' : 'Selecciona una secuencia'
     if (mode === 'SINGLE_SCENE') return selectedSingleSceneNumber != null ? `Escena ${selectedSingleSceneNumber} seleccionada` : 'Selecciona una escena'
     if (mode === 'SCENE_RANGE') return `Rango ${rangeStart || '1'}-${rangeEnd || rangeStart || '1'}`
-    return `${scenes.length} escenas detectadas`
+    return `${(scenes ?? []).length} escenas detectadas`
   })()
 
   return (
@@ -290,7 +291,7 @@ export function StoryboardSequenceSelectorModal({
                   Sobrescribir storyboard previo
                 </label>
                 <label className="flex items-center gap-2 text-xs text-gray-300">
-                  <input type="checkbox" checked={renderImagesOnComplete} onChange={(event) => onRenderImagesChange(event.target.checked)} />
+                  <input type="checkbox" checked={renderImagesOnComplete} onChange={(event) => onRenderImagesChange?.(event.target.checked)} />
                   Renderizar imágenes al terminar
                 </label>
               </div>
@@ -321,7 +322,7 @@ export function StoryboardSequenceSelectorModal({
                   <>
                     <button type="button" onClick={handleSelectAll} className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5">Seleccionar todas</button>
                     <button type="button" onClick={handleClearSelection} className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5">Limpiar selección</button>
-                    <button type="button" onClick={handleSelectVisible} disabled={visibleSequenceIds.length === 0} className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-40">Seleccionar visibles</button>
+                    <button type="button" onClick={handleSelectVisible} disabled={(visibleSequenceIds ?? []).length === 0} className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-40">Seleccionar visibles</button>
                   </>
                 )}
               </div>
@@ -351,7 +352,7 @@ export function StoryboardSequenceSelectorModal({
                               {item.intExt && <span>{item.intExt}</span>}
                               {item.timeOfDay && <span>{item.timeOfDay}</span>}
                             </div>
-                            {item.characters.length > 0 && (
+                            {(item.characters ?? []).length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1">
                                 {item.characters.slice(0, 6).map((character) => (
                                   <span key={character} className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-slate-300">{character}</span>
@@ -374,7 +375,7 @@ export function StoryboardSequenceSelectorModal({
                     {selectedSequenceCount} secuencias seleccionadas
                   </div>
 
-                  {filteredSequenceItems.length === 0 ? (
+                  {(filteredSequenceItems ?? []).length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-white/10 px-4 py-8 text-sm text-slate-500">
                       No hay secuencias visibles con el filtro actual.
                     </div>
@@ -404,7 +405,7 @@ export function StoryboardSequenceSelectorModal({
                               {item.timeOfDay && <span>{item.timeOfDay}</span>}
                               <span>{item.sequence.storyboard_status}</span>
                             </div>
-                            {item.characters.length > 0 && (
+                            {(item.characters ?? []).length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1">
                                 {item.characters.slice(0, 8).map((character) => (
                                   <span key={character} className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-slate-300">{character}</span>

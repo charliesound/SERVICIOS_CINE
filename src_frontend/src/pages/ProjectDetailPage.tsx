@@ -632,16 +632,16 @@ export default function ProjectDetailPage() {
   }, [activeTab])
 
   useEffect(() => {
-    if (!projectId || !storyboardShots.length) return
+    if (!projectId || (storyboardShots ?? []).length === 0) return
     setStoryboardData(mapStoryboardScopeToResult(projectId, storyboardShots))
   }, [assets, storyboardShots, projectId])
 
   const storyboardViewData = useMemo<StoryboardResult | null>(() => {
-    if (storyboardData && storyboardData.scenes.length > 0) {
+    if (storyboardData && (storyboardData.scenes ?? []).length > 0) {
       return storyboardData
     }
 
-    if (projectId && storyboardShots.length > 0) {
+    if (projectId && (storyboardShots ?? []).length > 0) {
       return mapStoryboardScopeToResult(projectId, storyboardShots)
     }
 
@@ -667,7 +667,7 @@ export default function ProjectDetailPage() {
 
   const hasStoryboardGenerated = Boolean(
     storyboardViewData
-    || storyboardShots.length > 0
+    || (storyboardShots ?? []).length > 0
     || latestCompletedStoryboardJob
     || ((storyboardSceneCount || 0) > 0)
     || ((storyboardShotCount || 0) > 0)
@@ -847,6 +847,7 @@ export default function ProjectDetailPage() {
   const confirmGenerateStoryboardSelection = async (selection: StoryboardSelectionValue) => {
     if (!projectId) return
     const selectedSceneNumbers = selection.sceneNumbers || []
+    const selectedSceneCount = (selectedSceneNumbers ?? []).length
     setIsStoryboarding(true)
     setStoryboardModalOpen(false)
     setError('')
@@ -857,8 +858,8 @@ export default function ProjectDetailPage() {
       status: 'queued',
       percent: 0,
       label: 'Preparando storyboard...',
-      helperText: selectedSceneNumbers.length > 0
-        ? `Progreso estimado hasta que el backend devuelva progreso real por escena. ${selectedSceneNumbers.length} escenas seleccionadas.`
+      helperText: selectedSceneCount > 0
+        ? `Progreso estimado hasta que el backend devuelva progreso real por escena. ${selectedSceneCount} escenas seleccionadas.`
         : 'Preparando generación de storyboard.',
       estimated: true,
     })
@@ -882,18 +883,18 @@ export default function ProjectDetailPage() {
         style_preset: 'hand_drawn_storyboard',
         visual_mode: 'hand_drawn_storyboard',
         shots_per_scene: 1,
-        max_scenes: generationMode === 'FULL_SCRIPT' ? 3 : selectedSceneNumbers.length || null,
+        max_scenes: generationMode === 'FULL_SCRIPT' ? 3 : selectedSceneCount || null,
         overwrite: selection.overwrite,
       }
       const stopPolling = pollJobsUntilSettled('storyboard', (job) => {
         setStoryboardProgress((current) => buildProgressState(
           'Generar storyboard',
           job,
-          selectedSceneNumbers.length > 0
-            ? `Procesando selección de ${selectedSceneNumbers.length} escena(s)`
+          selectedSceneCount > 0
+            ? `Procesando selección de ${selectedSceneCount} escena(s)`
             : 'Generando storyboard...',
-          selectedSceneNumbers.length > 0
-            ? `Progreso estimado hasta que el backend devuelva progreso real por escena. ${selectedSceneNumbers.length} escenas seleccionadas.`
+          selectedSceneCount > 0
+            ? `Progreso estimado hasta que el backend devuelva progreso real por escena. ${selectedSceneCount} escenas seleccionadas.`
             : 'Progreso estimado hasta que el backend devuelva progreso real.',
           current?.percent || 0,
         ))

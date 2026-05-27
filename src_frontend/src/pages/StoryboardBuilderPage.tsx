@@ -506,8 +506,8 @@ export default function StoryboardBuilderPage() {
           status: 'processing',
           percent: 50,
           label: `Generando storyboard — ${result.total_shots} planos en ${result.total_scenes} escenas`,
-          helperText: result.render_jobs.length > 0
-            ? `${result.render_jobs.length} render(s) encolados`
+          helperText: (result.render_jobs ?? []).length > 0
+            ? `${(result.render_jobs ?? []).length} render(s) encolados`
             : 'Estructura generada sin renders',
           jobId: result.job_id,
         })
@@ -518,7 +518,7 @@ export default function StoryboardBuilderPage() {
           percent: 100,
           label: 'Storyboard regenerado correctamente',
           helperText: result.total_shots > 0
-            ? `${result.total_scenes} escenas, ${result.total_shots} planos generados. Assets: ${result.generated_assets.length > 0 ? result.generated_assets.join(', ') : 'solo estructura'}`
+            ? `${result.total_scenes} escenas, ${result.total_shots} planos generados. Assets: ${(result.generated_assets ?? []).length > 0 ? (result.generated_assets ?? []).join(', ') : 'solo estructura'}`
             : 'Storyboard regenerado',
           jobId: result.job_id,
         })
@@ -1575,18 +1575,18 @@ export default function StoryboardBuilderPage() {
                   <p className="text-2xl font-bold text-amber-400">{creditEstimate.total_credits}</p>
                 </div>
               </div>
-              {creditEstimate.warnings.length > 0 && (
+              {(creditEstimate.warnings ?? []).length > 0 && (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
                   <p className="text-xs font-medium text-amber-400">Advertencias</p>
-                  {creditEstimate.warnings.map((w, i) => (
+                  {(creditEstimate.warnings ?? []).map((w, i) => (
                     <p key={i} className="text-xs text-amber-300/70">{w}</p>
                   ))}
                 </div>
               )}
-              {creditEstimate.notes.length > 0 && (
+              {(creditEstimate.notes ?? []).length > 0 && (
                 <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-1">
                   <p className="text-xs font-medium text-slate-400">Notas</p>
-                  {creditEstimate.notes.map((n, i) => (
+                  {(creditEstimate.notes ?? []).map((n, i) => (
                     <p key={i} className="text-xs text-slate-300">{n}</p>
                   ))}
                 </div>

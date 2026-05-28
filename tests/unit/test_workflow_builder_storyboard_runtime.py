@@ -193,3 +193,68 @@ def test_still_storyboard_frame_falls_back_to_storyboard_safe_when_production_pr
     assert executed_profile == "storyboard_safe"
     assert fallback_report is not None
     assert fallback_report.reason == "missing_nodes"
+
+
+def test_controlnet_profile_without_reference_falls_back_to_production_cinematic() -> None:
+    runtime, workflow_key, fallback_report, executed_profile = builder.build_runtime_prompt_with_profile(
+        "still_storyboard_frame",
+        {
+            "style_preset": "realistic_client_review",
+            "prompt": "A detective enters a neon-lit alley",
+            "source_scene_heading": "EXT. ALLEY - NIGHT",
+            "source_action_summary": "The detective enters the alley and scans the shadows.",
+            "shot_objective": "establish visual tension",
+            "location": "ALLEY",
+            "time_of_day": "NIGHT",
+            "continuity_seed": "proj-1:seq-1:shot-4",
+        },
+        requested_profile="production_storyboard_cinematic_controlnet",
+        available_nodes={
+            "CheckpointLoaderSimple",
+            "CLIPTextEncode",
+            "EmptyLatentImage",
+            "KSampler",
+            "VAEDecode",
+            "SaveImage",
+        },
+    )
+
+    assert isinstance(runtime, dict)
+    assert workflow_key == "still_storyboard_frame"
+    assert executed_profile == "production_storyboard_cinematic"
+    assert fallback_report is not None
+    assert fallback_report.reason == "missing_controlnet_reference"
+
+
+def test_controlnet_profile_with_pose_reference_uses_controlnet_template() -> None:
+    runtime, workflow_key, fallback_report, executed_profile = builder.build_runtime_prompt_with_profile(
+        "still_storyboard_frame",
+        {
+            "style_preset": "realistic_client_review",
+            "prompt": "A detective enters a neon-lit alley",
+            "pose_reference_image": "pose_reference.png",
+            "controlnet_model": "flux_dev_openpose_controlnetl.safetensors",
+            "controlnet_strength": 0.8,
+        },
+        requested_profile="production_storyboard_cinematic_controlnet",
+        available_nodes={
+            "CheckpointLoaderSimple",
+            "CLIPTextEncode",
+            "EmptyLatentImage",
+            "KSampler",
+            "VAEDecode",
+            "SaveImage",
+            "LoadImage",
+            "ControlNetLoader",
+            "ControlNetApplyAdvanced",
+            "DWPreprocessor",
+        },
+    )
+
+    assert isinstance(runtime, dict)
+    assert workflow_key == "still_storyboard_frame"
+    assert executed_profile == "production_storyboard_cinematic_controlnet"
+    assert fallback_report is None
+    assert runtime["2"]["inputs"]["image"] == "pose_reference.png"
+    assert runtime["3"]["inputs"]["control_net_name"] == "flux_dev_openpose_controlnetl.safetensors"
+    assert runtime["7"]["inputs"]["strength"] == 0.8

@@ -360,6 +360,11 @@ class StoryboardService:
         workflow_profile: str | None = None,
         render_quality: str = "standard",
         model_family: str | None = None,
+        pose_reference_image: str | None = None,
+        controlnet_hints: dict[str, Any] | list[Any] | None = None,
+        controlnet_strength: float | None = None,
+        controlnet_preprocessor: str | None = None,
+        controlnet_model: str | None = None,
         motion_ready: bool = False,
         image_edit_mode: bool = False,
         shots_per_sequence_mode: str = "legacy_count",
@@ -436,6 +441,11 @@ class StoryboardService:
             requested_profile=workflow_profile,
             style_preset=style_preset,
         )
+        profile_info["pose_reference_image"] = pose_reference_image
+        profile_info["controlnet_hints"] = controlnet_hints
+        profile_info["controlnet_strength"] = controlnet_strength
+        profile_info["controlnet_preprocessor"] = controlnet_preprocessor
+        profile_info["controlnet_model"] = controlnet_model
 
         job = ProjectJob(
             organization_id=tenant.organization_id,
@@ -613,6 +623,11 @@ class StoryboardService:
                 metadata_raw["model_family"] = model_family
                 metadata_raw["motion_ready"] = motion_ready
                 metadata_raw["image_edit_mode"] = image_edit_mode
+                metadata_raw["pose_reference_image"] = pose_reference_image
+                metadata_raw["controlnet_hints"] = controlnet_hints
+                metadata_raw["controlnet_strength"] = controlnet_strength
+                metadata_raw["controlnet_preprocessor"] = controlnet_preprocessor
+                metadata_raw["controlnet_model"] = controlnet_model
                 metadata_str = json.dumps(metadata_raw, ensure_ascii=False, default=str)
                 shot_record = StoryboardShot(
                     project_id=project_id,
@@ -683,6 +698,11 @@ class StoryboardService:
             "model_family": model_family,
             "motion_ready": motion_ready,
             "image_edit_mode": image_edit_mode,
+            "pose_reference_image": pose_reference_image,
+            "controlnet_hints": controlnet_hints,
+            "controlnet_strength": controlnet_strength,
+            "controlnet_preprocessor": controlnet_preprocessor,
+            "controlnet_model": controlnet_model,
         }
 
         await job_tracking_service.update_progress(
@@ -819,6 +839,11 @@ class StoryboardService:
                         "location": prompt_payload.get("location"),
                         "time_of_day": prompt_payload.get("time_of_day"),
                         "int_ext": prompt_payload.get("int_ext"),
+                        "pose_reference_image": prompt_payload.get("pose_reference_image"),
+                        "controlnet_hints": prompt_payload.get("controlnet_hints"),
+                        "controlnet_strength": prompt_payload.get("controlnet_strength"),
+                        "controlnet_preprocessor": prompt_payload.get("controlnet_preprocessor"),
+                        "controlnet_model": prompt_payload.get("controlnet_model"),
                     },
                 )
                 if response.status.value == "queued" and queue_item is not None:
@@ -2193,6 +2218,10 @@ class StoryboardService:
             "style_reference_images": metadata_payload.get("style_reference_images") or [],
             "visual_bible_reference_pack": metadata_payload.get("visual_bible_reference_pack") or {},
             "controlnet_hints": metadata_payload.get("controlnet_hints") or {},
+            "pose_reference_image": metadata_payload.get("pose_reference_image"),
+            "controlnet_strength": metadata_payload.get("controlnet_strength"),
+            "controlnet_preprocessor": metadata_payload.get("controlnet_preprocessor"),
+            "controlnet_model": metadata_payload.get("controlnet_model"),
             "workflow_profile_requested": metadata_payload.get("workflow_profile_requested") or "storyboard_safe",
             "storyboard_workflow_profile_info": metadata_payload.get("storyboard_workflow_profile_info") or {},
             "sheet_template": metadata_payload.get("sheet_template"),

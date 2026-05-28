@@ -22,6 +22,14 @@ CORE_NODES = {
     "SaveImage",
 }
 
+CONTROLNET_NODES = {
+    *CORE_NODES,
+    "LoadImage",
+    "ControlNetLoader",
+    "ControlNetApplyAdvanced",
+    "DWPreprocessor",
+}
+
 
 def test_selector_downgrades_legacy_production_quality_to_new_cinematic_profile() -> None:
     prompt, workflow_key, fallback_report, executed_profile = selector.select_workflow(
@@ -51,6 +59,39 @@ def test_selector_supports_production_storyboard_cinematic_profile_directly() ->
     assert workflow_key == "production_storyboard_cinematic"
     assert executed_profile == "production_storyboard_cinematic"
     assert fallback_report is None
+
+
+def test_selector_supports_production_storyboard_cinematic_controlnet_profile_directly() -> None:
+    prompt, workflow_key, fallback_report, executed_profile = selector.select_workflow(
+        workflow_key="still_text_to_image_pro",
+        requested_profile="production_storyboard_cinematic_controlnet",
+        inputs={
+            "prompt": "test prompt",
+            "pose_reference_image": "pose_reference.png",
+            "controlnet_model": "flux_dev_openpose_controlnetl.safetensors",
+        },
+        available_nodes=CONTROLNET_NODES,
+    )
+
+    assert isinstance(prompt, dict)
+    assert workflow_key == "production_storyboard_cinematic_controlnet"
+    assert executed_profile == "production_storyboard_cinematic_controlnet"
+    assert fallback_report is None
+
+
+def test_selector_controlnet_profile_falls_back_to_production_cinematic_when_controlnet_nodes_missing() -> None:
+    prompt, workflow_key, fallback_report, executed_profile = selector.select_workflow(
+        workflow_key="still_text_to_image_pro",
+        requested_profile="production_storyboard_cinematic_controlnet",
+        inputs={"prompt": "test prompt"},
+        available_nodes=CORE_NODES,
+    )
+
+    assert isinstance(prompt, dict)
+    assert workflow_key == "production_storyboard_cinematic"
+    assert executed_profile == "production_storyboard_cinematic"
+    assert fallback_report is not None
+    assert fallback_report.reason == "missing_nodes"
 
 
 def test_selector_downgrades_storyboard_safe_to_smoke_light_when_missing_node(monkeypatch) -> None:

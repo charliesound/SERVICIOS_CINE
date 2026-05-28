@@ -21,6 +21,7 @@ TEMPLATE_FILE_MAP: dict[WorkflowProfile, str] = {
     WorkflowProfile.smoke_light: "smoke_light.json",
     WorkflowProfile.storyboard_safe: "storyboard_safe.json",
     WorkflowProfile.production_storyboard_cinematic: "production_storyboard_cinematic_v1.json",
+    WorkflowProfile.production_storyboard_cinematic_controlnet: "production_storyboard_cinematic_controlnet_v1.json",
 }
 
 PROFILE_TO_WORKFLOW_KEY: dict[WorkflowProfile, str] = {
@@ -29,6 +30,7 @@ PROFILE_TO_WORKFLOW_KEY: dict[WorkflowProfile, str] = {
     WorkflowProfile.storyboard_fast: "storyboard_safe",
     WorkflowProfile.production_quality: "production_storyboard_cinematic",
     WorkflowProfile.production_storyboard_cinematic: "production_storyboard_cinematic",
+    WorkflowProfile.production_storyboard_cinematic_controlnet: "production_storyboard_cinematic_controlnet",
 }
 
 

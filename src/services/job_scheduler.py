@@ -283,6 +283,16 @@ class JobScheduler:
             ),
         }
         item.metadata.update(workflow_builder.extract_runtime_prompt_metadata(runtime_prompt))
+        references_used = {
+            "pose_reference_image": bool(prompt_inputs.get("pose_reference_image")),
+            "controlnet_hints": bool(prompt_inputs.get("controlnet_hints")),
+        }
+        if requested_profile == "production_storyboard_cinematic_controlnet" or executed_profile == "production_storyboard_cinematic_controlnet":
+            item.metadata["reference_mode"] = "controlnet"
+            item.metadata["references_used"] = references_used
+            item.metadata["controlnet_model"] = prompt_inputs.get("controlnet_model")
+            item.metadata["controlnet_preprocessor"] = prompt_inputs.get("controlnet_preprocessor")
+            item.metadata["controlnet_strength"] = prompt_inputs.get("controlnet_strength")
 
         final_checkpoint = (
             (item.metadata or {}).get("checkpoint")

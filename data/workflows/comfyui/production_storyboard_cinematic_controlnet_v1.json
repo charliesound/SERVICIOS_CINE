@@ -1,0 +1,194 @@
+{
+  "workflow_key": "production_storyboard_cinematic_controlnet",
+  "profile": "production_storyboard_cinematic_controlnet",
+  "description": "ControlNet storyboard workflow for pose/blocking consistency with safe fallback to production cinematic core profile.",
+  "source_reference": "data/workflows/comfyui/imported/storyboard_pack_adaptado/03_storyboard_controlnet_pose_axis_flux_ADAPTADO(API).json",
+  "node_classes": [
+    "CheckpointLoaderSimple",
+    "LoadImage",
+    "ControlNetLoader",
+    "DWPreprocessor",
+    "CLIPTextEncode",
+    "ControlNetApplyAdvanced",
+    "EmptyLatentImage",
+    "KSampler",
+    "VAEDecode",
+    "SaveImage"
+  ],
+  "parameters": {
+    "checkpoint": {"node": "1", "input": "ckpt_name"},
+    "pose_reference_image": {"node": "2", "input": "image"},
+    "controlnet_model": {"node": "3", "input": "control_net_name"},
+    "positive_prompt": {"node": "5", "input": "text"},
+    "negative_prompt": {"node": "6", "input": "text"},
+    "controlnet_strength": {"node": "7", "input": "strength"},
+    "start_at": {"node": "7", "input": "start_percent"},
+    "end_at": {"node": "7", "input": "end_percent"},
+    "width": {"node": "8", "input": "width"},
+    "height": {"node": "8", "input": "height"},
+    "steps": {"node": "9", "input": "steps"},
+    "cfg": {"node": "9", "input": "cfg"},
+    "sampler_name": {"node": "9", "input": "sampler_name"},
+    "scheduler": {"node": "9", "input": "scheduler"},
+    "seed": {"node": "9", "input": "seed"},
+    "denoise": {"node": "9", "input": "denoise"},
+    "output_prefix": {"node": "11", "input": "filename_prefix"}
+  },
+  "defaults": {
+    "checkpoint": "FLUX/flux1-dev-fp8.safetensors",
+    "pose_reference_image": "pose_reference.png",
+    "controlnet_model": "flux_dev_openpose_controlnetl.safetensors",
+    "positive_prompt": "cinematic reverse shot, eyeline match, 180 degree rule respected, same room, matching light direction, realistic actor blocking",
+    "negative_prompt": "axis jump, mirrored set, wrong gaze direction, deformed body, extra arms, text, watermark",
+    "controlnet_strength": 1.0,
+    "start_at": 0.0,
+    "end_at": 1.0,
+    "width": 1344,
+    "height": 768,
+    "steps": 20,
+    "cfg": 3.5,
+    "sampler_name": "euler",
+    "scheduler": "normal",
+    "seed": 0,
+    "denoise": 1.0,
+    "output_prefix": "storyboard_controlnet_axis"
+  },
+  "prompt_template": {
+    "1": {
+      "inputs": {
+        "ckpt_name": "FLUX/flux1-dev-fp8.safetensors"
+      },
+      "class_type": "CheckpointLoaderSimple"
+    },
+    "2": {
+      "inputs": {
+        "image": "pose_reference.png"
+      },
+      "class_type": "LoadImage"
+    },
+    "3": {
+      "inputs": {
+        "control_net_name": "flux_dev_openpose_controlnetl.safetensors"
+      },
+      "class_type": "ControlNetLoader"
+    },
+    "4": {
+      "inputs": {
+        "detect_hand": 512,
+        "detect_body": true,
+        "detect_face": true,
+        "resolution": true,
+        "bbox_detector": "yolox_l.onnx",
+        "pose_estimator": "dw-ll_ucoco_384_bs5.torchscript.pt",
+        "scale_stick_for_xinsr_cn": "disable",
+        "image": [
+          "2",
+          0
+        ]
+      },
+      "class_type": "DWPreprocessor"
+    },
+    "5": {
+      "inputs": {
+        "text": "cinematic reverse shot, eyeline match, 180 degree rule respected, same room, matching light direction, realistic actor blocking",
+        "clip": [
+          "1",
+          1
+        ]
+      },
+      "class_type": "CLIPTextEncode"
+    },
+    "6": {
+      "inputs": {
+        "text": "axis jump, mirrored set, wrong gaze direction, deformed body, extra arms, text, watermark",
+        "clip": [
+          "1",
+          1
+        ]
+      },
+      "class_type": "CLIPTextEncode"
+    },
+    "7": {
+      "inputs": {
+        "strength": 1.0,
+        "start_percent": 0.0,
+        "end_percent": 1.0,
+        "positive": [
+          "5",
+          0
+        ],
+        "negative": [
+          "6",
+          0
+        ],
+        "control_net": [
+          "3",
+          0
+        ],
+        "image": [
+          "4",
+          0
+        ]
+      },
+      "class_type": "ControlNetApplyAdvanced"
+    },
+    "8": {
+      "inputs": {
+        "width": 1344,
+        "height": 768,
+        "batch_size": 1
+      },
+      "class_type": "EmptyLatentImage"
+    },
+    "9": {
+      "inputs": {
+        "seed": 246802468,
+        "steps": 20,
+        "cfg": 3.5,
+        "sampler_name": "euler",
+        "scheduler": "normal",
+        "denoise": 1.0,
+        "model": [
+          "1",
+          0
+        ],
+        "positive": [
+          "7",
+          0
+        ],
+        "negative": [
+          "7",
+          1
+        ],
+        "latent_image": [
+          "8",
+          0
+        ]
+      },
+      "class_type": "KSampler"
+    },
+    "10": {
+      "inputs": {
+        "samples": [
+          "9",
+          0
+        ],
+        "vae": [
+          "1",
+          2
+        ]
+      },
+      "class_type": "VAEDecode"
+    },
+    "11": {
+      "inputs": {
+        "filename_prefix": "storyboard_controlnet_axis",
+        "images": [
+          "10",
+          0
+        ]
+      },
+      "class_type": "SaveImage"
+    }
+  }
+}

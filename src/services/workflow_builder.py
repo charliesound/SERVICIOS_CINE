@@ -375,7 +375,30 @@ class WorkflowBuilder:
             prepared["model_family"] = "flux"
             prepared["prompt"] = self._build_production_storyboard_prompt_text(prepared)
             prepared["negative_prompt"] = self._build_production_storyboard_negative_prompt(prepared)
+        if requested_profile == "production_storyboard_cinematic_controlnet":
+            prepared.setdefault("checkpoint", "FLUX/flux1-dev-fp8.safetensors")
+            prepared.setdefault("width", 1344)
+            prepared.setdefault("height", 768)
+            prepared.setdefault("steps", 20)
+            prepared.setdefault("cfg", 3.5)
+            prepared.setdefault("sampler_name", "euler")
+            prepared.setdefault("scheduler", "normal")
+            prepared.setdefault("controlnet_strength", 1.0)
+            prepared.setdefault("controlnet_preprocessor", "DWPreprocessor")
+            prepared.setdefault("controlnet_model", "flux_dev_openpose_controlnetl.safetensors")
+            prepared.setdefault("reference_mode", "controlnet")
         return prepared
+
+    def _has_usable_controlnet_reference(self, inputs: Dict[str, Any]) -> bool:
+        pose_reference_image = inputs.get("pose_reference_image")
+        if isinstance(pose_reference_image, str) and pose_reference_image.strip():
+            return True
+        hints = inputs.get("controlnet_hints")
+        if isinstance(hints, dict):
+            return any(value not in (None, "", [], {}) for value in hints.values())
+        if isinstance(hints, list):
+            return len(hints) > 0
+        return False
 
     def extract_runtime_prompt_metadata(self, runtime_prompt: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(runtime_prompt, dict):
@@ -499,17 +522,31 @@ class WorkflowBuilder:
                 "storyboard_fast",
                 "production_quality",
                 "production_storyboard_cinematic",
+                "production_storyboard_cinematic_controlnet",
             }
             fallback_report: Optional[WorkflowFallbackReport] = None
             executed_profile = requested_profile
+            selector_requested_profile = requested_profile
+            if requested_profile == "production_storyboard_cinematic_controlnet" and not self._has_usable_controlnet_reference(storyboard_inputs):
+                selector_requested_profile = "production_storyboard_cinematic"
+                fallback_report = WorkflowFallbackReport(
+                    requested_profile="production_storyboard_cinematic_controlnet",
+                    executed_profile="production_storyboard_cinematic",
+                    fallback_applied=True,
+                    reason="missing_controlnet_reference",
+                    missing_nodes=[],
+                    missing_models=[],
+                )
             if requested_profile in selector_profiles:
-                prompt, _exec_key, fallback_report, executed_profile = _selector_select_workflow(
+                prompt, _exec_key, selector_fallback_report, executed_profile = _selector_select_workflow(
                     workflow_key=workflow_key,
-                    requested_profile=requested_profile,
+                    requested_profile=selector_requested_profile,
                     inputs=storyboard_inputs,
                     available_nodes=available_nodes,
                     skip_node_validation=skip_node_validation,
                 )
+                if selector_fallback_report is not None:
+                    fallback_report = selector_fallback_report
                 if prompt is not None:
                     return prompt, workflow_key, fallback_report, executed_profile
             prompt = self._build_still_storyboard_prompt(storyboard_inputs)

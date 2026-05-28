@@ -525,6 +525,12 @@ class JobTrackingService:
             "style_reference_images",
             "visual_bible_reference_pack",
             "controlnet_hints",
+            "pose_reference_image",
+            "reference_mode",
+            "references_used",
+            "controlnet_model",
+            "controlnet_preprocessor",
+            "controlnet_strength",
         )
         meta: dict[str, Any] = {}
         for key in keys:

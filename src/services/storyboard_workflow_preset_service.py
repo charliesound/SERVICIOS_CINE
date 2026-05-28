@@ -18,6 +18,7 @@ ALLOWED_STORYBOARD_WORKFLOW_PROFILES: set[str] = {
     "storyboard_fast",
     "production_quality",
     "production_storyboard_cinematic",
+    "production_storyboard_cinematic_controlnet",
     "storyboard_clean_review",
     "storyboard_client_notes",
     "storyboard_technical",

@@ -88,6 +88,16 @@ def test_resolve_profile_accepts_production_storyboard_cinematic() -> None:
     assert resolved["fallback_applied"] is False
 
 
+def test_resolve_profile_accepts_production_storyboard_cinematic_controlnet() -> None:
+    resolved = storyboard_workflow_preset_service.resolve_profile(
+        sheet_template=None,
+        requested_profile="production_storyboard_cinematic_controlnet",
+    )
+
+    assert resolved["workflow_profile_requested"] == "production_storyboard_cinematic_controlnet"
+    assert resolved["fallback_applied"] is False
+
+
 def test_resolve_profile_promotes_realistic_client_review_style() -> None:
     resolved = storyboard_workflow_preset_service.resolve_profile(
         sheet_template=None,

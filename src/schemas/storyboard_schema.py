@@ -40,6 +40,11 @@ class StoryboardGenerateRequest(BaseModel):
     workflow_profile: Optional[str] = None
     render_quality: Literal["fast", "standard", "production"] = "standard"
     model_family: Optional[Literal["flux", "sdxl", "wan22", "qwen_image_edit", "auto"]] = None
+    pose_reference_image: Optional[str] = None
+    controlnet_hints: Optional[dict[str, Any] | list[Any]] = None
+    controlnet_strength: Optional[float] = None
+    controlnet_preprocessor: Optional[str] = None
+    controlnet_model: Optional[str] = None
     motion_ready: bool = False
     image_edit_mode: bool = False
     auto_export_sheet: bool = False

@@ -376,17 +376,22 @@ class WorkflowBuilder:
             prepared["prompt"] = self._build_production_storyboard_prompt_text(prepared)
             prepared["negative_prompt"] = self._build_production_storyboard_negative_prompt(prepared)
         if requested_profile == "production_storyboard_cinematic_controlnet":
-            prepared.setdefault("checkpoint", "FLUX/flux1-dev-fp8.safetensors")
-            prepared.setdefault("width", 1344)
-            prepared.setdefault("height", 768)
-            prepared.setdefault("steps", 20)
-            prepared.setdefault("cfg", 3.5)
-            prepared.setdefault("sampler_name", "euler")
-            prepared.setdefault("scheduler", "normal")
-            prepared.setdefault("controlnet_strength", 1.0)
-            prepared.setdefault("controlnet_preprocessor", "DWPreprocessor")
-            prepared.setdefault("controlnet_model", "flux_dev_openpose_controlnetl.safetensors")
-            prepared.setdefault("reference_mode", "controlnet")
+            strength_value = inputs.get("controlnet_strength")
+            try:
+                controlnet_strength = float(strength_value) if strength_value is not None else 1.0
+            except (TypeError, ValueError):
+                controlnet_strength = 1.0
+            prepared["checkpoint"] = "FLUX/flux1-dev-fp8.safetensors"
+            prepared["width"] = 1344
+            prepared["height"] = 768
+            prepared["steps"] = 20
+            prepared["cfg"] = 3.5
+            prepared["sampler_name"] = "euler"
+            prepared["scheduler"] = "normal"
+            prepared["controlnet_strength"] = controlnet_strength
+            prepared["controlnet_preprocessor"] = str(inputs.get("controlnet_preprocessor") or "DWPreprocessor")
+            prepared["controlnet_model"] = str(inputs.get("controlnet_model") or "flux_dev_openpose_controlnetl.safetensors")
+            prepared["reference_mode"] = "controlnet"
         return prepared
 
     def _has_usable_controlnet_reference(self, inputs: Dict[str, Any]) -> bool:
@@ -403,12 +408,29 @@ class WorkflowBuilder:
     def extract_runtime_prompt_metadata(self, runtime_prompt: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(runtime_prompt, dict):
             return {}
-        checkpoint = runtime_prompt.get("1", {}).get("inputs", {}).get("ckpt_name")
-        positive_prompt = runtime_prompt.get("2", {}).get("inputs", {}).get("text")
-        negative_prompt = runtime_prompt.get("3", {}).get("inputs", {}).get("text")
-        width = runtime_prompt.get("4", {}).get("inputs", {}).get("width")
-        height = runtime_prompt.get("4", {}).get("inputs", {}).get("height")
-        sampler_inputs = runtime_prompt.get("5", {}).get("inputs", {})
+
+        def _first_node_inputs(class_type: str) -> Dict[str, Any]:
+            for node in runtime_prompt.values():
+                if isinstance(node, dict) and node.get("class_type") == class_type:
+                    inputs_payload = node.get("inputs")
+                    if isinstance(inputs_payload, dict):
+                        return inputs_payload
+            return {}
+
+        checkpoint_inputs = _first_node_inputs("CheckpointLoaderSimple")
+        text_nodes = [
+            node.get("inputs")
+            for node in runtime_prompt.values()
+            if isinstance(node, dict) and node.get("class_type") == "CLIPTextEncode" and isinstance(node.get("inputs"), dict)
+        ]
+        latent_inputs = _first_node_inputs("EmptyLatentImage")
+        sampler_inputs = _first_node_inputs("KSampler")
+
+        checkpoint = checkpoint_inputs.get("ckpt_name")
+        positive_prompt = text_nodes[0].get("text") if len(text_nodes) > 0 else None
+        negative_prompt = text_nodes[1].get("text") if len(text_nodes) > 1 else None
+        width = latent_inputs.get("width")
+        height = latent_inputs.get("height")
         model_family: Optional[str] = None
         if isinstance(checkpoint, str):
             ckpt_lower = checkpoint.lower()

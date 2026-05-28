@@ -89,6 +89,11 @@ def _merge_storyboard_runtime_metadata(
         "style_reference_images",
         "visual_bible_reference_pack",
         "controlnet_hints",
+        "reference_mode",
+        "references_used",
+        "controlnet_model",
+        "controlnet_preprocessor",
+        "controlnet_strength",
     ):
         if runtime_metadata and runtime_metadata.get(key) is not None:
             merged[key] = runtime_metadata.get(key)
@@ -294,6 +299,13 @@ class JobScheduler:
             item.metadata["controlnet_preprocessor"] = prompt_inputs.get("controlnet_preprocessor")
             item.metadata["controlnet_strength"] = prompt_inputs.get("controlnet_strength")
 
+        self._dump_runtime_prompt_if_needed(
+            job_id=item.job_id,
+            runtime_prompt=runtime_prompt,
+            requested_profile=requested_profile,
+            executed_profile=executed_profile,
+        )
+
         final_checkpoint = (
             (item.metadata or {}).get("checkpoint")
         )
@@ -373,6 +385,30 @@ class JobScheduler:
                 str(e),
             )
             return False, str(e)
+
+    def _dump_runtime_prompt_if_needed(
+        self,
+        *,
+        job_id: str,
+        runtime_prompt: Dict[str, object],
+        requested_profile: str,
+        executed_profile: str,
+    ) -> None:
+        is_controlnet_profile = (
+            requested_profile == "production_storyboard_cinematic_controlnet"
+            or executed_profile == "production_storyboard_cinematic_controlnet"
+        )
+        if not is_controlnet_profile:
+            return
+        dump_path = Path(f"/tmp/cid_controlnet_runtime_prompt_{job_id}.json")
+        try:
+            dump_path.write_text(
+                json.dumps(runtime_prompt, ensure_ascii=False, indent=2, default=str),
+                encoding="utf-8",
+            )
+            logger.info("Dumped controlnet runtime prompt for job_id=%s at %s", job_id, str(dump_path))
+        except Exception as exc:
+            logger.warning("Could not dump controlnet runtime prompt for job_id=%s: %s", job_id, exc)
 
     async def _wait_for_completion(
         self, item: QueueItem, client: ComfyUIClient, prompt_id: str

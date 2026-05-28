@@ -258,3 +258,67 @@ def test_controlnet_profile_with_pose_reference_uses_controlnet_template() -> No
     assert runtime["2"]["inputs"]["image"] == "pose_reference.png"
     assert runtime["3"]["inputs"]["control_net_name"] == "flux_dev_openpose_controlnetl.safetensors"
     assert runtime["7"]["inputs"]["strength"] == 0.8
+
+
+def test_controlnet_profile_overrides_legacy_dimensions_and_checkpoint() -> None:
+    runtime, _workflow_key, _fallback_report, executed_profile = builder.build_runtime_prompt_with_profile(
+        "still_storyboard_frame",
+        {
+            "style_preset": "realistic_client_review",
+            "prompt": "Controlnet production frame",
+            "pose_reference_image": "pose_reference.png",
+            "checkpoint": "Realistic_Vision_V2.0.safetensors",
+            "width": 1024,
+            "height": 576,
+        },
+        requested_profile="production_storyboard_cinematic_controlnet",
+        available_nodes={
+            "CheckpointLoaderSimple",
+            "CLIPTextEncode",
+            "EmptyLatentImage",
+            "KSampler",
+            "VAEDecode",
+            "SaveImage",
+            "LoadImage",
+            "ControlNetLoader",
+            "ControlNetApplyAdvanced",
+            "DWPreprocessor",
+        },
+    )
+
+    assert isinstance(runtime, dict)
+    assert executed_profile == "production_storyboard_cinematic_controlnet"
+    assert runtime["1"]["inputs"]["ckpt_name"] == "FLUX/flux1-dev-fp8.safetensors"
+    assert runtime["8"]["inputs"]["width"] == 1344
+    assert runtime["8"]["inputs"]["height"] == 768
+
+
+def test_controlnet_runtime_metadata_reads_nodes_by_class_type() -> None:
+    runtime, _workflow_key, _fallback_report, _executed_profile = builder.build_runtime_prompt_with_profile(
+        "still_storyboard_frame",
+        {
+            "style_preset": "realistic_client_review",
+            "prompt": "Metadata extraction test",
+            "pose_reference_image": "pose_reference.png",
+        },
+        requested_profile="production_storyboard_cinematic_controlnet",
+        available_nodes={
+            "CheckpointLoaderSimple",
+            "CLIPTextEncode",
+            "EmptyLatentImage",
+            "KSampler",
+            "VAEDecode",
+            "SaveImage",
+            "LoadImage",
+            "ControlNetLoader",
+            "ControlNetApplyAdvanced",
+            "DWPreprocessor",
+        },
+    )
+
+    metadata = builder.extract_runtime_prompt_metadata(runtime)
+
+    assert metadata["checkpoint"] == "FLUX/flux1-dev-fp8.safetensors"
+    assert metadata["width"] == 1344
+    assert metadata["height"] == 768
+    assert metadata["steps"] == 20

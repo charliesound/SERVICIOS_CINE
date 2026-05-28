@@ -1,3 +1,6 @@
+import json
+from typing import Any
+
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,15 +23,49 @@ from services.shot_service import shot_service
 router = APIRouter(prefix="/api/projects", tags=["shots"])
 
 
+def _safe_metadata_dict(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except Exception:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return {}
+
+
+def _derive_render_state(*, asset_id: str | None, metadata: dict[str, Any]) -> tuple[str, str, bool, str | None]:
+    metadata_status = metadata.get("render_status")
+    render_job_id = metadata.get("render_job_id")
+
+    if metadata_status == "render_pending":
+        return "render_pending", "render_pending", False, render_job_id
+    if metadata_status == "render_failed":
+        return "render_failed", "render_failed", False, render_job_id
+    if metadata_status == "render_succeeded":
+        return "render_succeeded", "render_succeeded", bool(asset_id), render_job_id
+    if asset_id:
+        return "render_succeeded", "render_succeeded", True, render_job_id
+    return "no_asset", "planned", False, render_job_id
+
+
 async def _serialize_shot(
     db: AsyncSession,
     project_id: str,
     shot: StoryboardShot,
 ) -> StoryboardShotResponse:
+    metadata = _safe_metadata_dict(getattr(shot, "metadata_json", None))
     asset = None
     if shot.asset_id:
         result = await db.execute(select(MediaAsset).where(MediaAsset.id == shot.asset_id))
         asset = result.scalar_one_or_none()
+    render_status, image_state, has_image, render_job_id = _derive_render_state(
+        asset_id=shot.asset_id,
+        metadata=metadata,
+    )
     thumbnail_url = f"/api/projects/{project_id}/storyboard/shots/{shot.id}/thumbnail"
     image_url = f"/api/projects/{project_id}/storyboard/shots/{shot.id}/image"
     return StoryboardShotResponse(
@@ -53,6 +90,10 @@ async def _serialize_shot(
         thumbnail_url=thumbnail_url,
         image_url=image_url,
         preview_url=image_url,
+        render_job_id=render_job_id,
+        render_status=render_status,
+        has_image=has_image,
+        image_state=image_state,
         created_at=shot.created_at,
         updated_at=shot.updated_at,
     )

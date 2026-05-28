@@ -94,6 +94,13 @@ def _merge_storyboard_runtime_metadata(
         "controlnet_model",
         "controlnet_preprocessor",
         "controlnet_strength",
+        "character_reference_images",
+        "reference_strength",
+        "ipadapter_weight",
+        "ipadapter_model",
+        "clip_vision_model",
+        "start_at",
+        "end_at",
     ):
         if runtime_metadata and runtime_metadata.get(key) is not None:
             merged[key] = runtime_metadata.get(key)
@@ -136,6 +143,39 @@ SCHEDULER_JOB_TIMEOUT = int(os.getenv("SCHEDULER_JOB_TIMEOUT", "3600"))
 SCHEDULER_MAX_ERRORS = int(os.getenv("SCHEDULER_MAX_CONSECUTIVE_ERRORS", "5"))
 SCHEDULER_INITIAL_BACKOFF = int(os.getenv("SCHEDULER_INITIAL_BACKOFF", "2"))
 SCHEDULER_MAX_BACKOFF = int(os.getenv("SCHEDULER_MAX_BACKOFF", "30"))
+CID_DEBUG_DUMP_IPADAPTER_HISTORY = os.getenv("CID_DEBUG_DUMP_IPADAPTER_HISTORY", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _history_entry_completed(history_entry: dict) -> bool:
+    if not isinstance(history_entry, dict):
+        return False
+    status_payload = history_entry.get("status")
+    if isinstance(status_payload, dict):
+        completed = status_payload.get("completed")
+        if isinstance(completed, bool):
+            return completed
+        status_str = str(status_payload.get("status_str") or "").strip().lower()
+        if status_str in {"success", "completed"}:
+            return True
+    outputs = history_entry.get("outputs")
+    return isinstance(outputs, dict) and len(outputs) > 0
+
+
+def _history_outputs_count(history_entry: dict) -> int:
+    if not isinstance(history_entry, dict):
+        return 0
+    outputs = history_entry.get("outputs")
+    if not isinstance(outputs, dict):
+        return 0
+    total = 0
+    for node_output in outputs.values():
+        if not isinstance(node_output, dict):
+            continue
+        for output_kind in ("images", "audio", "videos", "files"):
+            entries = node_output.get(output_kind)
+            if isinstance(entries, list):
+                total += len(entries)
+    return total
 
 
 class JobScheduler:
@@ -291,6 +331,7 @@ class JobScheduler:
         references_used = {
             "pose_reference_image": bool(prompt_inputs.get("pose_reference_image")),
             "controlnet_hints": bool(prompt_inputs.get("controlnet_hints")),
+            "character_reference_images": bool(prompt_inputs.get("character_reference_images")),
         }
         if requested_profile == "production_storyboard_cinematic_controlnet" or executed_profile == "production_storyboard_cinematic_controlnet":
             item.metadata["reference_mode"] = "controlnet"
@@ -298,6 +339,16 @@ class JobScheduler:
             item.metadata["controlnet_model"] = prompt_inputs.get("controlnet_model")
             item.metadata["controlnet_preprocessor"] = prompt_inputs.get("controlnet_preprocessor")
             item.metadata["controlnet_strength"] = prompt_inputs.get("controlnet_strength")
+        if requested_profile == "production_storyboard_cinematic_reference" or executed_profile == "production_storyboard_cinematic_reference":
+            item.metadata["reference_mode"] = "ipadapter"
+            item.metadata["references_used"] = references_used
+            item.metadata["character_reference_images"] = prompt_inputs.get("character_reference_images")
+            item.metadata["ipadapter_model"] = prompt_inputs.get("ipadapter_model")
+            item.metadata["clip_vision_model"] = prompt_inputs.get("clip_vision_model")
+            item.metadata["ipadapter_weight"] = prompt_inputs.get("ipadapter_weight")
+            item.metadata["reference_strength"] = prompt_inputs.get("reference_strength")
+            item.metadata["start_at"] = prompt_inputs.get("start_at")
+            item.metadata["end_at"] = prompt_inputs.get("end_at")
 
         self._dump_runtime_prompt_if_needed(
             job_id=item.job_id,
@@ -398,9 +449,18 @@ class JobScheduler:
             requested_profile == "production_storyboard_cinematic_controlnet"
             or executed_profile == "production_storyboard_cinematic_controlnet"
         )
-        if not is_controlnet_profile:
+        is_ipadapter_profile = (
+            requested_profile == "production_storyboard_cinematic_reference"
+            or executed_profile == "production_storyboard_cinematic_reference"
+        )
+        if not is_controlnet_profile and not (is_ipadapter_profile and CID_DEBUG_DUMP_IPADAPTER_HISTORY):
             return
-        dump_path = Path(f"/tmp/cid_controlnet_runtime_prompt_{job_id}.json")
+        dump_name = (
+            f"/tmp/cid_controlnet_runtime_prompt_{job_id}.json"
+            if is_controlnet_profile
+            else f"/tmp/cid_ipadapter_runtime_prompt_{job_id}.json"
+        )
+        dump_path = Path(dump_name)
         try:
             dump_path.write_text(
                 json.dumps(runtime_prompt, ensure_ascii=False, indent=2, default=str),
@@ -409,6 +469,24 @@ class JobScheduler:
             logger.info("Dumped controlnet runtime prompt for job_id=%s at %s", job_id, str(dump_path))
         except Exception as exc:
             logger.warning("Could not dump controlnet runtime prompt for job_id=%s: %s", job_id, exc)
+
+    def _dump_ipadapter_history_if_needed(self, *, job_id: str, history_entry: dict) -> None:
+        if not CID_DEBUG_DUMP_IPADAPTER_HISTORY:
+            return
+        try:
+            history_path = Path(f"/tmp/cid_ipadapter_history_{job_id}.json")
+            history_path.write_text(
+                json.dumps(history_entry, ensure_ascii=False, indent=2, default=str),
+                encoding="utf-8",
+            )
+            outputs_path = Path(f"/tmp/cid_ipadapter_outputs_{job_id}.json")
+            outputs_payload = history_entry.get("outputs") if isinstance(history_entry, dict) else None
+            outputs_path.write_text(
+                json.dumps(outputs_payload if isinstance(outputs_payload, dict) else {}, ensure_ascii=False, indent=2, default=str),
+                encoding="utf-8",
+            )
+        except Exception as exc:
+            logger.warning("Could not dump ipadapter history for job_id=%s: %s", job_id, exc)
 
     async def _wait_for_completion(
         self, item: QueueItem, client: ComfyUIClient, prompt_id: str
@@ -430,6 +508,11 @@ class JobScheduler:
             try:
                 history = await client.get_history(prompt_id)
                 if prompt_id in history:
+                    history_entry = history[prompt_id]
+                    if not _history_entry_completed(history_entry):
+                        await asyncio.sleep(poll_interval)
+                        elapsed += poll_interval
+                        continue
                     # Update progress: persisting assets (90%)
                     async with AsyncSessionLocal() as _db:
                         from models.core import ProjectJob as PJ
@@ -438,12 +521,22 @@ class JobScheduler:
                             await job_tracking_service.update_progress(
                                 _db, job=_job, percent=90, stage="Guardando assets generados", code="persisting_assets"
                             )
-                    await self._persist_success_assets(
+                    self._dump_ipadapter_history_if_needed(
+                        job_id=item.job_id,
+                        history_entry=history_entry,
+                    )
+                    created_assets = await self._persist_success_assets(
                         item=item,
                         client=client,
                         prompt_id=prompt_id,
-                        history_entry=history[prompt_id],
+                        history_entry=history_entry,
                     )
+                    if created_assets == 0:
+                        no_output_error = "ComfyUI succeeded but produced no image outputs"
+                        queue_service.mark_failed(item.job_id, no_output_error)
+                        await self._persist_failure(item, "render_failed", no_output_error)
+                        logger.error("Job %s completed without outputs; marked failed", item.job_id)
+                        return
                     # Update progress: completed (100%)
                     async with AsyncSessionLocal() as _db:
                         from models.core import ProjectJob as PJ
@@ -486,7 +579,7 @@ class JobScheduler:
         client: ComfyUIClient,
         prompt_id: str,
         history_entry: dict,
-    ) -> None:
+    ) -> int:
         from database import AsyncSessionLocal
         from models.storyboard import StoryboardShot
         from .job_tracking_service import job_tracking_service
@@ -534,6 +627,7 @@ class JobScheduler:
                         str(image_path),
                     )
             await session.commit()
+            return len(created_assets)
 
     async def _persist_failure(
         self,

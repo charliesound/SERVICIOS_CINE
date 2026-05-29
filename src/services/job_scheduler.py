@@ -194,6 +194,7 @@ class JobScheduler:
         self._initialized = True
         self._running = False
         self._task: Optional[asyncio.Task] = None
+        self._running_tasks: dict[str, asyncio.Task] = {}
         self._poll_interval = 5
         self._job_timeout = 3600
 
@@ -215,6 +216,12 @@ class JobScheduler:
                     await self._task
                 except asyncio.CancelledError:
                     pass
+            for job_id, task in list(self._running_tasks.items()):
+                if not task.done():
+                    task.cancel()
+            if self._running_tasks:
+                await asyncio.gather(*self._running_tasks.values(), return_exceptions=True)
+            self._running_tasks.clear()
             logger.info("Job scheduler stopped")
 
     async def _run_loop(self):
@@ -229,23 +236,62 @@ class JobScheduler:
                 logger.error(f"Scheduler error: {e}")
                 await asyncio.sleep(self._poll_interval)
 
+    def _cleanup_done_tasks(self) -> None:
+        done_ids = [jid for jid, t in self._running_tasks.items() if t.done()]
+        for jid in done_ids:
+            del self._running_tasks[jid]
+
+    def _count_in_flight(self, backend: str) -> int:
+        running_ids: set[str] = set(queue_service._running.get(backend, []))
+        for job_id, task in self._running_tasks.items():
+            if not task.done():
+                item = queue_service._job_map.get(job_id)
+                if item is not None and item.backend == backend:
+                    running_ids.add(job_id)
+        return len(running_ids)
+
     async def _process_queues(self):
+        self._cleanup_done_tasks()
         backends = ["still", "video", "dubbing", "lab"]
 
         for backend_key in backends:
-            if not queue_service.can_accept_job(backend_key):
+            max_concurrent = queue_service._config.MAX_CONCURRENT.get(backend_key, 1)
+            if self._count_in_flight(backend_key) >= max_concurrent:
                 continue
 
             item = queue_service.get_next_for_backend(backend_key)
             if not item:
                 continue
 
+            if item.job_id in self._running_tasks and not self._running_tasks[item.job_id].done():
+                continue
+
+            logger.info("Scheduler picked render job job_id=%s backend=%s", item.job_id, item.backend)
+            task = asyncio.create_task(self._run_job_task(item))
+            self._running_tasks[item.job_id] = task
+
+    async def _run_job_task(self, item: QueueItem) -> None:
+        try:
+            logger.info("Dispatching render job job_id=%s backend=%s", item.job_id, item.backend)
             success, error = await self._execute_job(item)
             if not success:
                 queue_service.mark_failed(item.job_id, error or "Execution failed")
                 updated_item = queue_service.get_status(item.job_id)
                 if updated_item and updated_item.status == QueueStatus.FAILED:
                     await self._persist_failure(item, "render_failed", error or "Execution failed")
+        except asyncio.CancelledError:
+            logger.warning("Render job cancelled job_id=%s", item.job_id)
+            raise
+        except Exception as exc:
+            logger.error(
+                "Render job failed with exception job_id=%s error=%s",
+                item.job_id, str(exc),
+            )
+            try:
+                queue_service.mark_failed(item.job_id, str(exc))
+                await self._persist_failure(item, "render_failed", str(exc))
+            except Exception:
+                pass
 
     async def _execute_job(self, item: QueueItem) -> tuple[bool, Optional[str]]:
         backend = registry.get_backend(item.backend)
@@ -405,6 +451,7 @@ class JobScheduler:
                         )
                 result = await client.post_prompt(runtime_prompt, item.workflow_key)
                 item.prompt_id = result.get("prompt_id") if isinstance(result, dict) else None
+                logger.info("ComfyUI prompt submitted job_id=%s prompt_id=%s", item.job_id, item.prompt_id)
                 # Update progress: submitted to ComfyUI (45%)
                 async with AsyncSessionLocal() as _db:
                     from models.core import ProjectJob as PJ

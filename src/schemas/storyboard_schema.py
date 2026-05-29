@@ -40,6 +40,7 @@ class StoryboardGenerateRequest(BaseModel):
     workflow_profile: Optional[str] = None
     render_quality: Literal["fast", "standard", "production"] = "standard"
     model_family: Optional[Literal["flux", "sdxl", "wan22", "qwen_image_edit", "auto"]] = None
+    reference_mode: Optional[str] = None
     pose_reference_image: Optional[str] = None
     character_reference_images: Optional[list[str]] = None
     reference_strength: Optional[float] = None

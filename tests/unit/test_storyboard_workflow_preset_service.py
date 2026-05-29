@@ -117,3 +117,16 @@ def test_resolve_profile_promotes_realistic_client_review_style() -> None:
 
     assert resolved["workflow_profile_requested"] == "production_storyboard_cinematic"
     assert resolved["source"] == "style_preset"
+
+
+def test_resolve_profile_explicit_reference_wins_over_style_preset() -> None:
+    resolved = storyboard_workflow_preset_service.resolve_profile(
+        sheet_template=None,
+        requested_profile="production_storyboard_cinematic_reference",
+        style_preset="realistic_client_review",
+    )
+
+    assert resolved["workflow_profile_requested"] == "production_storyboard_cinematic_reference"
+    assert resolved["source"] == "explicit"
+    assert resolved["fallback_applied"] is False
+    assert resolved["reason"] == "explicit_profile_accepted"

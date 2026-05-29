@@ -363,6 +363,7 @@ class StoryboardService:
         pose_reference_image: str | None = None,
         character_reference_images: list[str] | None = None,
         reference_strength: float | None = None,
+        reference_mode: str | None = None,
         ipadapter_weight: float | None = None,
         ipadapter_model: str | None = None,
         clip_vision_model: str | None = None,
@@ -451,6 +452,7 @@ class StoryboardService:
         profile_info["pose_reference_image"] = pose_reference_image
         profile_info["character_reference_images"] = character_reference_images
         profile_info["reference_strength"] = reference_strength
+        profile_info["reference_mode"] = reference_mode
         profile_info["ipadapter_weight"] = ipadapter_weight
         profile_info["ipadapter_model"] = ipadapter_model
         profile_info["clip_vision_model"] = clip_vision_model
@@ -640,6 +642,7 @@ class StoryboardService:
                 metadata_raw["pose_reference_image"] = pose_reference_image
                 metadata_raw["character_reference_images"] = character_reference_images
                 metadata_raw["reference_strength"] = reference_strength
+                metadata_raw["reference_mode"] = reference_mode
                 metadata_raw["ipadapter_weight"] = ipadapter_weight
                 metadata_raw["ipadapter_model"] = ipadapter_model
                 metadata_raw["clip_vision_model"] = clip_vision_model
@@ -722,6 +725,7 @@ class StoryboardService:
             "pose_reference_image": pose_reference_image,
             "character_reference_images": character_reference_images,
             "reference_strength": reference_strength,
+            "reference_mode": reference_mode,
             "ipadapter_weight": ipadapter_weight,
             "ipadapter_model": ipadapter_model,
             "clip_vision_model": clip_vision_model,
@@ -870,6 +874,7 @@ class StoryboardService:
                         "pose_reference_image": prompt_payload.get("pose_reference_image"),
                         "character_reference_images": prompt_payload.get("character_reference_images"),
                         "reference_strength": prompt_payload.get("reference_strength"),
+                        "reference_mode": prompt_payload.get("reference_mode"),
                         "ipadapter_weight": prompt_payload.get("ipadapter_weight"),
                         "ipadapter_model": prompt_payload.get("ipadapter_model"),
                         "clip_vision_model": prompt_payload.get("clip_vision_model"),
@@ -948,9 +953,9 @@ class StoryboardService:
                         meta["shot_objective"] = prompt_payload.get("shot_objective")
                         meta["atmosphere"] = prompt_payload.get("atmosphere")
                         meta["reference_mode"] = (
-                            "ipadapter"
+                            prompt_payload.get("reference_mode") or "ipadapter"
                             if profile_info["workflow_profile_requested"] == "production_storyboard_cinematic_reference"
-                            else meta.get("reference_mode")
+                            else (prompt_payload.get("reference_mode") or meta.get("reference_mode"))
                         )
                         meta["character_reference_images"] = prompt_payload.get("character_reference_images")
                         meta["reference_strength"] = prompt_payload.get("reference_strength")
@@ -2268,6 +2273,7 @@ class StoryboardService:
             "pose_reference_image": metadata_payload.get("pose_reference_image"),
             "character_reference_images": metadata_payload.get("character_reference_images") or [],
             "reference_strength": metadata_payload.get("reference_strength"),
+            "reference_mode": metadata_payload.get("reference_mode"),
             "ipadapter_weight": metadata_payload.get("ipadapter_weight"),
             "ipadapter_model": metadata_payload.get("ipadapter_model"),
             "clip_vision_model": metadata_payload.get("clip_vision_model"),

@@ -33,7 +33,6 @@ CONTROLNET_NODES = {
 REFERENCE_NODES = {
     *CORE_NODES,
     "LoadImage",
-    "CLIPVisionLoader",
     "IPAdapterFluxLoader",
     "ApplyIPAdapterFlux",
 }
@@ -110,7 +109,7 @@ def test_selector_supports_production_storyboard_cinematic_reference_profile_dir
             "prompt": "test prompt",
             "character_reference_image": "pose_reference_smoke_2b1.png",
             "ipadapter_model": "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors",
-            "clip_vision_model": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
+            "clip_vision_model": "google/siglip-so400m-patch14-384",
         },
         available_nodes=REFERENCE_NODES,
     )

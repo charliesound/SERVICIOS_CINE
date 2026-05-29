@@ -401,8 +401,9 @@ class WorkflowBuilder:
             prepared["sampler_name"] = "euler"
             prepared["scheduler"] = "normal"
             prepared["model_family"] = "flux"
-            prepared["clip_vision_model"] = str(inputs.get("clip_vision_model") or "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors")
+            prepared["clip_vision_model"] = str(inputs.get("clip_vision_model") or "google/siglip-so400m-patch14-384")
             prepared["ipadapter_model"] = str(inputs.get("ipadapter_model") or "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors")
+            prepared["provider"] = str(inputs.get("provider") or "cuda")
             weight_value = inputs.get("ipadapter_weight", inputs.get("reference_strength"))
             try:
                 ipadapter_weight = float(weight_value) if weight_value is not None else 0.85
@@ -420,7 +421,7 @@ class WorkflowBuilder:
                 prepared["end_at"] = float(end_value) if end_value is not None else 1.0
             except (TypeError, ValueError):
                 prepared["end_at"] = 1.0
-            prepared["reference_mode"] = "ipadapter"
+            prepared["reference_mode"] = inputs.get("reference_mode") or "ipadapter_flux"
         return prepared
 
     def _has_usable_controlnet_reference(self, inputs: Dict[str, Any]) -> bool:

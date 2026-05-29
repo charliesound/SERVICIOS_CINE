@@ -369,7 +369,6 @@ def test_reference_profile_with_character_reference_uses_ipadapter_template() ->
                 "VAEDecode",
                 "SaveImage",
                 "LoadImage",
-                "CLIPVisionLoader",
                 "IPAdapterFluxLoader",
                 "ApplyIPAdapterFlux",
             },
@@ -381,8 +380,9 @@ def test_reference_profile_with_character_reference_uses_ipadapter_template() ->
     assert fallback_report is None
     assert runtime["1"]["inputs"]["ckpt_name"] == "FLUX/flux1-dev-fp8.safetensors"
     assert runtime["2"]["inputs"]["image"] == "pose_reference_smoke_2b1.png"
-    assert runtime["3"]["inputs"]["clip_name"] == "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
-    assert runtime["4"]["inputs"]["ipadapter_file"] == "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors"
-    assert runtime["5"]["inputs"]["weight"] == 0.72
-    assert runtime["5"]["inputs"]["start_at"] == 0.1
-    assert runtime["5"]["inputs"]["end_at"] == 0.9
+    assert runtime["3"]["inputs"]["ipadapter"] == "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors"
+    assert runtime["3"]["inputs"]["clip_vision"] == "google/siglip-so400m-patch14-384"
+    assert runtime["3"]["inputs"]["provider"] == "cuda"
+    assert runtime["4"]["inputs"]["weight"] == 0.72
+    assert runtime["4"]["inputs"]["start_at"] == 0.1
+    assert runtime["4"]["inputs"]["end_at"] == 0.9

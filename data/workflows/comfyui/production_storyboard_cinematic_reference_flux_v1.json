@@ -6,7 +6,6 @@
   "node_classes": [
     "CheckpointLoaderSimple",
     "LoadImage",
-    "CLIPVisionLoader",
     "IPAdapterFluxLoader",
     "ApplyIPAdapterFlux",
     "CLIPTextEncode",
@@ -18,27 +17,29 @@
   "parameters": {
     "checkpoint": {"node": "1", "input": "ckpt_name"},
     "character_reference_image": {"node": "2", "input": "image"},
-    "clip_vision_model": {"node": "3", "input": "clip_name"},
-    "ipadapter_model": {"node": "4", "input": "ipadapter_file"},
-    "ipadapter_weight": {"node": "5", "input": "weight"},
-    "start_at": {"node": "5", "input": "start_at"},
-    "end_at": {"node": "5", "input": "end_at"},
-    "positive_prompt": {"node": "6", "input": "text"},
-    "negative_prompt": {"node": "7", "input": "text"},
-    "width": {"node": "8", "input": "width"},
-    "height": {"node": "8", "input": "height"},
-    "steps": {"node": "9", "input": "steps"},
-    "cfg": {"node": "9", "input": "cfg"},
-    "sampler_name": {"node": "9", "input": "sampler_name"},
-    "scheduler": {"node": "9", "input": "scheduler"},
-    "seed": {"node": "9", "input": "seed"},
-    "denoise": {"node": "9", "input": "denoise"},
-    "output_prefix": {"node": "11", "input": "filename_prefix"}
+    "ipadapter_model": {"node": "3", "input": "ipadapter"},
+    "clip_vision_model": {"node": "3", "input": "clip_vision"},
+    "provider": {"node": "3", "input": "provider"},
+    "ipadapter_weight": {"node": "4", "input": "weight"},
+    "start_at": {"node": "4", "input": "start_at"},
+    "end_at": {"node": "4", "input": "end_at"},
+    "positive_prompt": {"node": "5", "input": "text"},
+    "negative_prompt": {"node": "6", "input": "text"},
+    "width": {"node": "7", "input": "width"},
+    "height": {"node": "7", "input": "height"},
+    "steps": {"node": "8", "input": "steps"},
+    "cfg": {"node": "8", "input": "cfg"},
+    "sampler_name": {"node": "8", "input": "sampler_name"},
+    "scheduler": {"node": "8", "input": "scheduler"},
+    "seed": {"node": "8", "input": "seed"},
+    "denoise": {"node": "8", "input": "denoise"},
+    "output_prefix": {"node": "10", "input": "filename_prefix"}
   },
   "defaults": {
     "checkpoint": "FLUX/flux1-dev-fp8.safetensors",
-    "clip_vision_model": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
     "ipadapter_model": "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors",
+    "clip_vision_model": "google/siglip-so400m-patch14-384",
+    "provider": "cuda",
     "ipadapter_weight": 0.85,
     "start_at": 0.0,
     "end_at": 1.0,
@@ -67,43 +68,38 @@
     },
     "3": {
       "inputs": {
-        "clip_name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
-      },
-      "class_type": "CLIPVisionLoader"
-    },
-    "4": {
-      "inputs": {
-        "ipadapter_file": "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors",
-        "clip_vision": ["3", 0]
+        "ipadapter": "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors",
+        "clip_vision": "google/siglip-so400m-patch14-384",
+        "provider": "cuda"
       },
       "class_type": "IPAdapterFluxLoader"
     },
-    "5": {
+    "4": {
       "inputs": {
         "weight": 0.85,
         "start_at": 0.0,
         "end_at": 1.0,
         "image": ["2", 0],
         "model": ["1", 0],
-        "ipadapter": ["4", 0]
+        "ipadapter": ["3", 0]
       },
       "class_type": "ApplyIPAdapterFlux"
     },
-    "6": {
+    "5": {
       "inputs": {
         "text": "cinematic establishing shot, professional lighting, consistent character appearance, matching wardrobe",
         "clip": ["1", 1]
       },
       "class_type": "CLIPTextEncode"
     },
-    "7": {
+    "6": {
       "inputs": {
         "text": "distorted face, inconsistent clothing, color shift, text, watermark, deformed body",
         "clip": ["1", 1]
       },
       "class_type": "CLIPTextEncode"
     },
-    "8": {
+    "7": {
       "inputs": {
         "width": 1344,
         "height": 768,
@@ -111,7 +107,7 @@
       },
       "class_type": "EmptyLatentImage"
     },
-    "9": {
+    "8": {
       "inputs": {
         "seed": 246802468,
         "steps": 20,
@@ -119,24 +115,24 @@
         "sampler_name": "euler",
         "scheduler": "normal",
         "denoise": 1.0,
-        "model": ["5", 0],
-        "positive": ["6", 0],
-        "negative": ["7", 0],
-        "latent_image": ["8", 0]
+        "model": ["4", 0],
+        "positive": ["5", 0],
+        "negative": ["6", 0],
+        "latent_image": ["7", 0]
       },
       "class_type": "KSampler"
     },
-    "10": {
+    "9": {
       "inputs": {
-        "samples": ["9", 0],
+        "samples": ["8", 0],
         "vae": ["1", 2]
       },
       "class_type": "VAEDecode"
     },
-    "11": {
+    "10": {
       "inputs": {
         "filename_prefix": "storyboard_reference",
-        "images": ["10", 0]
+        "images": ["9", 0]
       },
       "class_type": "SaveImage"
     }

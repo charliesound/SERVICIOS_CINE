@@ -43,7 +43,7 @@ def test_extract_render_metadata_preserves_ipadapter_flux_reference_mode() -> No
         "reference_strength": 0.85,
         "ipadapter_weight": 0.85,
         "ipadapter_model": "instantx_flux1_dev_ip_adapter_bf16.safetensors",
-        "clip_vision_model": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
+        "clip_vision_model": "google/siglip-so400m-patch14-384",
         "start_at": 0.0,
         "end_at": 1.0,
     }
@@ -72,9 +72,10 @@ def test_workflow_profile_requested_matches_expected_values() -> None:
         workflow_profile="production_storyboard_cinematic_reference",
         character_reference_images=["test.png"],
         reference_mode="ipadapter_flux",
+        provider="cuda",
         ipadapter_weight=0.85,
         ipadapter_model="instantx_flux1_dev_ip_adapter_bf16.safetensors",
-        clip_vision_model="CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
+        clip_vision_model="google/siglip-so400m-patch14-384",
     )
 
     assert req.workflow_profile == "production_storyboard_cinematic_reference"
@@ -82,4 +83,14 @@ def test_workflow_profile_requested_matches_expected_values() -> None:
     assert req.reference_mode == "ipadapter_flux"
     assert req.ipadapter_weight == 0.85
     assert req.ipadapter_model == "instantx_flux1_dev_ip_adapter_bf16.safetensors"
-    assert req.clip_vision_model == "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+    assert req.clip_vision_model == "google/siglip-so400m-patch14-384"
+
+
+def test_generate_request_schema_includes_provider() -> None:
+    fields = StoryboardGenerateRequest.model_fields
+    assert "provider" in fields
+
+
+def test_generate_request_schema_stores_provider() -> None:
+    req = StoryboardGenerateRequest(provider="cuda")
+    assert req.provider == "cuda"

@@ -102,3 +102,27 @@ def test_visual_bible_and_realistic_client_review_coexist() -> None:
     assert vb_meta["visual_bible"]["visual_bible_preset"] == "noir_classic"
     assert workflow_meta["workflow_profile"]["style_preset"] == "realistic_client_review"
     assert workflow_meta["workflow_profile"]["requested"] == "storyboard_safe"
+
+
+def test_extract_render_prompt_metadata_keeps_ipadapter_fields() -> None:
+    source_metadata = {
+        "reference_mode": "ipadapter",
+        "references_used": {"character_reference_images": True},
+        "character_reference_images": ["character_reference_smoke_2b2.png"],
+        "reference_strength": 0.65,
+        "ipadapter_weight": 0.65,
+        "ipadapter_model": "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors",
+        "clip_vision_model": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
+        "start_at": 0.0,
+        "end_at": 1.0,
+    }
+
+    render_meta = JobTrackingService._extract_render_prompt_metadata(source_metadata)
+
+    assert render_meta["reference_mode"] == "ipadapter"
+    assert render_meta["references_used"] == {"character_reference_images": True}
+    assert render_meta["character_reference_images"] == ["character_reference_smoke_2b2.png"]
+    assert render_meta["reference_strength"] == 0.65
+    assert render_meta["ipadapter_weight"] == 0.65
+    assert render_meta["ipadapter_model"] == "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors"
+    assert render_meta["clip_vision_model"] == "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"

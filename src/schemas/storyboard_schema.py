@@ -41,6 +41,13 @@ class StoryboardGenerateRequest(BaseModel):
     render_quality: Literal["fast", "standard", "production"] = "standard"
     model_family: Optional[Literal["flux", "sdxl", "wan22", "qwen_image_edit", "auto"]] = None
     pose_reference_image: Optional[str] = None
+    character_reference_images: Optional[list[str]] = None
+    reference_strength: Optional[float] = None
+    ipadapter_weight: Optional[float] = None
+    ipadapter_model: Optional[str] = None
+    clip_vision_model: Optional[str] = None
+    start_at: Optional[float] = None
+    end_at: Optional[float] = None
     controlnet_hints: Optional[dict[str, Any] | list[Any]] = None
     controlnet_strength: Optional[float] = None
     controlnet_preprocessor: Optional[str] = None

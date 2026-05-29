@@ -12,9 +12,11 @@ class WorkflowProfile(str, Enum):
     production_quality = "production_quality"
     production_storyboard_cinematic = "production_storyboard_cinematic"
     production_storyboard_cinematic_controlnet = "production_storyboard_cinematic_controlnet"
+    production_storyboard_cinematic_reference = "production_storyboard_cinematic_reference"
 
 
 FALLBACK_CHAIN: dict[WorkflowProfile, WorkflowProfile | None] = {
+    WorkflowProfile.production_storyboard_cinematic_reference: WorkflowProfile.production_storyboard_cinematic,
     WorkflowProfile.production_storyboard_cinematic_controlnet: WorkflowProfile.production_storyboard_cinematic,
     WorkflowProfile.production_quality: WorkflowProfile.production_storyboard_cinematic,
     WorkflowProfile.production_storyboard_cinematic: WorkflowProfile.storyboard_safe,

@@ -392,6 +392,35 @@ class WorkflowBuilder:
             prepared["controlnet_preprocessor"] = str(inputs.get("controlnet_preprocessor") or "DWPreprocessor")
             prepared["controlnet_model"] = str(inputs.get("controlnet_model") or "flux_dev_openpose_controlnetl.safetensors")
             prepared["reference_mode"] = "controlnet"
+        if requested_profile == "production_storyboard_cinematic_reference":
+            prepared["checkpoint"] = "FLUX/flux1-dev-fp8.safetensors"
+            prepared["width"] = 1344
+            prepared["height"] = 768
+            prepared["steps"] = 20
+            prepared["cfg"] = 3.5
+            prepared["sampler_name"] = "euler"
+            prepared["scheduler"] = "normal"
+            prepared["model_family"] = "flux"
+            prepared["clip_vision_model"] = str(inputs.get("clip_vision_model") or "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors")
+            prepared["ipadapter_model"] = str(inputs.get("ipadapter_model") or "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors")
+            weight_value = inputs.get("ipadapter_weight", inputs.get("reference_strength"))
+            try:
+                ipadapter_weight = float(weight_value) if weight_value is not None else 0.85
+            except (TypeError, ValueError):
+                ipadapter_weight = 0.85
+            prepared["ipadapter_weight"] = ipadapter_weight
+            prepared["reference_strength"] = ipadapter_weight
+            start_value = inputs.get("start_at")
+            end_value = inputs.get("end_at")
+            try:
+                prepared["start_at"] = float(start_value) if start_value is not None else 0.0
+            except (TypeError, ValueError):
+                prepared["start_at"] = 0.0
+            try:
+                prepared["end_at"] = float(end_value) if end_value is not None else 1.0
+            except (TypeError, ValueError):
+                prepared["end_at"] = 1.0
+            prepared["reference_mode"] = "ipadapter"
         return prepared
 
     def _has_usable_controlnet_reference(self, inputs: Dict[str, Any]) -> bool:
@@ -404,6 +433,19 @@ class WorkflowBuilder:
         if isinstance(hints, list):
             return len(hints) > 0
         return False
+
+    def _extract_primary_character_reference(self, inputs: Dict[str, Any]) -> Optional[str]:
+        references = inputs.get("character_reference_images")
+        if isinstance(references, list):
+            for entry in references:
+                if isinstance(entry, str) and entry.strip():
+                    return entry.strip()
+        if isinstance(references, str) and references.strip():
+            return references.strip()
+        return None
+
+    def _has_usable_character_reference(self, inputs: Dict[str, Any]) -> bool:
+        return self._extract_primary_character_reference(inputs) is not None
 
     def extract_runtime_prompt_metadata(self, runtime_prompt: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(runtime_prompt, dict):
@@ -545,6 +587,7 @@ class WorkflowBuilder:
                 "production_quality",
                 "production_storyboard_cinematic",
                 "production_storyboard_cinematic_controlnet",
+                "production_storyboard_cinematic_reference",
             }
             fallback_report: Optional[WorkflowFallbackReport] = None
             executed_profile = requested_profile
@@ -559,6 +602,20 @@ class WorkflowBuilder:
                     missing_nodes=[],
                     missing_models=[],
                 )
+            if requested_profile == "production_storyboard_cinematic_reference":
+                primary_character_reference = self._extract_primary_character_reference(storyboard_inputs)
+                if primary_character_reference is None:
+                    selector_requested_profile = "production_storyboard_cinematic"
+                    fallback_report = WorkflowFallbackReport(
+                        requested_profile="production_storyboard_cinematic_reference",
+                        executed_profile="production_storyboard_cinematic",
+                        fallback_applied=True,
+                        reason="missing_character_reference",
+                        missing_nodes=[],
+                        missing_models=[],
+                    )
+                else:
+                    storyboard_inputs["character_reference_image"] = primary_character_reference
             if requested_profile in selector_profiles:
                 prompt, _exec_key, selector_fallback_report, executed_profile = _selector_select_workflow(
                     workflow_key=workflow_key,

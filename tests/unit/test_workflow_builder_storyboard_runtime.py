@@ -322,3 +322,67 @@ def test_controlnet_runtime_metadata_reads_nodes_by_class_type() -> None:
     assert metadata["width"] == 1344
     assert metadata["height"] == 768
     assert metadata["steps"] == 20
+
+
+def test_reference_profile_without_character_reference_falls_back_to_production_cinematic() -> None:
+    runtime, workflow_key, fallback_report, executed_profile = builder.build_runtime_prompt_with_profile(
+        "still_storyboard_frame",
+        {
+            "style_preset": "realistic_client_review",
+            "prompt": "Reference profile without reference",
+        },
+        requested_profile="production_storyboard_cinematic_reference",
+        available_nodes={
+            "CheckpointLoaderSimple",
+            "CLIPTextEncode",
+            "EmptyLatentImage",
+            "KSampler",
+            "VAEDecode",
+            "SaveImage",
+        },
+    )
+
+    assert isinstance(runtime, dict)
+    assert workflow_key == "still_storyboard_frame"
+    assert executed_profile == "production_storyboard_cinematic"
+    assert fallback_report is not None
+    assert fallback_report.reason == "missing_character_reference"
+
+
+def test_reference_profile_with_character_reference_uses_ipadapter_template() -> None:
+    runtime, workflow_key, fallback_report, executed_profile = builder.build_runtime_prompt_with_profile(
+        "still_storyboard_frame",
+        {
+            "style_preset": "realistic_client_review",
+            "prompt": "Reference profile with image",
+            "character_reference_images": ["pose_reference_smoke_2b1.png"],
+            "ipadapter_weight": 0.72,
+            "start_at": 0.1,
+            "end_at": 0.9,
+        },
+        requested_profile="production_storyboard_cinematic_reference",
+            available_nodes={
+                "CheckpointLoaderSimple",
+                "CLIPTextEncode",
+                "EmptyLatentImage",
+                "KSampler",
+                "VAEDecode",
+                "SaveImage",
+                "LoadImage",
+                "CLIPVisionLoader",
+                "IPAdapterFluxLoader",
+                "ApplyIPAdapterFlux",
+            },
+    )
+
+    assert isinstance(runtime, dict)
+    assert workflow_key == "still_storyboard_frame"
+    assert executed_profile == "production_storyboard_cinematic_reference"
+    assert fallback_report is None
+    assert runtime["1"]["inputs"]["ckpt_name"] == "FLUX/flux1-dev-fp8.safetensors"
+    assert runtime["2"]["inputs"]["image"] == "pose_reference_smoke_2b1.png"
+    assert runtime["3"]["inputs"]["clip_name"] == "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+    assert runtime["4"]["inputs"]["ipadapter_file"] == "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors"
+    assert runtime["5"]["inputs"]["weight"] == 0.72
+    assert runtime["5"]["inputs"]["start_at"] == 0.1
+    assert runtime["5"]["inputs"]["end_at"] == 0.9

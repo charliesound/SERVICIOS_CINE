@@ -30,6 +30,14 @@ CONTROLNET_NODES = {
     "DWPreprocessor",
 }
 
+REFERENCE_NODES = {
+    *CORE_NODES,
+    "LoadImage",
+    "CLIPVisionLoader",
+    "IPAdapterFluxLoader",
+    "ApplyIPAdapterFlux",
+}
+
 
 def test_selector_downgrades_legacy_production_quality_to_new_cinematic_profile() -> None:
     prompt, workflow_key, fallback_report, executed_profile = selector.select_workflow(
@@ -92,6 +100,61 @@ def test_selector_controlnet_profile_falls_back_to_production_cinematic_when_con
     assert executed_profile == "production_storyboard_cinematic"
     assert fallback_report is not None
     assert fallback_report.reason == "missing_nodes"
+
+
+def test_selector_supports_production_storyboard_cinematic_reference_profile_directly() -> None:
+    prompt, workflow_key, fallback_report, executed_profile = selector.select_workflow(
+        workflow_key="still_text_to_image_pro",
+        requested_profile="production_storyboard_cinematic_reference",
+        inputs={
+            "prompt": "test prompt",
+            "character_reference_image": "pose_reference_smoke_2b1.png",
+            "ipadapter_model": "FLUX/instantx_flux1_dev_ip_adapter_bf16.safetensors",
+            "clip_vision_model": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
+        },
+        available_nodes=REFERENCE_NODES,
+    )
+
+    assert isinstance(prompt, dict)
+    assert workflow_key == "production_storyboard_cinematic_reference"
+    assert executed_profile == "production_storyboard_cinematic_reference"
+    assert fallback_report is None
+
+
+def test_selector_reference_profile_falls_back_to_production_cinematic_when_ipadapter_nodes_missing() -> None:
+    prompt, workflow_key, fallback_report, executed_profile = selector.select_workflow(
+        workflow_key="still_text_to_image_pro",
+        requested_profile="production_storyboard_cinematic_reference",
+        inputs={"prompt": "test prompt"},
+        available_nodes=CORE_NODES,
+    )
+
+    assert isinstance(prompt, dict)
+    assert workflow_key == "production_storyboard_cinematic"
+    assert executed_profile == "production_storyboard_cinematic"
+    assert fallback_report is not None
+    assert fallback_report.reason == "missing_nodes"
+
+
+def test_selector_reference_profile_falls_through_to_storyboard_safe_chain() -> None:
+    prompt, workflow_key, fallback_report, executed_profile = selector.select_workflow(
+        workflow_key="still_text_to_image_pro",
+        requested_profile="production_storyboard_cinematic_reference",
+        inputs={"prompt": "test prompt"},
+        available_nodes={
+            "CheckpointLoaderSimple",
+            "CLIPTextEncode",
+            "EmptyLatentImage",
+            "KSampler",
+            "VAEDecode",
+            "SaveImage",
+        },
+    )
+
+    assert isinstance(prompt, dict)
+    assert workflow_key == "production_storyboard_cinematic"
+    assert executed_profile == "production_storyboard_cinematic"
+    assert fallback_report is not None
 
 
 def test_selector_downgrades_storyboard_safe_to_smoke_light_when_missing_node(monkeypatch) -> None:

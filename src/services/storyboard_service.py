@@ -361,6 +361,13 @@ class StoryboardService:
         render_quality: str = "standard",
         model_family: str | None = None,
         pose_reference_image: str | None = None,
+        character_reference_images: list[str] | None = None,
+        reference_strength: float | None = None,
+        ipadapter_weight: float | None = None,
+        ipadapter_model: str | None = None,
+        clip_vision_model: str | None = None,
+        start_at: float | None = None,
+        end_at: float | None = None,
         controlnet_hints: dict[str, Any] | list[Any] | None = None,
         controlnet_strength: float | None = None,
         controlnet_preprocessor: str | None = None,
@@ -442,6 +449,13 @@ class StoryboardService:
             style_preset=style_preset,
         )
         profile_info["pose_reference_image"] = pose_reference_image
+        profile_info["character_reference_images"] = character_reference_images
+        profile_info["reference_strength"] = reference_strength
+        profile_info["ipadapter_weight"] = ipadapter_weight
+        profile_info["ipadapter_model"] = ipadapter_model
+        profile_info["clip_vision_model"] = clip_vision_model
+        profile_info["start_at"] = start_at
+        profile_info["end_at"] = end_at
         profile_info["controlnet_hints"] = controlnet_hints
         profile_info["controlnet_strength"] = controlnet_strength
         profile_info["controlnet_preprocessor"] = controlnet_preprocessor
@@ -624,6 +638,13 @@ class StoryboardService:
                 metadata_raw["motion_ready"] = motion_ready
                 metadata_raw["image_edit_mode"] = image_edit_mode
                 metadata_raw["pose_reference_image"] = pose_reference_image
+                metadata_raw["character_reference_images"] = character_reference_images
+                metadata_raw["reference_strength"] = reference_strength
+                metadata_raw["ipadapter_weight"] = ipadapter_weight
+                metadata_raw["ipadapter_model"] = ipadapter_model
+                metadata_raw["clip_vision_model"] = clip_vision_model
+                metadata_raw["start_at"] = start_at
+                metadata_raw["end_at"] = end_at
                 metadata_raw["controlnet_hints"] = controlnet_hints
                 metadata_raw["controlnet_strength"] = controlnet_strength
                 metadata_raw["controlnet_preprocessor"] = controlnet_preprocessor
@@ -699,6 +720,13 @@ class StoryboardService:
             "motion_ready": motion_ready,
             "image_edit_mode": image_edit_mode,
             "pose_reference_image": pose_reference_image,
+            "character_reference_images": character_reference_images,
+            "reference_strength": reference_strength,
+            "ipadapter_weight": ipadapter_weight,
+            "ipadapter_model": ipadapter_model,
+            "clip_vision_model": clip_vision_model,
+            "start_at": start_at,
+            "end_at": end_at,
             "controlnet_hints": controlnet_hints,
             "controlnet_strength": controlnet_strength,
             "controlnet_preprocessor": controlnet_preprocessor,
@@ -840,6 +868,13 @@ class StoryboardService:
                         "time_of_day": prompt_payload.get("time_of_day"),
                         "int_ext": prompt_payload.get("int_ext"),
                         "pose_reference_image": prompt_payload.get("pose_reference_image"),
+                        "character_reference_images": prompt_payload.get("character_reference_images"),
+                        "reference_strength": prompt_payload.get("reference_strength"),
+                        "ipadapter_weight": prompt_payload.get("ipadapter_weight"),
+                        "ipadapter_model": prompt_payload.get("ipadapter_model"),
+                        "clip_vision_model": prompt_payload.get("clip_vision_model"),
+                        "start_at": prompt_payload.get("start_at"),
+                        "end_at": prompt_payload.get("end_at"),
                         "controlnet_hints": prompt_payload.get("controlnet_hints"),
                         "controlnet_strength": prompt_payload.get("controlnet_strength"),
                         "controlnet_preprocessor": prompt_payload.get("controlnet_preprocessor"),
@@ -912,6 +947,18 @@ class StoryboardService:
                         meta["source_dialogue_summary"] = prompt_payload.get("source_dialogue_summary")
                         meta["shot_objective"] = prompt_payload.get("shot_objective")
                         meta["atmosphere"] = prompt_payload.get("atmosphere")
+                        meta["reference_mode"] = (
+                            "ipadapter"
+                            if profile_info["workflow_profile_requested"] == "production_storyboard_cinematic_reference"
+                            else meta.get("reference_mode")
+                        )
+                        meta["character_reference_images"] = prompt_payload.get("character_reference_images")
+                        meta["reference_strength"] = prompt_payload.get("reference_strength")
+                        meta["ipadapter_weight"] = prompt_payload.get("ipadapter_weight")
+                        meta["ipadapter_model"] = prompt_payload.get("ipadapter_model")
+                        meta["clip_vision_model"] = prompt_payload.get("clip_vision_model")
+                        meta["start_at"] = prompt_payload.get("start_at")
+                        meta["end_at"] = prompt_payload.get("end_at")
                         shot.metadata_json = json.dumps(meta, ensure_ascii=False, default=str)
 
                 await db.commit()
@@ -2219,6 +2266,13 @@ class StoryboardService:
             "visual_bible_reference_pack": metadata_payload.get("visual_bible_reference_pack") or {},
             "controlnet_hints": metadata_payload.get("controlnet_hints") or {},
             "pose_reference_image": metadata_payload.get("pose_reference_image"),
+            "character_reference_images": metadata_payload.get("character_reference_images") or [],
+            "reference_strength": metadata_payload.get("reference_strength"),
+            "ipadapter_weight": metadata_payload.get("ipadapter_weight"),
+            "ipadapter_model": metadata_payload.get("ipadapter_model"),
+            "clip_vision_model": metadata_payload.get("clip_vision_model"),
+            "start_at": metadata_payload.get("start_at"),
+            "end_at": metadata_payload.get("end_at"),
             "controlnet_strength": metadata_payload.get("controlnet_strength"),
             "controlnet_preprocessor": metadata_payload.get("controlnet_preprocessor"),
             "controlnet_model": metadata_payload.get("controlnet_model"),
@@ -2227,7 +2281,7 @@ class StoryboardService:
             "sheet_template": metadata_payload.get("sheet_template"),
             "render_quality": metadata_payload.get("render_quality"),
             "model_family": metadata_payload.get("model_family") or (
-                "flux" if (metadata_payload.get("workflow_profile_requested") in {"production_storyboard_cinematic", "production_quality"}) else None
+                "flux" if (metadata_payload.get("workflow_profile_requested") in {"production_storyboard_cinematic", "production_quality", "production_storyboard_cinematic_reference"}) else None
             ),
             "motion_ready": bool(metadata_payload.get("motion_ready", False)),
             "image_edit_mode": bool(metadata_payload.get("image_edit_mode", False)),

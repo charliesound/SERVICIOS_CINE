@@ -21,8 +21,8 @@
     "clip_vision_model": {"node": "3", "input": "clip_vision"},
     "provider": {"node": "3", "input": "provider"},
     "ipadapter_weight": {"node": "4", "input": "weight"},
-    "start_at": {"node": "4", "input": "start_at"},
-    "end_at": {"node": "4", "input": "end_at"},
+    "start_at": {"node": "4", "input": "start_percent"},
+    "end_at": {"node": "4", "input": "end_percent"},
     "positive_prompt": {"node": "5", "input": "text"},
     "negative_prompt": {"node": "6", "input": "text"},
     "width": {"node": "7", "input": "width"},
@@ -77,11 +77,11 @@
     "4": {
       "inputs": {
         "weight": 0.85,
-        "start_at": 0.0,
-        "end_at": 1.0,
+        "start_percent": 0.0,
+        "end_percent": 1.0,
         "image": ["2", 0],
         "model": ["1", 0],
-        "ipadapter": ["3", 0]
+        "ipadapter_flux": ["3", 0]
       },
       "class_type": "ApplyIPAdapterFlux"
     },

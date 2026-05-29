@@ -384,5 +384,10 @@ def test_reference_profile_with_character_reference_uses_ipadapter_template() ->
     assert runtime["3"]["inputs"]["clip_vision"] == "google/siglip-so400m-patch14-384"
     assert runtime["3"]["inputs"]["provider"] == "cuda"
     assert runtime["4"]["inputs"]["weight"] == 0.72
-    assert runtime["4"]["inputs"]["start_at"] == 0.1
-    assert runtime["4"]["inputs"]["end_at"] == 0.9
+    assert runtime["4"]["inputs"]["start_percent"] == 0.1
+    assert runtime["4"]["inputs"]["end_percent"] == 0.9
+    assert runtime["4"]["inputs"]["ipadapter_flux"] == ["3", 0]
+    assert "ipadapter" not in runtime["4"]["inputs"]
+    assert "start_at" not in runtime["4"]["inputs"]
+    assert "end_at" not in runtime["4"]["inputs"]
+    assert runtime["8"]["inputs"]["model"] == ["4", 0]

@@ -57,7 +57,9 @@ if IS_SQLITE:
     engine_kwargs["connect_args"] = {"check_same_thread": False, "timeout": 60}
     engine_kwargs["poolclass"] = NullPool
 else:
+    # PostgreSQL
     engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["connect_args"] = {"options": "-c search_path=cid,public"}
 
 engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 

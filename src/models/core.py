@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 import uuid
 
-from sqlalchemy import String, Boolean, DateTime
+from sqlalchemy import String, Boolean, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, foreign
 from database import Base
 
@@ -38,7 +38,7 @@ class Project(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(1000))
     status: Mapped[Optional[str]] = mapped_column(String(50), default="active")
-    script_text: Mapped[Optional[str]] = mapped_column(String(16777215), default=None)
+    script_text: Mapped[Optional[str]] = mapped_column(Text, default=None)
     created_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, default=datetime.utcnow
     )
@@ -113,7 +113,7 @@ class ProjectJob(Base):
     project_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     job_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
-    result_data: Mapped[Optional[str]] = mapped_column(String(16777215), nullable=True)
+    result_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True)
     progress_percent: Mapped[Optional[int]] = mapped_column(default=0, nullable=True)
     progress_stage: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

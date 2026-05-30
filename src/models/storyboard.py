@@ -42,6 +42,7 @@ class StoryboardShot(Base):
     sequence_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     sequence_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     scene_number: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    shot_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     scene_heading: Mapped[str | None] = mapped_column(String(500), nullable=True)
     narrative_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     asset_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)

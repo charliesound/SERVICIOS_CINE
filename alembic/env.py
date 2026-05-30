@@ -118,14 +118,15 @@ def run_migrations_offline() -> None:
             
         return True
     
+    is_pg = url.startswith("postgresql")
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         include_schemas=False,
-        version_table_schema="cid",
         include_object=include_object,
+        **(dict(version_table_schema="cid") if is_pg else {}),
     )
 
     with context.begin_transaction():
@@ -164,11 +165,10 @@ def run_migrations_online() -> None:
             
         return True
     
-    if url.startswith("postgresql"):
-        # For Alembic, we set the search_path to cid so that tables are created in the cid schema
+    is_pg = url.startswith("postgresql")
+    if is_pg:
         connect_args = {"options": "-c search_path=cid"}
     else:
-        # SQLite or other
         connect_args = {"check_same_thread": False}
 
     connectable = create_engine(
@@ -182,8 +182,8 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             include_schemas=False,
-            version_table_schema="cid",
             include_object=include_object,
+            **(dict(version_table_schema="cid") if is_pg else {}),
         )
 
         with context.begin_transaction():

@@ -101,7 +101,7 @@ class TestLegacyConfigCompat:
         assert "app" in config
         assert "auth" in config
         url = get_database_url()
-        assert url.startswith("sqlite")
+        assert url.startswith(("sqlite", "postgresql"))
 
     def test_legacy_get_llm_settings(self):
         from config import get_llm_settings

@@ -14,6 +14,12 @@ from services.logging_service import logger
 from services.qdrant_memory_service import qdrant_memory_service
 from services.rag_embedding_service import rag_embedding_service
 from core.config import get_settings
+from services.cid_rag_answer_service import cid_rag_answer_service
+from services.ollama_llm_service import (
+    OllamaLLMConnectionError,
+    OllamaLLMEmptyResponseError,
+    OllamaLLMTimeoutError,
+)
 
 
 router = APIRouter(prefix="/api/projects/{project_id}/memory", tags=["cid-memory"])
@@ -67,6 +73,28 @@ class SearchResponse(BaseModel):
     organization_id: str
     results: list[SearchResult]
     total_results: int
+
+
+class AnswerRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=2000)
+    limit: int = Field(default=5, ge=1, le=10)
+    source_types: list[str] | None = None
+    temperature: float = Field(default=0.2, ge=0.0, le=1.0)
+    include_sources: bool = True
+
+
+class AnswerUsage(BaseModel):
+    context_chunks: int
+    prompt_chars: int
+
+
+class AnswerResponse(BaseModel):
+    answer: str
+    project_id: str
+    organization_id: str
+    model: str
+    sources: list[SearchResult]
+    usage: AnswerUsage
 
 
 class IndexRequest(BaseModel):
@@ -171,3 +199,34 @@ async def memory_search(
         results=out,
         total_results=len(out),
     )
+
+
+@router.post("/answer", response_model=AnswerResponse)
+async def memory_answer(
+    project_id: str,
+    req: AnswerRequest,
+    tenant: TenantContext = Depends(get_tenant_context),
+    db: AsyncSession = Depends(get_db),
+):
+    del db
+    try:
+        result = await cid_rag_answer_service.answer_question(
+            organization_id=tenant.organization_id,
+            project_id=project_id,
+            question=req.question,
+            limit=req.limit,
+            source_types=req.source_types,
+            temperature=req.temperature,
+            include_sources=req.include_sources,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except OllamaLLMTimeoutError as exc:
+        raise HTTPException(status_code=504, detail=str(exc)) from exc
+    except (OllamaLLMConnectionError, OllamaLLMEmptyResponseError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error("Memory answer failed project=%s org=%s: %s", project_id, tenant.organization_id, exc)
+        raise HTTPException(status_code=500, detail="Failed to generate RAG answer") from exc
+
+    return AnswerResponse(**result)

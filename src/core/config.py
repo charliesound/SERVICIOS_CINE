@@ -152,6 +152,16 @@ class Settings(BaseSettings):
     ollama_url: str = "http://ollama:11434"
     cid_memory_collection: str = "cid_memory"
 
+    # ── CID RAG Answer ────────────────────────────────────────────────────
+    rag_llm_provider: str = "ollama"
+    rag_llm_model: str = "qwen2.5:14B"
+    rag_llm_temperature: float = 0.2
+    rag_max_context_chunks: int = 5
+    rag_max_chars_per_chunk: int = 1200
+    rag_max_prompt_chars: int = 8000
+    rag_llm_timeout_seconds: int = 60
+    rag_llm_num_predict: int = 512
+
     # ─────────────────────────────────────────────────────────────────────
     # Validators
     # ─────────────────────────────────────────────────────────────────────

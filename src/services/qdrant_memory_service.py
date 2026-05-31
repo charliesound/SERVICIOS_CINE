@@ -147,12 +147,24 @@ class QdrantMemoryService:
         query_vector: list[float],
         limit: int = 10,
         source_type: str | None = None,
+        source_types: list[str] | None = None,
     ) -> list[dict[str, Any]]:
         filter_payload = _project_filter(organization_id, project_id)
         if source_type:
             filter_payload["must"].append(
                 {"key": "source_type", "match": {"value": source_type}}
             )
+        if source_types:
+            allowed_source_types = [value for value in source_types if value]
+            if allowed_source_types:
+                filter_payload["must"].append(
+                    {
+                        "should": [
+                            {"key": "source_type", "match": {"value": value}}
+                            for value in allowed_source_types
+                        ]
+                    }
+                )
 
         results = await qdrant_service.semantic_search(
             collection=self.collection,

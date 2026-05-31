@@ -266,3 +266,40 @@ source .venv/bin/activate
 git status --short
 git diff --check
 
+## Regla obligatoria WSL para Antigravity
+
+Antigravity debe usarse solo para auditoría, arquitectura, planificación, revisión GO/NO-GO y diseño documental.
+
+El repositorio real es:
+
+/opt/SERVICIOS_CINE
+
+Antigravity NO debe crear archivos en:
+
+.gemini/antigravity/brain
+C:\mnt
+/mnt/c/mnt
+/mnt/wsl.localhost
+\\wsl.localhost\... como workdir
+
+Si Antigravity genera un informe o documento para este proyecto, debe guardarlo directamente en una ruta real del repo WSL, por ejemplo:
+
+/opt/SERVICIOS_CINE/docs/architecture/
+/opt/SERVICIOS_CINE/docs/ops/
+/opt/SERVICIOS_CINE/audits/
+
+Si Antigravity no puede escribir directamente en el repo WSL, debe entregar el contenido en la respuesta y avisar claramente:
+
+"NO HE CREADO EL ARCHIVO EN EL REPO. COPIAR MANUALMENTE ESTE CONTENIDO."
+
+Antigravity no debe usar PowerShell, Python de Windows ni rutas Windows para validar CID.
+
+Antes de proponer cualquier archivo, Antigravity debe asumir:
+
+cd /opt/SERVICIOS_CINE
+source .venv/bin/activate
+pwd
+git status --short
+
+Antigravity no debe hacer commits, tags, push ni cambios de código salvo instrucción explícita. Para implementación, edición real de archivos, tests y commits se usará OpenCode en WSL.
+

@@ -13,6 +13,7 @@ from services.cid_memory_ingestion_service import index_project
 from services.logging_service import logger
 from services.qdrant_memory_service import qdrant_memory_service
 from services.rag_embedding_service import rag_embedding_service
+from core.config import get_settings
 
 
 router = APIRouter(prefix="/api/projects/{project_id}/memory", tags=["cid-memory"])
@@ -25,13 +26,19 @@ class IndexResponse(BaseModel):
     sources_indexed: list[dict[str, Any]]
     total_chunks: int
     total_points_upserted: int
+    deleted_points: int = 0
     errors: list[str] | None = None
 
 
 class StatusResponse(BaseModel):
     project_id: str
     organization_id: str
-    indexed_chunks: int
+    total_points_for_project: int
+    points_by_source_type: dict[str, int]
+    embedding_model: str
+    collection_name: str
+    collection_vector_size: int
+    collection_distance: str
     sources: list[str]
 
 
@@ -62,16 +69,32 @@ class SearchResponse(BaseModel):
     total_results: int
 
 
+class IndexRequest(BaseModel):
+    clean: bool = False
+
+
 @router.post("/index", response_model=IndexResponse)
 async def memory_index(
     project_id: str,
+    request: IndexRequest,
     tenant: TenantContext = Depends(get_tenant_context),
     db: AsyncSession = Depends(get_db),
 ):
     logger.info(
-        "Memory index requested project=%s org=%s user=%s",
-        project_id, tenant.organization_id, tenant.user_id,
+        "Memory index requested project=%s org=%s user=%s clean=%s",
+        project_id, tenant.organization_id, tenant.user_id, request.clean,
     )
+
+    deleted_points = 0
+    if request.clean:
+        # Delete existing points for this project before reindexing
+        deleted_points = await qdrant_memory_service.delete_project_points(
+            organization_id=tenant.organization_id,
+            project_id=project_id,
+        )
+        if deleted_points < 0:
+            raise HTTPException(status_code=500, detail="Failed to delete existing points")
+
     result = await index_project(
         db,
         organization_id=tenant.organization_id,
@@ -79,7 +102,10 @@ async def memory_index(
     )
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
-    return IndexResponse(**result)
+
+    response_data = IndexResponse(**result)
+    response_data.deleted_points = deleted_points
+    return response_data
 
 
 @router.get("/status", response_model=StatusResponse)
@@ -88,15 +114,31 @@ async def memory_status(
     tenant: TenantContext = Depends(get_tenant_context),
     db: AsyncSession = Depends(get_db),
 ):
-    count = await qdrant_memory_service.count_project_points(
+    # Get detailed collection info
+    collection_info = await qdrant_memory_service.get_collection_info()
+    settings = get_settings()
+
+    # Get project-specific points count and breakdown by source type
+    total_points = await qdrant_memory_service.count_project_points(
         organization_id=tenant.organization_id,
         project_id=project_id,
     )
+
+    points_by_source = await qdrant_memory_service.count_points_by_source_type(
+        organization_id=tenant.organization_id,
+        project_id=project_id,
+    )
+
     return StatusResponse(
         project_id=project_id,
         organization_id=tenant.organization_id,
-        indexed_chunks=count,
-        sources=["script_text", "storyboard_shots", "production_breakdowns"],
+        total_points_for_project=total_points,
+        points_by_source_type=points_by_source,
+        embedding_model=collection_info.get("embedding_model", settings.embedding_model),
+        collection_name=collection_info.get("collection_name", settings.cid_memory_collection),
+        collection_vector_size=collection_info.get("vector_size", settings.embedding_vector_size),
+        collection_distance=collection_info.get("distance", "Cosine"),
+        sources=list(points_by_source.keys()) if points_by_source else ["script_text", "storyboard_shots", "production_breakdowns"],
     )
 
 

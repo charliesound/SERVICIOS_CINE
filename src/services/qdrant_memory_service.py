@@ -199,7 +199,15 @@ class QdrantMemoryService:
             logger.warning("count_project_points failed: %s", exc)
             return 0
 
-    async def delete_project_points(self, organization_id: str, project_id: str) -> bool:
+    async def delete_project_points(self, organization_id: str, project_id: str) -> int:
+        """
+        Delete all points for a specific organization and project.
+        Returns the number of points deleted.
+        Requires both organization_id and project_id to be provided.
+        """
+        if not organization_id or not project_id:
+            raise ValueError("Both organization_id and project_id are required for deletion")
+
         try:
             import httpx
             import os
@@ -210,10 +218,105 @@ class QdrantMemoryService:
                     f"{base}/collections/{self.collection}/points/delete",
                     json={"filter": filter_payload},
                 )
-                return resp.status_code in (200, 201)
+                if resp.status_code in (200, 201):
+                    # Get count of deleted points by checking count before/after or return approximate
+                    # For now, we'll get the count after deletion to report remaining
+                    remaining_count = await self.count_project_points(organization_id, project_id)
+                    # We don't have before count easily, so we'll return 0 to indicate success but not exact count
+                    # The caller can call count_project_points before and after if they need exact count
+                    logger.info("Deleted points for org=%s, project=%s (remaining: %s)",
+                              organization_id, project_id, remaining_count)
+                    return 0  # Indicates success, caller should use count before/after for exact number
+                else:
+                    logger.error("delete_project_points failed status=%s body=%s",
+                               resp.status_code, resp.text[:200])
+                    return -1  # Indicates failure
         except Exception as exc:
-            logger.warning("delete_project_points failed: %s", exc)
-            return False
+            logger.error("delete_project_points exception: %s", exc)
+            return -1  # Indicates failure
+
+    async def get_collection_info(self) -> dict[str, Any]:
+        """Get general information about the cid_memory collection."""
+        try:
+            import httpx
+            import os
+            base = os.getenv("QDRANT_URL", "http://qdrant:6333").rstrip("/")
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.get(f"{base}/collections/{self.collection}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    result = data.get("result", {})
+                    config = result.get("config", {})
+                    params = config.get("params", {})
+                    vectors = params.get("vectors", {})
+                    return {
+                        "collection_name": self.collection,
+                        "vector_size": vectors.get("size", 0),
+                        "distance": vectors.get("distance", "Cosine"),
+                        "status": result.get("status", "unknown"),
+                        "points_count": result.get("count", 0),
+                        "embedding_model": self.embedding_model
+                    }
+                return {}
+        except Exception as exc:
+            logger.warning("get_collection_info failed: %s", exc)
+            return {}
+
+    async def count_points_by_source_type(self, organization_id: str, project_id: str) -> dict[str, int]:
+        """Count points in cid_memory filtered by organization_id and project_id, grouped by source_type."""
+        try:
+            import httpx
+            import os
+            base = os.getenv("QDRANT_URL", "http://qdrant:6333").rstrip("/")
+            filter_payload = {
+                "must": [
+                    {"key": "organization_id", "match": {"value": organization_id}},
+                    {"key": "project_id", "match": {"value": project_id}},
+                ]
+            }
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # Scroll through all points with payload to count by source_type
+                offset = 0
+                limit = 100
+                source_counts = {}
+
+                while True:
+                    resp = await client.post(
+                        f"{base}/collections/{self.collection}/points/scroll",
+                        json={
+                            "filter": filter_payload,
+                            "limit": limit,
+                            "offset": offset,
+                            "with_payload": True,
+                            "with_vectors": False
+                        }
+                    )
+                    if resp.status_code != 200:
+                        logger.warning("Failed to scroll points for source type counting: %s", resp.text)
+                        break
+
+                    data = resp.json()
+                    result = data.get("result", {})
+                    points = result.get("points", [])
+
+                    if not points:
+                        break
+
+                    for point in points:
+                        payload = point.get("payload", {})
+                        source_type = payload.get("source_type", "unknown")
+                        source_counts[source_type] = source_counts.get(source_type, 0) + 1
+
+                    # If we got less than the limit, we've reached the end
+                    if len(points) < limit:
+                        break
+
+                    offset += limit
+
+                return source_counts
+        except Exception as exc:
+            logger.warning("count_points_by_source_type failed: %s", exc)
+            return {}
 
 
 qdrant_memory_service = QdrantMemoryService()

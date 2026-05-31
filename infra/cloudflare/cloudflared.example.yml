@@ -1,0 +1,40 @@
+# =============================================================================
+# cloudflared.example.yml — Plantilla de túnel Cloudflare para AILinkCinema
+# =============================================================================
+# Copiar a ~/.cloudflared/config.yml y reemplazar:
+#   - CID_TUNNEL_ID      → ID del túnel (de Cloudflare Dashboard)
+#   - tudominio.com      → tu dominio real
+#   - CID_TUNNEL_ID.json → ruta al JSON de credenciales del túnel
+# =============================================================================
+# Routing:
+#   app.tudominio.com  → Caddy :80    → Frontend React (SPA principal)
+#   api.tudominio.com  → Caddy :80    → Backend FastAPI (vía /api/*)
+#   demo.tudominio.com → Caddy :80    → Frontend (demo mode)
+#   default            → 404
+#
+# NO incluir:
+#   - PostgreSQL (5432)
+#   - Qdrant (6333)
+#   - Ollama (11434)
+#   - ComfyUI (8188-8192)
+#   - n8n (5678)
+# =============================================================================
+
+tunnel: CID_TUNNEL_ID
+credentials-file: /home/USER/.cloudflared/CID_TUNNEL_ID.json
+
+ingress:
+  # ── App (Frontend principal) ─────────────────────────────────────
+  - hostname: app.tudominio.com
+    service: http://127.0.0.1:80
+
+  # ── Demo (Frontend demo mode) ────────────────────────────────────
+  - hostname: demo.tudominio.com
+    service: http://127.0.0.1:80
+
+  # ── API (Backend FastAPI vía reverse proxy) ─────────────────────
+  - hostname: api.tudominio.com
+    service: http://127.0.0.1:80
+
+  # ── Catch-all: 404 para todo lo demás ─────────────────────────
+  - service: http_status:404

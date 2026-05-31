@@ -28,7 +28,17 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
 
     # ── CORS ─────────────────────────────────────────────────────────────
-    cors_allowed_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    cors_allowed_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+        description="Comma-separated list of allowed CORS origins. Set CORS_ALLOWED_ORIGINS env var to override.",
+    )
+
+    @field_validator("cors_allowed_origins", mode="before")
+    @classmethod
+    def _cors_parse_env(cls, v: str | list[str]) -> list[str]:
+        if isinstance(v, str) and v:
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v if isinstance(v, list) else []
     cors_allow_credentials: bool = True
     cors_allowed_methods: list[str] = ["*"]
     cors_allowed_headers: list[str] = ["*"]

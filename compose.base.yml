@@ -79,7 +79,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${HTTP_PORT:-80}:80"
+      - "127.0.0.1:${HTTP_PORT:-80}:80"
     volumes:
       - ./Caddyfile.deploy:/etc/caddy/Caddyfile:ro
       - ./certs:/etc/caddy/certs:ro

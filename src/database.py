@@ -59,7 +59,7 @@ if IS_SQLITE:
 else:
     # PostgreSQL
     engine_kwargs["pool_pre_ping"] = True
-    engine_kwargs["connect_args"] = {"options": "-c search_path=cid,public"}
+    engine_kwargs["connect_args"] = {"server_settings": {"search_path": "cid,public"}}
 
 engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 

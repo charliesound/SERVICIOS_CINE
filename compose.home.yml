@@ -1,4 +1,4 @@
-# AILinkCinema - Compose for Home Demo
+﻿# AILinkCinema - Compose for Home Demo
 # Usage: docker compose -f compose.base.yml -f compose.home.yml up
 # For remote laptop access, add: -f compose.home.tailscale.yml
 
@@ -32,6 +32,12 @@ services:
       COMFYUI_LAB: ${COMFYUI_LAB_BASE_URL:-http://172.24.174.31:8191}
       DATABASE_URL: postgresql+asyncpg://ailinkcinema:${POSTGRES_PASSWORD}@ailinkcinema_postgres:5432/ailinkcinema
       BACKEND_HOST: 127.0.0.1
+      QDRANT_URL: http://qdrant:6333
+      CID_MEMORY_COLLECTION: cid_memory
+      EMBEDDING_PROVIDER: ollama
+      EMBEDDING_MODEL: nomic-embed-text:v1.5
+      EMBEDDING_VECTOR_SIZE: 768
+      OLLAMA_URL: http://ollama:11434
 
   frontend:
     build:

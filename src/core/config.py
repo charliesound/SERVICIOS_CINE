@@ -145,6 +145,13 @@ class Settings(BaseSettings):
     comfysearch_roots: str = ""
     comfysearch_embedding_model: str = "all-MiniLM-L6-v2"
 
+    # ── CID Memory / Embeddings ───────────────────────────────────────────
+    embedding_provider: str = "ollama"
+    embedding_model: str = "nomic-embed-text:v1.5"
+    embedding_vector_size: int = 768
+    ollama_url: str = "http://ollama:11434"
+    cid_memory_collection: str = "cid_memory"
+
     # ─────────────────────────────────────────────────────────────────────
     # Validators
     # ─────────────────────────────────────────────────────────────────────

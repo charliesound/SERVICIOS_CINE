@@ -344,6 +344,11 @@ def _register_routers(app: FastAPI, settings) -> None:
 
     app.include_router(comfyui_instance_router, tags=["comfyui"])
 
+    # ── CID Memory / RAG ─────────────────────────────────────────────────
+    from routes.memory_routes import router as memory_router
+
+    app.include_router(memory_router, tags=["cid-memory"])
+
     # ── CID internal test mode ───────────────────────────────────────────
     import os
 

@@ -37,10 +37,12 @@ def test_build_answer_prompt_includes_context_and_question() -> None:
         ],
         max_chars_per_chunk=1200,
     )
-    assert "Contexto:" in prompt
-    assert "Fuente 1 script_text" in prompt
+    assert "Contexto recuperado del proyecto:" in prompt
+    assert "Guion:" in prompt
+    assert "Fuente 1 (Guion)" in prompt
     assert "Una casa abandonada" in prompt
     assert "Que ocurre?" in prompt
+    assert "Planos de storyboard relacionados:" in prompt
 
 
 @pytest.mark.asyncio
@@ -142,6 +144,89 @@ async def test_answer_question_without_results(monkeypatch: pytest.MonkeyPatch) 
     assert result["answer"] == NO_CONTEXT_ANSWER
     assert result["sources"] == []
     assert result["usage"]["context_chunks"] == 0
+
+
+@pytest.mark.asyncio
+async def test_answer_question_prompt_includes_multiple_chunks(monkeypatch: pytest.MonkeyPatch) -> None:
+    service = CIDRAGAnswerService()
+    captured: dict[str, str] = {}
+
+    async def fake_embed_query(question: str) -> list[float]:
+        return [0.6] * 768
+
+    async def fake_search(**kwargs):
+        return [
+            {"id": "1", "score": 0.99, "source_type": "storyboard_shot", "source_id": "s1", "source_table": "storyboard_shots", "title": "Plano 1", "text": "Plano general de la casa.", "chunk_index": 0, "chunk_count": 1, "tags": []},
+            {"id": "2", "score": 0.98, "source_type": "script_text", "source_id": "g1", "source_table": "projects", "title": "Guion", "text": "Marta entra en la casa abandonada.", "chunk_index": 0, "chunk_count": 1, "tags": []},
+            {"id": "3", "score": 0.97, "source_type": "production_breakdown", "source_id": "b1", "source_table": "production_breakdowns", "title": "Breakdown", "text": "Interior noche con linterna.", "chunk_index": 0, "chunk_count": 1, "tags": []},
+            {"id": "4", "score": 0.96, "source_type": "storyboard_shot", "source_id": "s2", "source_table": "storyboard_shots", "title": "Plano 2", "text": "Primer plano de la linterna.", "chunk_index": 0, "chunk_count": 1, "tags": []},
+            {"id": "5", "score": 0.95, "source_type": "storyboard_shot", "source_id": "s3", "source_table": "storyboard_shots", "title": "Plano 3", "text": "Pasillo oscuro.", "chunk_index": 0, "chunk_count": 1, "tags": []},
+        ]
+
+    async def fake_generate(*, prompt: str, system_prompt: str, model: str | None = None, temperature: float | None = None) -> str:
+        captured["prompt"] = prompt
+        return "Respuesta"
+
+    monkeypatch.setattr("services.cid_rag_answer_service.rag_embedding_service.embed_query", fake_embed_query)
+    monkeypatch.setattr("services.cid_rag_answer_service.qdrant_memory_service.search", fake_search)
+    monkeypatch.setattr("services.cid_rag_answer_service.ollama_llm_service.generate", fake_generate)
+
+    result = await service.answer_question(
+        organization_id="org-1",
+        project_id="proj-1",
+        question="¿Qué ocurre en la escena y qué planos la representan?",
+        limit=5,
+        include_sources=True,
+    )
+    assert result["answer"] == "Respuesta"
+    assert result["usage"]["context_chunks"] >= 3
+    assert captured["prompt"].count("Fuente ") >= 3
+
+
+def test_build_answer_prompt_preserves_type_sections() -> None:
+    prompt = build_answer_prompt(
+        "Pregunta",
+        [
+            {"source_type": "script_text", "title": "Guion", "text": "Accion de guion."},
+            {"source_type": "storyboard_shot", "title": "Plano", "text": "Plano del pasillo."},
+            {"source_type": "production_breakdown", "title": "Breakdown", "text": "Detalle tecnico."},
+        ],
+        max_chars_per_chunk=120,
+    )
+    assert "Guion:" in prompt
+    assert "Storyboard:" in prompt
+    assert "Breakdown:" in prompt
+
+
+@pytest.mark.asyncio
+async def test_answer_question_prioritizes_storyboard_for_planos(monkeypatch: pytest.MonkeyPatch) -> None:
+    service = CIDRAGAnswerService()
+
+    async def fake_embed_query(question: str) -> list[float]:
+        return [0.7] * 768
+
+    async def fake_search(**kwargs):
+        return [
+            {"id": "a", "score": 0.95, "source_type": "script_text", "source_id": "g1", "source_table": "projects", "title": "Guion", "text": "Marta entra.", "chunk_index": 0, "chunk_count": 1, "tags": []},
+            {"id": "b", "score": 0.90, "source_type": "storyboard_shot", "source_id": "s1", "source_table": "storyboard_shots", "title": "Plano", "text": "MS de Marta con linterna.", "chunk_index": 0, "chunk_count": 1, "tags": []},
+            {"id": "c", "score": 0.85, "source_type": "production_breakdown", "source_id": "bd1", "source_table": "production_breakdowns", "title": "Breakdown", "text": "Interior noche.", "chunk_index": 0, "chunk_count": 1, "tags": []},
+        ]
+
+    async def fake_generate(**kwargs):
+        return "Respuesta"
+
+    monkeypatch.setattr("services.cid_rag_answer_service.rag_embedding_service.embed_query", fake_embed_query)
+    monkeypatch.setattr("services.cid_rag_answer_service.qdrant_memory_service.search", fake_search)
+    monkeypatch.setattr("services.cid_rag_answer_service.ollama_llm_service.generate", fake_generate)
+
+    result = await service.answer_question(
+        organization_id="org-1",
+        project_id="proj-1",
+        question="¿Qué planos representan la escena?",
+        limit=3,
+    )
+    source_types = [source["source_type"] for source in result["sources"]]
+    assert "storyboard_shot" in source_types
 
 
 @pytest.mark.asyncio

@@ -31,8 +31,8 @@ class OllamaLLMService:
         self.model = settings.rag_llm_model
         self.temperature = settings.rag_llm_temperature
         self.num_predict = settings.rag_llm_num_predict
-        # qwen2.5:14B can exceed 60s on the current runtime for full answers.
-        self.timeout_seconds = max(float(settings.rag_llm_timeout_seconds), 240.0)
+        # qwen2.5:14B can exceed 60s on the current runtime for richer multi-source answers.
+        self.timeout_seconds = max(float(settings.rag_llm_timeout_seconds), 420.0)
 
     async def generate(
         self,

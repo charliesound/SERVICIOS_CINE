@@ -6,8 +6,11 @@ import { useAuthStore, getPrimaryCIDTarget } from '@/store'
 import type { RegisterDemoPayload } from '@/types'
 import { getApiErrorMessage } from '@/utils/apiErrors'
 import { useSeo } from '@/hooks/useSeo'
+import LanguageToggle from '@/components/common/LanguageToggle'
+import { useLanguage } from '@/i18n'
 
 export default function RegisterDemoPage() {
+  const { t } = useLanguage()
   const { isAuthenticated } = useAuthStore()
   const [form, setForm] = useState<RegisterDemoPayload>({
     full_name: '',
@@ -81,23 +84,23 @@ export default function RegisterDemoPage() {
       <nav className="border-b border-white/5">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/register/select" className="text-sm text-gray-400 hover:text-white transition-colors">
-            ← Volver
+            {t('auth.register.back')}
           </Link>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
               <Clapperboard className="w-4 h-4 text-black" />
             </div>
-            <span className="text-sm font-medium">Demo guiada</span>
+            <span className="text-sm font-medium">{t('auth.register.guidedDemo')}</span>
           </div>
-          <div className="w-16" />
+          <LanguageToggle />
         </div>
       </nav>
 
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2">Solicitar una demo guiada</h1>
-            <p className="text-gray-400 text-sm">Esta opcion es para una sesion con el equipo. Si quieres entrar ahora a CID, usa el acceso demo gratuito.</p>
+            <h1 className="text-2xl font-bold mb-2">{t('auth.register.demoTitle')}</h1>
+            <p className="text-gray-400 text-sm">{t('auth.register.demoSubtitle')}</p>
           </div>
 
           <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">

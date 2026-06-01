@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store'
+import LanguageToggle from '@/components/common/LanguageToggle'
 import {
   LayoutDashboard,
   Layers3,
@@ -95,6 +96,9 @@ export default function AppShell() {
 
         {user && (
           <div className="p-4 border-t border-white/5">
+            <div className="mb-3 flex justify-center">
+              <LanguageToggle />
+            </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black text-sm font-bold">

@@ -7,6 +7,8 @@ import { authApi } from '@/api'
 import type { CIDProgram, RegisterCIDPayload } from '@/types'
 import { getApiErrorMessage } from '@/utils/apiErrors'
 import { useSeo } from '@/hooks/useSeo'
+import LanguageToggle from '@/components/common/LanguageToggle'
+import { useLanguage } from '@/i18n'
 
 const programs: { id: CIDProgram; label: string; desc: string; badge: string }[] = [
   { id: 'demo', label: 'Demo', desc: 'Acceso gratuito para probar la plataforma', badge: 'Gratis' },
@@ -17,6 +19,7 @@ const programs: { id: CIDProgram; label: string; desc: string; badge: string }[]
 ]
 
 export default function RegisterCIDPage() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const { login } = useAuthStore()
   const [step, setStep] = useState<'select' | 'form'>('select')
@@ -75,15 +78,15 @@ export default function RegisterCIDPage() {
       <nav className="border-b border-white/5">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/register/select" className="text-sm text-gray-400 hover:text-white transition-colors">
-            ← Volver
+            {t('auth.register.back')}
           </Link>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
               <Clapperboard className="w-4 h-4 text-black" />
             </div>
-            <span className="text-sm font-medium">Programa CID</span>
+            <span className="text-sm font-medium">{t('auth.register.cidProgram')}</span>
           </div>
-          <div className="w-16" />
+          <LanguageToggle />
         </div>
       </nav>
 
@@ -92,8 +95,8 @@ export default function RegisterCIDPage() {
           {step === 'select' ? (
             <>
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold mb-2">Elige tu plan</h1>
-                <p className="text-gray-400 text-sm">Selecciona el programa CID que mejor se adapte a ti.</p>
+                <h1 className="text-2xl font-bold mb-2">{t('auth.register.cidTitle')}</h1>
+                <p className="text-gray-400 text-sm">{t('auth.register.cidSubtitle')}</p>
               </div>
 
               <div className="space-y-3 mb-8">
@@ -126,7 +129,7 @@ export default function RegisterCIDPage() {
                 onClick={() => setStep('form')}
                 className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
               >
-                Continuar con {programs.find((p) => p.id === selectedProgram)?.label} <ArrowRight className="w-4 h-4" />
+                {t('auth.register.continue')} {programs.find((p) => p.id === selectedProgram)?.label} <ArrowRight className="w-4 h-4" />
               </button>
             </>
           ) : (
@@ -136,7 +139,7 @@ export default function RegisterCIDPage() {
                   onClick={() => setStep('select')}
                   className="text-sm text-gray-400 hover:text-white transition-colors"
                 >
-                  ← Cambiar plan
+                  {t('auth.register.changePlan')}
                 </button>
                 <span className="text-sm text-amber-400 font-medium px-3 py-1 bg-amber-500/10 rounded-full">
                   {programs.find((p) => p.id === selectedProgram)?.label} —{' '}
@@ -264,7 +267,7 @@ export default function RegisterCIDPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Procesando...
+                      {t('auth.login.processing')}
                     </span>
                   ) : (
                     <>Crear cuenta <ArrowRight className="w-4 h-4" /></>

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, LogOut, ShieldCheck, ArrowRight, ChevronRight, Film, FileSearch, Clapperboard, LayoutTemplate, MonitorPlay, Sparkles, Waypoints } from 'lucide-react'
+import { ShieldCheck, ArrowRight, ChevronRight, Film, FileSearch, Clapperboard, LayoutTemplate, MonitorPlay, Sparkles, Waypoints } from 'lucide-react'
+import PublicHeader from '@/components/common/PublicHeader'
 import LandingAmbientScene from '@/components/landing/LandingAmbientScene'
 import { useSeo } from '@/hooks/useSeo'
-import { getPrimaryCIDTarget, useAuthStore } from '@/store'
+import { useLanguage } from '@/i18n'
 import { buildAbsoluteUrl, buildBreadcrumbStructuredData } from '@/utils/seo'
 import { CID_CORE_FUTURE_PRODUCTS } from '@/config/cidCoreScope'
 
@@ -43,8 +44,7 @@ const useCases = [
 ]
 
 export default function CIDProductPage() {
-  const { isAuthenticated, user } = useAuthStore()
-  const cidTarget = getPrimaryCIDTarget(user)
+  const { t } = useLanguage()
   const [activePricing, setActivePricing] = useState<'setup' | 'modules'>('setup')
 
   useSeo({
@@ -82,49 +82,7 @@ export default function CIDProductPage() {
       <div className="landing-noise" />
       <div className="landing-backdrop" />
 
-      {/* Header */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#07111d]/55 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-3">
-            <img src="/assets/ailinkcinema-logo.png" alt="AILinkCinema" className="h-11 w-11 rounded-2xl object-cover shadow-[0_0_32px_rgba(245,158,11,0.22)]" />
-            <div>
-              <p className="text-lg font-semibold tracking-tight text-white">AILinkCinema</p>
-              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-slate-400">CID Product</p>
-            </div>
-          </Link>
-
-          <nav className="hidden items-center gap-7 text-sm text-slate-300 xl:flex">
-            <Link to="/solutions" className="transition-colors duration-300 hover:text-white">Soluciones</Link>
-            <Link to="/pricing" className="transition-colors duration-300 hover:text-white">Precios</Link>
-            <Link to="/legal/privacidad" className="transition-colors duration-300 hover:text-white">Legal</Link>
-          </nav>
-
-          <div className="flex items-center gap-2 md:gap-3">
-            {isAuthenticated ? (
-              <>
-                <Link to={cidTarget} className="landing-cta-secondary hidden sm:inline-flex">
-                  <LayoutDashboard className="h-4 w-4" />
-                  Entrar a CID
-                </Link>
-                <button
-                  onClick={() => {
-                    useAuthStore.getState().logout()
-                    window.location.href = '/'
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-400 transition-colors hover:text-red-200"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Salir
-                </button>
-              </>
-            ) : (
-              <Link to="/register/demo" className="landing-cta-primary hidden sm:inline-flex">
-                Solicitar demo
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
+      <PublicHeader eyebrowKey="public.header.cidProduct" />
 
       <main>
         {/* 1. HERO */}
@@ -151,15 +109,15 @@ export default function CIDProductPage() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link to="/register/demo" className="landing-cta-primary inline-flex items-center gap-2">
-                  Solicitar demo
+                  {t('common.cta.requestDemo')}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link to="/pricing" className="landing-cta-secondary inline-flex items-center gap-2">
-                  Ver precios
+                  {t('common.cta.viewPricing')}
                   <ChevronRight className="h-4 w-4" />
                 </Link>
                 <Link to="/solutions" className="landing-cta-ghost inline-flex items-center gap-2">
-                  Hablar con un especialista
+                  {t('common.cta.talkSpecialist')}
                 </Link>
               </div>
             </div>
@@ -433,11 +391,11 @@ export default function CIDProductPage() {
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link to="/pricing" className="landing-cta-primary inline-flex items-center gap-2">
-                Ver precios completos
+                {t('common.cta.viewFullPricing')}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link to="/register/demo" className="landing-cta-secondary inline-flex items-center gap-2">
-                Solicitar propuesta
+                {t('common.cta.requestProposal')}
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
@@ -477,11 +435,11 @@ export default function CIDProductPage() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Link to="/register/demo" className="landing-cta-primary inline-flex items-center justify-center gap-2">
-                  Solicitar demo
+                  {t('common.cta.requestDemo')}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link to="/solutions" className="landing-cta-secondary inline-flex items-center justify-center gap-2">
-                  Hablar con nosotros
+                  {t('common.cta.talkToUs')}
                   <ChevronRight className="h-4 w-4" />
                 </Link>
               </div>

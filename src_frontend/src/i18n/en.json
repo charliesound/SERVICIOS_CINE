@@ -13,6 +13,14 @@
       "viewSolution": "View solution",
       "hireSolution": "Hire solution",
       "access": "Access",
+      "viewCid": "View CID",
+      "viewSolutions": "View solutions",
+      "exploreCid": "Explore CID",
+      "viewPricing": "View pricing",
+      "viewFullPricing": "View full pricing",
+      "requestProposal": "Request proposal",
+      "talkSpecialist": "Talk to a specialist",
+      "talkToUs": "Talk to us",
       "viewCidStudio": "View CID Studio",
       "hireCidStudio": "Hire CID Studio",
       "accessCidStudio": "Access CID Studio"
@@ -20,6 +28,24 @@
     "brand": {
       "name": "AILinkCinema",
       "suite": "CID Studio"
+    }
+  },
+  "public": {
+    "nav": {
+      "solutions": "Solutions",
+      "cidStudio": "CID Studio",
+      "pricing": "Pricing",
+      "legal": "Legal"
+    },
+    "header": {
+      "pricing": "Pricing",
+      "solutions": "Solutions",
+      "cidProduct": "CID Studio",
+      "solutionDetail": "Solution detail",
+      "login": "Access",
+      "register": "Registration",
+      "enterCid": "Enter CID",
+      "logout": "Logout"
     }
   },
   "landing": {
@@ -106,6 +132,57 @@
     },
     "footer": {
       "line": "AILinkCinema diagnoses real needs and commercializes modular solutions or CID Studio for film and audiovisual operations."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "AILinkCinema",
+      "subtitle": "Sign in to your account",
+      "email": "Email",
+      "password": "Password",
+      "forgot": "Forgot your password?",
+      "submit": "Sign in",
+      "processing": "Processing...",
+      "noAccount": "No account yet?",
+      "requestAccess": "Request access",
+      "backHome": "← Back home"
+    },
+    "register": {
+      "selectTitle": "Start with AILinkCinema",
+      "selectSubtitle": "Choose CID Studio access, a guided demo or partner program depending on your need.",
+      "alreadyHaveAccount": "I already have an account",
+      "guidedDemo": "Guided demo",
+      "cidProgram": "CID Program",
+      "back": "← Back",
+      "demoTitle": "Request a guided demo",
+      "demoSubtitle": "Consultative session with the team to diagnose real needs and propose a solution.",
+      "cidTitle": "Choose your plan",
+      "cidSubtitle": "Select the CID Studio program that best fits you.",
+      "continue": "Continue",
+      "changePlan": "← Change plan"
+    }
+  },
+  "pages": {
+    "pricing": {
+      "customEyebrow": "Custom development",
+      "ruleEyebrow": "Base commercial rule",
+      "ruleTitle": "Complete product or targeted module depending on the project's moment.",
+      "modulesEyebrow": "Module pricing",
+      "modulesTitle": "Every module has its own price, and all can be integrated inside CID.",
+      "footerText": "Pricing for premium film software, real pipeline configuration and specialized solutions.",
+      "footerNote": "AILinkCinema distinguishes between modules, the complete CID product and custom development."
+    },
+    "solutions": {
+      "heroEyebrow": "AILinkCinema / Solutions",
+      "heroTitle": "AI solutions for film and audiovisual teams",
+      "heroDescription": "AI solution catalog for film focused on pre-production: CID, script breakdown, storyboard, planning, pitch, promo video and VFX.",
+      "baseEyebrow": "Base offer",
+      "baseTitle": "CID is the main product, with specialized apps that can operate separately or integrated.",
+      "baseText": "You can hire each module separately or integrate all of them inside CID for a complete workflow.",
+      "futureTitle": "Labs and future products outside CID Core",
+      "futureText": "Dubbing, sound post and restoration remain separate lines for future products and are not part of the visible CID Core catalog.",
+      "footerText": "Main product, specialized apps and custom development for real cinematic workflows.",
+      "footerNote": "Each module can be hired separately and all of them can be integrated inside CID."
     }
   },
   "modules": {

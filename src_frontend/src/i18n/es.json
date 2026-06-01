@@ -13,6 +13,14 @@
       "viewSolution": "Ver solución",
       "hireSolution": "Contratar solución",
       "access": "Acceder",
+      "viewCid": "Ver CID",
+      "viewSolutions": "Ver soluciones",
+      "exploreCid": "Explorar CID",
+      "viewPricing": "Ver precios",
+      "viewFullPricing": "Ver precios completos",
+      "requestProposal": "Solicitar propuesta",
+      "talkSpecialist": "Hablar con un especialista",
+      "talkToUs": "Hablar con nosotros",
       "viewCidStudio": "Ver CID Studio",
       "hireCidStudio": "Contratar CID Studio",
       "accessCidStudio": "Acceder a CID Studio"
@@ -20,6 +28,24 @@
     "brand": {
       "name": "AILinkCinema",
       "suite": "CID Studio"
+    }
+  },
+  "public": {
+    "nav": {
+      "solutions": "Soluciones",
+      "cidStudio": "CID Studio",
+      "pricing": "Precios",
+      "legal": "Legal"
+    },
+    "header": {
+      "pricing": "Precios",
+      "solutions": "Soluciones",
+      "cidProduct": "CID Studio",
+      "solutionDetail": "Detalle de solución",
+      "login": "Acceso",
+      "register": "Registro",
+      "enterCid": "Entrar a CID",
+      "logout": "Salir"
     }
   },
   "landing": {
@@ -106,6 +132,57 @@
     },
     "footer": {
       "line": "AILinkCinema diagnostica necesidades reales y comercializa soluciones modulares o CID Studio para cine y audiovisual."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "AILinkCinema",
+      "subtitle": "Inicia sesión en tu cuenta",
+      "email": "Email",
+      "password": "Contraseña",
+      "forgot": "¿Has olvidado tu contraseña?",
+      "submit": "Iniciar sesión",
+      "processing": "Procesando...",
+      "noAccount": "¿No tienes cuenta?",
+      "requestAccess": "Solicitar acceso",
+      "backHome": "← Volver al inicio"
+    },
+    "register": {
+      "selectTitle": "Empieza con AILinkCinema",
+      "selectSubtitle": "Elige acceso a CID Studio, demo guiada o programa partner según tu necesidad.",
+      "alreadyHaveAccount": "Ya tengo cuenta",
+      "guidedDemo": "Demo guiada",
+      "cidProgram": "Programa CID",
+      "back": "← Volver",
+      "demoTitle": "Solicitar una demo guiada",
+      "demoSubtitle": "Sesión consultiva con el equipo para diagnosticar necesidades reales y proponer solución.",
+      "cidTitle": "Elige tu plan",
+      "cidSubtitle": "Selecciona el programa CID Studio que mejor se adapte a ti.",
+      "continue": "Continuar",
+      "changePlan": "← Cambiar plan"
+    }
+  },
+  "pages": {
+    "pricing": {
+      "customEyebrow": "Desarrollo a medida",
+      "ruleEyebrow": "Regla comercial base",
+      "ruleTitle": "Producto integral o módulo puntual según el momento del proyecto.",
+      "modulesEyebrow": "Precios por módulo",
+      "modulesTitle": "Todos los módulos con precio propio, todos integrables dentro de CID.",
+      "footerText": "Precios orientados a software premium para cine, configuración real de pipeline y soluciones especializadas.",
+      "footerNote": "AILinkCinema diferencia entre módulos, producto integral CID y desarrollo a medida."
+    },
+    "solutions": {
+      "heroEyebrow": "AILinkCinema / Soluciones",
+      "heroTitle": "Soluciones IA para cine y audiovisual",
+      "heroDescription": "Catálogo de soluciones IA para cine con foco en preproducción: CID, desglose de guion, storyboard, planificación, pitch, promo video y VFX.",
+      "baseEyebrow": "Oferta base",
+      "baseTitle": "CID es el producto principal, con aplicaciones especializadas que pueden operar por separado o integradas.",
+      "baseText": "Puedes contratar cada módulo por separado o integrarlos todos dentro de CID para un flujo completo.",
+      "futureTitle": "Laboratorios y futuros productos fuera de CID Core",
+      "futureText": "Doblaje, sound post y restoration se mantienen como líneas separadas para producto futuro y no forman parte del catálogo visible de CID Core.",
+      "footerText": "Producto principal, apps especializadas y desarrollo a medida para workflows cinematográficos reales.",
+      "footerNote": "Cada módulo puede contratarse por separado y todos pueden integrarse dentro de CID."
     }
   },
   "modules": {

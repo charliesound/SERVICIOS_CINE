@@ -4,8 +4,11 @@ import { useAuthStore, getPrimaryCIDTarget } from '@/store'
 import { Clapperboard, Mail, Lock, ArrowRight } from 'lucide-react'
 import { useSeo } from '@/hooks/useSeo'
 import { PasswordToggle } from '@/components/PasswordToggle'
+import LanguageToggle from '@/components/common/LanguageToggle'
+import { useLanguage } from '@/i18n'
 
 export default function LoginPage() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const { login, isAuthenticated, user } = useAuthStore()
   const [email, setEmail] = useState('')
@@ -60,14 +63,17 @@ export default function LoginPage() {
               <Clapperboard className="w-6 h-6 text-black" />
             </div>
           </Link>
-          <h1 className="text-2xl font-bold text-white tracking-tight">AILinkCinema</h1>
-          <p className="text-slate-400 text-sm mt-1">Inicia sesión en tu cuenta</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{t('auth.login.title')}</h1>
+          <p className="text-slate-400 text-sm mt-1">{t('auth.login.subtitle')}</p>
+          <div className="mt-4 flex justify-center">
+            <LanguageToggle />
+          </div>
         </div>
 
         <div className="card bg-dark-200/80 backdrop-blur-xl border border-white/5">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="label">Email</label>
+              <label className="label">{t('auth.login.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
@@ -82,7 +88,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="label">Contraseña</label>
+              <label className="label">{t('auth.login.password')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
@@ -103,7 +109,7 @@ export default function LoginPage() {
                   to="/forgot-password"
                   className="text-amber-400 hover:text-amber-300 text-xs transition-colors"
                 >
-                  ¿Has olvidado tu contraseña?
+                  {t('auth.login.forgot')}
                 </Link>
               </div>
             </div>
@@ -125,19 +131,19 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Procesando...
+                  {t('auth.login.processing')}
                 </span>
               ) : (
-                <>Iniciar sesión <ArrowRight className="w-4 h-4" /></>
+                <>{t('auth.login.submit')} <ArrowRight className="w-4 h-4" /></>
               )}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-slate-400 text-sm">
-              ¿No tienes cuenta?{' '}
+              {t('auth.login.noAccount')}{' '}
               <Link to="/register/select" className="text-amber-400 hover:text-amber-300 font-medium transition-colors">
-                Solicitar acceso
+                {t('auth.login.requestAccess')}
               </Link>
             </p>
           </div>
@@ -154,7 +160,7 @@ export default function LoginPage() {
             to="/"
             className="text-amber-400 hover:text-amber-300 text-sm transition-colors"
           >
-            ← Volver al inicio
+            {t('auth.login.backHome')}
           </Link>
         </div>
       </div>

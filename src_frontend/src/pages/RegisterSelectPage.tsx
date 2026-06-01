@@ -3,6 +3,8 @@ import { Clapperboard, ArrowRight, Film, Users, Star } from 'lucide-react'
 import { useAuthStore, getPrimaryCIDTarget } from '@/store'
 import { useEffect } from 'react'
 import { useSeo } from '@/hooks/useSeo'
+import LanguageToggle from '@/components/common/LanguageToggle'
+import { useLanguage } from '@/i18n'
 
 const programs = [
   {
@@ -35,6 +37,7 @@ const programs = [
 ]
 
 export default function RegisterSelectPage() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuthStore()
 
@@ -83,12 +86,15 @@ export default function RegisterSelectPage() {
              </div>
              <p className="text-xl font-bold text-white tracking-tight">AILinkCinema</p>
            </div>
-           <Link
-             to="/login"
-             className="text-sm text-gray-400 hover:text-white transition-colors"
-           >
-             Ya tengo cuenta
-           </Link>
+           <div className="flex items-center gap-3">
+             <LanguageToggle />
+             <Link
+               to="/login"
+               className="text-sm text-gray-400 hover:text-white transition-colors"
+             >
+               {t('auth.register.alreadyHaveAccount')}
+             </Link>
+           </div>
          </div>
        </nav>
 
@@ -97,10 +103,10 @@ export default function RegisterSelectPage() {
         <div className="w-full max-w-5xl">
           <div className="text-center mb-12">
               <h1 className="text-3xl md:text-4xl font-bold mb-4">
-                Empieza con AILinkCinema
+                {t('auth.register.selectTitle')}
               </h1>
               <p className="text-gray-400 text-lg max-w-xl mx-auto">
-                Si quieres entrar ahora a CID, usa Acceso CID. La demo guiada es una solicitud comercial.
+                {t('auth.register.selectSubtitle')}
               </p>
             </div>
 
@@ -143,9 +149,9 @@ export default function RegisterSelectPage() {
           </div>
 
           <p className="text-center text-gray-500 text-sm mt-8">
-            ¿Ya tienes cuenta?{' '}
+            {t('auth.register.alreadyHaveAccount')}{' '}
             <Link to="/login" className="text-amber-400 hover:text-amber-300 transition-colors">
-              Inicia sesión
+              {t('auth.login.submit')}
             </Link>
           </p>
         </div>

@@ -7,8 +7,10 @@ import { useUserPlanStatus } from '@/hooks/usePlans'
 import QueueStatusPanel from '@/components/QueueStatusPanel'
 import { DEMO_PROJECTS } from '@/data/demo'
 import { ArrowRight, Clock, CheckCircle, FolderOpen, Zap } from 'lucide-react'
+import { useLanguage } from '@/i18n'
 
 export default function Dashboard() {
+  const { t } = useLanguage()
   const { user } = useAuthStore()
   const { data: jobs } = useJobs({ user_id: user?.user_id })
   const { data: planStatus } = useUserPlanStatus(user?.user_id || '', user?.plan || 'free')
@@ -32,12 +34,12 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="heading-xl">Dashboard</h1>
-          <p className="text-slate-400 mt-1">Vista general de tus proyectos y del estado base del pipeline</p>
+          <h1 className="heading-xl">{t('internal.dashboard.title')}</h1>
+          <p className="text-slate-400 mt-1">{t('internal.dashboard.subtitle')}</p>
         </div>
         <Link to="/create" className="btn-primary flex items-center gap-2">
           <FolderOpen className="w-4 h-4" />
-          Crear proyecto
+          {t('internal.dashboard.createProject')}
         </Link>
       </div>
 
@@ -50,7 +52,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-2xl font-bold text-white">{projects.length}</p>
-               <p className="text-sm text-slate-400">Proyectos reales</p>
+               <p className="text-sm text-slate-400">{t('internal.dashboard.realProjects')}</p>
             </div>
           </div>
         </div>
@@ -62,7 +64,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-2xl font-bold text-white">{activeProjects.length}</p>
-              <p className="text-sm text-slate-400">Activos</p>
+              <p className="text-sm text-slate-400">{t('internal.dashboard.active')}</p>
             </div>
           </div>
         </div>
@@ -74,7 +76,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-2xl font-bold text-white">{deliveredProjects.length}</p>
-              <p className="text-sm text-slate-400">Entregados</p>
+              <p className="text-sm text-slate-400">{t('internal.dashboard.delivered')}</p>
             </div>
           </div>
         </div>
@@ -86,7 +88,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-2xl font-bold text-white">{portfolioBudget.toLocaleString()}€</p>
-              <p className="text-sm text-slate-400">Presupuesto</p>
+              <p className="text-sm text-slate-400">{t('internal.dashboard.budget')}</p>
             </div>
           </div>
         </div>
@@ -96,11 +98,11 @@ export default function Dashboard() {
         <div className="card bg-gradient-to-r from-amber-500/5 to-transparent border-amber-500/20">
           <div className="flex items-start justify-between gap-6">
             <div>
-              <p className="text-sm text-slate-400 mb-1">Plan y uso</p>
+              <p className="text-sm text-slate-400 mb-1">{t('internal.dashboard.planUsage')}</p>
               <h2 className="text-xl font-semibold text-white capitalize">{planStatus.plan}</h2>
               <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div className="rounded-xl bg-dark-300/50 p-3">
-                  <p className="text-slate-500">Proyectos</p>
+                  <p className="text-slate-500">{t('internal.common.projects')}</p>
                   <p className="text-white font-semibold">
                     {planStatus.projects_count}/{planStatus.max_projects === -1 ? '∞' : planStatus.max_projects}
                   </p>
@@ -112,13 +114,13 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="rounded-xl bg-dark-300/50 p-3">
-                  <p className="text-slate-500">Analisis</p>
+                  <p className="text-slate-500">{t('internal.common.analysis')}</p>
                   <p className="text-white font-semibold">
                     {planStatus.analyses_count}/{planStatus.max_analyses === -1 ? '∞' : planStatus.max_analyses}
                   </p>
                 </div>
                 <div className="rounded-xl bg-dark-300/50 p-3">
-                  <p className="text-slate-500">Storyboards</p>
+                  <p className="text-slate-500">{t('internal.common.storyboards')}</p>
                   <p className="text-white font-semibold">
                     {planStatus.storyboards_count}/{planStatus.max_storyboards === -1 ? '∞' : planStatus.max_storyboards}
                   </p>
@@ -127,15 +129,15 @@ export default function Dashboard() {
             </div>
 
             <div className="text-right min-w-[180px]">
-              <p className="text-xs uppercase tracking-wider text-slate-500 mb-2">Export</p>
+              <p className="text-xs uppercase tracking-wider text-slate-500 mb-2">{t('internal.dashboard.export')}</p>
               <p className={`text-sm font-medium ${planStatus.export_json ? 'text-green-400' : 'text-amber-400'}`}>
-                {planStatus.export_json ? 'JSON incluido' : 'Upgrade requerido'}
+                {planStatus.export_json ? t('internal.dashboard.jsonIncluded') : t('internal.dashboard.upgradeRequired')}
               </p>
               <p className={`mt-1 text-xs font-medium ${planStatus.export_zip ? 'text-green-400' : 'text-slate-500'}`}>
-                {planStatus.export_zip ? 'ZIP comercial incluido' : 'ZIP disponible desde planes con export'}
+                {planStatus.export_zip ? t('internal.dashboard.zipIncluded') : t('internal.dashboard.zipFromExportPlans')}
               </p>
               <Link to="/plans" className="btn-secondary mt-4 inline-flex items-center gap-2 text-sm">
-                Ver planes <ArrowRight className="w-4 h-4" />
+                {t('internal.common.viewPlans')} <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -145,9 +147,9 @@ export default function Dashboard() {
       {/* Projects foundation */}
       <div className="card card-hover">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="heading-md">Proyectos Recientes</h2>
+          <h2 className="heading-md">{t('internal.dashboard.recentProjects')}</h2>
           <Link to="/history" className="btn-ghost flex items-center gap-1 text-sm">
-            Ver historial <ArrowRight className="w-4 h-4" />
+            {t('internal.dashboard.viewHistory')} <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
@@ -185,9 +187,9 @@ export default function Dashboard() {
       {/* Queue Panel */}
       <div className="card card-hover">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="heading-md">Queue Status</h2>
+          <h2 className="heading-md">{t('internal.dashboard.queueStatus')}</h2>
           <Link to="/queue" className="btn-ghost flex items-center gap-1 text-sm">
-            View all <ArrowRight className="w-4 h-4" />
+            {t('internal.common.viewAll')} <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
         <QueueStatusPanel />
@@ -197,9 +199,9 @@ export default function Dashboard() {
       {recentJobs.length > 0 && (
         <div className="card card-hover">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="heading-md">Recent Projects</h2>
+            <h2 className="heading-md">{t('internal.dashboard.recentJobs')}</h2>
             <Link to="/queue" className="btn-ghost flex items-center gap-1 text-sm">
-              View all <ArrowRight className="w-4 h-4" />
+              {t('internal.common.viewAll')} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 

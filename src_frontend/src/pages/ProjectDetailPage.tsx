@@ -20,6 +20,7 @@ import { StoryboardTracePanel } from '@/components/storyboard/StoryboardTracePan
 import type { ScriptUploadResult, StoryboardSceneCandidate, StoryboardSequence, StoryboardShot } from '@/types/storyboard'
 import ConceptArtDryRunPanel from '@/components/concept-art/ConceptArtDryRunPanel'
 import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/storyboardText'
+import { useLanguage } from '@/i18n'
 
 type Tab = 'script' | 'analysis' | 'storyboard' | 'concept-art' | 'history'
 
@@ -186,6 +187,7 @@ function dedupeList(items: unknown): string {
 }
 
 export default function ProjectDetailPage() {
+  const { t } = useLanguage()
   const { projectId } = useParams<{ projectId: string }>()
   const { user } = useAuthStore()
   const { data: planStatus } = useUserPlanStatus(user?.user_id || '', user?.plan || 'free')
@@ -1008,24 +1010,24 @@ export default function ProjectDetailPage() {
   }, [projectId, jobs])
 
   const TABS: { key: Tab; label: string; count?: number | null }[] = [
-    { key: 'script', label: 'Guion' },
+    { key: 'script', label: t('internal.projectDetail.tabs.script') },
     {
       key: 'analysis',
-      label: 'Analisis',
+      label: t('internal.projectDetail.tabs.analysis'),
       count: analysisData ? 1 : null,
     },
     {
       key: 'storyboard',
-      label: 'Storyboard',
+      label: t('internal.projectDetail.tabs.storyboard'),
       count: storyboardSceneCount,
     },
     {
       key: 'concept-art',
-      label: 'Concept Art',
+      label: t('internal.projectDetail.tabs.conceptArt'),
     },
     {
       key: 'history',
-      label: 'Historial',
+      label: t('internal.projectDetail.tabs.history'),
       count: jobs.length > 0 ? jobs.length : null,
     },
   ]
@@ -1038,7 +1040,7 @@ export default function ProjectDetailPage() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
-          <span className="text-sm">Cargando proyecto...</span>
+          <span className="text-sm">{t('internal.common.loadingProject')}</span>
         </div>
       </div>
     )
@@ -1047,8 +1049,8 @@ export default function ProjectDetailPage() {
   if (!project) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-400">Proyecto no encontrado.</p>
-        <Link to="/projects" className="text-amber-400 text-sm mt-2 inline-block">← Volver a proyectos</Link>
+        <p className="text-gray-400">{t('internal.common.projectNotFound')}</p>
+        <Link to="/projects" className="text-amber-400 text-sm mt-2 inline-block">{t('internal.common.backToProjects')}</Link>
       </div>
     )
   }
@@ -1066,9 +1068,9 @@ export default function ProjectDetailPage() {
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{project.name}</h1>
           <p className="text-gray-400 text-sm mt-0.5">
-            {project.description || 'Sin descripcion'}
+            {project.description || t('internal.common.noDescription')}
             {project.script_text && (
-              <span className="ml-2 text-green-400">· Guion cargado</span>
+              <span className="ml-2 text-green-400">· {t('internal.common.scriptLoaded')}</span>
             )}
           </p>
         </div>
@@ -1079,7 +1081,7 @@ export default function ProjectDetailPage() {
             className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-40"
           >
             <Download className="w-4 h-4" />
-            {exportingFormat === 'json' ? 'Exportando JSON...' : 'Export JSON'}
+            {exportingFormat === 'json' ? t('internal.projectDetail.exportingJson') : t('internal.projectDetail.exportJson')}
           </button>
           <button
             onClick={() => handleExport('zip')}
@@ -1087,7 +1089,7 @@ export default function ProjectDetailPage() {
             className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-40"
           >
               <Download className="w-4 h-4" />
-              {exportingFormat === 'zip' ? 'Empaquetando ZIP...' : 'Export ZIP'}
+              {exportingFormat === 'zip' ? t('internal.projectDetail.packingZip') : t('internal.projectDetail.exportZip')}
           </button>
           <Link
             to={`/projects/${projectId}/funding`}
@@ -1101,7 +1103,7 @@ export default function ProjectDetailPage() {
             className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2"
           >
             <FolderOpen className="w-4 h-4" />
-            Dashboard
+            {t('internal.projectDetail.dashboard')}
           </Link>
           <Link
             to={`/projects/${projectId}/script-analysis`}
@@ -1122,14 +1124,14 @@ export default function ProjectDetailPage() {
             className="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-medium transition-colors flex items-center gap-2"
           >
             <Pencil className="w-4 h-4" />
-            Editar Storyboard
+            {t('internal.projectDetail.editStoryboard')}
           </Link>
           <Link
             to={`/projects/${projectId}/editorial`}
             className="px-4 py-2 text-sm border border-emerald-500/20 hover:border-emerald-400/30 text-emerald-300 rounded-xl transition-colors flex items-center gap-2"
           >
             <Film className="w-4 h-4" />
-            Premontaje / Assembly
+            {t('internal.projectDetail.assembly')}
           </Link>
         </div>
       </div>
@@ -1140,11 +1142,11 @@ export default function ProjectDetailPage() {
             <div>
               <div className="flex items-center gap-2 mb-2 text-sm text-slate-400">
                 <Crown className="w-4 h-4 text-amber-400" />
-                Plan y uso
+                {t('internal.projectDetail.planUsage')}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div>
-                  <p className="text-slate-500">Proyectos</p>
+                  <p className="text-slate-500">{t('internal.common.projects')}</p>
                   <p className="text-white font-semibold">{planStatus.projects_count}/{planStatus.max_projects === -1 ? '∞' : planStatus.max_projects}</p>
                 </div>
                 <div>
@@ -1152,25 +1154,25 @@ export default function ProjectDetailPage() {
                   <p className="text-white font-semibold">{planStatus.jobs_count}/{planStatus.max_total_jobs === -1 ? '∞' : planStatus.max_total_jobs}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Analisis</p>
+                  <p className="text-slate-500">{t('internal.common.analysis')}</p>
                   <p className="text-white font-semibold">{planStatus.analyses_count}/{planStatus.max_analyses === -1 ? '∞' : planStatus.max_analyses}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Storyboards</p>
+                  <p className="text-slate-500">{t('internal.common.storyboards')}</p>
                   <p className="text-white font-semibold">{planStatus.storyboards_count}/{planStatus.max_storyboards === -1 ? '∞' : planStatus.max_storyboards}</p>
                 </div>
               </div>
             </div>
             <div className="text-right">
               <p className={`text-sm font-medium ${planStatus.export_json ? 'text-green-400' : 'text-amber-400'}`}>
-                {planStatus.export_json ? 'Export JSON incluido' : 'Upgrade para exportar'}
+                {planStatus.export_json ? t('internal.projectDetail.exportJsonIncluded') : t('internal.projectDetail.upgradeExport')}
               </p>
               <p className={`mt-1 text-xs font-medium ${planStatus.export_zip ? 'text-green-400' : 'text-slate-500'}`}>
-                {planStatus.export_zip ? 'ZIP comercial disponible' : 'ZIP disponible en planes con export completo'}
+                {planStatus.export_zip ? t('internal.projectDetail.zipAvailable') : t('internal.projectDetail.zipFullPlan')}
               </p>
               {(planStatus.recommended_upgrade || !planStatus.export_json) && (
                 <Link to="/plans" className="mt-2 inline-flex items-center gap-1 text-sm text-amber-400 hover:text-amber-300">
-                  Upgrade recomendado: {(planStatus.recommended_upgrade || 'creator')}
+                  {t('internal.projectDetail.recommendedUpgrade')}: {(planStatus.recommended_upgrade || 'creator')}
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               )}
@@ -1220,8 +1222,8 @@ export default function ProjectDetailPage() {
               {successMsg}
             </div>
           )}
-          <ActionProgressPanel progress={analysisProgress} onRetry={handleAnalyzeScript} retryLabel="Reintentar análisis" />
-          <ActionProgressPanel progress={storyboardProgress} onRetry={handleGenerateStoryboard} retryLabel="Reintentar storyboard" />
+          <ActionProgressPanel progress={analysisProgress} onRetry={handleAnalyzeScript} retryLabel={t('internal.projectDetail.retryAnalysis')} />
+          <ActionProgressPanel progress={storyboardProgress} onRetry={handleGenerateStoryboard} retryLabel={t('internal.projectDetail.retryStoryboard')} />
         </div>
       )}
 
@@ -1236,8 +1238,8 @@ export default function ProjectDetailPage() {
                   <FileText className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Editor de guion</h3>
-                  <p className="text-gray-400 text-xs">Pega o edita el texto del guion</p>
+                  <h3 className="font-semibold">{t('internal.projectDetail.scriptEditor')}</h3>
+                  <p className="text-gray-400 text-xs">{t('internal.projectDetail.scriptEditorHelp')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -1255,7 +1257,7 @@ export default function ProjectDetailPage() {
                   className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Upload className="w-4 h-4" />
-                  {isUploadingScript ? 'Subiendo...' : 'Subir archivo de guion'}
+                  {isUploadingScript ? t('internal.projectDetail.uploading') : t('internal.projectDetail.uploadScriptFile')}
                 </button>
                 {saveMsg && (
                   <span className="text-green-400 text-sm flex items-center gap-1">
@@ -1270,7 +1272,7 @@ export default function ProjectDetailPage() {
                   className="px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Save className="w-4 h-4" />
-                  {isSaving ? 'Guardando...' : 'Guardar guion'}
+                  {isSaving ? t('internal.projectDetail.saving') : t('internal.projectDetail.saveScript')}
                 </button>
               </div>
             </div>
@@ -1357,7 +1359,7 @@ export default function ProjectDetailPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-semibold text-sm">
-                    {isAnalyzing ? 'Analizando...' : 'Analizar guion'}
+                    {isAnalyzing ? t('internal.projectDetail.analyzing') : t('internal.projectDetail.analyzeScript')}
                   </span>
                 </div>
                 <p className="text-gray-400 text-xs leading-relaxed">
@@ -1385,7 +1387,7 @@ export default function ProjectDetailPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-semibold text-sm">
-                    {isStoryboarding ? 'Generando...' : 'Generar storyboard'}
+                    {isStoryboarding ? t('internal.projectDetail.generating') : t('internal.projectDetail.generateStoryboard')}
                   </span>
                 </div>
                 <p className="text-gray-400 text-xs leading-relaxed">

@@ -31,6 +31,7 @@ import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/sto
 import { deriveCharacterBreakdown } from '@/utils/characterBreakdown'
 import { CharacterBreakdownPanel } from '@/components/storyboard/CharacterBreakdownPanel'
 import { CharacterBiblePanel } from '@/components/storyboard/CharacterBiblePanel'
+import { useLanguage } from '@/i18n'
 
 function toDirtyShot(shot: StoryboardShot): DirtyShot {
   return { ...shot, isDirty: false }
@@ -77,6 +78,7 @@ function shouldDisplayShotImage(shot: StoryboardShot): boolean {
 
 
 export default function StoryboardBuilderPage() {
+  const { t } = useLanguage()
   const { projectId } = useParams<{ projectId: string }>()
   const storyboardLocale = getStoryboardUiLocale()
   const [shots, setShots] = useState<DirtyShot[]>([])
@@ -661,7 +663,7 @@ export default function StoryboardBuilderPage() {
       <div className="flex items-center justify-center h-96">
         <div className="flex items-center gap-3 text-amber-400">
           <Loader2 className="w-6 h-6 animate-spin" />
-          <span>Loading storyboard...</span>
+          <span>{t('internal.storyboardBuilder.loading')}</span>
         </div>
       </div>
     )
@@ -681,17 +683,17 @@ export default function StoryboardBuilderPage() {
             <div>
               <h1 className="text-2xl font-bold text-white flex items-center gap-3">
                 <Film className="w-6 h-6 text-amber-400" />
-                Storyboard Builder
+                {t('internal.storyboardBuilder.title')}
               </h1>
               <p className="text-gray-400 text-sm mt-1">
                 {filteredShots.length} shot{filteredShots.length !== 1 ? 's' : ''}
-                {dirtyCount > 0 && <span className="text-amber-400 ml-2">• {dirtyCount} unsaved</span>}
+                {dirtyCount > 0 && <span className="text-amber-400 ml-2">• {dirtyCount} {t('internal.storyboardBuilder.unsaved')}</span>}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-              <label htmlFor="storyboard-style" className="text-xs text-slate-300">Estilo visual storyboard</label>
+              <label htmlFor="storyboard-style" className="text-xs text-slate-300">{t('internal.storyboardBuilder.styleLabel')}</label>
               <select
                 id="storyboard-style"
                 value={stylePreset}
@@ -708,16 +710,16 @@ export default function StoryboardBuilderPage() {
             </div>
             <button onClick={() => { fetchShots(); fetchSequences() }}
               className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors">
-              <RefreshCw className="w-4 h-4" /> Refresh
+              <RefreshCw className="w-4 h-4" /> {t('internal.storyboardBuilder.refresh')}
             </button>
             <button onClick={handleAddShot} disabled={isSaving}
               className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors disabled:opacity-50">
-              <Plus className="w-4 h-4" /> Add Shot
+              <Plus className="w-4 h-4" /> {t('internal.storyboardBuilder.addShot')}
             </button>
             <button onClick={handleSave} disabled={isSaving || dirtyCount === 0}
               className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Guardar Storyboard
+              {t('internal.storyboardBuilder.saveStoryboard')}
             </button>
           </div>
         </div>
@@ -725,10 +727,10 @@ export default function StoryboardBuilderPage() {
         {/* Tab Navigation */}
         <div className="flex gap-1 border-b border-white/10 pb-1">
           {[
-            { id: 'analyze' as const, label: '1. Analizar guion', icon: FileText },
-            { id: 'sequences' as const, label: '2. Secuencias', icon: ListChecks },
-            { id: 'characters' as const, label: 'Personajes', icon: Users },
-            { id: 'shots' as const, label: '3. Planos generados', icon: Film },
+            { id: 'analyze' as const, label: t('internal.storyboardBuilder.tabs.analyze'), icon: FileText },
+            { id: 'sequences' as const, label: t('internal.storyboardBuilder.tabs.sequences'), icon: ListChecks },
+            { id: 'characters' as const, label: t('internal.storyboardBuilder.tabs.characters'), icon: Users },
+            { id: 'shots' as const, label: t('internal.storyboardBuilder.tabs.shots'), icon: Film },
           ].map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all ${
@@ -746,9 +748,9 @@ export default function StoryboardBuilderPage() {
           <div className="space-y-6">
             {/* Script Upload Section */}
             <section className="card bg-dark-200/80 border border-white/5 p-6 space-y-4">
-              <h2 className="text-lg font-semibold text-white">Subir guion</h2>
+              <h2 className="text-lg font-semibold text-white">{t('internal.storyboardBuilder.uploadScript')}</h2>
               <p className="text-sm text-slate-400">
-                Sube un archivo de guion en formato PDF, DOCX, TXT o MD.
+                {t('internal.storyboardBuilder.uploadScriptHelp')}
               </p>
               <div className="flex items-center gap-3">
                 <input
@@ -764,7 +766,7 @@ export default function StoryboardBuilderPage() {
                   className="flex items-center gap-2 px-4 py-2 text-sm border border-white/10 hover:border-white/20 rounded-xl transition-colors disabled:opacity-40"
                 >
                   <Upload className="w-4 h-4" />
-                  {isUploadingScript ? 'Subiendo...' : 'Seleccionar archivo'}
+                  {isUploadingScript ? t('internal.projectDetail.uploading') : t('internal.storyboardBuilder.selectFile')}
                 </button>
                 {selectedScriptFile && (
                   <span className="text-sm text-slate-300 truncate max-w-[300px]">{selectedScriptFile.name}</span>
@@ -774,7 +776,7 @@ export default function StoryboardBuilderPage() {
                 <button onClick={handleUploadScript} disabled={isUploadingScript}
                   className="inline-flex items-center gap-2 px-6 py-2.5 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40 text-sm">
                   {isUploadingScript ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  {isUploadingScript ? 'Subiendo guion...' : 'Subir guion'}
+                  {isUploadingScript ? t('internal.storyboardBuilder.uploadingScript') : t('internal.storyboardBuilder.uploadScript')}
                 </button>
               )}
               {scriptUploadResult && (
@@ -814,15 +816,14 @@ export default function StoryboardBuilderPage() {
             </section>
 
             <section className="card bg-dark-200/80 border border-white/5 p-6 space-y-4">
-              <h2 className="text-lg font-semibold text-white">Análisis del guion completo</h2>
+              <h2 className="text-lg font-semibold text-white">{t('internal.storyboardBuilder.fullScriptAnalysis')}</h2>
               <p className="text-sm text-slate-400">
-                Analiza el guion completo para generar sinopsis, personajes, localizaciones y mapa de secuencias.
-                Después podrás seleccionar una secuencia para planificar y generar su storyboard.
+                {t('internal.storyboardBuilder.fullScriptAnalysisHelp')}
               </p>
               <button onClick={handleAnalyzeFullScript} disabled={isAnalyzing}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40">
                 {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-5 h-5" />}
-                {isAnalyzing ? 'Analizando guion completo...' : 'Analizar guion completo'}
+                {isAnalyzing ? t('internal.storyboardBuilder.analyzingFullScript') : t('internal.storyboardBuilder.analyzeFullScript')}
               </button>
             </section>
 
@@ -923,7 +924,7 @@ export default function StoryboardBuilderPage() {
 
             {/* Template section */}
             <section className="card bg-dark-200/80 border border-white/5 p-6 space-y-4">
-              <h2 className="text-lg font-semibold text-white">Selecciona una secuencia</h2>
+              <h2 className="text-lg font-semibold text-white">{t('internal.storyboardBuilder.selectSequence')}</h2>
 
               {/* Sequence cards grid */}
               <div className="grid gap-3">
@@ -994,7 +995,7 @@ export default function StoryboardBuilderPage() {
                     disabled={isGenerating || isEstimatingCredits}
                     className="flex items-center gap-2 px-6 py-3 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40">
                     {isGenerating || isEstimatingCredits ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                    {isGenerating ? 'Generando storyboard...' : isEstimatingCredits ? 'Estimando créditos...' : 'Generar storyboard de esta secuencia'}
+                    {isGenerating ? t('internal.projectDetail.generating') : isEstimatingCredits ? 'Estimando créditos...' : t('internal.storyboardBuilder.generateSequenceStoryboard')}
                   </button>
                 </div>
               </section>
@@ -1016,7 +1017,7 @@ export default function StoryboardBuilderPage() {
             <section className="card bg-dark-200/80 border border-white/5 p-6 space-y-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Seleccionar secuencia</h2>
+                  <h2 className="text-lg font-semibold text-white">{t('internal.storyboardBuilder.selectSequence')}</h2>
                   <p className="text-sm text-slate-400 mt-1">
                     {sequences.length} secuencias disponibles · {selectorScenes.length} escenas detectadas · {sequenceCharacters.length} personajes
                   </p>
@@ -1036,7 +1037,7 @@ export default function StoryboardBuilderPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10"
                   >
                     <ListChecks className="w-4 h-4" />
-                    Seleccionar secuencia
+                    {t('internal.storyboardBuilder.selectSequence')}
                   </button>
                   <button
                     type="button"
@@ -1045,7 +1046,7 @@ export default function StoryboardBuilderPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-300 hover:bg-cyan-500/20 disabled:opacity-40"
                   >
                     {isPlanningSequence ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                    Planificar storyboard
+                    {t('internal.storyboardBuilder.planStoryboard')}
                   </button>
                   <button
                     type="button"
@@ -1054,7 +1055,7 @@ export default function StoryboardBuilderPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/20 disabled:opacity-40"
                   >
                     {isGenerating || isEstimatingCredits ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    Generar storyboard de esta secuencia
+                    {t('internal.storyboardBuilder.generateSequenceStoryboard')}
                   </button>
                 </div>
               </div>
@@ -1067,14 +1068,14 @@ export default function StoryboardBuilderPage() {
                   className="w-4 h-4 rounded border-cyan-500/50 text-cyan-500 focus:ring-cyan-500/30"
                 />
                 <div>
-                  <p className="font-medium text-white">Renderizar imágenes al terminar</p>
+                  <p className="font-medium text-white">{t('internal.storyboardBuilder.renderOnComplete')}</p>
                   <p className="text-xs text-slate-400">Si está activado, CID encolará render still al finalizar la generación del storyboard.</p>
                 </div>
               </label>
 
               {sequences.length === 0 ? (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200">
-                  No hay secuencias disponibles. Analiza el guion completo para construir el mapa narrativo.
+                  {t('internal.storyboardBuilder.noSequences')}
                 </div>
               ) : (
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -1198,14 +1199,14 @@ export default function StoryboardBuilderPage() {
             <section className="card bg-dark-200/80 border border-white/5 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Planos generados</h2>
+                  <h2 className="text-lg font-semibold text-white">{t('internal.storyboardBuilder.generatedShots')}</h2>
                   <p className="text-sm text-slate-400">{filteredShots.length} planos</p>
                 </div>
                 <div className="flex gap-2">
                   {selectedSequenceId && (
                     <button onClick={() => handleGenerate(true)} disabled={isGenerating}
                       className="flex items-center gap-2 px-4 py-2 text-sm bg-white/10 border border-white/20 text-white rounded-xl hover:bg-white/20 transition-all">
-                      <RefreshCw className="w-4 h-4" /> Regenerar secuencia
+                      <RefreshCw className="w-4 h-4" /> {t('internal.storyboardBuilder.regenerateSequence')}
                     </button>
                   )}
                   <button
@@ -1215,11 +1216,11 @@ export default function StoryboardBuilderPage() {
                     className="px-3 py-2 text-xs border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 rounded-xl hover:bg-cyan-500/20 transition-all disabled:opacity-50 inline-flex items-center gap-1"
                   >
                     <Wrench className="w-3 h-3" />
-                    {isRepairing ? 'Reparando...' : 'Reparar miniaturas'}
+                    {isRepairing ? 'Reparando...' : t('internal.storyboardBuilder.repairThumbnails')}
                   </button>
                   <select className="input text-sm w-auto" value={selectedSequenceId}
                     onChange={(e) => setSelectedSequenceId(e.target.value)}>
-                    <option value="">Todas las secuencias</option>
+                    <option value="">{t('internal.storyboardBuilder.allSequences')}</option>
                     {sequences.map((s) => (
                       <option key={s.sequence_id} value={s.sequence_id}>Secuencia {s.sequence_number} — {s.title}</option>
                     ))}
@@ -1358,8 +1359,8 @@ export default function StoryboardBuilderPage() {
             {filteredShots.length === 0 ? (
               <div className="text-center py-20">
                 <Film className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-white mb-2">No shots yet</h2>
-                <p className="text-gray-400 mb-6">Selecciona una secuencia y genera su storyboard.</p>
+                <h2 className="text-xl font-semibold text-white mb-2">{t('internal.storyboardBuilder.noShotsTitle')}</h2>
+                <p className="text-gray-400 mb-6">{t('internal.storyboardBuilder.noShotsText')}</p>
               </div>
             ) : (
               <div className="space-y-6">

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, CheckCircle2, Clapperboard, Film, Languages, Layers3, PlayCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Film, Languages, Layers3, PlayCircle } from 'lucide-react'
 import LanguageToggle from '@/components/common/LanguageToggle'
 import { t, useLanguage } from '@/i18n'
 import { useSeo } from '@/hooks/useSeo'
@@ -61,6 +61,14 @@ function ModuleCard({ title, description, badge }: { title: string; description:
   )
 }
 
+function VisualCard({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
+  return (
+    <div className={`overflow-hidden rounded-3xl border border-white/10 bg-[#0d1117] shadow-[0_24px_80px_rgba(2,6,23,0.24)] ${className}`}>
+      <img src={src} alt={alt} className="h-full w-full object-cover" />
+    </div>
+  )
+}
+
 export default function LandingPage() {
   const { language } = useLanguage()
 
@@ -108,9 +116,11 @@ export default function LandingPage() {
       <header className="sticky top-0 z-40 border-b border-white/8 bg-[#07090d]/85 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-8">
           <Link to="/" className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 text-black shadow-[0_0_36px_rgba(245,158,11,0.22)]">
-              <Clapperboard className="h-6 w-6" />
-            </div>
+            <img
+              src="/assets/ailinkcinema-logo.png"
+              alt={t('common.brand.name')}
+              className="h-12 w-12 rounded-2xl object-cover shadow-[0_0_36px_rgba(245,158,11,0.22)]"
+            />
             <div>
               <p className="text-xl font-bold tracking-tight text-white">{t('common.brand.name')}</p>
               <p className="text-[11px] uppercase tracking-[0.28em] text-amber-300/70">{t('common.brand.suite')}</p>
@@ -162,21 +172,17 @@ export default function LandingPage() {
               <p className="mt-6 max-w-2xl text-sm leading-7 text-slate-400">{t('landing.hero.support')}</p>
             </div>
 
-            <div className="relative z-10 rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.3)]">
-              <div className="flex items-center gap-3 text-amber-300">
-                <Languages className="h-5 w-5" />
-                <span className="text-sm font-semibold uppercase tracking-[0.24em]">{t('common.language.toggleLabel')}</span>
-              </div>
-              <p className="mt-4 text-3xl font-semibold text-white">{language.toUpperCase()}</p>
-              <p className="mt-3 leading-7 text-slate-300">{t('landing.demo.body')}</p>
-              <div className="mt-8 grid gap-4">
-                <div className="rounded-2xl border border-white/8 bg-[#0d1117] p-4">
-                  <p className="text-sm font-semibold text-white">{t('modules.editorialNleBridge.title')}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">{t('modules.editorialNleBridge.nles')}</p>
-                </div>
-                <div className="rounded-2xl border border-white/8 bg-[#0d1117] p-4">
-                  <p className="text-sm font-semibold text-white">{t('landing.cidSuite.title')}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">{t('landing.cidSuite.point3')}</p>
+            <div className="relative z-10 grid gap-4">
+              <VisualCard src="/landing-media/hero-cinematic.webp" alt={t('common.brand.name')} className="aspect-[4/4.5]" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <VisualCard src="/assets/cid-storyboard-1.png" alt={t('modules.storyboardStudio.title')} className="aspect-[4/3]" />
+                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_30px_100px_rgba(0,0,0,0.3)]">
+                  <div className="flex items-center gap-3 text-amber-300">
+                    <Languages className="h-5 w-5" />
+                    <span className="text-sm font-semibold uppercase tracking-[0.24em]">{t('common.language.toggleLabel')}</span>
+                  </div>
+                  <p className="mt-4 text-3xl font-semibold text-white">{language.toUpperCase()}</p>
+                  <p className="mt-3 text-sm leading-7 text-slate-300">{t('modules.editorialNleBridge.nles')}</p>
                 </div>
               </div>
             </div>
@@ -209,6 +215,11 @@ export default function LandingPage() {
                 badge={key === 'editorialNleBridge' ? t('landing.standalone.badge') : undefined}
               />
             ))}
+          </div>
+          <div className="mt-8 grid gap-5 lg:grid-cols-3">
+            <VisualCard src="/landing-media/landing-storyboard-preview.webp" alt={t('modules.storyboardStudio.title')} className="aspect-[16/10]" />
+            <VisualCard src="/landing-media/landing-cid-orchestration.webp" alt={t('common.brand.suite')} className="aspect-[16/10]" />
+            <VisualCard src="/landing-media/landing-producers-studios.webp" alt={t('landing.useCases.case1Title')} className="aspect-[16/10]" />
           </div>
         </Section>
 
@@ -244,11 +255,14 @@ export default function LandingPage() {
                 ))}
               </ul>
             </div>
-            <div className="rounded-3xl border border-amber-400/20 bg-amber-400/10 p-8">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-amber-100">{t('landing.cidSuite.includedLabel')}</p>
-              <h3 className="mt-4 text-2xl font-semibold text-white">{t('modules.editorialNleBridge.title')}</h3>
-              <p className="mt-4 leading-7 text-amber-50/90">{t('modules.editorialNleBridge.included')}</p>
-              <p className="mt-4 leading-7 text-amber-50/90">{t('modules.editorialNleBridge.description')}</p>
+            <div className="space-y-6">
+              <div className="rounded-3xl border border-amber-400/20 bg-amber-400/10 p-8">
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-amber-100">{t('landing.cidSuite.includedLabel')}</p>
+                <h3 className="mt-4 text-2xl font-semibold text-white">{t('modules.editorialNleBridge.title')}</h3>
+                <p className="mt-4 leading-7 text-amber-50/90">{t('modules.editorialNleBridge.included')}</p>
+                <p className="mt-4 leading-7 text-amber-50/90">{t('modules.editorialNleBridge.description')}</p>
+              </div>
+              <VisualCard src="/landing-media/landing-delivery-final.webp" alt={t('modules.editorialNleBridge.title')} className="aspect-[16/10]" />
             </div>
           </div>
         </Section>
@@ -258,6 +272,10 @@ export default function LandingPage() {
             {useCases.map((item) => (
               <FeatureCard key={item.title} title={item.title} body={item.body} />
             ))}
+          </div>
+          <div className="mt-8 grid gap-5 md:grid-cols-2">
+            <VisualCard src="/landing-media/landing-ai-reasoning.webp" alt={t('landing.useCases.case2Title')} className="aspect-[16/10]" />
+            <VisualCard src="/landing-media/landing-comfyui-generation.webp" alt={t('modules.comfyuiWorkflow.title')} className="aspect-[16/10]" />
           </div>
         </Section>
 
@@ -288,6 +306,7 @@ export default function LandingPage() {
 
             <div className="rounded-3xl border border-white/10 bg-[#0e1118] p-8">
               <div className="space-y-4">
+                <VisualCard src="/landing-media/landing-hero-main.webp" alt={t('common.cta.requestDemo')} className="mb-4 aspect-[16/10]" />
                 <Link to="/pricing" className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-amber-400 px-6 py-4 font-semibold text-black transition-transform hover:-translate-y-0.5">
                   {t('common.cta.requestDemo')}
                   <ArrowRight className="h-4 w-4" />

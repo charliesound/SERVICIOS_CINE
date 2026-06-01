@@ -3,6 +3,14 @@ import { ArrowRight, CheckCircle2, Film, Languages, Layers3, PlayCircle } from '
 import LanguageToggle from '@/components/common/LanguageToggle'
 import { t, useLanguage } from '@/i18n'
 import { useSeo } from '@/hooks/useSeo'
+import { useAuthStore } from '@/store'
+import {
+  getCidStudioAccessRoute,
+  getCidStudioCheckoutRoute,
+  getModuleAccessRoute,
+  getModuleCheckoutRoute,
+} from '@/utils/productAccess'
+import type { UserProfile } from '@/types'
 
 type ModuleItem = {
   key:
@@ -45,9 +53,21 @@ function FeatureCard({ title, body }: FeatureCardProps) {
   )
 }
 
-function ModuleCard({ title, description, badge }: { title: string; description: string; badge?: string }) {
+function ModuleCard({
+  moduleKey,
+  title,
+  description,
+  badge,
+  user,
+}: {
+  moduleKey: string
+  title: string
+  description: string
+  badge?: string
+  user: UserProfile | null
+}) {
   return (
-    <article className="rounded-3xl border border-white/10 bg-[#0e1118] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.24)]">
+    <article id={`solution-${moduleKey}`} className="rounded-3xl border border-white/10 bg-[#0e1118] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.24)]">
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-xl font-semibold text-white">{title}</h3>
         {badge ? (
@@ -57,6 +77,17 @@ function ModuleCard({ title, description, badge }: { title: string; description:
         ) : null}
       </div>
       <p className="mt-4 leading-7 text-slate-300">{description}</p>
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <a href={`#solution-${moduleKey}`} className="inline-flex items-center justify-center rounded-full border border-white/12 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/6">
+          {t('common.cta.viewSolution')}
+        </a>
+        <Link to={getModuleCheckoutRoute(moduleKey)} className="inline-flex items-center justify-center rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5">
+          {t('common.cta.hireSolution')}
+        </Link>
+        <Link to={getModuleAccessRoute(user, moduleKey)} className="inline-flex items-center justify-center rounded-full border border-amber-400/30 px-4 py-2 text-sm font-semibold text-amber-100 transition-colors hover:bg-amber-400/10">
+          {t('common.cta.access')}
+        </Link>
+      </div>
     </article>
   )
 }
@@ -71,6 +102,7 @@ function VisualCard({ src, alt, className = '' }: { src: string; alt: string; cl
 
 export default function LandingPage() {
   const { language } = useLanguage()
+  const user = useAuthStore((state) => state.user)
 
   useSeo({
     title: `${t('common.brand.name')} | ${t('landing.hero.title')}`,
@@ -147,7 +179,7 @@ export default function LandingPage() {
 
       <main>
         <section className="relative overflow-hidden border-b border-white/8 py-24 md:py-32">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.16),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.14),transparent_26%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.2),transparent_32%),radial-gradient(circle_at_82%_18%,rgba(59,130,246,0.16),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.035),transparent_42%)]" />
           <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 md:px-8 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-200">
@@ -168,6 +200,9 @@ export default function LandingPage() {
                 <a href="#modules" className="inline-flex items-center gap-2 rounded-full border border-white/12 px-6 py-3 font-semibold text-white transition-colors hover:bg-white/6">
                   {t('landing.hero.secondary')}
                 </a>
+                <Link to={getCidStudioAccessRoute(user)} className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 px-6 py-3 font-semibold text-amber-100 transition-colors hover:bg-amber-400/10">
+                  {t('common.cta.accessCidStudio')}
+                </Link>
               </div>
               <p className="mt-6 max-w-2xl text-sm leading-7 text-slate-400">{t('landing.hero.support')}</p>
             </div>
@@ -213,6 +248,8 @@ export default function LandingPage() {
                 title={t(`modules.${key}.title`)}
                 description={t(`modules.${key}.description`)}
                 badge={key === 'editorialNleBridge' ? t('landing.standalone.badge') : undefined}
+                moduleKey={key}
+                user={user}
               />
             ))}
           </div>
@@ -236,6 +273,17 @@ export default function LandingPage() {
                   <div key={key} className="rounded-2xl border border-white/8 bg-[#0d1117] p-4">
                     <p className="font-semibold text-white">{t(`modules.${key}.title`)}</p>
                     <p className="mt-2 text-sm leading-6 text-slate-300">{t(`modules.${key}.description`)}</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <a href={`#solution-${key}`} className="rounded-full border border-white/12 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/6">
+                        {t('common.cta.viewSolution')}
+                      </a>
+                      <Link to={getModuleCheckoutRoute(key)} className="rounded-full bg-amber-400 px-3 py-1.5 text-xs font-semibold text-black transition-transform hover:-translate-y-0.5">
+                        {t('common.cta.hireSolution')}
+                      </Link>
+                      <Link to={getModuleAccessRoute(user, key)} className="rounded-full border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-100 transition-colors hover:bg-amber-400/10">
+                        {t('common.cta.access')}
+                      </Link>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -261,6 +309,17 @@ export default function LandingPage() {
                 <h3 className="mt-4 text-2xl font-semibold text-white">{t('modules.editorialNleBridge.title')}</h3>
                 <p className="mt-4 leading-7 text-amber-50/90">{t('modules.editorialNleBridge.included')}</p>
                 <p className="mt-4 leading-7 text-amber-50/90">{t('modules.editorialNleBridge.description')}</p>
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <a href="#suite" className="inline-flex items-center justify-center rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+                    {t('common.cta.viewCidStudio')}
+                  </a>
+                  <Link to={getCidStudioCheckoutRoute()} className="inline-flex items-center justify-center rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5">
+                    {t('common.cta.hireCidStudio')}
+                  </Link>
+                  <Link to={getCidStudioAccessRoute(user)} className="inline-flex items-center justify-center rounded-full border border-amber-400/30 px-4 py-2 text-sm font-semibold text-amber-100 transition-colors hover:bg-amber-400/10">
+                    {t('common.cta.accessCidStudio')}
+                  </Link>
+                </div>
               </div>
               <VisualCard src="/landing-media/landing-delivery-final.webp" alt={t('modules.editorialNleBridge.title')} className="aspect-[16/10]" />
             </div>

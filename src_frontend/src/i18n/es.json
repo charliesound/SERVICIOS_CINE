@@ -9,64 +9,70 @@
       "requestDemo": "Solicitar demo",
       "contact": "Contactar",
       "viewModules": "Ver módulos",
-      "startOnboarding": "Iniciar onboarding"
+      "startOnboarding": "Iniciar onboarding",
+      "viewSolution": "Ver solución",
+      "hireSolution": "Contratar solución",
+      "access": "Acceder",
+      "viewCidStudio": "Ver CID Studio",
+      "hireCidStudio": "Contratar CID Studio",
+      "accessCidStudio": "Acceder a CID Studio"
     },
     "brand": {
       "name": "AILinkCinema",
-      "suite": "CID Suite"
+      "suite": "CID Studio"
     }
   },
   "landing": {
     "nav": {
       "what": "Qué es",
       "problems": "Problemas",
-      "modules": "Módulos",
-      "suite": "CID Suite",
+      "modules": "Soluciones",
+      "suite": "CID Studio",
       "pricing": "Planes",
       "demo": "Demo"
     },
     "hero": {
-      "eyebrow": "Plataforma comercial para cine y audiovisual",
-      "title": "AILinkCinema convierte IA especializada en productos vendibles para cine, series y postproducción.",
-      "subtitle": "Desde análisis de guion y storyboard hasta inteligencia editorial conectada con NLEs, AILinkCinema presenta un ecosistema modular que puede venderse por separado o como paquete completo bajo CID Suite.",
+      "eyebrow": "Diagnóstico audiovisual + solución IA aplicada",
+      "title": "AILinkCinema estudia las necesidades reales de cada cliente y aplica IA para resolver problemas concretos.",
+      "subtitle": "No vendemos IA genérica: detectamos cuellos de botella reales en productoras, dirección, postproducción, venta y distribución, y los convertimos en soluciones modulares o en CID Studio, el sistema completo desde el guion hasta la entrega de materiales.",
       "primary": "Solicitar demo",
       "secondary": "Explorar módulos",
       "support": "Disponible para productoras, directores, técnicos, estudios, distribuidores y equipos de postproducción."
     },
     "what": {
       "title": "Qué es AILinkCinema y a qué se dedica",
-      "body": "AILinkCinema es la marca comercial principal del ecosistema. Agrupa sistemas de inteligencia aplicada a desarrollo, preproducción, producción, postproducción, localización y distribución audiovisual.",
-      "point1": "Marca comercial y plataforma principal del ecosistema.",
-      "point2": "CID Suite es el paquete integral con todos los módulos y sistemas.",
-      "point3": "Cada módulo puede comercializarse también como producto independiente según el caso de uso del cliente."
+      "body": "AILinkCinema funciona como consultora-producto: analiza necesidades reales del cliente audiovisual, identifica problemas operativos y creativos, y despliega IA aplicada para resolverlos con soluciones modulares o con CID Studio.",
+      "point1": "Primero diagnostica: procesos, materiales, roles, entregas y bloqueos del cliente.",
+      "point2": "Después propone soluciones modulares nacidas de problemas reales detectados en clientes.",
+      "point3": "Cuando el cliente necesita cobertura completa, CID Studio conecta guion, producción, venta y distribución."
     },
     "problems": {
       "title": "Problemas que resuelve para productoras, directores, técnicos y distribuidores",
-      "card1Title": "Fragmentación del pipeline",
-      "card1Body": "Unifica análisis, desarrollo visual, desglose, memoria de feedback, edición y distribución en una misma capa comercial.",
-      "card2Title": "Tiempo perdido en tareas repetitivas",
-      "card2Body": "Reduce horas manuales en lectura, transcripción, clasificación, búsqueda, preparación de materiales y exportes.",
-      "card3Title": "Falta de trazabilidad creativa",
-      "card3Body": "Conecta decisiones creativas, feedback y outputs de producción con un sistema orientado a continuidad y control.",
-      "card4Title": "Dificultad para monetizar herramientas internas",
-      "card4Body": "Permite empaquetar productos vendibles por separado o integrarlos en CID Suite con una narrativa comercial clara."
+      "card1Title": "Necesidades distintas en cada cliente",
+      "card1Body": "AILinkCinema no impone un paquete cerrado: estudia el caso real y selecciona la solución modular adecuada.",
+      "card2Title": "Procesos audiovisuales lentos",
+      "card2Body": "Aplica IA donde hay fricción: lectura, desglose, transcripción, búsqueda, preparación comercial y entregas.",
+      "card3Title": "Decisiones sin trazabilidad",
+      "card3Body": "Conecta guion, feedback, materiales visuales, edición y distribución para que cada decisión pueda recuperarse y reutilizarse.",
+      "card4Title": "Sistemas aislados",
+      "card4Body": "Las soluciones modulares pueden trabajar solas o integrarse dentro de CID Studio cuando el proyecto requiere continuidad completa."
     },
     "modules": {
-      "title": "Módulos y sistemas existentes",
-      "subtitle": "Catálogo inicial de productos y sistemas vendibles dentro del ecosistema AILinkCinema."
+      "title": "Soluciones modulares existentes",
+      "subtitle": "Catálogo inicial de soluciones nacidas de problemas reales detectados en clientes audiovisuales."
     },
     "standalone": {
-      "title": "Qué puede adquirirse por separado y para qué sirve cada módulo",
-      "body": "Cada módulo puede licenciarse como producto independiente cuando el cliente necesita resolver una parte concreta del pipeline sin desplegar la suite completa.",
+      "title": "Qué puede adquirirse por separado y para qué sirve cada solución",
+      "body": "Cada solución modular puede contratarse de forma independiente cuando el cliente necesita resolver un problema específico sin desplegar CID Studio completo.",
       "badge": "Producto independiente"
     },
     "cidSuite": {
-      "title": "Qué incluye CID Suite como paquete completo",
-      "body": "CID Suite reúne todos los módulos en una sola propuesta comercial y operativa: desarrollo, visualización, desglose, memoria, localización, editorial intelligence y distribución.",
+      "title": "Qué incluye CID Studio como sistema completo",
+      "body": "CID Studio es la solución completa de AILinkCinema: conecta guion, análisis, desarrollo visual, desglose, feedback, editorial intelligence, venta y distribución en un flujo operativo único.",
       "point1": "Gobierno centralizado de activos, procesos y salidas.",
-      "point2": "Activación modular según el tipo de cliente o fase del proyecto.",
-      "point3": "Incluye también Editorial Intelligence & NLE Bridge como bloque estratégico de alto valor.",
-      "includedLabel": "Incluido en CID Suite"
+      "point2": "Activación de soluciones modulares según cliente, rol y fase del proyecto.",
+      "point3": "Desde el guion hasta la entrega de materiales para producción, venta y distribución.",
+      "includedLabel": "Incluido en CID Studio"
     },
     "useCases": {
       "title": "Casos de uso reales",
@@ -84,8 +90,8 @@
       "starterTitle": "Módulo individual",
       "starterBody": "Licencia o servicio para resolver un problema específico con despliegue acotado.",
       "starterMeta": "Ideal para pilotos y adopción inicial",
-      "suiteTitle": "CID Suite",
-      "suiteBody": "Paquete completo para organizaciones que necesitan coordinación transversal entre áreas.",
+      "suiteTitle": "CID Studio",
+      "suiteBody": "Sistema completo para organizaciones que necesitan cubrir desde guion hasta materiales de producción, venta y distribución.",
       "suiteMeta": "Modelo recomendado para operaciones continuas",
       "enterpriseTitle": "Appliance / Enterprise",
       "enterpriseBody": "Despliegue controlado, onboarding, soporte y configuración según seguridad, equipos y volumen.",
@@ -93,13 +99,13 @@
     },
     "demo": {
       "title": "Demo / contacto / onboarding",
-      "body": "La estrategia comercial recomendada empieza con demos controladas, contacto consultivo y onboarding guiado antes de activar módulos o suite completa.",
+      "body": "La estrategia comercial empieza con diagnóstico, demo controlada y onboarding guiado antes de activar una solución modular o CID Studio.",
       "point1": "Demo comercial orientada a casos reales de cliente.",
-      "point2": "Contacto para evaluación de módulos independientes o CID Suite.",
+      "point2": "Contacto para evaluar soluciones independientes o CID Studio.",
       "point3": "Onboarding por fases según rol, equipo y objetivos."
     },
     "footer": {
-      "line": "AILinkCinema comercializa productos modulares y CID Suite como plataforma integral para cine y audiovisual."
+      "line": "AILinkCinema diagnostica necesidades reales y comercializa soluciones modulares o CID Studio para cine y audiovisual."
     }
   },
   "modules": {
@@ -139,7 +145,7 @@
       "title": "Editorial Intelligence & NLE Bridge",
       "description": "Sistema de inteligencia editorial para ingesta, transcripción con timecode, diarización de personajes, búsqueda semántica, selects, paper edit, markers, timelines y export/interacción con DaVinci Resolve, Avid Media Composer y Adobe Premiere Pro.",
       "independent": "Se vende como producto independiente para equipos de edición y postproducción.",
-      "included": "También forma parte de CID Suite como módulo estratégico de alto valor.",
+      "included": "También forma parte de CID Studio como solución estratégica de alto valor.",
       "nles": "Compatible en la narrativa comercial con DaVinci Resolve, Avid Media Composer y Adobe Premiere Pro."
     }
   }

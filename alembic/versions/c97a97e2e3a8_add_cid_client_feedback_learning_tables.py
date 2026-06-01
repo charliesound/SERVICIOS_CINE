@@ -122,7 +122,6 @@ def upgrade() -> None:
         sa.Column("metadata_json", sa.JSON, nullable=True),
         sa.Column("created_at", sa.DateTime, nullable=False),
         sa.Column("updated_at", sa.DateTime, nullable=False),
-        sa.CheckConstraint(_enum_ck(CID_FEEDBACK_STATUSES), name="ck_cfme_status"),
     )
     op.create_index("ix_cfme_org_project", "cid_feedback_memory_entries", ["organization_id", "project_id"])
     op.create_index("ix_cfme_feedback_id", "cid_feedback_memory_entries", ["feedback_id"])

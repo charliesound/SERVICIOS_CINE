@@ -123,10 +123,6 @@ class CIDClientFeedback(Base):
 class CIDFeedbackMemoryEntry(Base):
     __tablename__ = "cid_feedback_memory_entries"
     __table_args__ = (
-        CheckConstraint(
-            f"status IN ({', '.join(repr(s) for s in CID_FEEDBACK_STATUSES)})",
-            name="ck_cfme_status",
-        ),
         Index("ix_cfme_org_project", "organization_id", "project_id"),
         Index("ix_cfme_feedback_id", "feedback_id"),
         Index("ix_cfme_source", "source_type", "source_id"),

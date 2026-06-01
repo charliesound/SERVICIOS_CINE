@@ -5,6 +5,7 @@ import { StoryboardTracePanel } from '@/components/storyboard/StoryboardTracePan
 import type { DirtyShot } from '@/types/storyboard'
 import { resolveShotRenderState } from '@/types/storyboard'
 import { getStoryboardShotDisplayText, getStoryboardUiLocale } from '@/utils/storyboardText'
+import { useLanguage } from '@/i18n'
 
 interface ShotCardProps {
   shot: DirtyShot
@@ -16,6 +17,7 @@ interface ShotCardProps {
 
 
 export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: ShotCardProps) {
+  const { t } = useLanguage()
   const [localText, setLocalText] = useState(shot.narrative_text || getStoryboardShotDisplayText(shot, getStoryboardUiLocale()))
   const renderState = resolveShotRenderState(shot)
   const isRenderPending = renderState.state === 'rendering'
@@ -35,9 +37,9 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
             <AuthenticatedStoryboardShotImage
               projectId={shot.project_id}
               shotId={shot.id}
-              alt={shot.asset_file_name || 'Shot preview'}
+              alt={shot.asset_file_name || t('components.storyboard.shotCard.shotPreview')}
               className="w-full h-full object-cover"
-              fallbackLabel="Sin miniatura"
+              fallbackLabel={t('components.storyboard.shotCard.noThumbnail')}
             />
             <button
               onClick={() => onOpenPicker(shot.id)}
@@ -45,7 +47,7 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
             >
               <div className="flex items-center gap-2 bg-amber-500 text-black px-4 py-2 rounded-lg font-medium">
                 <Image className="w-4 h-4" />
-                Change Asset
+                {t('components.storyboard.shotCard.changeAsset')}
               </div>
             </button>
           </>
@@ -54,31 +56,31 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
             {isRenderPending ? (
               <>
                 <Loader2 className="w-10 h-10 mb-2 animate-spin text-amber-400/60" />
-                <span className="text-sm text-amber-300/70 text-center">Render pendiente</span>
-                <span className="text-[10px] text-slate-600 mt-1 text-center">Imagen pendiente de generar o asociar</span>
+                <span className="text-sm text-amber-300/70 text-center">{t('components.storyboard.shotCard.renderPending')}</span>
+                <span className="text-[10px] text-slate-600 mt-1 text-center">{t('components.storyboard.shotCard.renderPendingHelp')}</span>
               </>
             ) : renderState.state === 'failed' ? (
               <>
                 <AlertTriangle className="w-10 h-10 mb-2 text-red-400/70" />
-                <span className="text-sm text-red-300/80 text-center">Render fallido</span>
-                <span className="text-[10px] text-slate-500 mt-1 text-center">Revisa el error o asigna un asset manualmente</span>
+                <span className="text-sm text-red-300/80 text-center">{t('components.storyboard.shotCard.renderFailed')}</span>
+                <span className="text-[10px] text-slate-500 mt-1 text-center">{t('components.storyboard.shotCard.renderFailedHelp')}</span>
               </>
             ) : (
               <>
                 <Image className="w-12 h-12 mb-2 opacity-40" />
-                <span className="text-sm text-slate-500">Imagen pendiente de generar o asociar</span>
+                <span className="text-sm text-slate-500">{t('components.storyboard.shotCard.renderPendingHelp')}</span>
                 <button
                   onClick={() => onOpenPicker(shot.id)}
                   className="mt-2 text-amber-400 hover:text-amber-300 text-sm"
                 >
-                  Select asset
+                  {t('components.storyboard.shotCard.selectAsset')}
                 </button>
               </>
             )}
           </div>
         )}
         {shot.isDirty && (
-          <div className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" title="Unsaved changes" />
+          <div className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" title={t('components.storyboard.shotCard.unsavedChanges')} />
         )}
         <div className={`absolute top-2 left-2 ${renderState.pulse ? 'animate-pulse' : ''}`} title={shot.render_error || renderState.label}>
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${renderState.color} border-current/20`}>
@@ -93,12 +95,12 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
 
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">Shot {shot.sequence_order}</span>
+          <span className="text-xs text-gray-500">{t('components.storyboard.shotCard.shot')} {shot.sequence_order}</span>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-cyan-300">v{shot.version}</span>
             {shot.generation_job_id && <span className="text-[10px] text-slate-500 font-mono">{shot.generation_job_id.slice(0, 8)}</span>}
             {shot.isDirty && (
-              <span className="text-xs text-amber-400">Modified</span>
+              <span className="text-xs text-amber-400">{t('components.storyboard.shotCard.modified')}</span>
             )}
             <button
               onClick={() => onDelete(shot.id)}
@@ -114,7 +116,7 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
           value={localText}
           onChange={(e) => setLocalText(e.target.value)}
           onBlur={handleTextBlur}
-          placeholder="Enter narrative text..."
+          placeholder={t('components.storyboard.shotCard.placeholder')}
           disabled={isSaving}
           className="w-full bg-dark-300 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 resize-none disabled:opacity-50"
           rows={3}
@@ -123,7 +125,7 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
         {(shot.render_job_id || shot.generation_job_id) && (
           <div className="space-y-1 text-[10px] text-slate-600">
             <p className="flex items-center gap-1">
-              <span>Última generación:</span>
+              <span>{t('components.storyboard.shotCard.lastGeneration')}:</span>
               <span className="text-slate-400">{new Date(shot.updated_at).toLocaleString()}</span>
             </p>
             {shot.render_job_id && (
@@ -156,14 +158,14 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
             disabled={isSaving}
             className="flex-1 bg-dark-300 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 disabled:opacity-50"
           >
-            <option value="">Shot Type</option>
-            <option value="WS">Wide Shot</option>
-            <option value="MS">Medium Shot</option>
-            <option value="CU">Close Up</option>
-            <option value="ECU">Extreme Close Up</option>
-            <option value="OTS">Over the Shoulder</option>
-            <option value="LS">Long Shot</option>
-            <option value="POV">Point of View</option>
+            <option value="">{t('components.storyboard.shotCard.shotType')}</option>
+            <option value="WS">{t('components.storyboard.shotCard.wideShot')}</option>
+            <option value="MS">{t('components.storyboard.shotCard.mediumShot')}</option>
+            <option value="CU">{t('components.storyboard.shotCard.closeUp')}</option>
+            <option value="ECU">{t('components.storyboard.shotCard.extremeCloseUp')}</option>
+            <option value="OTS">{t('components.storyboard.shotCard.overTheShoulder')}</option>
+            <option value="LS">{t('components.storyboard.shotCard.longShot')}</option>
+            <option value="POV">{t('components.storyboard.shotCard.pointOfView')}</option>
           </select>
           <select
             value={shot.visual_mode || ''}
@@ -171,10 +173,10 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
             disabled={isSaving}
             className="flex-1 bg-dark-300 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 disabled:opacity-50"
           >
-            <option value="">Visual Mode</option>
-            <option value="sketch">Sketch</option>
-            <option value="render">Render</option>
-            <option value="reference">Reference</option>
+            <option value="">{t('components.storyboard.shotCard.visualMode')}</option>
+            <option value="sketch">{t('components.storyboard.shotCard.sketch')}</option>
+            <option value="render">{t('components.storyboard.shotCard.render')}</option>
+            <option value="reference">{t('components.storyboard.shotCard.reference')}</option>
           </select>
         </div>
       </div>

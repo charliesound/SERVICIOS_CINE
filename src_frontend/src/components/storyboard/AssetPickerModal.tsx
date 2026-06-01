@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { X, ChevronLeft, ChevronRight, Image, AlertCircle } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
 import type { ProjectImageAssetItem, ProjectImageAssetPaginationMeta } from '@/types/storyboard'
+import { useLanguage } from '@/i18n'
 
 interface AssetPickerModalProps {
   isOpen: boolean
@@ -18,6 +19,7 @@ export function AssetPickerModal({
   onSelect,
   onClose,
 }: AssetPickerModalProps) {
+  const { t } = useLanguage()
   const [assets, setAssets] = useState<ProjectImageAssetItem[]>([])
   const [meta, setMeta] = useState<ProjectImageAssetPaginationMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -33,7 +35,7 @@ export function AssetPickerModal({
       setMeta(response.meta)
       setPage(pageNum)
     } catch (err) {
-      setError('Failed to load assets. Please try again.')
+      setError(t('components.storyboard.assetPicker.loadError'))
       console.error('Asset fetch error:', err)
     } finally {
       setIsLoading(false)
@@ -70,7 +72,7 @@ export function AssetPickerModal({
       
       <div className="relative bg-dark-200 border border-white/10 rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h2 className="text-lg font-semibold text-white">Select Asset</h2>
+          <h2 className="text-lg font-semibold text-white">{t('components.storyboard.assetPicker.title')}</h2>
           <button
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
@@ -87,7 +89,7 @@ export function AssetPickerModal({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                <span className="text-sm">Loading assets...</span>
+                <span className="text-sm">{t('components.storyboard.assetPicker.loading')}</span>
               </div>
             </div>
           )}
@@ -101,7 +103,7 @@ export function AssetPickerModal({
                   onClick={() => fetchAssets(page)}
                   className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-sm transition-colors"
                 >
-                  Retry
+                  {t('components.storyboard.common.retry')}
                 </button>
               </div>
             </div>
@@ -111,7 +113,7 @@ export function AssetPickerModal({
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-3 text-gray-500">
                 <Image className="w-12 h-12" />
-                <span>No image assets found in this project</span>
+                <span>{t('components.storyboard.assetPicker.empty')}</span>
               </div>
             </div>
           )}
@@ -155,7 +157,7 @@ export function AssetPickerModal({
         {meta && meta.total_pages > 1 && (
           <div className="flex items-center justify-between p-4 border-t border-white/10">
             <span className="text-sm text-gray-400">
-              Page {meta.page} of {meta.total_pages} ({meta.total_items} items)
+              {t('components.storyboard.assetPicker.pageInfo')} {meta.page} / {meta.total_pages} ({meta.total_items})
             </span>
             <div className="flex gap-2">
               <button

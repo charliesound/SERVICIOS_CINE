@@ -23,6 +23,7 @@ import type { ModuleInfo } from '@/types'
 import ModuleAccessBadge from './ModuleAccessBadge'
 import ModulePackBadge from './ModulePackBadge'
 import ModuleStatusBadge from './ModuleStatusBadge'
+import { useLanguage } from '@/i18n'
 
 export interface ModuleCardAction {
   label: string
@@ -56,16 +57,16 @@ const iconMap: Record<string, LucideIcon> = {
   delivery_distribution: LayoutTemplate,
 }
 
-const categoryLabels: Record<string, string> = {
-  foundation: 'Base operativa',
-  development: 'Desarrollo',
-  preproduction: 'Preproducción',
-  orchestration: 'Orquestación',
-  production: 'Producción',
-  legal: 'Legal',
-  funding: 'Financiación',
-  postproduction: 'Postproducción',
-  delivery: 'Entrega y distribución',
+const categoryLabelKeys: Record<string, string> = {
+  foundation: 'components.modules.category.foundation',
+  development: 'components.modules.category.development',
+  preproduction: 'components.modules.category.preproduction',
+  orchestration: 'components.modules.category.orchestration',
+  production: 'components.modules.category.production',
+  legal: 'components.modules.category.legal',
+  funding: 'components.modules.category.funding',
+  postproduction: 'components.modules.category.postproduction',
+  delivery: 'components.modules.category.delivery',
 }
 
 function RequirementBadge({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
@@ -78,8 +79,10 @@ function RequirementBadge({ icon: Icon, label }: { icon: LucideIcon; label: stri
 }
 
 export default function ModuleCard({ module, enabled, action, lockedReasonLabel }: ModuleCardProps) {
+  const { t } = useLanguage()
   const Icon = iconMap[module.key] || Cpu
   const actionClasses = action.variant === 'primary' ? 'btn-primary' : 'btn-secondary'
+  const categoryLabelKey = categoryLabelKeys[module.category]
 
   return (
     <article className="card card-hover flex h-full flex-col overflow-hidden rounded-[1.6rem] border border-white/8 bg-dark-200/60 p-0">
@@ -91,7 +94,7 @@ export default function ModuleCard({ module, enabled, action, lockedReasonLabel 
               <Icon className="h-5 w-5" />
             </div>
             <div>
-              <p className="editorial-kicker text-slate-500">{categoryLabels[module.category] || module.category}</p>
+              <p className="editorial-kicker text-slate-500">{categoryLabelKey ? t(categoryLabelKey) : module.category}</p>
               <h2 className="mt-2 text-xl font-semibold text-white">{module.name}</h2>
             </div>
           </div>
@@ -106,13 +109,13 @@ export default function ModuleCard({ module, enabled, action, lockedReasonLabel 
           <ModuleStatusBadge value={module.status} variant="technical" />
           <ModuleStatusBadge value={module.commercial_status} variant="commercial" />
           <ModulePackBadge pack={module.recommended_pack} />
-          {module.requires_gpu && <RequirementBadge icon={Cpu} label="Requiere GPU" />}
-          {module.requires_local_gpu_node && <RequirementBadge icon={Sparkles} label="Nodo local" />}
+          {module.requires_gpu && <RequirementBadge icon={Cpu} label={t('components.modules.card.requiresGpu')} />}
+          {module.requires_local_gpu_node && <RequirementBadge icon={Sparkles} label={t('components.modules.card.localNode')} />}
         </div>
 
         {module.dependencies.length > 0 && (
           <div className="rounded-2xl border border-white/6 bg-white/[0.03] p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Dependencias</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{t('components.modules.card.dependencies')}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {module.dependencies.map((dependency) => (
                 <span key={dependency} className="inline-flex items-center rounded-full border border-white/10 bg-dark-300/60 px-2.5 py-1 text-xs text-slate-300">
@@ -124,7 +127,7 @@ export default function ModuleCard({ module, enabled, action, lockedReasonLabel 
         )}
 
         <div className="mt-auto space-y-3 rounded-2xl border border-white/6 bg-white/[0.03] p-4">
-          <p className="text-sm font-medium text-white">Precio según plan o activación comercial</p>
+          <p className="text-sm font-medium text-white">{t('components.modules.card.priceByPlan')}</p>
           {lockedReasonLabel ? <p className="text-sm text-slate-400">{lockedReasonLabel}</p> : null}
           {action.helperText ? <p className="text-sm text-slate-400">{action.helperText}</p> : null}
 

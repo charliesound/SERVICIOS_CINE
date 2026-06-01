@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertCircle, Check, Layers, Search, X } from 'lucide-react'
 import type { StoryboardSceneCandidate, StoryboardSequence, StoryboardSelectionMode } from '@/types/storyboard'
+import { useLanguage } from '@/i18n'
 
 export interface StoryboardSelectionValue {
   mode: StoryboardSelectionMode
@@ -37,12 +38,12 @@ interface SequencePresentationItem {
   searchableText: string
 }
 
-const MODE_LABELS: Array<{ value: StoryboardSelectionMode; title: string; description: string }> = [
-  { value: 'SELECTED_SCENES', title: 'Varias secuencias', description: 'Selecciona varias secuencias visibles y genera solo ese bloque.' },
-  { value: 'SEQUENCE', title: 'Solo una secuencia', description: 'Elige una secuencia concreta.' },
-  { value: 'SINGLE_SCENE', title: 'Una sola escena', description: 'Genera una escena concreta.' },
-  { value: 'SCENE_RANGE', title: 'Rango de escenas', description: 'Genera desde una escena inicial a otra final.' },
-  { value: 'FULL_SCRIPT', title: 'Storyboard completo', description: 'Genera todo el guion detectado.' },
+const MODE_LABELS: Array<{ value: StoryboardSelectionMode; titleKey: string; descriptionKey: string }> = [
+  { value: 'SELECTED_SCENES', titleKey: 'components.storyboard.sequenceSelectorModal.modes.selected', descriptionKey: 'components.storyboard.sequenceSelectorModal.modes.selectedDescription' },
+  { value: 'SEQUENCE', titleKey: 'components.storyboard.sequenceSelectorModal.modes.sequence', descriptionKey: 'components.storyboard.sequenceSelectorModal.modes.sequenceDescription' },
+  { value: 'SINGLE_SCENE', titleKey: 'components.storyboard.sequenceSelectorModal.modes.singleScene', descriptionKey: 'components.storyboard.sequenceSelectorModal.modes.singleSceneDescription' },
+  { value: 'SCENE_RANGE', titleKey: 'components.storyboard.sequenceSelectorModal.modes.range', descriptionKey: 'components.storyboard.sequenceSelectorModal.modes.rangeDescription' },
+  { value: 'FULL_SCRIPT', titleKey: 'components.storyboard.sequenceSelectorModal.modes.full', descriptionKey: 'components.storyboard.sequenceSelectorModal.modes.fullDescription' },
 ]
 
 function normalizeText(value: string): string {
@@ -112,6 +113,7 @@ export function StoryboardSequenceSelectorModal({
   onClose,
   onConfirm,
 }: StoryboardSequenceSelectorModalProps) {
+  const { t } = useLanguage()
   const [mode, setMode] = useState<StoryboardSelectionMode>('SELECTED_SCENES')
   const [search, setSearch] = useState('')
   const [selectedSequenceId, setSelectedSequenceId] = useState<string>('')
@@ -236,19 +238,19 @@ export function StoryboardSequenceSelectorModal({
   })()
 
   const primaryButtonLabel = (() => {
-    if (mode === 'FULL_SCRIPT') return 'Generar storyboard completo'
-    if (mode === 'SEQUENCE') return 'Generar storyboard de la secuencia'
-    if (mode === 'SINGLE_SCENE') return 'Generar storyboard de la escena'
-    if (mode === 'SCENE_RANGE') return 'Generar storyboard del rango'
-    return `Generar storyboard de secuencias seleccionadas${selectedSequenceCount > 0 ? ` (${selectedSequenceCount})` : ''}`
+    if (mode === 'FULL_SCRIPT') return t('components.storyboard.sequenceSelectorModal.generateFull')
+    if (mode === 'SEQUENCE') return t('components.storyboard.sequenceSelectorModal.generateSequence')
+    if (mode === 'SINGLE_SCENE') return t('components.storyboard.sequenceSelectorModal.generateScene')
+    if (mode === 'SCENE_RANGE') return t('components.storyboard.sequenceSelectorModal.generateRange')
+    return `${t('components.storyboard.sequenceSelectorModal.generateSelected')}${selectedSequenceCount > 0 ? ` (${selectedSequenceCount})` : ''}`
   })()
 
   const helperStatus = (() => {
-    if (mode === 'SELECTED_SCENES') return `${selectedSequenceCount} secuencias seleccionadas · ${(selectedSceneNumbersForMulti ?? []).length} escenas cubiertas`
-    if (mode === 'SEQUENCE') return selectedSequenceId ? '1 secuencia seleccionada' : 'Selecciona una secuencia'
-    if (mode === 'SINGLE_SCENE') return selectedSingleSceneNumber != null ? `Escena ${selectedSingleSceneNumber} seleccionada` : 'Selecciona una escena'
+    if (mode === 'SELECTED_SCENES') return `${selectedSequenceCount} ${t('components.storyboard.sequenceSelectorModal.selectedSequences')} · ${(selectedSceneNumbersForMulti ?? []).length} ${t('components.storyboard.sequenceSelectorModal.coveredScenes')}`
+    if (mode === 'SEQUENCE') return selectedSequenceId ? t('components.storyboard.sequenceSelectorModal.oneSequenceSelected') : t('components.storyboard.sequenceSelectorModal.selectSequence')
+    if (mode === 'SINGLE_SCENE') return selectedSingleSceneNumber != null ? `Escena ${selectedSingleSceneNumber} seleccionada` : t('components.storyboard.sequenceSelectorModal.selectScene')
     if (mode === 'SCENE_RANGE') return `Rango ${rangeStart || '1'}-${rangeEnd || rangeStart || '1'}`
-    return `${(scenes ?? []).length} escenas detectadas`
+    return `${(scenes ?? []).length} ${t('components.storyboard.sequenceSelectorModal.detectedScenes')}`
   })()
 
   return (
@@ -256,8 +258,8 @@ export function StoryboardSequenceSelectorModal({
       <div className="flex h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0f1013] shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
           <div>
-            <h3 className="text-lg font-semibold text-white">Seleccionar secuencias para storyboard</h3>
-            <p className="mt-1 text-sm text-gray-400">Controla exactamente qué secuencias quieres generar sin disparar el storyboard completo por error.</p>
+            <h3 className="text-lg font-semibold text-white">{t('components.storyboard.sequenceSelectorModal.title')}</h3>
+            <p className="mt-1 text-sm text-gray-400">{t('components.storyboard.sequenceSelectorModal.subtitle')}</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-xl p-2 text-gray-400 transition-colors hover:bg-white/5 hover:text-white">
             <X className="h-5 w-5" />
@@ -274,25 +276,25 @@ export function StoryboardSequenceSelectorModal({
                   onClick={() => setMode(item.value)}
                   className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${mode === item.value ? 'border-amber-400/40 bg-amber-500/10' : 'border-white/10 bg-transparent hover:border-white/20'}`}
                 >
-                  <div className="font-medium text-white">{item.title}</div>
-                  <div className="mt-1 text-xs leading-relaxed text-gray-400">{item.description}</div>
+                  <div className="font-medium text-white">{t(item.titleKey)}</div>
+                  <div className="mt-1 text-xs leading-relaxed text-gray-400">{t(item.descriptionKey)}</div>
                 </button>
               ))}
 
               <div className="rounded-2xl border border-white/10 p-4 space-y-3">
-                <div className="text-sm font-medium text-gray-300">Resumen</div>
+                <div className="text-sm font-medium text-gray-300">{t('components.storyboard.sequenceSelectorModal.summary')}</div>
                 <div className="text-xs text-gray-400">{helperStatus}</div>
                 <label className="flex items-center gap-2 text-xs text-gray-300">
                   <input type="checkbox" checked={regenerateExisting} onChange={(event) => setRegenerateExisting(event.target.checked)} />
-                  Regenerar escenas ya existentes
+                  {t('components.storyboard.sequenceSelectorModal.regenerateExisting')}
                 </label>
                 <label className="flex items-center gap-2 text-xs text-gray-300">
                   <input type="checkbox" checked={overwrite} onChange={(event) => setOverwrite(event.target.checked)} />
-                  Sobrescribir storyboard previo
+                  {t('components.storyboard.sequenceSelectorModal.overwrite')}
                 </label>
                 <label className="flex items-center gap-2 text-xs text-gray-300">
                   <input type="checkbox" checked={renderImagesOnComplete} onChange={(event) => onRenderImagesChange?.(event.target.checked)} />
-                  Renderizar imágenes al terminar
+                  {t('components.storyboard.sequenceSelectorModal.renderOnComplete')}
                 </label>
               </div>
             </div>
@@ -313,16 +315,16 @@ export function StoryboardSequenceSelectorModal({
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Buscar por número, título, localización, personajes, INT/EXT o DÍA/NOCHE..."
+                    placeholder={t('components.storyboard.sequenceSelectorModal.searchPlaceholder')}
                     className="input w-full pl-9"
                   />
                 </div>
 
                 {mode === 'SELECTED_SCENES' && (
                   <>
-                    <button type="button" onClick={handleSelectAll} className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5">Seleccionar todas</button>
-                    <button type="button" onClick={handleClearSelection} className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5">Limpiar selección</button>
-                    <button type="button" onClick={handleSelectVisible} disabled={(visibleSequenceIds ?? []).length === 0} className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-40">Seleccionar visibles</button>
+                    <button type="button" onClick={handleSelectAll} className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5">{t('components.storyboard.sequenceSelectorModal.selectAll')}</button>
+                    <button type="button" onClick={handleClearSelection} className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5">{t('components.storyboard.sequenceSelectorModal.clearSelection')}</button>
+                    <button type="button" onClick={handleSelectVisible} disabled={(visibleSequenceIds ?? []).length === 0} className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-40">{t('components.storyboard.sequenceSelectorModal.selectVisible')}</button>
                   </>
                 )}
               </div>
@@ -372,12 +374,12 @@ export function StoryboardSequenceSelectorModal({
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-gray-300">
                     <Layers className="h-4 w-4" />
-                    {selectedSequenceCount} secuencias seleccionadas
+                    {selectedSequenceCount} {t('components.storyboard.sequenceSelectorModal.selectedSequences')}
                   </div>
 
                   {(filteredSequenceItems ?? []).length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-white/10 px-4 py-8 text-sm text-slate-500">
-                      No hay secuencias visibles con el filtro actual.
+                      {t('components.storyboard.sequenceSelectorModal.noVisibleSequences')}
                     </div>
                   ) : (
                     filteredSequenceItems.map((item) => {
@@ -449,11 +451,11 @@ export function StoryboardSequenceSelectorModal({
               {mode === 'SCENE_RANGE' && (
                 <div className="grid max-w-md grid-cols-2 gap-3">
                   <label className="space-y-2 text-sm text-gray-300">
-                    <span>Escena inicial</span>
+                    <span>{t('components.storyboard.sequenceSelectorModal.startScene')}</span>
                     <input className="input w-full" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} />
                   </label>
                   <label className="space-y-2 text-sm text-gray-300">
-                    <span>Escena final</span>
+                    <span>{t('components.storyboard.sequenceSelectorModal.endScene')}</span>
                     <input className="input w-full" value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} />
                   </label>
                 </div>
@@ -461,7 +463,7 @@ export function StoryboardSequenceSelectorModal({
 
               {mode === 'FULL_SCRIPT' && (
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-100">
-                  Este modo generará el storyboard para todo el material detectado. Úsalo solo si no necesitas selección parcial.
+                  {t('components.storyboard.sequenceSelectorModal.fullWarning')}
                 </div>
               )}
             </div>
@@ -471,9 +473,9 @@ export function StoryboardSequenceSelectorModal({
                 <div className="text-xs text-gray-500">{helperStatus}</div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   {!canConfirm && mode !== 'FULL_SCRIPT' && (
-                    <span className="text-xs text-amber-300">Selecciona al menos una secuencia o una escena para continuar.</span>
+                    <span className="text-xs text-amber-300">{t('components.storyboard.sequenceSelectorModal.mustSelect')}</span>
                   )}
-                  <button type="button" onClick={onClose} className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:bg-white/5">Cancelar</button>
+                  <button type="button" onClick={onClose} className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:bg-white/5">{t('components.storyboard.common.cancel')}</button>
                   <button
                     type="button"
                     disabled={!canConfirm}

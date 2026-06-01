@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Download, ExternalLink, FileImage, LayoutGrid, Loader2 } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
+import { useLanguage } from '@/i18n'
 import type {
   StoryboardSheetRequest,
   StoryboardSheetTemplate,
@@ -29,11 +30,11 @@ type StoryboardSheetApiError = {
   }
 }
 
-const layoutOptions: Array<{ value: StoryboardSheetLayoutName; label: string; description: string }> = [
-  { value: 'grid_2x2', label: 'Grid 2x2', description: '4 frames por página' },
-  { value: 'grid_2x3', label: 'Grid 2x3', description: '6 frames por página' },
-  { value: 'grid_2x4', label: 'Grid 2x4', description: '8 frames por página' },
-  { value: 'grid_3x3', label: 'Grid 3x3', description: '9 frames por página' },
+const layoutOptions: Array<{ value: StoryboardSheetLayoutName; label: string; frames: number }> = [
+  { value: 'grid_2x2', label: 'Grid 2x2', frames: 4 },
+  { value: 'grid_2x3', label: 'Grid 2x3', frames: 6 },
+  { value: 'grid_2x4', label: 'Grid 2x4', frames: 8 },
+  { value: 'grid_3x3', label: 'Grid 3x3', frames: 9 },
 ]
 
 const presetOptions: Array<{ value: StoryboardSheetPreset; label: string; description: string }> = [
@@ -49,13 +50,13 @@ const outputFormatOptions: Array<{ value: StoryboardSheetOutputFormat; label: st
 ]
 
 const frameCountOptions = [
-  { value: 'all', label: 'Todas' },
+  { value: 'all', labelKey: 'components.storyboard.sheetExportPanel.all' },
   { value: '4', label: '4 imágenes' },
   { value: '8', label: '8 imágenes' },
   { value: '12', label: '12 imágenes' },
   { value: '16', label: '16 imágenes' },
   { value: '24', label: '24 imágenes' },
-  { value: 'custom', label: 'Personalizado' },
+  { value: 'custom', labelKey: 'components.storyboard.sheetExportPanel.custom' },
 ] as const
 
 const sheetTemplateOptions: Array<{
@@ -257,6 +258,7 @@ function StoryboardSheetResult({
   creditEstimate,
   pageUrls,
 }: StoryboardSheetResultProps) {
+  const { t } = useLanguage()
   const extension = result.output_format === 'pdf' ? 'pdf' : 'png'
   const previewUrl = useBlobUrl(
     result.output_format === 'png' && pageUrls.length === 1 ? (result.artifact_url || pageUrls[0]) : null
@@ -268,14 +270,14 @@ function StoryboardSheetResult({
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-emerald-300">
             <CheckCircle2 className="h-5 w-5" />
-            <p className="text-sm font-semibold text-white">Export generado correctamente</p>
+            <p className="text-sm font-semibold text-white">{t('components.storyboard.sheetExportPanel.generated')}</p>
           </div>
           <p className="text-xs text-slate-400">
-            Resultado: {result.output_format.toUpperCase()} · layout {result.layout} · preset {result.preset}
+            {t('components.storyboard.sheetExportPanel.result')}: {result.output_format.toUpperCase()} · layout {result.layout} · preset {result.preset}
           </p>
           {templateMetadata && (
             <p className="text-xs text-slate-500">
-              Template: {templateMetadata.sheet_template || 'actual'} · orientación {templateMetadata.orientation}
+              Template: {templateMetadata.sheet_template || t('components.storyboard.sheetExportPanel.currentMode')} · {t('components.storyboard.sheetExportPanel.orientation')} {templateMetadata.orientation}
             </p>
           )}
         </div>
@@ -288,7 +290,7 @@ function StoryboardSheetResult({
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
             >
               <ExternalLink className="h-4 w-4" />
-              Abrir
+              {t('components.storyboard.common.open')}
             </button>
             <button
               type="button"
@@ -296,7 +298,7 @@ function StoryboardSheetResult({
               className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 transition-colors hover:bg-amber-500/20"
             >
               <Download className="h-4 w-4" />
-              Descargar
+              {t('components.storyboard.common.download')}
             </button>
           </div>
         )}
@@ -304,21 +306,21 @@ function StoryboardSheetResult({
 
       {!result.artifact_url && (
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200">
-          Export generado, pero la URL de descarga no está disponible. Reintenta o contacta soporte.
+          {t('components.storyboard.sheetExportPanel.missingUrl')}
         </div>
       )}
 
       <div className="grid gap-3 md:grid-cols-5">
         <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Frames</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{t('components.storyboard.common.frames')}</p>
           <p className="mt-2 text-2xl font-semibold text-white">{result.frame_count}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Páginas</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{t('components.storyboard.common.pages')}</p>
           <p className="mt-2 text-2xl font-semibold text-white">{pageCount}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Formato</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{t('components.storyboard.common.format')}</p>
           <p className="mt-2 text-lg font-semibold text-white">{result.output_format.toUpperCase()}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-black/20 p-3">
@@ -326,7 +328,7 @@ function StoryboardSheetResult({
           <p className="mt-2 text-lg font-semibold text-white">{result.layout}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Créditos</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{t('components.storyboard.common.credits')}</p>
           <p className="mt-2 text-lg font-semibold text-white">{creditEstimate?.estimated_credits ?? 'n/a'}</p>
         </div>
       </div>
@@ -334,12 +336,12 @@ function StoryboardSheetResult({
       {pageUrls.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-            {pageUrls.length > 1 ? 'Páginas' : 'Página'}
+            {pageUrls.length > 1 ? t('components.storyboard.common.pages') : t('components.storyboard.common.page')}
           </p>
           <ul className="space-y-2">
             {pageUrls.map((url, index) => (
               <li key={`${url}-${index}`} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3">
-                <span className="text-sm text-slate-200">Página {index + 1}</span>
+                <span className="text-sm text-slate-200">{t('components.storyboard.common.page')} {index + 1}</span>
                 <span className="flex shrink-0 gap-2">
                   <button
                     type="button"
@@ -347,7 +349,7 @@ function StoryboardSheetResult({
                     className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    Abrir
+                    {t('components.storyboard.common.open')}
                   </button>
                   <button
                     type="button"
@@ -355,7 +357,7 @@ function StoryboardSheetResult({
                     className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20"
                   >
                     <Download className="h-3.5 w-3.5" />
-                    Descargar
+                    {t('components.storyboard.common.download')}
                   </button>
                 </span>
               </li>
@@ -366,17 +368,17 @@ function StoryboardSheetResult({
 
       {creditEstimate && (
         <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Créditos</p>
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">{t('components.storyboard.common.credits')}</p>
           <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-200">
-            <p><span className="text-slate-500">Frames facturables:</span> {creditEstimate.billable_frames}</p>
-            <p><span className="text-slate-500">Créditos estimados:</span> {creditEstimate.estimated_credits}</p>
+            <p><span className="text-slate-500">{t('components.storyboard.sheetExportPanel.billableFrames')}:</span> {creditEstimate.billable_frames}</p>
+            <p><span className="text-slate-500">{t('components.storyboard.sheetExportPanel.estimatedCredits')}:</span> {creditEstimate.estimated_credits}</p>
           </div>
         </div>
       )}
 
       {previewUrl && (
         <div className="space-y-3">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Vista previa</p>
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">{t('components.storyboard.sheetExportPanel.preview')}</p>
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-2">
             <img
               src={previewUrl}
@@ -395,6 +397,7 @@ interface StoryboardSheetExportPanelProps {
 }
 
 export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportPanelProps) {
+  const { t } = useLanguage()
   const [outputFormat, setOutputFormat] = useState<StoryboardSheetOutputFormat>('png')
   const [layout, setLayout] = useState<StoryboardSheetLayoutName>('grid_2x2')
   const [preset, setPreset] = useState<StoryboardSheetPreset>('realistic_client_review')
@@ -454,22 +457,22 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
 
   const estimatedCreditsLabel = useMemo(() => {
     if (requestedFrameCount != null) {
-      return `Créditos estimados: ${requestedFrameCount}`
+      return `${t('components.storyboard.sheetExportPanel.estimatedCredits')}: ${requestedFrameCount}`
     }
     if (selectedTemplateOption.defaultFrames != null) {
-      return `Créditos estimados: ${selectedTemplateOption.defaultFrames}`
+      return `${t('components.storyboard.sheetExportPanel.estimatedCredits')}: ${selectedTemplateOption.defaultFrames}`
     }
     if (requestedFrameCount == null) {
-      return 'Créditos estimados: Se calculará al generar el sheet.'
+      return `${t('components.storyboard.sheetExportPanel.estimatedCredits')}: ${t('components.storyboard.sheetExportPanel.creditsWillCalculate')}`
     }
-    return 'Créditos estimados: Se calculará al generar el sheet.'
-  }, [requestedFrameCount, selectedTemplateOption.defaultFrames])
+    return `${t('components.storyboard.sheetExportPanel.estimatedCredits')}: ${t('components.storyboard.sheetExportPanel.creditsWillCalculate')}`
+  }, [requestedFrameCount, selectedTemplateOption.defaultFrames, t])
 
   const handleGenerate = async () => {
     if (frameCountMode === 'custom') {
       const parsed = Number(customFrameCount)
       if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
-        setError('El valor personalizado debe ser un número entero entre 1 y 100.')
+        setError(t('components.storyboard.sheetExportPanel.customValidation'))
         setResult(null)
         return
       }
@@ -507,21 +510,20 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-amber-300">
             <LayoutGrid className="h-5 w-5" />
-            <h3 className="text-lg font-semibold text-white">Descargar Storyboard Sheet</h3>
+            <h3 className="text-lg font-semibold text-white">{t('components.storyboard.sheetExportPanel.title')}</h3>
           </div>
           <p className="max-w-3xl text-sm text-slate-400">
-            Selecciona formato, plantilla y páginas para descargar el Storyboard Sheet en PNG o PDF.
-            Si ya generaste el storyboard, los ajustes están preconfigurados.
+            {t('components.storyboard.sheetExportPanel.subtitle')}
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-400">
-          Formato listo para producción · {result ? 'export disponible' : 'configura y prepara descarga'}
+          {t('components.storyboard.sheetExportPanel.readyProduction')} · {result ? t('components.storyboard.sheetExportPanel.exportAvailable') : t('components.storyboard.sheetExportPanel.configureDownload')}
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <label className="space-y-2">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Formato</span>
+          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">{t('components.storyboard.common.format')}</span>
           <select
             value={outputFormat}
             onChange={(event) => setOutputFormat(event.target.value as StoryboardSheetOutputFormat)}
@@ -534,23 +536,23 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
         </label>
 
         <label className="space-y-2 xl:col-span-2">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Template</span>
+          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">{t('components.storyboard.sheetExportPanel.template')}</span>
           <select
             value={sheetTemplate}
             onChange={(event) => setSheetTemplate(event.target.value as 'current' | StoryboardSheetTemplate)}
             className="w-full rounded-xl border border-white/10 bg-dark-300/70 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-amber-500/50"
           >
             {sheetTemplateOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
+              <option key={option.value} value={option.value}>{option.value === 'current' ? t('components.storyboard.sheetExportPanel.autoCurrent') : option.label}</option>
             ))}
           </select>
           <p className="text-xs text-slate-500">
-            {selectedTemplateOption.description}
+            {sheetTemplate === 'current' ? t('components.storyboard.sheetExportPanel.autoCurrentDescription') : selectedTemplateOption.description}
           </p>
         </label>
 
         <label className="space-y-2">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Layout</span>
+          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">{t('components.storyboard.common.layout')}</span>
           <select
             value={layout}
             onChange={(event) => setLayout(event.target.value as StoryboardSheetLayoutName)}
@@ -562,13 +564,13 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
           </select>
           <p className="text-xs text-slate-500">
             {sheetTemplate === 'current'
-              ? layoutOptions.find((option) => option.value === layout)?.description
-              : 'La plantilla seleccionada resolverá automáticamente el layout efectivo.'}
+              ? `${layoutOptions.find((option) => option.value === layout)?.frames ?? ''} ${t('components.storyboard.common.frames')} / ${t('components.storyboard.common.page').toLowerCase()}`
+              : t('components.storyboard.sheetExportPanel.templateResolvesLayout')}
           </p>
         </label>
 
         <label className="space-y-2">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Preset</span>
+          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">{t('components.storyboard.sheetExportPanel.preset')}</span>
           <select
             value={preset}
             onChange={(event) => setPreset(event.target.value as StoryboardSheetPreset)}
@@ -581,23 +583,23 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
           <p className="text-xs text-slate-500">
             {sheetTemplate === 'current'
               ? presetOptions.find((option) => option.value === preset)?.description
-              : 'La plantilla seleccionada resolverá automáticamente el preset efectivo.'}
+              : t('components.storyboard.sheetExportPanel.templateResolvesPreset')}
           </p>
         </label>
 
         <label className="space-y-2">
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Imágenes a incluir</span>
+          <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">{t('components.storyboard.sheetExportPanel.imagesToInclude')}</span>
           <select
             value={frameCountMode}
             onChange={(event) => setFrameCountMode(event.target.value as (typeof frameCountOptions)[number]['value'])}
             className="w-full rounded-xl border border-white/10 bg-dark-300/70 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-amber-500/50"
           >
             {frameCountOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
+              <option key={option.value} value={option.value}>{'labelKey' in option ? t(option.labelKey) : option.label}</option>
             ))}
           </select>
           <p className="text-xs text-slate-500">
-            Selecciona cuántos frames incluir para controlar el coste estimado del export.
+            {t('components.storyboard.sheetExportPanel.frameCostHelp')}
           </p>
         </label>
       </div>
@@ -605,7 +607,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
       {frameCountMode === 'custom' && (
         <div className="grid gap-4 md:grid-cols-[minmax(0,280px)_1fr] md:items-end">
           <label className="space-y-2">
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Cantidad personalizada</span>
+            <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">{t('components.storyboard.sheetExportPanel.customQuantity')}</span>
             <input
               type="number"
               min={1}
@@ -617,7 +619,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             />
           </label>
           <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-400">
-            Valor permitido: entre 1 y 100 imágenes.
+            {t('components.storyboard.sheetExportPanel.allowedValue')}
           </div>
         </div>
       )}
@@ -628,19 +630,19 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
 
       {/* Page selection */}
       <div className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Selección de páginas</p>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">{t('components.storyboard.sheetExportPanel.pageSelection')}</p>
         <div className="flex flex-wrap gap-3">
           <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
             <input type="radio" name="page-select" checked={selectedPages === 'all'} onChange={() => setSelectedPages('all')} className="text-amber-500" />
-            Todas las páginas
+            {t('components.storyboard.sheetExportPanel.allPages')}
           </label>
           <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
             <input type="radio" name="page-select" checked={selectedPages === 'current'} onChange={() => setSelectedPages('current')} className="text-amber-500" />
-            Página actual
+            {t('components.storyboard.sheetExportPanel.currentPage')}
           </label>
           <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
             <input type="radio" name="page-select" checked={selectedPages === 'range'} onChange={() => setSelectedPages('range')} className="text-amber-500" />
-            Rango
+            {t('components.storyboard.sheetExportPanel.range')}
           </label>
           {selectedPages === 'range' && (
             <input
@@ -668,7 +670,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
                   }}
                   className="text-amber-500"
                 />
-                Página {idx + 1}
+                {t('components.storyboard.common.page')} {idx + 1}
               </label>
             ))}
           </div>
@@ -683,16 +685,16 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
           className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileImage className="h-4 w-4" />}
-          {isSubmitting ? 'Preparando descarga...' : result ? 'Descargar Storyboard Sheet' : 'Preparar descarga'}
+          {isSubmitting ? t('components.storyboard.sheetExportPanel.preparingDownload') : result ? t('components.storyboard.sheetExportPanel.downloadSheet') : t('components.storyboard.sheetExportPanel.prepareDownload')}
         </button>
         {result && (
           <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs text-emerald-300">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Export disponible
+            {t('components.storyboard.sheetExportPanel.exportAvailable')}
           </span>
         )}
         <div className="text-xs text-slate-500">
-          {sheetTemplate === 'current' ? 'modo actual' : selectedTemplateOption.label} · {outputFormat.toUpperCase()} · {requestedFrameCount == null ? 'frames por defecto/todos' : `${requestedFrameCount} imágenes`}
+          {sheetTemplate === 'current' ? t('components.storyboard.sheetExportPanel.currentMode') : selectedTemplateOption.label} · {outputFormat.toUpperCase()} · {requestedFrameCount == null ? t('components.storyboard.sheetExportPanel.defaultFrames') : `${requestedFrameCount} imágenes`}
         </div>
       </div>
 

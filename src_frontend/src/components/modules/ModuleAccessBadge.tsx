@@ -1,11 +1,17 @@
 import clsx from 'clsx'
+import { useLanguage } from '@/i18n'
 
 interface ModuleAccessBadgeProps {
   enabled: boolean | null
 }
 
 export default function ModuleAccessBadge({ enabled }: ModuleAccessBadgeProps) {
-  const label = enabled === null ? 'Catálogo informativo' : enabled ? 'Disponible' : 'Bloqueado'
+  const { t } = useLanguage()
+  const label = enabled === null
+    ? t('components.modules.accessBadge.informational')
+    : enabled
+      ? t('components.modules.accessBadge.available')
+      : t('components.modules.accessBadge.locked')
   const tone = enabled === null
     ? 'bg-slate-500/12 text-slate-200 border-slate-400/20'
     : enabled

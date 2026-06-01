@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Loader2, Send, History, AlertTriangle, CheckCircle2, Shield, FileText, ChevronDown, ChevronUp } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
+import { t } from '@/i18n'
 import type {
   StoryboardShot,
   FeedbackCategory,
@@ -11,20 +12,20 @@ import type {
 } from '@/types/storyboard'
 
 const CATEGORY_LABELS: { value: FeedbackCategory; label: string }[] = [
-  { value: 'composition', label: 'Composición' },
-  { value: 'lighting', label: 'Iluminación' },
-  { value: 'character', label: 'Personaje' },
-  { value: 'camera', label: 'Cámara' },
-  { value: 'continuity', label: 'Continuidad' },
-  { value: 'tone', label: 'Tono' },
-  { value: 'production', label: 'Producción' },
-  { value: 'other', label: 'Otro' },
+  { value: 'composition', label: 'components.storyboard.directorFeedback.categories.composition' },
+  { value: 'lighting', label: 'components.storyboard.directorFeedback.categories.lighting' },
+  { value: 'character', label: 'components.storyboard.directorFeedback.categories.character' },
+  { value: 'camera', label: 'components.storyboard.directorFeedback.categories.camera' },
+  { value: 'continuity', label: 'components.storyboard.directorFeedback.categories.continuity' },
+  { value: 'tone', label: 'components.storyboard.directorFeedback.categories.tone' },
+  { value: 'production', label: 'components.storyboard.directorFeedback.categories.production' },
+  { value: 'other', label: 'components.storyboard.directorFeedback.categories.other' },
 ]
 
 const SEVERITY_LABELS: { value: FeedbackSeverity; label: string; color: string }[] = [
-  { value: 'minor', label: 'Leve', color: 'text-green-400 border-green-500/30 bg-green-500/10' },
-  { value: 'medium', label: 'Media', color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
-  { value: 'major', label: 'Grave', color: 'text-red-400 border-red-500/30 bg-red-500/10' },
+  { value: 'minor', label: 'components.storyboard.directorFeedback.severities.minor', color: 'text-green-400 border-green-500/30 bg-green-500/10' },
+  { value: 'medium', label: 'components.storyboard.directorFeedback.severities.medium', color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
+  { value: 'major', label: 'components.storyboard.directorFeedback.severities.major', color: 'text-red-400 border-red-500/30 bg-red-500/10' },
 ]
 
 interface DirectorFeedbackPanelProps {
@@ -101,7 +102,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
         revision_plan: res.revision_plan,
       })
     } catch (err: any) {
-      setSubmitError(err?.response?.data?.detail || err?.message || 'Error al enviar la nota del director')
+      setSubmitError(err?.response?.data?.detail || err?.message || t('components.storyboard.directorFeedback.submitError'))
     } finally {
       setIsSubmitting(false)
     }
@@ -120,7 +121,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
       const entries = await storyboardApi.getShotRevisionHistory(projectId, shot.id)
       setHistoryEntries(entries)
     } catch (err: any) {
-      setHistoryError(err?.response?.data?.detail || err?.message || 'Error al cargar historial')
+      setHistoryError(err?.response?.data?.detail || err?.message || t('components.storyboard.directorFeedback.loadHistoryError'))
     } finally {
       setIsLoadingHistory(false)
     }
@@ -133,12 +134,12 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
       {/* Header */}
       <div className="flex items-center gap-2">
         <Shield className="w-4 h-4 text-amber-400" />
-        <h4 className="text-sm font-semibold text-amber-300">Notas del director</h4>
+        <h4 className="text-sm font-semibold text-amber-300">{t('components.storyboard.directorFeedback.title')}</h4>
       </div>
 
       {/* Functional note */}
       <p className="text-[11px] text-slate-500 leading-relaxed">
-        CID revisa el prompt respetando la lógica narrativa original: guion, secuencia, intención cinematográfica, continuidad y referencia visual si existe.
+        {t('components.storyboard.directorFeedback.infoText')}
       </p>
 
       {/* Note textarea */}
@@ -146,7 +147,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
         <textarea
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
-          placeholder="Escribe tu nota aquí... Ej: 'La iluminación es demasiado oscura, necesito más luz natural'"
+          placeholder={t('components.storyboard.directorFeedback.placeholder')}
           rows={3}
           className="w-full rounded-xl border border-white/10 bg-[#0a1016] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500/50 focus:outline-none resize-none"
         />
@@ -155,19 +156,19 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
       {/* Category + Severity row */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Categoría</label>
+          <label className="block text-xs font-medium text-slate-400 mb-1">{t('components.storyboard.directorFeedback.category')}</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as FeedbackCategory)}
             className="w-full rounded-xl border border-white/10 bg-[#0a1016] px-3 py-2 text-sm text-white focus:border-amber-500/50 focus:outline-none"
           >
             {CATEGORY_LABELS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>{t(opt.label)}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Severidad</label>
+          <label className="block text-xs font-medium text-slate-400 mb-1">{t('components.storyboard.directorFeedback.severity')}</label>
           <div className="flex gap-1.5">
             {SEVERITY_LABELS.map((s) => (
               <button
@@ -179,7 +180,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
                     : 'border-white/10 bg-[#0a1016] text-slate-500 hover:border-white/20'
                 }`}
               >
-                {s.label}
+                {t(s.label)}
               </button>
             ))}
           </div>
@@ -194,7 +195,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
           onChange={(e) => setPreserveLogic(e.target.checked)}
           className="rounded border-white/20 bg-[#0a1016] text-amber-500 focus:ring-amber-500/30"
         />
-        <span className="text-xs text-slate-400">Preservar lógica original del guion</span>
+        <span className="text-xs text-slate-400">{t('components.storyboard.directorFeedback.preserveOriginal')}</span>
       </label>
 
       {/* Submit button */}
@@ -208,7 +209,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
         ) : (
           <Send className="w-4 h-4" />
         )}
-        {isSubmitting ? 'Revisando prompt con CID...' : 'Revisar prompt con CID'}
+        {isSubmitting ? t('components.storyboard.directorFeedback.reviewingPrompt') : t('components.storyboard.directorFeedback.reviewPrompt')}
       </button>
 
       {/* Error */}
@@ -225,7 +226,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-green-400 flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Revisión completada
+              {t('components.storyboard.directorFeedback.completed')}
             </span>
             {result.prompt_revision.version_number > 0 && (
               <span className="text-[10px] text-slate-500">v{result.prompt_revision.version_number}</span>
@@ -235,18 +236,18 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
           {/* Status & Risk */}
           <div className="grid grid-cols-2 gap-2 text-[11px]">
             <div className="rounded-lg border border-white/5 bg-dark-300/40 p-2">
-              <span className="text-slate-500">Estado</span>
+              <span className="text-slate-500">{t('components.storyboard.directorFeedback.status')}</span>
               <p className="text-white font-medium">{result.status}</p>
             </div>
             <div className="rounded-lg border border-white/5 bg-dark-300/40 p-2">
-              <span className="text-slate-500">Riesgo</span>
+              <span className="text-slate-500">{t('components.storyboard.directorFeedback.risk')}</span>
               <p className={`font-medium ${
                 result.interpretation.risk_level === 'high' ? 'text-red-400' :
                 result.interpretation.risk_level === 'medium' ? 'text-amber-400' :
                 'text-green-400'
               }`}>
-                {result.interpretation.risk_level === 'high' ? 'Alto' :
-                 result.interpretation.risk_level === 'medium' ? 'Medio' : 'Bajo'}
+                {result.interpretation.risk_level === 'high' ? t('components.storyboard.directorFeedback.riskHigh') :
+                 result.interpretation.risk_level === 'medium' ? t('components.storyboard.directorFeedback.riskMedium') : t('components.storyboard.directorFeedback.riskLow')}
               </p>
             </div>
           </div>
@@ -254,27 +255,27 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
           {/* Conflicts */}
           <div className="space-y-1 text-[11px]">
             <div className="flex items-center gap-2">
-              <span className="text-slate-500">Conflicto con guion:</span>
+              <span className="text-slate-500">{t('components.storyboard.directorFeedback.conflictScript')}</span>
               {result.interpretation.conflict_with_script ? (
-                <span className="text-red-400 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Sí</span>
+                <span className="text-red-400 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t('components.storyboard.directorFeedback.yes')}</span>
               ) : (
-                <span className="text-green-400 font-medium flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No</span>
+                <span className="text-green-400 font-medium flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> {t('components.storyboard.directorFeedback.no')}</span>
               )}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-slate-500">Conflicto con referencia visual:</span>
+              <span className="text-slate-500">{t('components.storyboard.directorFeedback.conflictVisual')}</span>
               {result.interpretation.conflict_with_reference ? (
-                <span className="text-red-400 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Sí</span>
+                <span className="text-red-400 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t('components.storyboard.directorFeedback.yes')}</span>
               ) : (
-                <span className="text-green-400 font-medium flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No</span>
+                <span className="text-green-400 font-medium flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> {t('components.storyboard.directorFeedback.no')}</span>
               )}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-slate-500">Conflicto con prompt inicial:</span>
+              <span className="text-slate-500">{t('components.storyboard.directorFeedback.conflictPrompt')}</span>
               {result.interpretation.conflict_with_initial_prompt ? (
-                <span className="text-amber-400 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Sí</span>
+                <span className="text-amber-400 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t('components.storyboard.directorFeedback.yes')}</span>
               ) : (
-                <span className="text-green-400 font-medium flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No</span>
+                <span className="text-green-400 font-medium flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> {t('components.storyboard.directorFeedback.no')}</span>
               )}
             </div>
           </div>
@@ -282,21 +283,21 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
           {/* Explanation */}
           {result.interpretation.explanation && (
             <div className="text-[11px] text-slate-300 leading-relaxed">
-              <span className="text-slate-500">Explicación:</span> {result.interpretation.explanation}
+              <span className="text-slate-500">{t('components.storyboard.directorFeedback.explanation')}</span> {result.interpretation.explanation}
             </div>
           )}
 
           {/* Recommended action */}
           {result.interpretation.recommended_action && (
             <div className="rounded-lg border border-amber-500/10 bg-amber-500/5 p-2 text-[11px] text-slate-300">
-              <span className="text-amber-400 font-medium">Acción recomendada:</span> {result.interpretation.recommended_action}
+              <span className="text-amber-400 font-medium">{t('components.storyboard.directorFeedback.recommendedAction')}</span> {result.interpretation.recommended_action}
             </div>
           )}
 
           {/* Requested changes */}
           {result.interpretation.requested_changes.length > 0 && (
             <div>
-              <p className="text-[11px] font-medium text-slate-400 mb-1">Cambios solicitados</p>
+              <p className="text-[11px] font-medium text-slate-400 mb-1">{t('components.storyboard.directorFeedback.requestedChanges')}</p>
               <ul className="list-inside list-disc text-[11px] text-slate-300 space-y-0.5">
                 {result.interpretation.requested_changes.map((c, i) => (
                   <li key={i}>{c}</li>
@@ -309,7 +310,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
           {result.interpretation.protected_story_elements.length > 0 && (
             <div>
               <p className="text-[11px] font-medium text-green-400/80 mb-1 flex items-center gap-1">
-                <Shield className="w-3 h-3" /> Elementos protegidos del guion
+                <Shield className="w-3 h-3" /> {t('components.storyboard.directorFeedback.protectedElements')}
               </p>
               <ul className="list-inside list-disc text-[11px] text-slate-300 space-y-0.5">
                 {result.interpretation.protected_story_elements.map((e, i) => (
@@ -323,34 +324,34 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
           {result.prompt_revision.original_prompt && (
             <div className="border-t border-white/10 pt-3 space-y-3">
               <h5 className="text-xs font-medium text-amber-400 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" /> Prompt
+                <FileText className="w-3.5 h-3.5" /> {t('components.storyboard.directorFeedback.prompt')}
               </h5>
 
               <div>
-                <p className="text-[10px] font-medium text-slate-500 mb-1">Original</p>
+                <p className="text-[10px] font-medium text-slate-500 mb-1">{t('components.storyboard.directorFeedback.original')}</p>
                 <pre className="whitespace-pre-wrap text-[11px] text-slate-400 bg-dark-300/40 rounded-lg p-2 border border-white/5 max-h-24 overflow-y-auto">
-                  {result.prompt_revision.original_prompt || '(sin prompt original)'}
+                  {result.prompt_revision.original_prompt || t('components.storyboard.directorFeedback.originalPromptEmpty')}
                 </pre>
               </div>
 
               <div>
-                <p className="text-[10px] font-medium text-green-400/70 mb-1">Revisado</p>
+                <p className="text-[10px] font-medium text-green-400/70 mb-1">{t('components.storyboard.directorFeedback.revised')}</p>
                 <pre className="whitespace-pre-wrap text-[11px] text-green-300/80 bg-dark-300/40 rounded-lg p-2 border border-green-500/10 max-h-24 overflow-y-auto">
-                  {result.prompt_revision.revised_prompt || '(sin cambios)'}
+                  {result.prompt_revision.revised_prompt || t('components.storyboard.directorFeedback.revisedPromptEmpty')}
                 </pre>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <p className="text-[10px] font-medium text-slate-500 mb-1">Negative prompt original</p>
+                  <p className="text-[10px] font-medium text-slate-500 mb-1">{t('components.storyboard.directorFeedback.originalNegative')}</p>
                   <pre className="whitespace-pre-wrap text-[11px] text-slate-400 bg-dark-300/40 rounded-lg p-2 border border-white/5 max-h-20 overflow-y-auto">
-                    {result.prompt_revision.original_negative_prompt || '(vacío)'}
+                    {result.prompt_revision.original_negative_prompt || t('components.storyboard.directorFeedback.negativePromptEmpty')}
                   </pre>
                 </div>
                 <div>
-                  <p className="text-[10px] font-medium text-green-400/70 mb-1">Negative prompt revisado</p>
+                  <p className="text-[10px] font-medium text-green-400/70 mb-1">{t('components.storyboard.directorFeedback.revisedNegative')}</p>
                   <pre className="whitespace-pre-wrap text-[11px] text-green-300/80 bg-dark-300/40 rounded-lg p-2 border border-green-500/10 max-h-20 overflow-y-auto">
-                    {result.prompt_revision.revised_negative_prompt || '(vacío)'}
+                    {result.prompt_revision.revised_negative_prompt || t('components.storyboard.directorFeedback.negativePromptEmpty')}
                   </pre>
                 </div>
               </div>
@@ -361,7 +362,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
           <div className="grid grid-cols-3 gap-2 text-[11px]">
             {result.prompt_revision.preserved_elements.length > 0 && (
               <div className="rounded-lg border border-green-500/10 bg-green-500/5 p-2">
-                <p className="font-medium text-green-400/80 mb-0.5">Preservado</p>
+                <p className="font-medium text-green-400/80 mb-0.5">{t('components.storyboard.directorFeedback.preserved')}</p>
                 <ul className="list-inside list-disc text-green-300/60 space-y-0.5">
                   {result.prompt_revision.preserved_elements.map((e, i) => (
                     <li key={i} className="text-[10px]">{e}</li>
@@ -371,7 +372,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
             )}
             {result.prompt_revision.changed_elements.length > 0 && (
               <div className="rounded-lg border border-amber-500/10 bg-amber-500/5 p-2">
-                <p className="font-medium text-amber-400/80 mb-0.5">Cambiado</p>
+                <p className="font-medium text-amber-400/80 mb-0.5">{t('components.storyboard.directorFeedback.changed')}</p>
                 <ul className="list-inside list-disc text-amber-300/60 space-y-0.5">
                   {result.prompt_revision.changed_elements.map((e, i) => (
                     <li key={i} className="text-[10px]">{e}</li>
@@ -381,7 +382,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
             )}
             {result.prompt_revision.rejected_changes.length > 0 && (
               <div className="rounded-lg border border-red-500/10 bg-red-500/5 p-2">
-                <p className="font-medium text-red-400/80 mb-0.5">Rechazado</p>
+                <p className="font-medium text-red-400/80 mb-0.5">{t('components.storyboard.directorFeedback.rejected')}</p>
                 <ul className="list-inside list-disc text-red-300/60 space-y-0.5">
                   {result.prompt_revision.rejected_changes.map((e, i) => (
                     <li key={i} className="text-[10px]">{e}</li>
@@ -394,14 +395,14 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
           {/* Revision reason */}
           {result.prompt_revision.revision_reason && (
             <div className="text-[11px] text-slate-400">
-              <span className="text-slate-500">Motivo de revisión:</span> {result.prompt_revision.revision_reason}
+              <span className="text-slate-500">{t('components.storyboard.directorFeedback.revisionReason')}</span> {result.prompt_revision.revision_reason}
             </div>
           )}
 
           {/* QA Checklist */}
           {result.revision_plan.qa_checklist.length > 0 && (
             <div className="border-t border-white/10 pt-2">
-              <p className="text-[11px] font-medium text-slate-400 mb-1">Checklist QA</p>
+              <p className="text-[11px] font-medium text-slate-400 mb-1">{t('components.storyboard.directorFeedback.qaChecklist')}</p>
               <ul className="space-y-0.5">
                 {result.revision_plan.qa_checklist.map((item, i) => (
                   <li key={i} className="text-[10px] text-slate-500 flex items-start gap-1.5">
@@ -422,7 +423,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
           className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-amber-400 transition-colors"
         >
           <History className="w-3.5 h-3.5" />
-          Ver historial de revisiones
+          {t('components.storyboard.directorFeedback.verHistorial')}
           {showHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </button>
 
@@ -431,7 +432,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
             {isLoadingHistory ? (
               <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Cargando historial...
+                {t('components.storyboard.directorFeedback.cargandoHistorial')}
               </div>
             ) : historyError ? (
               <div className="text-xs text-red-400 py-1">{historyError}</div>
@@ -445,7 +446,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
                         <p className="text-[10px] text-slate-500">ID: {String(entry.revision_id).substring(0, 12)}...</p>
                       )}
                       {entry.version_number !== undefined && (
-                        <p className="text-[10px] text-slate-500">Versión: {String(entry.version_number)}</p>
+                        <p className="text-[10px] text-slate-500">{t('components.storyboard.directorFeedback.version')} {String(entry.version_number)}</p>
                       )}
                       {entry.note_text && (
                         <p className="text-slate-300">{String(entry.note_text)}</p>
@@ -461,7 +462,7 @@ export default function DirectorFeedbackPanel({ shot, projectId }: DirectorFeedb
                 })}
               </div>
             ) : (
-              <p className="text-xs text-slate-500 py-1">Todavía no hay revisiones para este plano.</p>
+              <p className="text-xs text-slate-500 py-1">{t('components.storyboard.directorFeedback.noRevisions')}</p>
             )}
           </div>
         )}

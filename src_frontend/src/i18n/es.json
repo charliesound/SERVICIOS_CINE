@@ -519,7 +519,230 @@
         "creditsWillCalculate": "Se calculará al generar el sheet.",
         "templateResolvesLayout": "La plantilla seleccionada resolverá automáticamente el layout efectivo.",
         "templateResolvesPreset": "La plantilla seleccionada resolverá automáticamente el preset efectivo.",
-        "frameCostHelp": "Selecciona cuántos frames incluir para controlar el coste estimado del export."
+        "frameCostHelp": "Selecciona cuántos frames incluir para controlar el coste estimado del export.",
+        "errors": {
+          "sessionExpired": "Sesión caducada. Vuelve a iniciar sesión.",
+          "invalidRequest": "La solicitud del storyboard sheet no es válida.",
+          "validationError": "El backend rechazó la solicitud por un error de validación.",
+          "internalError": "No se pudo generar el storyboard sheet por un error interno del backend.",
+          "unavailable": "El backend no está disponible en este momento. Revisa la conexión e inténtalo otra vez.",
+          "genericError": "No se pudo generar el storyboard sheet."
+        },
+        "templates": {
+          "current": {
+            "label": "Automático / Actual",
+            "description": "Usa el layout y preset actuales sin aplicar plantilla comercial."
+          },
+          "clean_4_panel_pitch": {
+            "label": "Pitch limpio — 4 imágenes",
+            "description": "Pitch compacto para presentar 4 frames clave."
+          },
+          "clean_6_panel_review": {
+            "label": "Review — 6 imágenes",
+            "description": "Formato de revisión editorial con 6 frames."
+          },
+          "grid_8_panel_vertical": {
+            "label": "8 imágenes vertical",
+            "description": "Plantilla vertical de 8 paneles para revisión densa."
+          },
+          "grid_8_panel_landscape": {
+            "label": "8 imágenes landscape",
+            "description": "Versión horizontal de 8 paneles."
+          },
+          "production_12_panel_vertical": {
+            "label": "Producción — 12 vertical",
+            "description": "Hoja de producción vertical para secuencias extensas."
+          },
+          "production_12_panel_landscape": {
+            "label": "Producción — 12 landscape",
+            "description": "Hoja de producción horizontal de alta densidad."
+          },
+          "client_review_with_notes": {
+            "label": "Cliente con notas",
+            "description": "Template con más espacio para revisión y notas."
+          },
+          "technical_storyboard_sheet": {
+            "label": "Técnico",
+            "description": "Formato técnico inspirado en hojas de shot list y notas."
+          }
+        },
+        "imagesCount": "imágenes"
+      },
+      "directorFeedback": {
+        "title": "Notas del director",
+        "infoText": "CID revisa el prompt respetando la lógica narrativa original: guion, secuencia, intención cinematográfica, continuidad y referencia visual si existe.",
+        "placeholder": "Escribe tu nota aquí... Ej: 'La iluminación es demasiado oscura, necesito más luz natural'",
+        "category": "Categoría",
+        "severity": "Severidad",
+        "preserveOriginal": "Preservar lógica original del guion",
+        "completed": "Revisión completada",
+        "status": "Estado",
+        "risk": "Riesgo",
+        "conflictScript": "Conflicto con guion:",
+        "conflictVisual": "Conflicto con referencia visual:",
+        "conflictPrompt": "Conflicto con prompt inicial:",
+        "explanation": "Explicación:",
+        "recommendedAction": "Acción recomendada:",
+        "requestedChanges": "Cambios solicitados",
+        "original": "Original",
+        "revised": "Revisado",
+        "originalNegative": "Negative prompt original",
+        "revisedNegative": "Negative prompt revisado",
+        "preserved": "Preservado",
+        "changed": "Cambiado",
+        "rejected": "Rechazado",
+        "revisionReason": "Motivo de revisión:",
+        "qaChecklist": "Checklist QA",
+        "version": "Versión:",
+        "noRevisions": "Todavía no hay revisiones para este plano.",
+        "verHistorial": "Ver historial de revisiones",
+        "cargandoHistorial": "Cargando historial...",
+        "yes": "Sí",
+        "no": "No",
+        "categories": {
+          "composition": "Composición",
+          "lighting": "Iluminación",
+          "character": "Personaje",
+          "camera": "Cámara",
+          "continuity": "Continuidad",
+          "tone": "Tono",
+          "production": "Producción",
+          "other": "Otro"
+        },
+        "severities": {
+          "minor": "Leve",
+          "medium": "Media",
+          "major": "Grave"
+        },
+        "submitError": "Error al enviar la nota del director",
+        "loadHistoryError": "Error al cargar historial",
+        "originalPromptEmpty": "(sin prompt original)",
+        "revisedPromptEmpty": "(sin cambios)",
+        "negativePromptEmpty": "(vacío)",
+        "analyzing": "Analizando notas...",
+        "send": "Enviar",
+        "protectedElements": "Elementos protegidos del guion",
+        "reviewingPrompt": "Revisando prompt con CID...",
+        "reviewPrompt": "Revisar prompt con CID",
+        "riskHigh": "Alto",
+        "riskMedium": "Medio",
+        "riskLow": "Bajo",
+        "prompt": "Prompt"
+      },
+      "characterBible": {
+        "title": "Character Bible",
+        "subtitle": "Control de continuidad visual de personajes, referencias aprobadas y variantes de look.",
+        "securityUi": "Seguridad UI",
+        "securityUiHelp": "Introduce un MediaAsset ID ya existente para vincular una referencia aprobada. CID solo guarda el identificador y la URL API segura, nunca rutas internas del sistema.",
+        "characters": "Personajes",
+        "noCharacters": "No hay personajes cargados todavía.",
+        "suggestedBySequences": "Sugerido por secuencias",
+        "newCharacter": "Nuevo personaje",
+        "characterId": "Character ID",
+        "characterName": "Nombre del personaje",
+        "visualDescription": "Visual description",
+        "wardrobe": "Wardrobe",
+        "hairMakeup": "Hair & makeup",
+        "associatedProps": "Associated props",
+        "negativeConstraints": "Negative constraints",
+        "lookVariants": "Variantes de look",
+        "noVariants": "Todavía no hay variantes cargadas.",
+        "approvedReferences": "Referencias aprobadas",
+        "selectedAsset": "Asset seleccionado",
+        "existingProjectAssets": "Assets existentes del proyecto",
+        "selectExistingAssetHelp": "Selecciona un asset visual ya disponible en el proyecto o usa el campo manual de MediaAsset ID.",
+        "reloadAssets": "Recargar assets",
+        "noReferences": "Todavía no hay referencias aprobadas.",
+        "continuityResolution": "Resolución de continuidad",
+        "character": "Personaje:",
+        "resolvedLook": "Look resuelto:",
+        "primaryReference": "Referencia primaria:",
+        "promptLock": "Prompt lock:",
+        "negativeBlock": "Negative block:",
+        "continuityBlock": "Continuity block:",
+        "traceability": "Trazabilidad",
+        "noTraceabilityMetadata": "No hay metadata de trazabilidad para este personaje.",
+        "traceabilityUnavailable": "Trazabilidad no disponible.",
+        "successAddVariant": "Variante añadida correctamente",
+        "errorAddVariant": "No se pudo añadir la variante",
+        "errorSelectCharacter": "Selecciona un personaje e introduce un MediaAsset ID válido",
+        "addVariant": "Añadir variante",
+        "primary": "Primary",
+        "viewTraceability": "Ver trazabilidad",
+        "linkReference": "Vincular referencia",
+        "selectExistingAsset": "Seleccionar asset existente",
+        "saveCharacter": "Guardar personaje",
+        "saving": "Guardando...",
+        "lookIdPlaceholder": "look-night-exterior",
+        "lookNamePlaceholder": "Night exterior",
+        "narrativePhasePlaceholder": "Acto 2",
+        "descPlaceholder": "Descripción opcional",
+        "primaryRefCheckbox": "Referencia principal",
+        "noPreviewSecure": "Sin preview segura",
+        "previewSecure": "Preview segura disponible",
+        "useAsReference": "Usar como referencia",
+        "pageOf": "Página {page} de {totalPages} ({totalItems} assets)"
+      },
+      "directorVisualReference": {
+        "title": "Referencia visual del director",
+        "subtitle": "Sube una imagen de referencia para guiar el estilo visual de las generaciones",
+        "imageRefLabel": "Imagen de referencia (URL o asset ID)",
+        "imageRefPlaceholder": "https://ejemplo.com/referencia.webp o asset_id",
+        "purposeLabel": "Propósito de la referencia",
+        "intensityLabel": "Intensidad",
+        "modeLabel": "Modo de referencia",
+        "notesLabel": "Notas del director",
+        "notesPlaceholder": "Ej: \"Quiero que esta escena tenga una luz suave como la referencia, pero con colores más cálidos\"",
+        "analyzeButton": "Analizar referencia visual",
+        "analyzingStatus": "Analizando referencia visual...",
+        "styleProfileTitle": "Perfil de estilo extraído",
+        "styleSummary": "Resumen:",
+        "stylePalette": "Paleta:",
+        "styleLighting": "Iluminación:",
+        "styleAtmosphere": "Atmósfera:",
+        "transferableTraits": "Rasgos transferibles:",
+        "scriptMatchTitle": "Cotejo con el guion",
+        "scriptMatchPlaceholder": "Pega aquí el texto de la escena del guion para cotejarlo con la referencia visual...",
+        "scriptMatchButton": "Cotejar con el guion",
+        "scriptMatchingStatus": "Cotejando con el guion...",
+        "alignmentScoreLabel": "Score de alineación",
+        "matchesLabel": "Coincidencias",
+        "tensionsLabel": "Tensiones detectadas",
+        "enrichedIntentLabel": "Intención enriquecida",
+        "applyButton": "Usar esta referencia en storyboard",
+        "purposes": {
+          "global_project_style": "Estilo global del proyecto",
+          "scene_mood": "Atmósfera de escena",
+          "character_visual_reference": "Referencia visual de personaje",
+          "location_reference": "Referencia de localización",
+          "lighting_reference": "Referencia de iluminación",
+          "color_palette_reference": "Referencia de paleta de color",
+          "composition_reference": "Referencia de composición",
+          "storyboard_reference": "Referencia de storyboard"
+        },
+        "modes": {
+          "mood_only": {
+            "label": "Solo atmósfera",
+            "description": "Transfiere solo el ambiente y la sensación visual"
+          },
+          "palette_lighting": {
+            "label": "Paleta y luz",
+            "description": "Transfiere color e iluminación"
+          },
+          "composition_guidance": {
+            "label": "Guía de composición",
+            "description": "Transfiere encuadre y composición"
+          },
+          "full_art_direction": {
+            "label": "Dirección artística completa",
+            "description": "Transfiere todos los aspectos visuales"
+          }
+        },
+        "intensities": {
+          "low": "Suave",
+          "medium": "Media",
+          "high": "Fuerte"
+        }
       }
     }
   },

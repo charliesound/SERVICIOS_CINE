@@ -79,6 +79,19 @@ from models.crm import (
 )
 from models.password_reset import PasswordResetToken
 from models.project_visual_bible import ProjectVisualBible
+from models.client_feedback import (
+    CIDClientFeedback,
+    CIDFeedbackMemoryEntry,
+    CIDAnswerFeedbackEvent,
+    CIDProjectLearningRule,
+    CIDOrganizationLearningPreference,
+    CIDFeedbackAudit,
+    CID_FEEDBACK_TYPES,
+    CID_FEEDBACK_SCOPES,
+    CID_FEEDBACK_STATUSES,
+    CID_FEEDBACK_AUDIT_ACTIONS,
+    CID_LEARNING_RULE_TYPES,
+)
 from models.change_governance import (
     ProjectChangeRequest,
     ProjectApproval,
@@ -189,4 +202,15 @@ __all__ = [
     "SHOT_PRIORITIES",
     "SHOT_TYPES",
     "PLANNING_ITEM_STATUSES",
+    "CIDClientFeedback",
+    "CIDFeedbackMemoryEntry",
+    "CIDAnswerFeedbackEvent",
+    "CIDProjectLearningRule",
+    "CIDOrganizationLearningPreference",
+    "CIDFeedbackAudit",
+    "CID_FEEDBACK_TYPES",
+    "CID_FEEDBACK_SCOPES",
+    "CID_FEEDBACK_STATUSES",
+    "CID_FEEDBACK_AUDIT_ACTIONS",
+    "CID_LEARNING_RULE_TYPES",
 ]

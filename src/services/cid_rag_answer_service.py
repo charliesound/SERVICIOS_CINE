@@ -74,6 +74,7 @@ def _section_title(source_type: str) -> str:
         "script_text": "Guion",
         "storyboard_shot": "Storyboard",
         "production_breakdown": "Breakdown",
+        "client_feedback": "Feedback de clientes",
     }
     return mapping.get(source_type, source_type)
 
@@ -85,13 +86,13 @@ def build_answer_prompt(question: str, sources: list[dict[str, Any]], *, max_cha
         grouped.setdefault(source_type, []).append(_format_source(index, source, max_chars_per_chunk))
 
     sections: list[str] = []
-    for source_type in ("script_text", "storyboard_shot", "production_breakdown"):
+    for source_type in ("script_text", "storyboard_shot", "production_breakdown", "client_feedback"):
         items = grouped.get(source_type)
         if items:
             sections.append(f"{_section_title(source_type)}:\n" + "\n".join(items))
 
     for source_type, items in grouped.items():
-        if source_type not in {"script_text", "storyboard_shot", "production_breakdown"}:
+        if source_type not in {"script_text", "storyboard_shot", "production_breakdown", "client_feedback"}:
             sections.append(f"{_section_title(source_type)}:\n" + "\n".join(items))
 
     context = "\n\n".join(sections) if sections else "Sin contexto recuperado."
@@ -103,7 +104,8 @@ def build_answer_prompt(question: str, sources: list[dict[str, Any]], *, max_cha
         "- Si la pregunta pide que ocurre, integra Guion o Breakdown si aparecen.\n"
         "- Si la pregunta pide planos, prioriza Storyboard.\n"
         "- No inventes.\n"
-        "- Si ves rarezas o contradicciones, indicalas.\n\n"
+        "- Si ves rarezas o contradicciones, indicalas.\n"
+        "- Si hay feedback de clientes, la respuesta corregida tiene prioridad sobre fuentes originales.\n\n"
         "Responde con este formato:\n"
         "Resumen de la escena:\n"
         "Planos de storyboard relacionados:\n"
@@ -213,6 +215,8 @@ class CIDRAGAnswerService:
             prioritized_types.append("storyboard_shot")
         if re.search(r"\b(que ocurre|que pasa|escena|ocurre|pasa)\b", normalized_question):
             prioritized_types.extend(["script_text", "production_breakdown"])
+        if re.search(r"\b(que es|que significa|explica|diferencia|como se llama|definicion)\b", normalized_question):
+            prioritized_types.append("client_feedback")
 
         prioritized_types = list(dict.fromkeys(prioritized_types))
         selected_ids: set[str] = set()

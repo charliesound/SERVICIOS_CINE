@@ -385,3 +385,172 @@ async def test_ollama_generate_payload_includes_num_predict_and_stream_false(mon
     payload = captured["json"]
     assert payload["stream"] is False
     assert payload["options"]["num_predict"] == 512
+
+
+# ── Feedback-aware Answering ─────────────────────────────────────────────────
+
+def test_build_answer_prompt_includes_client_feedback_section() -> None:
+    prompt = build_answer_prompt(
+        "¿Qué es un dolly?",
+        [
+            {
+                "source_type": "client_feedback",
+                "title": "feedback-answer_helpful",
+                "source_id": "fb-1",
+                "score": 0.95,
+                "text": "Pregunta: ¿Qué es un dolly shot?\nRespuesta corregida: Un dolly shot es un plano con travelling sobre ruedas.",
+            }
+        ],
+        max_chars_per_chunk=1200,
+    )
+    assert "Feedback de clientes:" in prompt
+    assert "Respuesta corregida:" in prompt
+    assert "feedback de clientes" in prompt.lower()
+
+
+def test_build_answer_prompt_orders_client_feedback_after_standard_sources() -> None:
+    prompt = build_answer_prompt(
+        "Pregunta",
+        [
+            {"source_type": "script_text", "title": "Guion", "text": "Accion."},
+            {"source_type": "client_feedback", "title": "feedback", "text": "Feedback."},
+        ],
+        max_chars_per_chunk=120,
+    )
+    guion_pos = prompt.find("Guion:")
+    feedback_pos = prompt.find("Feedback de clientes:")
+    assert guion_pos >= 0
+    assert feedback_pos >= 0
+    assert guion_pos < feedback_pos
+
+
+def test_build_answer_prompt_includes_feedback_priority_instruction() -> None:
+    prompt = build_answer_prompt(
+        "Pregunta",
+        [{"source_type": "script_text", "title": "Guion", "text": "Texto."}],
+        max_chars_per_chunk=120,
+    )
+    assert "feedback de clientes" in prompt.lower()
+    assert "prioridad" in prompt.lower() or "prioritaria" in prompt.lower()
+
+
+@pytest.mark.asyncio
+async def test_answer_question_includes_feedback_sources(monkeypatch: pytest.MonkeyPatch) -> None:
+    service = CIDRAGAnswerService()
+    captured_prompt: dict[str, str] = {}
+
+    async def fake_embed_query(question: str) -> list[float]:
+        return [0.5] * 768
+
+    async def fake_search(**kwargs):
+        return [
+            {"id": "f1", "score": 0.95, "source_type": "client_feedback", "source_id": "fb-1",
+             "source_table": "cid_client_feedback", "title": "feedback", "text": "Pregunta: ¿Qué es un dolly?",
+             "chunk_index": 0, "chunk_count": 1, "tags": ["client_feedback"]},
+            {"id": "s1", "score": 0.85, "source_type": "script_text", "source_id": "g1",
+             "source_table": "projects", "title": "Guion", "text": "Texto.", "chunk_index": 0,
+             "chunk_count": 1, "tags": []},
+        ]
+
+    async def fake_generate(*, prompt: str, system_prompt: str, model: str | None = None,
+                            temperature: float | None = None) -> str:
+        captured_prompt["prompt"] = prompt
+        return "Respuesta"
+
+    monkeypatch.setattr("services.cid_rag_answer_service.rag_embedding_service.embed_query", fake_embed_query)
+    monkeypatch.setattr("services.cid_rag_answer_service.qdrant_memory_service.search", fake_search)
+    monkeypatch.setattr("services.cid_rag_answer_service.ollama_llm_service.generate", fake_generate)
+
+    result = await service.answer_question(
+        organization_id="org-1",
+        project_id="proj-1",
+        question="¿Qué es un dolly?",
+        limit=5,
+    )
+    source_types = [s["source_type"] for s in result["sources"]]
+    assert "client_feedback" in source_types
+    assert captured_prompt["prompt"].count("Feedback de clientes:") >= 1
+
+
+@pytest.mark.asyncio
+async def test_answer_question_prioritizes_feedback_when_relevant(monkeypatch: pytest.MonkeyPatch) -> None:
+    service = CIDRAGAnswerService()
+
+    async def fake_embed_query(question: str) -> list[float]:
+        return [0.5] * 768
+
+    async def fake_search(**kwargs):
+        return [
+            {"id": "s1", "score": 0.96, "source_type": "script_text", "source_id": "g1",
+             "source_table": "projects", "title": "Guion", "text": "Entra en la casa. La puerta cruje.",
+             "chunk_index": 0, "chunk_count": 1, "tags": []},
+            {"id": "f1", "score": 0.91, "source_type": "client_feedback", "source_id": "fb-1",
+             "source_table": "cid_client_feedback", "title": "feedback", "text": "Pregunta: ¿Qué es un travelling?\nRespuesta corregida: Movimiento de cámara sobre rieles.",
+             "chunk_index": 0, "chunk_count": 1, "tags": ["client_feedback"]},
+        ]
+
+    async def fake_generate(**kwargs):
+        return "Respuesta"
+
+    monkeypatch.setattr("services.cid_rag_answer_service.rag_embedding_service.embed_query", fake_embed_query)
+    monkeypatch.setattr("services.cid_rag_answer_service.qdrant_memory_service.search", fake_search)
+    monkeypatch.setattr("services.cid_rag_answer_service.ollama_llm_service.generate", fake_generate)
+
+    result = await service.answer_question(
+        organization_id="org-1",
+        project_id="proj-1",
+        question="¿Qué es un travelling? Explícamelo.",
+        limit=3,
+    )
+    source_types = [s["source_type"] for s in result["sources"]]
+    assert "client_feedback" in source_types
+
+
+@pytest.mark.asyncio
+async def test_answer_question_feedback_isolates_by_org(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Feedback from org-A must not appear when answering for org-B."""
+    service = CIDRAGAnswerService()
+    captured_org: list[str] = []
+
+    async def fake_embed_query(question: str) -> list[float]:
+        return [0.5] * 768
+
+    async def fake_search(**kwargs):
+        captured_org.append(kwargs.get("organization_id", ""))
+        return []  # empty for isolation test
+
+    monkeypatch.setattr("services.cid_rag_answer_service.rag_embedding_service.embed_query", fake_embed_query)
+    monkeypatch.setattr("services.cid_rag_answer_service.qdrant_memory_service.search", fake_search)
+
+    await service.answer_question(
+        organization_id="org-client-a",
+        project_id="proj-1",
+        question="Pregunta",
+        limit=3,
+    )
+    assert "org-client-a" in captured_org
+
+
+@pytest.mark.asyncio
+async def test_answer_question_feedback_isolates_by_project(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Feedback from proj-A must not appear when answering for proj-B."""
+    service = CIDRAGAnswerService()
+    captured_project: list[str] = []
+
+    async def fake_embed_query(question: str) -> list[float]:
+        return [0.5] * 768
+
+    async def fake_search(**kwargs):
+        captured_project.append(kwargs.get("project_id", ""))
+        return []
+
+    monkeypatch.setattr("services.cid_rag_answer_service.rag_embedding_service.embed_query", fake_embed_query)
+    monkeypatch.setattr("services.cid_rag_answer_service.qdrant_memory_service.search", fake_search)
+
+    await service.answer_question(
+        organization_id="org-1",
+        project_id="proj-client-b",
+        question="Pregunta",
+        limit=3,
+    )
+    assert "proj-client-b" in captured_project

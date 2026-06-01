@@ -81,6 +81,7 @@ class AnswerRequest(BaseModel):
     source_types: list[str] | None = None
     temperature: float = Field(default=0.2, ge=0.0, le=1.0)
     include_sources: bool = True
+    language: str | None = None
 
 
 class AnswerUsage(BaseModel):

@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from core.config import get_settings
+from core.i18n import get_no_context_answer, get_system_prompt, normalize_language
 from services.logging_service import logger
 from services.ollama_llm_service import ollama_llm_service
 from services.qdrant_memory_service import qdrant_memory_service
@@ -130,6 +131,7 @@ class CIDRAGAnswerService:
         project_id: str,
         question: str,
         limit: int = 5,
+        language: str | None = None,
         source_types: list[str] | None = None,
         temperature: float | None = None,
         include_sources: bool = True,
@@ -177,7 +179,7 @@ class CIDRAGAnswerService:
 
         answer = await ollama_llm_service.generate(
             prompt=prompt,
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=get_system_prompt(language),
             model=self.model,
             temperature=selected_temperature,
         )

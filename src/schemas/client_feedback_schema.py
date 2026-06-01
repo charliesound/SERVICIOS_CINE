@@ -3,13 +3,31 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
+
+
+CID_FEEDBACK_TYPES_VALID = {
+    "answer_helpful", "answer_wrong", "answer_partially_wrong",
+    "approved_correction", "rejected_answer",
+    "style_preference", "tone_preference", "project_rule",
+    "character_correction", "location_correction", "raccord_correction",
+    "storyboard_correction", "production_decision",
+    "prompt_success_case", "prompt_failure_case",
+    "source_blacklist", "source_preference",
+}
 
 
 class CIDClientFeedbackCreate(BaseModel):
     project_id: str
     feedback_type: str
     feedback_scope: str = "project_feedback"
+
+    @field_validator("feedback_type")
+    @classmethod
+    def validate_feedback_type(cls, v: str) -> str:
+        if v not in CID_FEEDBACK_TYPES_VALID:
+            raise ValueError(f"Invalid feedback_type: {v}")
+        return v
     original_question: str | None = None
     original_answer: str | None = None
     corrected_answer: str | None = None
@@ -203,3 +221,23 @@ class CIDFeedbackAuditResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ── API request/response schemas ───────────────────────────────────────
+
+class FeedbackQueryParams(BaseModel):
+    feedback_type: str | None = None
+    status: str | None = None
+    limit: int = Field(default=20, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)
+
+
+class AggregatedFeedbackResponse(BaseModel):
+    total_count: int
+    status_counts: dict[str, int]
+    type_counts: dict[str, int]
+
+
+class FeedbackDeleteResponse(BaseModel):
+    id: str
+    deleted: bool

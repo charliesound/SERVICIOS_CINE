@@ -349,6 +349,11 @@ def _register_routers(app: FastAPI, settings) -> None:
 
     app.include_router(memory_router, tags=["cid-memory"])
 
+    # ── CID Client Feedback ──────────────────────────────────────────────
+    from routes.client_feedback_routes import router as client_feedback_router
+
+    app.include_router(client_feedback_router, tags=["cid-feedback"])
+
     # ── CID internal test mode ───────────────────────────────────────────
     import os
 

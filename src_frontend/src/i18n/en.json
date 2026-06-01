@@ -1,0 +1,146 @@
+{
+  "common": {
+    "language": {
+      "spanish": "Spanish",
+      "english": "English",
+      "toggleLabel": "Language"
+    },
+    "cta": {
+      "requestDemo": "Request demo",
+      "contact": "Contact",
+      "viewModules": "View modules",
+      "startOnboarding": "Start onboarding"
+    },
+    "brand": {
+      "name": "AILinkCinema",
+      "suite": "CID Suite"
+    }
+  },
+  "landing": {
+    "nav": {
+      "what": "What it is",
+      "problems": "Problems",
+      "modules": "Modules",
+      "suite": "CID Suite",
+      "pricing": "Plans",
+      "demo": "Demo"
+    },
+    "hero": {
+      "eyebrow": "Commercial platform for film and audiovisual teams",
+      "title": "AILinkCinema turns specialized AI into sellable products for film, series and post-production.",
+      "subtitle": "From script analysis and storyboard workflows to editorial intelligence connected to NLEs, AILinkCinema presents a modular ecosystem that can be sold separately or as a full package under CID Suite.",
+      "primary": "Request demo",
+      "secondary": "Explore modules",
+      "support": "Built for production companies, directors, technical teams, studios, distributors and post-production crews."
+    },
+    "what": {
+      "title": "What AILinkCinema is and what it does",
+      "body": "AILinkCinema is the main commercial brand of the ecosystem. It groups intelligence systems for development, pre-production, production, post-production, localization and audiovisual distribution.",
+      "point1": "Commercial brand and main platform of the ecosystem.",
+      "point2": "CID Suite is the full package that includes every module and system.",
+      "point3": "Each module can also be commercialized independently depending on the client use case."
+    },
+    "problems": {
+      "title": "Problems it solves for production companies, directors, technical teams and distributors",
+      "card1Title": "Fragmented pipelines",
+      "card1Body": "Unifies analysis, visual development, breakdowns, feedback memory, editing and distribution inside one commercial layer.",
+      "card2Title": "Manual repetitive work",
+      "card2Body": "Cuts hours spent on reading, transcription, classification, search, packaging and export preparation.",
+      "card3Title": "Lack of creative traceability",
+      "card3Body": "Connects creative decisions, client feedback and production outputs with a continuity-oriented system.",
+      "card4Title": "Internal tools that are hard to monetize",
+      "card4Body": "Makes it possible to package standalone products or position them inside CID Suite with a clear commercial narrative."
+    },
+    "modules": {
+      "title": "Existing modules and systems",
+      "subtitle": "Initial catalog of sellable products and systems inside the AILinkCinema ecosystem."
+    },
+    "standalone": {
+      "title": "What can be acquired separately and what each module is for",
+      "body": "Each module can be licensed as a standalone product when the client needs to solve a specific part of the pipeline without deploying the full suite.",
+      "badge": "Standalone product"
+    },
+    "cidSuite": {
+      "title": "What CID Suite includes as a complete package",
+      "body": "CID Suite brings every module together in a single commercial and operational offer: development, visualization, breakdown, memory, localization, editorial intelligence and distribution.",
+      "point1": "Centralized governance of assets, processes and outputs.",
+      "point2": "Modular activation depending on client type or project phase.",
+      "point3": "Also includes Editorial Intelligence & NLE Bridge as a strategic high-value block.",
+      "includedLabel": "Included in CID Suite"
+    },
+    "useCases": {
+      "title": "Real-world use cases",
+      "case1Title": "Production companies",
+      "case1Body": "Accelerate development, budgeting, commercial materials and coordination across departments.",
+      "case2Title": "Direction and creative development",
+      "case2Body": "Generate storyboards, visual references, creative selects and decision layers faster.",
+      "case3Title": "Editorial post-production",
+      "case3Body": "Search by content, build paper edits and connect outputs with DaVinci Resolve, Avid Media Composer and Adobe Premiere Pro.",
+      "case4Title": "Distribution and sales",
+      "case4Body": "Prepare launch packages, audience analysis and dossiers for buyers and partners."
+    },
+    "pricing": {
+      "title": "Pricing and plans",
+      "starterTitle": "Standalone module",
+      "starterBody": "License or service focused on a single problem with a constrained deployment.",
+      "starterMeta": "Ideal for pilots and initial adoption",
+      "suiteTitle": "CID Suite",
+      "suiteBody": "Full package for organizations that need cross-functional coordination.",
+      "suiteMeta": "Recommended model for continuous operations",
+      "enterpriseTitle": "Appliance / Enterprise",
+      "enterpriseBody": "Controlled deployment, onboarding, support and configuration aligned with security, teams and workload.",
+      "enterpriseMeta": "Designed for studios and complex organizations"
+    },
+    "demo": {
+      "title": "Demo / contact / onboarding",
+      "body": "The recommended commercial strategy starts with controlled demos, consultative contact and guided onboarding before enabling standalone modules or the full suite.",
+      "point1": "Commercial demo aligned with real client scenarios.",
+      "point2": "Contact path for evaluating standalone modules or CID Suite.",
+      "point3": "Phased onboarding by role, team and business goals."
+    },
+    "footer": {
+      "line": "AILinkCinema commercializes modular products and CID Suite as an integrated platform for film and audiovisual operations."
+    }
+  },
+  "modules": {
+    "scriptIntelligence": {
+      "title": "Script Intelligence",
+      "description": "Analyzes scripts, structure, arcs, creative coverage and decision points for development and pre-production."
+    },
+    "storyboardStudio": {
+      "title": "Storyboard Studio",
+      "description": "Transforms script and visual decisions into storyboards, frames and assisted visual planning."
+    },
+    "productionBreakdown": {
+      "title": "Production Breakdown",
+      "description": "Extracts production elements, resources, needs and operational blocks to prepare shoots."
+    },
+    "clientFeedbackMemory": {
+      "title": "Client Feedback Memory",
+      "description": "Learns from approved historical feedback to improve creative consistency and commercial response."
+    },
+    "pitchDossier": {
+      "title": "Pitch & Dossier",
+      "description": "Generates presentation materials, dossiers and commercial narratives for financing, sales and partnerships."
+    },
+    "comfyuiWorkflow": {
+      "title": "ComfyUI Workflow Intelligence",
+      "description": "Organizes and exploits complex visual workflows for teams working with generative pipelines."
+    },
+    "dubbingLocalization": {
+      "title": "DubbingTake / Localization",
+      "description": "Centralizes dubbing, localization, adaptation and multilingual delivery control."
+    },
+    "distributionAudience": {
+      "title": "Distribution & Audience",
+      "description": "Supports launch strategies, audience analysis and distribution material preparation."
+    },
+    "editorialNleBridge": {
+      "title": "Editorial Intelligence & NLE Bridge",
+      "description": "Editorial intelligence system for ingestion, timecode transcription, character diarization, semantic search, selects, paper edit, markers, timelines and export/interaction with DaVinci Resolve, Avid Media Composer and Adobe Premiere Pro.",
+      "independent": "Sold as a standalone product for editorial and post-production teams.",
+      "included": "Also included inside CID Suite as a strategic high-value module.",
+      "nles": "Commercially positioned around DaVinci Resolve, Avid Media Composer and Adobe Premiere Pro interoperability."
+    }
+  }
+}

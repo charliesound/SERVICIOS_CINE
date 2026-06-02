@@ -385,7 +385,8 @@
         "shotsLabel": "Planos:",
         "jobLabel": "Job:",
         "noStoryboardYet": "Sin storyboard aún",
-        "goToScriptGenerate": "Ve a la pestaña Guion y pulsa “Generar storyboard” para comenzar."
+        "goToScriptGenerate": "Ve a la pestaña Guion y pulsa “Generar storyboard” para comenzar.",
+        "generateHelp": "Detecta escenas, sugiere tipos de plano y genera la estructura visual."
       },
       "exports": {
         "exportError": "No se pudo exportar el proyecto en {format}.",
@@ -399,7 +400,24 @@
         "presentationView": "Presentación",
         "empty": "No hay assets generados aún.",
         "sequence": "Secuencia",
-        "shot": "Shot"
+        "shot": "shot",
+        "asset": "Asset",
+        "shots": "shots"
+      },
+      "remaining": {
+        "jobs": "Jobs",
+        "detectedSequences": "Secuencias detectadas",
+        "detectedScenes": "Escenas detectadas",
+        "sequencesLower": "secuencias",
+        "scenesLower": "escenas",
+        "documentAnalysis": "Análisis documental",
+        "document": "Documento:",
+        "type": "Tipo:",
+        "loadingHistory": "Cargando historial...",
+        "emptyHistory": "Sin historial de operaciones",
+        "analysisJob": "Análisis",
+        "retryError": "Error al reintentar",
+        "showingScenes": "Mostrando {shown} de {total} {kind}"
       }
     },
     "storyboardBuilder": {

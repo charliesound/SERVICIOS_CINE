@@ -1150,7 +1150,7 @@ export default function ProjectDetailPage() {
                   <p className="text-white font-semibold">{planStatus.projects_count}/{planStatus.max_projects === -1 ? '∞' : planStatus.max_projects}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Jobs</p>
+                  <p className="text-slate-500">{t('internal.projectDetail.remaining.jobs')}</p>
                   <p className="text-white font-semibold">{planStatus.jobs_count}/{planStatus.max_total_jobs === -1 ? '∞' : planStatus.max_total_jobs}</p>
                 </div>
                 <div>
@@ -1391,7 +1391,7 @@ export default function ProjectDetailPage() {
                   </span>
                 </div>
                 <p className="text-gray-400 text-xs leading-relaxed">
-                  Detecta escenas, sugiere tipos de plano y genera la estructura visual.
+                  {t('internal.projectDetail.storyboard.generateHelp')}
                 </p>
               </div>
             </button>
@@ -1479,8 +1479,8 @@ export default function ProjectDetailPage() {
                   </div>
                   <div className="card bg-dark-200/80 border border-white/5 p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-sm font-semibold text-gray-300">{analysisData.scenes?.some((s: any) => s.sequence_label) ? 'Secuencias detectadas' : 'Escenas detectadas'}</h4>
-                      <span className="text-xs text-slate-500">{analysisData.scenes?.length ?? 0} {analysisData.scenes?.some((s: any) => s.sequence_label) ? 'secuencias' : 'escenas'}</span>
+                      <h4 className="text-sm font-semibold text-gray-300">{analysisData.scenes?.some((s: any) => s.sequence_label) ? t('internal.projectDetail.remaining.detectedSequences') : t('internal.projectDetail.remaining.detectedScenes')}</h4>
+                      <span className="text-xs text-slate-500">{analysisData.scenes?.length ?? 0} {analysisData.scenes?.some((s: any) => s.sequence_label) ? t('internal.projectDetail.remaining.sequencesLower') : t('internal.projectDetail.remaining.scenesLower')}</span>
                     </div>
                     <div className="space-y-3">
                       {(analysisData.scenes || []).slice(0, showAllScenes ? undefined : 8).map((scene, index) => (
@@ -1492,7 +1492,7 @@ export default function ProjectDetailPage() {
                             {String(scene.location || 'sin localizacion')} · {String(scene.time_of_day || 'DAY')}
                           </p>
                           <p className="mt-2 text-sm text-slate-300">
-                            Personajes: {dedupeList(scene.characters)}
+                            {t('internal.projectDetail.analysis.characters')}: {dedupeList(scene.characters)}
                           </p>
                         </div>
                       ))}
@@ -1500,7 +1500,10 @@ export default function ProjectDetailPage() {
                     {(analysisData.scenes?.length ?? 0) > 8 && (
                       <div className="mt-3 flex items-center justify-between">
                         <span className="text-xs text-slate-500">
-                          Mostrando {showAllScenes ? analysisData.scenes!.length : 8} de {analysisData.scenes!.length} {analysisData.scenes?.some((s: any) => s.sequence_label) ? 'secuencias' : 'escenas'}
+                          {t('internal.projectDetail.remaining.showingScenes')
+  .replace('{shown}', String(showAllScenes ? analysisData.scenes!.length : 8))
+  .replace('{total}', String(analysisData.scenes!.length))
+  .replace('{kind}', analysisData.scenes?.some((s: any) => s.sequence_label) ? t('internal.projectDetail.remaining.sequencesLower') : t('internal.projectDetail.remaining.scenesLower'))}
                         </span>
                         <button
                           onClick={() => setShowAllScenes(!showAllScenes)}
@@ -1514,10 +1517,10 @@ export default function ProjectDetailPage() {
                 </>
               ) : (
                 <div className="card bg-dark-200/80 border border-white/5 p-6">
-                  <h4 className="text-sm font-semibold mb-4 text-gray-300">Analisis documental</h4>
+                  <h4 className="text-sm font-semibold mb-4 text-gray-300">{t('internal.projectDetail.remaining.documentAnalysis')}</h4>
                   <div className="grid gap-3 md:grid-cols-2 text-sm text-slate-300">
-                    <p><span className="text-slate-500">Documento:</span> {analysisData.document_id || '—'}</p>
-                    <p><span className="text-slate-500">Tipo:</span> {(analysisData.doc_type || 'unknown').replace(/_/g, ' ')}</p>
+                    <p><span className="text-slate-500">{t('internal.projectDetail.remaining.document')}</span> {analysisData.document_id || '—'}</p>
+                    <p><span className="text-slate-500">{t('internal.projectDetail.remaining.type')}</span> {(analysisData.doc_type || 'unknown').replace(/_/g, ' ')}</p>
                     <div className="md:col-span-2"><ConfidenceBar score={analysisData.confidence_score ?? null} /></div>
                   </div>
                 </div>
@@ -1746,7 +1749,7 @@ export default function ProjectDetailPage() {
               <History className="w-10 h-10 text-gray-600" />
               <div>
                 <p className="text-gray-300 font-medium">
-                  {jobsLoading ? 'Cargando historial...' : 'Sin historial de operaciones'}
+                  {jobsLoading ? t('internal.projectDetail.remaining.loadingHistory') : t('internal.projectDetail.remaining.emptyHistory')}
                 </p>
                 <p className="text-gray-500 text-sm mt-1">
                   Las operaciones de analisis y storyboard apareceran aqui.
@@ -1786,7 +1789,7 @@ export default function ProjectDetailPage() {
                 const isCompleted = job.status === 'completed'
                 const isDone = isCompleted || isFailed
 
-                const jobLabel = job.job_type === 'analyze' ? 'Analisis' : 'Storyboard'
+                const jobLabel = job.job_type === 'analyze' ? t('internal.projectDetail.remaining.analysisJob') : t('internal.projectDetail.tabs.storyboard')
                 const jobIcon = job.job_type === 'analyze' ? (
                   <Sparkles className="w-4 h-4 text-amber-400" />
                 ) : (
@@ -1892,7 +1895,7 @@ export default function ProjectDetailPage() {
                                         })
                                       }
                                     })
-                                    .catch(() => setError('Error al reintentar'))
+                                    .catch(() => setError(t('internal.projectDetail.remaining.retryError')))
                                     .finally(() => setRetryingJobId(null))
                                 }}
                                 disabled={isRetrying || isProcessing}
@@ -1921,7 +1924,7 @@ export default function ProjectDetailPage() {
                             <div className="flex items-center gap-4 mt-2">
                               {rd.doc_type && (
                                 <span className="text-xs text-gray-400">
-                                  Tipo: <span className="text-gray-300 capitalize">{rd.doc_type.replace(/_/g, ' ')}</span>
+                                  {t('internal.projectDetail.remaining.type')} <span className="text-gray-300 capitalize">{rd.doc_type.replace(/_/g, ' ')}</span>
                                 </span>
                               )}
                               {rd.confidence_score != null && (
@@ -2048,7 +2051,7 @@ export default function ProjectDetailPage() {
                               {t('internal.projectDetail.assets.sequence')} {seqId.toUpperCase()}
                             </span>
                             <span className="text-gray-500 text-xs">
-                              ({seqAssets.length} shot{seqAssets.length !== 1 ? 's' : ''})
+                              ({seqAssets.length} {seqAssets.length === 1 ? t('internal.projectDetail.assets.shot') : t('internal.projectDetail.assets.shots')})
                             </span>
                           </div>
                         </div>
@@ -2124,7 +2127,7 @@ export default function ProjectDetailPage() {
                                   {t('internal.projectDetail.assets.sequence')} {seqId.toUpperCase()}
                                 </h3>
                                 <p className="text-sm text-gray-400">
-                                  {seqAssets.length} shot{seqAssets.length !== 1 ? 's' : ''} · {seqModes.includes('flux') ? 'Premium' : 'Realistic'}
+                                  {seqAssets.length} {seqAssets.length === 1 ? t('internal.projectDetail.assets.shot') : t('internal.projectDetail.assets.shots')} · {seqModes.includes('flux') ? 'Premium' : 'Realistic'}
                                 </p>
                               </div>
                             </div>
@@ -2217,7 +2220,7 @@ export default function ProjectDetailPage() {
                     const seqId = (meta?.sequence_id as string) || 'sin-seq'
                     const isAnalysis = asset.asset_source === 'script_analysis'
                     const isStoryboard = asset.asset_source === 'script_storyboard'
-                    const sourceLabel = isAnalysis ? 'Analisis' : isStoryboard ? 'Storyboard' : asset.asset_source || 'Asset'
+                    const sourceLabel = isAnalysis ? t('internal.projectDetail.remaining.analysisJob') : isStoryboard ? t('internal.projectDetail.tabs.storyboard') : asset.asset_source || t('internal.projectDetail.assets.asset')
                     const sourceColor = isAnalysis ? 'text-amber-400' : isStoryboard ? 'text-blue-400' : 'text-gray-400'
                     const isPremium = visualMode === 'flux'
                     const dateStr = asset.created_at

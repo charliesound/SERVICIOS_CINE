@@ -385,7 +385,8 @@
         "shotsLabel": "Shots:",
         "jobLabel": "Job:",
         "noStoryboardYet": "No storyboard yet",
-        "goToScriptGenerate": "Go to the Script tab and click “Generate storyboard” to begin."
+        "goToScriptGenerate": "Go to the Script tab and click “Generate storyboard” to begin.",
+        "generateHelp": "Detect scenes, suggest shot types and generate the visual structure."
       },
       "exports": {
         "exportError": "Could not export the project as {format}.",
@@ -399,7 +400,24 @@
         "presentationView": "Presentation",
         "empty": "No generated assets yet.",
         "sequence": "Sequence",
-        "shot": "Shot"
+        "shot": "shot",
+        "asset": "Asset",
+        "shots": "shots"
+      },
+      "remaining": {
+        "jobs": "Jobs",
+        "detectedSequences": "Detected sequences",
+        "detectedScenes": "Detected scenes",
+        "sequencesLower": "sequences",
+        "scenesLower": "scenes",
+        "documentAnalysis": "Document analysis",
+        "document": "Document:",
+        "type": "Type:",
+        "loadingHistory": "Loading history...",
+        "emptyHistory": "No operation history",
+        "analysisJob": "Analysis",
+        "retryError": "Retry failed",
+        "showingScenes": "Showing {shown} of {total} {kind}"
       }
     },
     "storyboardBuilder": {

@@ -1261,7 +1261,8 @@
       "create": "Create",
       "modules": "Modules",
       "history": "History",
-      "external": "External"
+      "external": "External",
+      "producer": "Producer"
     },
     "appRegistry": {
       "title": "CID Ecosystem",
@@ -2839,6 +2840,72 @@
       "badgePromptNoLlamado": "/prompt not called",
       "statusCompletado": "completed",
       "errorFallback": "Error preparing the workflow"
+    },
+    "producerStudioHub": {
+      "seoTitle": "Producer AI Studio | CID",
+      "seoDescription": "Operational hub to prepare, finance, previsualize and control audiovisual projects inside CID.",
+      "eyebrow": "Operational hub",
+      "title": "Producer AI Studio",
+      "subtitle": "Operational hub to prepare, finance, previsualize and control audiovisual projects inside CID.",
+      "capabilitiesEyebrow": "Operational layers",
+      "capabilitiesTitle": "Activate the producer journey from real CID routes",
+      "flowEyebrow": "Recommended flow",
+      "flowTitle": "Suggested order to work inside CID",
+      "actions": {
+        "createProject": {
+          "title": "Create project",
+          "description": "Open a new project and centralize script, budget and operational tracking from the start.",
+          "cta": "Open project creator"
+        },
+        "myProjects": {
+          "title": "My projects",
+          "description": "Access your active slate to continue operations and review the current state of each production.",
+          "cta": "Open projects"
+        },
+        "documents": {
+          "title": "Documents",
+          "description": "Open the document workspace to prepare support materials, deliverables and traceability.",
+          "cta": "Open documents"
+        },
+        "reports": {
+          "title": "Reports",
+          "description": "Open reports to review operational outputs and consolidated internal follow-up.",
+          "cta": "Open reports"
+        }
+      },
+      "capabilities": {
+        "budget": {
+          "title": "Budget",
+          "text": "Open a project and enter Budget to generate estimates from the script."
+        },
+        "funding": {
+          "title": "Funding",
+          "text": "Open a project and enter Funding to structure sources, grants and gaps."
+        },
+        "storyboard": {
+          "title": "Storyboard",
+          "text": "Open a project and enter Storyboard Builder to previsualize sequences."
+        },
+        "producerDossier": {
+          "title": "Producer dossier",
+          "text": "Open a project and enter Producer dossier to generate the executive package."
+        },
+        "editorialAssembly": {
+          "title": "Editorial Assembly",
+          "text": "Open a project and enter Rough Cut / Assembly to prepare the editorial flow."
+        }
+      },
+      "flow": {
+        "steps": {
+          "createProject": "Create project",
+          "uploadScript": "Upload script",
+          "generateBudget": "Generate budget",
+          "reviewFunding": "Review funding",
+          "createStoryboard": "Create storyboard",
+          "prepareProducerDossier": "Prepare producer dossier",
+          "coordinateEditorialDelivery": "Coordinate editorial and delivery"
+        }
+      }
     }
   }
 }

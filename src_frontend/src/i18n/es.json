@@ -1261,7 +1261,8 @@
       "create": "Crear",
       "modules": "Módulos",
       "history": "Historial",
-      "external": "Externo"
+      "external": "Externo",
+      "producer": "Productor"
     },
     "appRegistry": {
       "title": "Ecosistema CID",
@@ -2839,6 +2840,72 @@
       "badgePromptNoLlamado": "/prompt no llamado",
       "statusCompletado": "completado",
       "errorFallback": "Error al preparar el workflow"
+    },
+    "producerStudioHub": {
+      "seoTitle": "Producer AI Studio | CID",
+      "seoDescription": "Centro operativo para preparar, financiar, previsualizar y controlar proyectos audiovisuales dentro de CID.",
+      "eyebrow": "Hub operativo",
+      "title": "Producer AI Studio",
+      "subtitle": "Centro operativo para preparar, financiar, previsualizar y controlar proyectos audiovisuales dentro de CID.",
+      "capabilitiesEyebrow": "Capas operativas",
+      "capabilitiesTitle": "Activa el recorrido del productor desde las rutas reales de CID",
+      "flowEyebrow": "Flujo recomendado",
+      "flowTitle": "Orden sugerido para trabajar dentro de CID",
+      "actions": {
+        "createProject": {
+          "title": "Crear proyecto",
+          "description": "Abre un proyecto nuevo y centraliza desde el inicio guion, presupuesto y seguimiento operativo.",
+          "cta": "Ir a crear proyecto"
+        },
+        "myProjects": {
+          "title": "Mis proyectos",
+          "description": "Accede a tu cartera activa para continuar operaciones y revisar el estado general de cada producción.",
+          "cta": "Abrir proyectos"
+        },
+        "documents": {
+          "title": "Documentos",
+          "description": "Consulta el espacio documental para preparar materiales de soporte, entregables y trazabilidad.",
+          "cta": "Abrir documentos"
+        },
+        "reports": {
+          "title": "Informes",
+          "description": "Entra en informes para revisar salidas operativas y seguimiento consolidado del trabajo interno.",
+          "cta": "Abrir informes"
+        }
+      },
+      "capabilities": {
+        "budget": {
+          "title": "Presupuesto",
+          "text": "Abre un proyecto y entra en Presupuesto para generar estimaciones desde el guion."
+        },
+        "funding": {
+          "title": "Financiación",
+          "text": "Abre un proyecto y entra en Financiación para estructurar fuentes, ayudas y gaps."
+        },
+        "storyboard": {
+          "title": "Storyboard",
+          "text": "Abre un proyecto y entra en Storyboard Builder para previsualizar secuencias."
+        },
+        "producerDossier": {
+          "title": "Dossier productor",
+          "text": "Abre un proyecto y entra en Dossier productor para generar el paquete ejecutivo."
+        },
+        "editorialAssembly": {
+          "title": "Editorial Assembly",
+          "text": "Abre un proyecto y entra en Premontaje / Assembly para preparar flujo editorial."
+        }
+      },
+      "flow": {
+        "steps": {
+          "createProject": "Crear proyecto",
+          "uploadScript": "Subir guion",
+          "generateBudget": "Generar presupuesto",
+          "reviewFunding": "Revisar financiación",
+          "createStoryboard": "Crear storyboard",
+          "prepareProducerDossier": "Preparar dossier productor",
+          "coordinateEditorialDelivery": "Coordinar editorial y entrega"
+        }
+      }
     }
   }
 }

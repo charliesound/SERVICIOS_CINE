@@ -61,6 +61,7 @@ import PricingPage from './pages/PricingPage'
 import DemoCIDPage from './pages/DemoCIDPage'
 import DirectorSolutionPage from './pages/DirectorSolutionPage'
 import ProducerSolutionPage from './pages/ProducerSolutionPage'
+import ProducerStudioHubPage from './pages/ProducerStudioHubPage'
 import AppRegistryPage from './pages/AppRegistryPage'
 import ModulesCatalogPage from './pages/ModulesCatalogPage'
 import ScriptAnalysisProPage from './pages/ScriptAnalysisProPage'
@@ -151,7 +152,7 @@ export default function App() {
             path="/cid/producer"
             element={
               <PlanRoute program="producer">
-                <Dashboard />
+                <ProducerStudioHubPage />
               </PlanRoute>
             }
           />

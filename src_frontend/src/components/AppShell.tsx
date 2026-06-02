@@ -22,6 +22,7 @@ import {
   Grid2x2,
   BadgeEuro,
   Puzzle,
+  Briefcase,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { t } from '@/i18n'
@@ -34,6 +35,7 @@ const navItems = [
   { to: '/queue', icon: ListOrdered, label: 'Cola' },
   { to: '/workflows', icon: GitBranch, label: 'Workflows' },
   { to: '/cid/pipeline-builder', icon: Sparkles, label: 'Pipeline Builder' },
+  { to: '/cid/producer', icon: Briefcase, label: t('internal.nav.producer') },
   { to: '/solutions', icon: Grid2x2, label: 'Soluciones' },
   { to: '/modules', icon: Layers3, label: t('internal.nav.modules') },
   { to: '/apps', icon: Puzzle, label: 'Apps' },

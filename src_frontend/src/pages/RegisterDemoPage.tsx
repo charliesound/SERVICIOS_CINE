@@ -26,8 +26,8 @@ export default function RegisterDemoPage() {
   const [step, setStep] = useState<'form' | 'success'>('form')
 
   useSeo({
-    title: step === 'success' ? 'Solicitud de demo enviada' : 'Solicitar demo guiada',
-    description: 'Formulario privado para solicitar una demo guiada de AILinkCinema y CID.',
+    title: step === 'success' ? t('auth.registerDemo.metaSuccessTitle') : t('auth.registerDemo.metaTitle'),
+    description: t('auth.registerDemo.metaDescription'),
     path: '/register/demo',
     robots: 'noindex, nofollow',
   })
@@ -46,7 +46,7 @@ export default function RegisterDemoPage() {
       })
       setStep('success')
     } catch (err: unknown) {
-      setError(getApiErrorMessage(err, 'Error en la solicitud'))
+      setError(getApiErrorMessage(err, t('auth.registerDemo.requestError')))
     } finally {
       setIsLoading(false)
     }
@@ -59,7 +59,7 @@ export default function RegisterDemoPage() {
           <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-6">
             <Check className="w-8 h-8 text-blue-400" />
           </div>
-          <h1 className="text-2xl font-bold mb-4">Solicitud enviada</h1>
+          <h1 className="text-2xl font-bold mb-4">{t('auth.registerDemo.successTitle')}</h1>
           <p className="text-gray-400 mb-8">
             Hemos recibido tu solicitud de demo guiada. El equipo de AILinkCinema te contactara en las proximas 24 horas.
           </p>
@@ -68,10 +68,10 @@ export default function RegisterDemoPage() {
               to={isAuthenticated ? getPrimaryCIDTarget(useAuthStore.getState().user) : '/register/cid'}
               className="px-8 py-3 bg-amber-500 hover:bg-amber-400 text-black font-medium rounded-xl transition-colors flex items-center gap-2"
             >
-              Quiero entrar ahora a CID <ArrowRight className="w-4 h-4" />
+              {t('auth.registerDemo.enterCidNow')} <ArrowRight className="w-4 h-4" />
             </Link>
             <Link to="/" className="text-sm text-slate-400 hover:text-white transition-colors">
-              Volver al inicio
+              {t('auth.registerDemo.backHome')}
             </Link>
           </div>
         </div>
@@ -104,16 +104,16 @@ export default function RegisterDemoPage() {
           </div>
 
           <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
-            <p className="font-medium text-amber-300">Quieres entrar ahora mismo?</p>
-            <p className="mt-1 text-amber-100/90">Crea una cuenta en el plan Demo de CID y accede directamente a la plataforma.</p>
+            <p className="font-medium text-amber-300">{t('auth.registerDemo.enterNowTitle')}</p>
+            <p className="mt-1 text-amber-100/90">{t('auth.registerDemo.enterNowText')}</p>
             <Link to="/register/cid" className="mt-3 inline-flex items-center gap-2 text-amber-300 hover:text-amber-200 transition-colors">
-              Ir al acceso demo CID <ArrowRight className="w-4 h-4" />
+              {t('auth.registerDemo.goDemoAccess')} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="label">Nombre completo *</label>
+              <label className="label">{t('auth.registerDemo.fullName')}</label>
               <input
                 type="text"
                 value={form.full_name}
@@ -125,7 +125,7 @@ export default function RegisterDemoPage() {
             </div>
 
             <div>
-              <label className="label">Email *</label>
+              <label className="label">{t('auth.registerDemo.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
@@ -140,66 +140,66 @@ export default function RegisterDemoPage() {
             </div>
 
             <div>
-              <label className="label">Empresa / Productora *</label>
+              <label className="label">{t('auth.registerDemo.company')}</label>
               <input
                 type="text"
                 value={form.company}
                 onChange={(e) => setForm({ ...form, company: e.target.value })}
-                placeholder="Nombre de tu empresa"
+                placeholder={t('auth.registerDemo.companyPlaceholder')}
                 className="input"
                 required
               />
             </div>
 
             <div>
-              <label className="label">Cargo</label>
+              <label className="label">{t('auth.registerDemo.role')}</label>
               <input
                 type="text"
                 value={form.position}
                 onChange={(e) => setForm({ ...form, position: e.target.value })}
-                placeholder="Tu posición en la empresa"
+                placeholder={t('auth.registerDemo.rolePlaceholder')}
                 className="input"
               />
             </div>
 
             <div>
-              <label className="label">¿Qué necesitas? *</label>
+              <label className="label">{t('auth.registerDemo.need')}</label>
               <select
                 value={form.need}
                 onChange={(e) => setForm({ ...form, need: e.target.value })}
                 className="input"
                 required
               >
-                <option value="">Selecciona una opción</option>
-                <option value="desglose">Desglose de guion</option>
-                <option value="storyboard">Storyboard con IA</option>
-                <option value="planificacion">Planificación visual</option>
-                <option value="completo">Flujo completo CID</option>
-                <option value="otro">Otro</option>
+                <option value="">{t('auth.registerDemo.selectOption')}</option>
+                <option value="desglose">{t('auth.registerDemo.needs.breakdown')}</option>
+                <option value="storyboard">{t('auth.registerDemo.needs.storyboard')}</option>
+                <option value="planificacion">{t('auth.registerDemo.needs.visualPlanning')}</option>
+                <option value="completo">{t('auth.registerDemo.needs.fullFlow')}</option>
+                <option value="otro">{t('auth.registerDemo.needs.other')}</option>
               </select>
             </div>
 
             <div>
-              <label className="label">Tamaño del proyecto</label>
+              <label className="label">{t('auth.registerDemo.projectSize')}</label>
               <select
                 value={form.project_size}
                 onChange={(e) => setForm({ ...form, project_size: e.target.value })}
                 className="input"
               >
-                <option value="">Selecciona</option>
-                <option value="pequeño">Pequeño (&lt; 90 min)</option>
-                <option value="medio">Medio (90-120 min)</option>
-                <option value="grande">Grande (&gt; 120 min)</option>
-                <option value="serie">Serie / Episódico</option>
+                <option value="">{t('auth.registerDemo.select')}</option>
+                <option value="pequeño">{t('auth.registerDemo.sizes.small')}</option>
+                <option value="medio">{t('auth.registerDemo.sizes.medium')}</option>
+                <option value="grande">{t('auth.registerDemo.sizes.large')}</option>
+                <option value="serie">{t('auth.registerDemo.sizes.series')}</option>
               </select>
             </div>
 
             <div>
-              <label className="label">Mensaje (opcional)</label>
+              <label className="label">{t('auth.registerDemo.message')}</label>
               <textarea
                 value={form.message}
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
-                placeholder="Cuéntanos más sobre tu proyecto..."
+                placeholder={t('auth.registerDemo.messagePlaceholder')}
                 className="input min-h-[80px] resize-none"
               />
             </div>
@@ -207,7 +207,7 @@ export default function RegisterDemoPage() {
             <p className="text-xs leading-5 text-slate-500">
               Al enviar esta solicitud aceptas que AILinkCinema trate tus datos para gestionar la demo, de acuerdo con la{' '}
               <Link to="/legal/privacidad" className="text-blue-400 hover:text-blue-300">
-                política de privacidad
+                {t('auth.registerDemo.privacy')}
               </Link>
               , el{' '}
               <Link to="/legal/aviso-legal" className="text-blue-400 hover:text-blue-300">
@@ -240,7 +240,7 @@ export default function RegisterDemoPage() {
                   Enviando...
                 </span>
               ) : (
-                <>Solicitar demo <ArrowRight className="w-4 h-4" /></>
+                <>{t('auth.registerDemo.submit')} <ArrowRight className="w-4 h-4" /></>
               )}
             </button>
           </form>

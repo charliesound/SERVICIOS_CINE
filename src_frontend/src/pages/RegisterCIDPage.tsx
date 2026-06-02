@@ -11,11 +11,11 @@ import LanguageToggle from '@/components/common/LanguageToggle'
 import { useLanguage } from '@/i18n'
 
 const programs: { id: CIDProgram; label: string; desc: string; badge: string }[] = [
-  { id: 'demo', label: 'Demo', desc: 'Acceso gratuito para probar la plataforma', badge: 'Gratis' },
-  { id: 'creator', label: 'Creator', desc: 'Para independientes y freelancers', badge: '9.99€/mes' },
-  { id: 'producer', label: 'Producer', desc: 'Para productoras medianas y equipos', badge: '29.99€/mes' },
-  { id: 'studio', label: 'Studio', desc: 'Acceso completo con todas las funciones', badge: '79.99€/mes' },
-  { id: 'enterprise', label: 'Enterprise', desc: 'Infraestructura dedicada y SLA', badge: 'Custom' },
+  { id: 'demo', label: 'Demo', desc: 'auth.registerCid.plans.demo.desc', badge: 'auth.registerCid.plans.demo.badge' },
+  { id: 'creator', label: 'Creator', desc: 'auth.registerCid.plans.creator.desc', badge: '9.99€/mes' },
+  { id: 'producer', label: 'Producer', desc: 'auth.registerCid.plans.producer.desc', badge: '29.99€/mes' },
+  { id: 'studio', label: 'Studio', desc: 'auth.registerCid.plans.studio.desc', badge: '79.99€/mes' },
+  { id: 'enterprise', label: 'Enterprise', desc: 'auth.registerCid.plans.enterprise.desc', badge: 'auth.registerCid.plans.enterprise.badge' },
 ]
 
 export default function RegisterCIDPage() {
@@ -38,8 +38,8 @@ export default function RegisterCIDPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   useSeo({
-    title: 'Registro CID',
-    description: 'Alta privada para acceder a los planes CID de AILinkCinema.',
+    title: t('auth.registerCid.metaTitle'),
+    description: t('auth.registerCid.metaDescription'),
     path: '/register/cid',
     robots: 'noindex, nofollow',
   })
@@ -47,11 +47,11 @@ export default function RegisterCIDPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.accept_terms) {
-      setError('Debes aceptar los términos y condiciones')
+      setError(t('auth.registerCid.acceptTermsError'))
       return
     }
     if (form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+      setError(t('auth.registerCid.passwordMinLength'))
       return
     }
 
@@ -67,7 +67,7 @@ export default function RegisterCIDPage() {
       const target = `/cid/${selectedProgram}`
       navigate(target, { replace: true })
     } catch (err: unknown) {
-      setError(getApiErrorMessage(err, 'Error en el registro'))
+      setError(getApiErrorMessage(err, t('auth.registerCid.registerError')))
     } finally {
       setIsLoading(false)
     }
@@ -149,14 +149,14 @@ export default function RegisterCIDPage() {
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="label">Usuario *</label>
+                  <label className="label">{t('auth.registerCid.username')}</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <input
                       type="text"
                       value={form.username}
                       onChange={(e) => setForm({ ...form, username: e.target.value })}
-                      placeholder="Nombre de usuario"
+                      placeholder={t('auth.registerCid.usernamePlaceholder')}
                       className="input pl-10"
                       required
                     />
@@ -164,7 +164,7 @@ export default function RegisterCIDPage() {
                 </div>
 
                 <div>
-                  <label className="label">Nombre completo</label>
+                  <label className="label">{t('auth.registerCid.fullName')}</label>
                   <input
                     type="text"
                     value={form.full_name}
@@ -175,7 +175,7 @@ export default function RegisterCIDPage() {
                 </div>
 
                 <div>
-                  <label className="label">Email *</label>
+                  <label className="label">{t('auth.registerCid.email')}</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <input
@@ -190,36 +190,36 @@ export default function RegisterCIDPage() {
                 </div>
 
                 <div>
-                  <label className="label">Empresa / Productora</label>
+                  <label className="label">{t('auth.registerCid.company')}</label>
                   <input
                     type="text"
                     value={form.company}
                     onChange={(e) => setForm({ ...form, company: e.target.value })}
-                    placeholder="Nombre de tu empresa"
+                    placeholder={t('auth.registerCid.companyPlaceholder')}
                     className="input"
                   />
                 </div>
 
                 <div>
-                  <label className="label">País</label>
+                  <label className="label">{t('auth.registerCid.country')}</label>
                   <input
                     type="text"
                     value={form.country}
                     onChange={(e) => setForm({ ...form, country: e.target.value })}
-                    placeholder="Tu país"
+                    placeholder={t('auth.registerCid.countryPlaceholder')}
                     className="input"
                   />
                 </div>
 
                 <div>
-                  <label className="label">Contraseña *</label>
+                  <label className="label">{t('auth.registerCid.password')}</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder={t('auth.registerCid.passwordPlaceholder')}
                       className="input pl-10 pr-10"
                       required
                       minLength={6}
@@ -241,11 +241,11 @@ export default function RegisterCIDPage() {
                   <span className="text-sm text-gray-400">
                     Acepto los{' '}
                     <Link to="/legal/terminos" className="text-amber-400 hover:text-amber-300">
-                      términos y condiciones
+                      {t('auth.registerCid.terms')}
                     </Link>{' '}
                     y la{' '}
                     <Link to="/legal/privacidad" className="text-amber-400 hover:text-amber-300">
-                      política de privacidad
+                      {t('auth.registerCid.privacy')}
                     </Link>
                   </span>
                 </label>
@@ -270,7 +270,7 @@ export default function RegisterCIDPage() {
                       {t('auth.login.processing')}
                     </span>
                   ) : (
-                    <>Crear cuenta <ArrowRight className="w-4 h-4" /></>
+                    <>{t('auth.registerCid.createAccount')} <ArrowRight className="w-4 h-4" /></>
                   )}
                 </button>
               </form>

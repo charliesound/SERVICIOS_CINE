@@ -2,18 +2,19 @@ import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/store'
 import { Mail, Clock, ArrowRight } from 'lucide-react'
 import { useSeo } from '@/hooks/useSeo'
+import { t } from '@/i18n'
 
 export default function PendingAccessPage() {
   const { user } = useAuthStore()
 
   const programLabels: Record<string, string> = {
-    cid_user: 'Programa CID',
-    demo_request: 'Demo personalizada',
+    cid_user: t('auth.pending.cidUser'),
+    demo_request: t('auth.pending.demoRequest'),
     partner_interest: 'Programa Partner',
   }
 
   useSeo({
-    title: 'Acceso pendiente',
+    title: t('auth.pending.metaTitle'),
     description: 'Estado privado de revision de acceso en AILinkCinema.',
     path: '/pending-access',
     robots: 'noindex, nofollow',
@@ -26,23 +27,23 @@ export default function PendingAccessPage() {
           <Clock className="w-8 h-8 text-amber-400" />
         </div>
 
-        <h1 className="text-2xl font-bold mb-4">Acceso pendiente</h1>
+        <h1 className="text-2xl font-bold mb-4">{t('auth.pending.title')}</h1>
         <p className="text-gray-400 mb-8">
           Tu solicitud para el{' '}
           <span className="text-amber-400 font-medium">
             {programLabels[user?.signup_type || 'cid_user'] || 'programa'}
           </span>{' '}
-          está siendo revisada por el equipo de AILinkCinema.
+          {t('auth.pending.reviewedByTeam')}
         </p>
 
         <div className="p-5 bg-white/5 rounded-xl border border-white/10 text-left mb-6 space-y-3">
           <div className="flex items-center gap-3 text-sm">
             <Clock className="w-4 h-4 text-amber-400" />
-            <span className="text-gray-400">Recibirás un email en: <span className="text-white">{user?.email}</span></span>
+            <span className="text-gray-400">{t('auth.pending.emailNotice')} <span className="text-white">{user?.email}</span></span>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <Mail className="w-4 h-4 text-amber-400" />
-            <span className="text-gray-400">Tiempo de respuesta habitual: 24-48h</span>
+            <span className="text-gray-400">{t('auth.pending.responseTime')}</span>
           </div>
         </div>
 

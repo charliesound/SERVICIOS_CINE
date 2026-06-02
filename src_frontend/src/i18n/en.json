@@ -194,6 +194,93 @@
     "password": {
       "hide": "Hide password",
       "show": "Show password"
+    },
+    "registerCid": {
+      "metaTitle": "CID registration",
+      "metaDescription": "Private signup to access AILinkCinema CID plans.",
+      "acceptTermsError": "You must accept the terms and conditions",
+      "passwordMinLength": "Password must be at least 6 characters",
+      "registerError": "Registration error",
+      "username": "Username *",
+      "usernamePlaceholder": "Username",
+      "fullName": "Full name",
+      "email": "Email *",
+      "company": "Company / Production company",
+      "companyPlaceholder": "Your company name",
+      "country": "Country",
+      "countryPlaceholder": "Your country",
+      "password": "Password *",
+      "passwordPlaceholder": "Minimum 6 characters",
+      "terms": "terms and conditions",
+      "privacy": "privacy policy",
+      "createAccount": "Create account",
+      "plans": {
+        "demo": {
+          "desc": "Free access to test the platform",
+          "badge": "Free"
+        },
+        "creator": {
+          "desc": "For independents and freelancers"
+        },
+        "studio": {
+          "desc": "Full access with all features"
+        },
+        "producer": {
+          "desc": "For mid-sized production companies and teams"
+        },
+        "enterprise": {
+          "desc": "Dedicated infrastructure and SLA",
+          "badge": "Custom"
+        }
+      }
+    },
+    "registerDemo": {
+      "metaTitle": "Request a guided demo",
+      "metaSuccessTitle": "Demo request sent",
+      "metaDescription": "Private form to request a guided AILinkCinema and CID demo.",
+      "requestError": "Request error",
+      "successTitle": "Request sent",
+      "enterCidNow": "I want to access CID now",
+      "backHome": "Back home",
+      "enterNowTitle": "Want to enter right now?",
+      "enterNowText": "Create an account on the CID Demo plan and access the platform directly.",
+      "goDemoAccess": "Go to CID demo access",
+      "fullName": "Full name *",
+      "email": "Email *",
+      "company": "Company / Production company *",
+      "companyPlaceholder": "Your company name",
+      "role": "Role",
+      "rolePlaceholder": "Your position in the company",
+      "need": "What do you need? *",
+      "selectOption": "Select an option",
+      "select": "Select",
+      "projectSize": "Project size",
+      "message": "Message (optional)",
+      "messagePlaceholder": "Tell us more about your project...",
+      "privacy": "privacy policy",
+      "submit": "Request demo",
+      "needs": {
+        "breakdown": "Script breakdown",
+        "storyboard": "AI storyboard",
+        "visualPlanning": "Visual planning",
+        "fullFlow": "Full CID flow",
+        "other": "Other"
+      },
+      "sizes": {
+        "small": "Small (< 90 min)",
+        "medium": "Medium (90-120 min)",
+        "large": "Large (> 120 min)",
+        "series": "Series / Episodic"
+      }
+    },
+    "pending": {
+      "cidUser": "CID Program",
+      "demoRequest": "Custom demo",
+      "metaTitle": "Access pending",
+      "title": "Access pending",
+      "reviewedByTeam": "is being reviewed by the AILinkCinema team.",
+      "emailNotice": "You will receive an email at:",
+      "responseTime": "Usual response time: 24-48h"
     }
   },
   "pages": {

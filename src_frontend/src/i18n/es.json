@@ -444,6 +444,11 @@
         "charactersBreakdownBySequence": "Personajes y desglose por secuencias",
         "alignment": "Alignment:",
         "prompt": "Prompt:"
+      },
+      "notifications": {
+        "scriptUploaded": "Guion subido correctamente",
+        "storyboardRegeneratedSuccessfully": "Storyboard regenerado correctamente",
+        "storyboardRegenerated": "Storyboard regenerado"
       }
     }
   },

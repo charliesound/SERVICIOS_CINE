@@ -444,6 +444,11 @@
         "charactersBreakdownBySequence": "Characters and breakdown by sequences",
         "alignment": "Alignment:",
         "prompt": "Prompt:"
+      },
+      "notifications": {
+        "scriptUploaded": "Script uploaded successfully",
+        "storyboardRegeneratedSuccessfully": "Storyboard regenerated successfully",
+        "storyboardRegenerated": "Storyboard regenerated"
       }
     }
   },

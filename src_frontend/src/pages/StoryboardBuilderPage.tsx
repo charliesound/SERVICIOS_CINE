@@ -526,10 +526,10 @@ export default function StoryboardBuilderPage() {
           title: 'Regenerar storyboard',
           status: 'completed',
           percent: 100,
-          label: 'Storyboard regenerado correctamente',
+          label: t('internal.storyboardBuilder.notifications.storyboardRegeneratedSuccessfully'),
           helperText: result.total_shots > 0
             ? `${result.total_scenes} escenas, ${result.total_shots} planos generados. Assets: ${(result.generated_assets ?? []).length > 0 ? (result.generated_assets ?? []).join(', ') : 'solo estructura'}`
-            : 'Storyboard regenerado',
+            : t('internal.storyboardBuilder.notifications.storyboardRegenerated'),
           jobId: result.job_id,
         })
       } else {
@@ -785,7 +785,7 @@ export default function StoryboardBuilderPage() {
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2">
                   <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
                     <Check className="w-4 h-4" />
-                    Guion subido correctamente
+                    {t('internal.storyboardBuilder.notifications.scriptUploaded')}
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     <div>

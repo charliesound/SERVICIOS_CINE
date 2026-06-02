@@ -296,7 +296,7 @@ export default function StoryboardBuilderPage() {
     if (!file) return
     const ext = file.name.split('.').pop()?.toLowerCase()
     if (ext === 'doc') {
-      setScriptUploadError('Formato .doc no soportado. Usa .docx (Word moderno).')
+      setScriptUploadError(t('internal.storyboardBuilder.uploadResult.unsupportedDoc'))
       setSelectedScriptFile(null)
       event.target.value = ''
       return
@@ -700,12 +700,12 @@ export default function StoryboardBuilderPage() {
                 onChange={(event) => setStylePreset(event.target.value)}
                 className="bg-transparent text-sm text-white outline-none"
               >
-                <option value="hand_drawn_storyboard">Dibujo storyboard a mano</option>
-                <option value="rough_pencil_storyboard">Boceto a lápiz</option>
-                <option value="ink_storyboard">Tinta / line art</option>
-                <option value="charcoal_storyboard">Carboncillo cinematográfico</option>
-                <option value="graphic_novel_storyboard">Novela gráfica</option>
-                <option value="cinematic_realistic">Previz realista</option>
+                <option value="hand_drawn_storyboard">{t('internal.storyboardBuilder.stylePresets.handDrawnStoryboard')}</option>
+                <option value="rough_pencil_storyboard">{t('internal.storyboardBuilder.stylePresets.roughPencilStoryboard')}</option>
+                <option value="ink_storyboard">{t('internal.storyboardBuilder.stylePresets.inkStoryboard')}</option>
+                <option value="charcoal_storyboard">{t('internal.storyboardBuilder.stylePresets.charcoalStoryboard')}</option>
+                <option value="graphic_novel_storyboard">{t('internal.storyboardBuilder.stylePresets.graphicNovelStoryboard')}</option>
+                <option value="cinematic_realistic">{t('internal.storyboardBuilder.stylePresets.cinematicRealistic')}</option>
               </select>
             </div>
             <button onClick={() => { fetchShots(); fetchSequences() }}
@@ -787,21 +787,21 @@ export default function StoryboardBuilderPage() {
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     <div>
-                      <p className="text-xs text-slate-500">Formato</p>
+                      <p className="text-xs text-slate-500">{t('internal.storyboardBuilder.uploadResult.format')}</p>
                       <p className="text-white font-medium">{scriptUploadResult.format}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">Palabras</p>
+                      <p className="text-xs text-slate-500">{t('internal.storyboardBuilder.uploadResult.words')}</p>
                       <p className="text-white font-medium">{scriptUploadResult.word_count.toLocaleString()}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">Caracteres</p>
+                      <p className="text-xs text-slate-500">{t('internal.storyboardBuilder.uploadResult.characters')}</p>
                       <p className="text-white font-medium">{scriptUploadResult.character_count.toLocaleString()}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">Listo para análisis</p>
+                      <p className="text-xs text-slate-500">{t('internal.storyboardBuilder.uploadResult.readyForAnalysis')}</p>
                       <p className={scriptUploadResult.ready_for_analysis ? 'text-emerald-400 font-medium' : 'text-amber-400 font-medium'}>
-                        {scriptUploadResult.ready_for_analysis ? 'Sí' : 'No'}
+                        {scriptUploadResult.ready_for_analysis ? t('internal.storyboardBuilder.common.yes') : t('internal.storyboardBuilder.common.no')}
                       </p>
                     </div>
                   </div>
@@ -836,29 +836,29 @@ export default function StoryboardBuilderPage() {
                   </h3>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="space-y-2">
-                      <p className="text-xs text-slate-400">Logline</p>
+                      <p className="text-xs text-slate-400">{t('internal.storyboardBuilder.analysis.logline')}</p>
                       <p className="text-sm text-white">{analysisResult.synopsis.logline || '—'}</p>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-xs text-slate-400">Premisa</p>
+                      <p className="text-xs text-slate-400">{t('internal.storyboardBuilder.analysis.premise')}</p>
                       <p className="text-sm text-white">{analysisResult.synopsis.premise || '—'}</p>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-xs text-slate-400">Tema</p>
+                      <p className="text-xs text-slate-400">{t('internal.storyboardBuilder.analysis.theme')}</p>
                       <p className="text-sm text-white">{analysisResult.synopsis.theme || '—'}</p>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-xs text-slate-400">Género / Tono</p>
+                      <p className="text-xs text-slate-400">{t('internal.storyboardBuilder.analysis.genreTone')}</p>
                       <p className="text-sm text-white">{analysisResult.synopsis.genre || '—'} • {analysisResult.synopsis.tone || '—'}</p>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-xs text-slate-400">Sinopsis extendida</p>
+                    <p className="text-xs text-slate-400">{t('internal.storyboardBuilder.analysis.extendedSynopsis')}</p>
                     <p className="text-sm text-white">{analysisResult.synopsis.synopsis_extended || '—'}</p>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Personajes principales</p>
+                      <p className="text-xs text-slate-400 mb-1">{t('internal.storyboardBuilder.analysis.mainCharacters')}</p>
                       <div className="flex flex-wrap gap-1">
                         {analysisResult.synopsis.main_characters.map((c, i) => (
                           <span key={i} className="px-2 py-0.5 text-xs bg-amber-400/10 text-amber-300 rounded-full">{c}</span>
@@ -866,7 +866,7 @@ export default function StoryboardBuilderPage() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Localizaciones principales</p>
+                      <p className="text-xs text-slate-400 mb-1">{t('internal.storyboardBuilder.analysis.mainLocations')}</p>
                       <div className="flex flex-wrap gap-1">
                         {analysisResult.synopsis.main_locations.map((l, i) => (
                           <span key={i} className="px-2 py-0.5 text-xs bg-cyan-400/10 text-cyan-300 rounded-full">{l}</span>
@@ -891,7 +891,7 @@ export default function StoryboardBuilderPage() {
                               <span className="text-xs font-bold text-amber-400">#{entry.sequence_number}</span>
                               <h4 className="text-sm font-semibold text-white">{entry.title}</h4>
                               {entry.recommended_for_storyboard && (
-                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-400/10 text-green-300 rounded">Recomendada</span>
+                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-400/10 text-green-300 rounded">{t('internal.storyboardBuilder.analysis.recommended')}</span>
                               )}
                             </div>
                             <p className="text-xs text-slate-400 mb-2">{entry.summary}</p>
@@ -965,7 +965,7 @@ export default function StoryboardBuilderPage() {
                 </h3>
                 {shotPlan.warnings && shotPlan.warnings.length > 0 && (
                   <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
-                    <p className="text-xs font-medium text-amber-400">Advertencias</p>
+                    <p className="text-xs font-medium text-amber-400">{t('internal.storyboardBuilder.analysis.warnings')}</p>
                     {shotPlan.warnings.map((w, i) => (
                       <p key={i} className="text-[11px] text-amber-300/70">{w}</p>
                     ))}
@@ -995,7 +995,7 @@ export default function StoryboardBuilderPage() {
                     disabled={isGenerating || isEstimatingCredits}
                     className="flex items-center gap-2 px-6 py-3 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 font-medium hover:bg-amber-500/30 transition-all disabled:opacity-40">
                     {isGenerating || isEstimatingCredits ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                    {isGenerating ? t('internal.projectDetail.generating') : isEstimatingCredits ? 'Estimando créditos...' : t('internal.storyboardBuilder.generateSequenceStoryboard')}
+                    {isGenerating ? t('internal.projectDetail.generating') : isEstimatingCredits ? t('internal.storyboardBuilder.credits.estimating') : t('internal.storyboardBuilder.generateSequenceStoryboard')}
                   </button>
                 </div>
               </section>
@@ -1005,7 +1005,7 @@ export default function StoryboardBuilderPage() {
             {sequences.length > 0 && !selectedSequenceId && (
               <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-sm text-amber-300/80 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
-                Primero selecciona una secuencia. CID genera storyboards por secuencia para preservar la lógica narrativa.
+                {t('internal.storyboardBuilder.selectSequenceFirst')}
               </div>
             )}
           </div>
@@ -1069,7 +1069,7 @@ export default function StoryboardBuilderPage() {
                 />
                 <div>
                   <p className="font-medium text-white">{t('internal.storyboardBuilder.renderOnComplete')}</p>
-                  <p className="text-xs text-slate-400">Si está activado, CID encolará render still al finalizar la generación del storyboard.</p>
+                  <p className="text-xs text-slate-400">{t('internal.storyboardBuilder.renderOnCompleteHelp')}</p>
                 </div>
               </label>
 
@@ -1182,7 +1182,7 @@ export default function StoryboardBuilderPage() {
               <div className="space-y-6">
                 {projectId && <CharacterBiblePanel projectId={projectId} />}
                 <div className="text-center py-10">
-                  <p className="text-slate-400 mb-4">No hay datos de personajes. Analiza el guion completo primero.</p>
+                  <p className="text-slate-400 mb-4">{t('internal.storyboardBuilder.noCharacterData')}</p>
                   <button onClick={handleAnalyzeFullScript} disabled={isAnalyzing}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300">
                     <FileText className="w-4 h-4" /> Analizar guion completo
@@ -1352,7 +1352,7 @@ export default function StoryboardBuilderPage() {
             {sequences.length > 0 && !selectedSequenceId && filteredShots.length === 0 && (
               <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-sm text-amber-300/80 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
-                Primero selecciona una secuencia en la pestaña "Secuencias". CID genera storyboards por secuencia para preservar la lógica narrativa.
+                {t('internal.storyboardBuilder.selectSequenceFirstFromTab')}
               </div>
             )}
 
@@ -1606,7 +1606,7 @@ export default function StoryboardBuilderPage() {
               </div>
               {(creditEstimate.warnings ?? []).length > 0 && (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
-                  <p className="text-xs font-medium text-amber-400">Advertencias</p>
+                  <p className="text-xs font-medium text-amber-400">{t('internal.storyboardBuilder.analysis.warnings')}</p>
                   {(creditEstimate.warnings ?? []).map((w, i) => (
                     <p key={i} className="text-xs text-amber-300/70">{w}</p>
                   ))}

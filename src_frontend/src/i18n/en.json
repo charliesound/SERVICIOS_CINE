@@ -328,7 +328,44 @@
       "repairThumbnails": "Repair thumbnails",
       "allSequences": "All sequences",
       "noShotsTitle": "No shots yet",
-      "noShotsText": "Select a sequence and generate its storyboard."
+      "noShotsText": "Select a sequence and generate its storyboard.",
+      "stylePresets": {
+        "handDrawnStoryboard": "Hand-drawn storyboard",
+        "roughPencilStoryboard": "Rough pencil sketch",
+        "inkStoryboard": "Ink / line art",
+        "charcoalStoryboard": "Cinematic charcoal",
+        "graphicNovelStoryboard": "Graphic novel",
+        "cinematicRealistic": "Realistic previz"
+      },
+      "uploadResult": {
+        "format": "Format",
+        "words": "Words",
+        "characters": "Characters",
+        "readyForAnalysis": "Ready for analysis",
+        "unsupportedDoc": "Classic .doc format is not supported. Use .docx (modern Word)."
+      },
+      "common": {
+        "yes": "Yes",
+        "no": "No"
+      },
+      "analysis": {
+        "logline": "Logline",
+        "premise": "Premise",
+        "theme": "Theme",
+        "genreTone": "Genre / Tone",
+        "extendedSynopsis": "Extended synopsis",
+        "mainCharacters": "Main characters",
+        "mainLocations": "Main locations",
+        "recommended": "Recommended",
+        "warnings": "Warnings"
+      },
+      "credits": {
+        "estimating": "Estimating credits..."
+      },
+      "selectSequenceFirst": "First select a sequence. CID generates storyboards by sequence to preserve narrative logic.",
+      "renderOnCompleteHelp": "When enabled, CID will enqueue still renders after storyboard generation finishes.",
+      "noCharacterData": "No character data yet. Analyze the full script first.",
+      "selectSequenceFirstFromTab": "First select a sequence in the \"Sequences\" tab. CID generates storyboards by sequence to preserve narrative logic."
     }
   },
   "components": {

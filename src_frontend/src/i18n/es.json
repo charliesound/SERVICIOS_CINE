@@ -328,7 +328,44 @@
       "repairThumbnails": "Reparar miniaturas",
       "allSequences": "Todas las secuencias",
       "noShotsTitle": "No hay planos todavía",
-      "noShotsText": "Selecciona una secuencia y genera su storyboard."
+      "noShotsText": "Selecciona una secuencia y genera su storyboard.",
+      "stylePresets": {
+        "handDrawnStoryboard": "Dibujo storyboard a mano",
+        "roughPencilStoryboard": "Boceto a lápiz",
+        "inkStoryboard": "Tinta / line art",
+        "charcoalStoryboard": "Carboncillo cinematográfico",
+        "graphicNovelStoryboard": "Novela gráfica",
+        "cinematicRealistic": "Previz realista"
+      },
+      "uploadResult": {
+        "format": "Formato",
+        "words": "Palabras",
+        "characters": "Caracteres",
+        "readyForAnalysis": "Listo para análisis",
+        "unsupportedDoc": "Formato .doc no soportado. Usa .docx (Word moderno)."
+      },
+      "common": {
+        "yes": "Sí",
+        "no": "No"
+      },
+      "analysis": {
+        "logline": "Logline",
+        "premise": "Premisa",
+        "theme": "Tema",
+        "genreTone": "Género / Tono",
+        "extendedSynopsis": "Sinopsis extendida",
+        "mainCharacters": "Personajes principales",
+        "mainLocations": "Localizaciones principales",
+        "recommended": "Recomendada",
+        "warnings": "Advertencias"
+      },
+      "credits": {
+        "estimating": "Estimando créditos..."
+      },
+      "selectSequenceFirst": "Primero selecciona una secuencia. CID genera storyboards por secuencia para preservar la lógica narrativa.",
+      "renderOnCompleteHelp": "Si está activado, CID encolará render still al finalizar la generación del storyboard.",
+      "noCharacterData": "No hay datos de personajes. Analiza el guion completo primero.",
+      "selectSequenceFirstFromTab": "Primero selecciona una secuencia en la pestaña \"Secuencias\". CID genera storyboards por secuencia para preservar la lógica narrativa."
     }
   },
   "components": {

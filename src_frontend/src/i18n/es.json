@@ -1772,6 +1772,17 @@
         "noAdditionalRagRationale": "Sin rationale RAG adicional.",
         "noDetailedEvaluation": "No hay evaluación detallada disponible para esta oportunidad.",
         "noEvidenceFragments": "Sin fragmentos de evidencia para esta oportunidad."
+      },
+      "fitLevels": {
+        "high": "Alto",
+        "medium": "Medio",
+        "low": "Bajo",
+        "blocked": "Bloqueado"
+      },
+      "regions": {
+        "spain": "España",
+        "europe": "Europa",
+        "iberoamericaLatam": "Iberoamérica / LATAM"
       }
     }
   },

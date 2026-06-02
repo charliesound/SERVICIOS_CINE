@@ -236,10 +236,10 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
             className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-amber-400/40"
           >
             <option value="">{t('components.fundingOpportunitiesDashboard.filters.allLevels')}</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-            <option value="blocked">Blocked</option>
+            <option value="high">{t('components.fundingOpportunitiesDashboard.fitLevels.high')}</option>
+            <option value="medium">{t('components.fundingOpportunitiesDashboard.fitLevels.medium')}</option>
+            <option value="low">{t('components.fundingOpportunitiesDashboard.fitLevels.low')}</option>
+            <option value="blocked">{t('components.fundingOpportunitiesDashboard.fitLevels.blocked')}</option>
           </select>
 
           <select
@@ -248,9 +248,9 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
             className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-amber-400/40"
           >
             <option value="">{t('components.fundingOpportunitiesDashboard.filters.allRegions')}</option>
-            <option value="spain">Spain</option>
-            <option value="europe">Europe</option>
-            <option value="iberoamerica_latam">Iberoamerica / LATAM</option>
+            <option value="spain">{t('components.fundingOpportunitiesDashboard.regions.spain')}</option>
+            <option value="europe">{t('components.fundingOpportunitiesDashboard.regions.europe')}</option>
+            <option value="iberoamerica_latam">{t('components.fundingOpportunitiesDashboard.regions.iberoamericaLatam')}</option>
           </select>
 
           <select

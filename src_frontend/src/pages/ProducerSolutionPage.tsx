@@ -558,101 +558,161 @@ export default function ProducerSolutionPage() {
         {/* FORMULARIO VISUAL */}
         <section id="producer-form" className="relative border-t border-white/5 bg-[#09111c]/40 py-24 md:py-32">
           <div className="mx-auto max-w-3xl px-5 md:px-8">
-            <LandingReveal>
-              <div className="text-center">
-                <p className="editorial-kicker text-amber-300/90">Prueba Producer AI Studio</p>
-                <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">
-                  Impulsa tu <span className="text-gradient-amber">proxima produccion</span>
-                </h2>
-                <p className="mt-4 text-lg leading-8 text-slate-400">
-                  Rellena el formulario y evaluaremos tu proyecto para el acceso a la beta de gestion.
-                </p>
-              </div>
-            </LandingReveal>
-
-            <LandingReveal>
-              <div className="mt-12">
-                <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    {formFields.slice(0, 2).map((field) => {
-                      const IconComponent = field.icon as LucideIcon
-                      return (
-                        <div key={field.name}>
-                          <label className="label" htmlFor={field.name}>{field.label}</label>
-                          <div className="relative">
-                            <IconComponent className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                            <input
-                              id={field.name}
-                              name={field.name}
-                              type={field.type}
-                              className="input pl-10"
-                              placeholder={field.placeholder}
-                              readOnly
-                            />
-                          </div>
-                        </div>
-                      )
-                    })}
+            {isAuthenticated ? (
+              <>
+                <LandingReveal>
+                  <div className="text-center">
+                    <p className="editorial-kicker text-amber-300/90">Producer AI Studio activo</p>
+                    <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">
+                      Continúa tu <span className="text-gradient-amber">operación en CID</span>
+                    </h2>
+                    <p className="mt-4 text-lg leading-8 text-slate-400">
+                      Ya tienes acceso a CID. Continúa trabajando desde tus proyectos o crea uno nuevo.
+                    </p>
                   </div>
+                </LandingReveal>
 
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    {formFields.slice(2).map((field) => {
-                      const options = field.options as string[]
-                      return (
-                        <div key={field.name}>
-                          <label className="label" htmlFor={field.name}>{field.label}</label>
-                          <select
-                            id={field.name}
-                            name={field.name}
-                            className="input"
-                            defaultValue=""
-                          >
-                            <option value="" disabled>{field.placeholder}</option>
-                            {options.map((opt) => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )
-                    })}
+                <LandingReveal>
+                  <div className="mt-12 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_80px_rgba(245,158,11,0.08)] md:p-8">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <Link to="/projects/new" className="landing-creative-card h-full transition-transform hover:-translate-y-0.5">
+                        <LayoutDashboard className="h-5 w-5 text-amber-400" />
+                        <h3 className="mt-4 text-base font-semibold text-white">Crear proyecto</h3>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                          Abre un proyecto nuevo y arranca el flujo operativo desde CID.
+                        </p>
+                        <span className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-amber-300">
+                          Ir a crear proyecto
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </Link>
+
+                      <Link to="/projects" className="landing-creative-card h-full transition-transform hover:-translate-y-0.5">
+                        <FileSearch className="h-5 w-5 text-amber-400" />
+                        <h3 className="mt-4 text-base font-semibold text-white">Mis proyectos</h3>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                          Revisa el estado de tus producciones y entra en el proyecto que necesites operar.
+                        </p>
+                        <span className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-amber-300">
+                          Abrir proyectos
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </Link>
+
+                      <Link to="/cid" className="landing-creative-card h-full transition-transform hover:-translate-y-0.5">
+                        <Sparkles className="h-5 w-5 text-amber-400" />
+                        <h3 className="mt-4 text-base font-semibold text-white">Entrar a CID</h3>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                          Accede al entorno central para continuar con presupuesto, control y seguimiento.
+                        </p>
+                        <span className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-amber-300">
+                          Abrir CID
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </Link>
+                    </div>
                   </div>
-
-                  <div>
-                    <label className="label" htmlFor="descripcion">Estado actual del proyecto</label>
-                    <textarea
-                      id="descripcion"
-                      name="descripcion"
-                      rows={3}
-                      className="input resize-none"
-                      placeholder="Cuentanos en que fase esta el proyecto (desarrollo, preprod...) y tus necesidades de gestion..."
-                      readOnly
-                    />
+                </LandingReveal>
+              </>
+            ) : (
+              <>
+                <LandingReveal>
+                  <div className="text-center">
+                    <p className="editorial-kicker text-amber-300/90">Prueba Producer AI Studio</p>
+                    <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">
+                      Impulsa tu <span className="text-gradient-amber">proxima produccion</span>
+                    </h2>
+                    <p className="mt-4 text-lg leading-8 text-slate-400">
+                      Rellena el formulario y evaluaremos tu proyecto para el acceso a la beta de gestion.
+                    </p>
                   </div>
+                </LandingReveal>
 
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      id="acepta"
-                      className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/30"
-                      checked
-                      readOnly
-                    />
-                    <label htmlFor="acepta" className="text-sm text-slate-400">
-                      Acepto que me contacten para gestionar esta solicitud de acceso a Producer AI Studio.
-                    </label>
+                <LandingReveal>
+                  <div className="mt-12">
+                    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        {formFields.slice(0, 2).map((field) => {
+                          const IconComponent = field.icon as LucideIcon
+                          return (
+                            <div key={field.name}>
+                              <label className="label" htmlFor={field.name}>{field.label}</label>
+                              <div className="relative">
+                                <IconComponent className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                                <input
+                                  id={field.name}
+                                  name={field.name}
+                                  type={field.type}
+                                  className="input pl-10"
+                                  placeholder={field.placeholder}
+                                  readOnly
+                                />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        {formFields.slice(2).map((field) => {
+                          const options = field.options as string[]
+                          return (
+                            <div key={field.name}>
+                              <label className="label" htmlFor={field.name}>{field.label}</label>
+                              <select
+                                id={field.name}
+                                name={field.name}
+                                className="input"
+                                defaultValue=""
+                              >
+                                <option value="" disabled>{field.placeholder}</option>
+                                {options.map((opt) => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      <div>
+                        <label className="label" htmlFor="descripcion">Estado actual del proyecto</label>
+                        <textarea
+                          id="descripcion"
+                          name="descripcion"
+                          rows={3}
+                          className="input resize-none"
+                          placeholder="Cuentanos en que fase esta el proyecto (desarrollo, preprod...) y tus necesidades de gestion..."
+                          readOnly
+                        />
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          id="acepta"
+                          className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/30"
+                          checked
+                          readOnly
+                        />
+                        <label htmlFor="acepta" className="text-sm text-slate-400">
+                          Acepto que me contacten para gestionar esta solicitud de acceso a Producer AI Studio.
+                        </label>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="landing-cta-primary w-full justify-center py-4 text-base opacity-60 cursor-not-allowed"
+                        disabled
+                      >
+                        <Send className="h-4 w-4" />
+                        Enviar solicitud
+                      </button>
+                    </form>
                   </div>
-
-                  <button
-                    type="submit"
-                    className="landing-cta-primary w-full justify-center py-4 text-base opacity-60 cursor-not-allowed"
-                    disabled
-                  >
-                    <Send className="h-4 w-4" />
-                    Enviar solicitud
-                  </button>
-                </form>
-              </div>
-            </LandingReveal>
+                </LandingReveal>
+              </>
+            )}
           </div>
         </section>
 

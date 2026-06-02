@@ -127,16 +127,16 @@ function StoryboardTracePanelInner({ projectId, shotId, compact = false }: Story
           {!isTraceLoading && !traceError && trace && (
             <>
               <div className="space-y-1.5">
-                <p><span className="text-slate-500">Scene heading:</span> {traceValue(trace.prompt_trace?.source_scene_heading, t)}</p>
-                <p><span className="text-slate-500">Action:</span> {shortTraceValue(trace.prompt_trace?.source_action_summary, t)}</p>
-                <p><span className="text-slate-500">Dialogue:</span> {shortTraceValue(trace.prompt_trace?.source_dialogue_summary, t)}</p>
-                <p><span className="text-slate-500">Prompt:</span> {shortTraceValue(trace.prompt_trace?.positive_prompt_enriched || trace.prompt_trace?.original_narrative, t)}</p>
-                <p><span className="text-slate-500">Workflow:</span> {traceValue(trace.workflow_trace?.workflow_key, t)} · {traceValue(trace.workflow_trace?.workflow_profile_executed || trace.workflow_trace?.workflow_profile, t)}</p>
-                <p><span className="text-slate-500">Fallback:</span> {trace.workflow_trace?.fallback_applied ? traceValue(trace.workflow_trace?.fallback_reason, t) : t('components.storyboard.common.no')}</p>
+                <p><span className="text-slate-500">{t('components.storyboard.tracePanel.sceneHeading')}</span> {traceValue(trace.prompt_trace?.source_scene_heading, t)}</p>
+                <p><span className="text-slate-500">{t('components.storyboard.tracePanel.action')}</span> {shortTraceValue(trace.prompt_trace?.source_action_summary, t)}</p>
+                <p><span className="text-slate-500">{t('components.storyboard.tracePanel.dialogue')}</span> {shortTraceValue(trace.prompt_trace?.source_dialogue_summary, t)}</p>
+                <p><span className="text-slate-500">{t('components.storyboard.tracePanel.prompt')}</span> {shortTraceValue(trace.prompt_trace?.positive_prompt_enriched || trace.prompt_trace?.original_narrative, t)}</p>
+                <p><span className="text-slate-500">{t('components.storyboard.tracePanel.workflow')}</span> {traceValue(trace.workflow_trace?.workflow_key, t)} · {traceValue(trace.workflow_trace?.workflow_profile_executed || trace.workflow_trace?.workflow_profile, t)}</p>
+                <p><span className="text-slate-500">{t('components.storyboard.tracePanel.fallback')}</span> {trace.workflow_trace?.fallback_applied ? traceValue(trace.workflow_trace?.fallback_reason, t) : t('components.storyboard.common.no')}</p>
                 <p><span className="text-slate-500">{t('components.storyboard.tracePanel.model')}:</span> {traceValue(trace.model_trace?.model_family, t)} · {traceValue(trace.model_trace?.checkpoint, t)}</p>
                 <p><span className="text-slate-500">{t('components.storyboard.tracePanel.parameters')}:</span> seed {traceValue(trace.model_trace?.seed, t)} · steps {traceValue(trace.model_trace?.steps, t)} · cfg {traceValue(trace.model_trace?.cfg, t)} · sampler {traceValue(trace.model_trace?.sampler, t)} · scheduler {traceValue(trace.model_trace?.scheduler, t)} · {traceValue(trace.model_trace?.width, t)}x{traceValue(trace.model_trace?.height, t)}</p>
-                <p><span className="text-slate-500">Render job:</span> {traceValue(trace.render_job_id, t)}</p>
-                <p><span className="text-slate-500">Media asset:</span> {traceValue(trace.asset_trace?.media_asset_id, t)}</p>
+                <p><span className="text-slate-500">{t('components.storyboard.tracePanel.renderJob')}</span> {traceValue(trace.render_job_id, t)}</p>
+                <p><span className="text-slate-500">{t('components.storyboard.tracePanel.mediaAsset')}</span> {traceValue(trace.asset_trace?.media_asset_id, t)}</p>
                 <p><span className="text-slate-500">{t('components.storyboard.tracePanel.version')}:</span> v{traceValue(trace.version_trace?.current_version, t)} {trace.version_trace?.has_previous_versions ? `· ${t('components.storyboard.tracePanel.previousVersions')}` : `· ${t('components.storyboard.tracePanel.noPreviousVersions')}`}</p>
               </div>
 

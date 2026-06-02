@@ -739,7 +739,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                         {reference.thumbnail_url && isSafeAssetUrl(reference.thumbnail_url) && (
                           <div className="mt-2 flex flex-wrap items-center gap-3">
                             <img src={reference.thumbnail_url} alt={reference.asset_file_name || reference.asset_id} className="h-16 w-16 rounded-lg border border-white/10 object-cover" loading="lazy" />
-                            <a href={reference.thumbnail_url} target="_blank" rel="noreferrer" className="inline-flex text-xs text-cyan-300 hover:text-cyan-200">thumbnail_url</a>
+                            <a href={reference.thumbnail_url} target="_blank" rel="noreferrer" className="inline-flex text-xs text-cyan-300 hover:text-cyan-200">{t('components.storyboard.characterBible.thumbnailUrl')}</a>
                           </div>
                         )}
                         {!reference.thumbnail_url && isSafeAssetUrl(reference.asset_api_url) && (

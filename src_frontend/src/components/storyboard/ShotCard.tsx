@@ -136,7 +136,7 @@ export function ShotCard({ shot, onUpdate, onDelete, onOpenPicker, isSaving }: S
             )}
             {shot.generation_job_id && (
               <p className="flex items-center gap-1">
-                <span>Gen job:</span>
+                <span>{t('components.storyboard.shotCard.genJob')}</span>
                 <span className="text-slate-400 font-mono">{shot.generation_job_id.substring(0, 12)}...</span>
               </p>
             )}

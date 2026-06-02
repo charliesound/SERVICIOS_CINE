@@ -324,7 +324,7 @@ function StoryboardSheetResult({
           <p className="mt-2 text-lg font-semibold text-white">{result.output_format.toUpperCase()}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Layout</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{t('components.storyboard.common.layout')}</p>
           <p className="mt-2 text-lg font-semibold text-white">{result.layout}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-black/20 p-3">

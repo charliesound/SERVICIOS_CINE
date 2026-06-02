@@ -410,7 +410,8 @@
         "pointOfView": "Punto de vista",
         "sketch": "Boceto",
         "render": "Render",
-        "reference": "Referencia"
+        "reference": "Referencia",
+        "genJob": "Gen job:"
       },
       "assetPicker": {
         "title": "Seleccionar asset",
@@ -434,7 +435,15 @@
         "parameters": "Parámetros",
         "version": "Versión",
         "previousVersions": "hay indicios de versiones anteriores",
-        "noPreviousVersions": "sin versiones anteriores detectadas"
+        "noPreviousVersions": "sin versiones anteriores detectadas",
+        "sceneHeading": "Encabezado de escena:",
+        "action": "Acción:",
+        "dialogue": "Diálogo:",
+        "prompt": "Prompt:",
+        "workflow": "Workflow:",
+        "fallback": "Fallback:",
+        "renderJob": "Render job:",
+        "mediaAsset": "Media asset:"
       },
       "characterBreakdown": {
         "empty": "No se detectaron personajes en las secuencias.",
@@ -722,7 +731,8 @@
         "loadingAssets": "Cargando assets...",
         "resolveContinuity": "Resolver continuidad",
         "noAssets": "No hay assets visuales disponibles en este proyecto. Puedes seguir vinculando referencias mediante MediaAsset ID manual.",
-        "unavailable": "No disponible"
+        "unavailable": "No disponible",
+        "thumbnailUrl": "thumbnail_url"
       },
       "directorVisualReference": {
         "title": "Referencia visual del director",

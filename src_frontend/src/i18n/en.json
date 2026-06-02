@@ -1714,6 +1714,10 @@
         "errorUnknown": "Unknown error",
         "errorAlignmentFailed": "Could not compare with the script",
         "errorAlignment": "Script comparison error"
+      },
+      "authenticatedShotImage": {
+        "loading": "Loading...",
+        "noThumbnail": "No thumbnail"
       }
     },
     "projectFundingPanel": {

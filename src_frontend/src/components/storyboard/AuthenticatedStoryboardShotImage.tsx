@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Image as ImageIcon, Loader2 } from 'lucide-react'
 import { storyboardApi } from '@/api/storyboard'
+import { useLanguage } from '@/i18n'
 
 interface AuthenticatedStoryboardShotImageProps {
   projectId: string
@@ -15,8 +16,10 @@ export function AuthenticatedStoryboardShotImage({
   shotId,
   alt,
   className,
-  fallbackLabel = 'Sin miniatura',
+  fallbackLabel,
 }: AuthenticatedStoryboardShotImageProps) {
+  const { t } = useLanguage()
+  const resolvedFallbackLabel = fallbackLabel ?? t('components.storyboard.authenticatedShotImage.noThumbnail')
   const [src, setSrc] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -88,7 +91,7 @@ export function AuthenticatedStoryboardShotImage({
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-500">
       {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5 opacity-70" />}
-      <span className="text-[11px] text-center">{isLoading ? 'Cargando...' : fallbackLabel}</span>
+      <span className="text-[11px] text-center">{isLoading ? t('components.storyboard.authenticatedShotImage.loading') : resolvedFallbackLabel}</span>
     </div>
   )
 }

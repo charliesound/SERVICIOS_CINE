@@ -1714,6 +1714,10 @@
         "errorUnknown": "Error desconocido",
         "errorAlignmentFailed": "No se pudo cotejar con el guion",
         "errorAlignment": "Error al cotejar con el guion"
+      },
+      "authenticatedShotImage": {
+        "loading": "Cargando...",
+        "noThumbnail": "Sin miniatura"
       }
     },
     "projectFundingPanel": {

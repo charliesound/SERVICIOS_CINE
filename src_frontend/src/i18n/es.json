@@ -1669,6 +1669,62 @@
         "errorAlignmentFailed": "No se pudo cotejar con el guion",
         "errorAlignment": "Error al cotejar con el guion"
       }
+    },
+    "projectFundingPanel": {
+      "currencyLocale": "es-ES",
+      "confirmDelete": "¿Eliminar esta fuente?",
+      "privateSourcesTitle": "Fuentes privadas",
+      "newSource": "Nueva fuente",
+      "sourceTypes": {
+        "equity": "Equity",
+        "privateInvestor": "Inversor privado",
+        "preSale": "Preventa",
+        "minimumGuarantee": "Garantía mínima",
+        "inKind": "Especie (in-kind)",
+        "brandPartnership": "Partner de marca",
+        "loan": "Préstamo",
+        "other": "Otro"
+      },
+      "status": {
+        "secured": "Asegurado",
+        "negotiating": "En negociación",
+        "projected": "Proyectado"
+      },
+      "metrics": {
+        "totalBudget": "Presupuesto total",
+        "secured": "Asegurado",
+        "negotiating": "En negociación",
+        "projected": "Proyectado",
+        "currentFundingGap": "Brecha de financiación actual",
+        "optimisticFundingGap": "Brecha de financiación optimista"
+      },
+      "form": {
+        "name": "Nombre",
+        "type": "Tipo",
+        "amount": "Monto",
+        "status": "Estado",
+        "notes": "Notas"
+      },
+      "actions": {
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "edit": "Editar",
+        "delete": "Eliminar"
+      },
+      "empty": {
+        "title": "No hay fuentes privadas registradas",
+        "help": "Añade fuentes para calcular la brecha de financiación"
+      },
+      "messages": {
+        "sourceCreated": "Fuente creada correctamente",
+        "sourceDeleted": "Fuente eliminada",
+        "sourceUpdated": "Fuente actualizada"
+      },
+      "errors": {
+        "createSource": "Error al crear fuente",
+        "deleteSource": "Error al eliminar",
+        "updateSource": "Error al actualizar"
+      }
     }
   },
   "modules": {

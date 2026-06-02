@@ -1,24 +1,25 @@
 import { useState, useEffect } from 'react'
 import { projectFundingApi, type ProjectFundingSource, type ProjectFundingSummary, type CreateFundingSourcePayload } from '@/api'
+import { t } from '@/i18n'
 import {
   DollarSign, Plus, Pencil, Trash2, Save, X, Loader2, AlertCircle, CheckCircle2
 } from 'lucide-react'
 
 const SOURCE_TYPES = [
-  { value: 'equity', label: 'Equity' },
-  { value: 'private_investor', label: 'Inverse Privado' },
-  { value: 'pre_sale', label: 'Pre-venta' },
-  { value: 'minimum_guarantee', label: 'Garantía Mínima' },
-  { value: 'in_kind', label: 'Especie (In-kind)' },
-  { value: 'brand_partnership', label: 'Partner de Marca' },
-  { value: 'loan', label: 'Préstamo' },
-  { value: 'other', label: 'Otro' },
+  { value: 'equity', labelKey: 'components.projectFundingPanel.sourceTypes.equity' },
+  { value: 'private_investor', labelKey: 'components.projectFundingPanel.sourceTypes.privateInvestor' },
+  { value: 'pre_sale', labelKey: 'components.projectFundingPanel.sourceTypes.preSale' },
+  { value: 'minimum_guarantee', labelKey: 'components.projectFundingPanel.sourceTypes.minimumGuarantee' },
+  { value: 'in_kind', labelKey: 'components.projectFundingPanel.sourceTypes.inKind' },
+  { value: 'brand_partnership', labelKey: 'components.projectFundingPanel.sourceTypes.brandPartnership' },
+  { value: 'loan', labelKey: 'components.projectFundingPanel.sourceTypes.loan' },
+  { value: 'other', labelKey: 'components.projectFundingPanel.sourceTypes.other' },
 ]
 
 const STATUS_OPTIONS = [
-  { value: 'secured', label: 'Secured', color: 'bg-green-500/10 text-green-400 border-green-500/20' },
-  { value: 'negotiating', label: 'En negociación', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-  { value: 'projected', label: 'Proyectado', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+  { value: 'secured', labelKey: 'components.projectFundingPanel.status.secured', color: 'bg-green-500/10 text-green-400 border-green-500/20' },
+  { value: 'negotiating', labelKey: 'components.projectFundingPanel.status.negotiating', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+  { value: 'projected', labelKey: 'components.projectFundingPanel.status.projected', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
 ]
 
 interface Props {
@@ -53,7 +54,7 @@ export default function ProjectFundingPanel({ projectId }: Props) {
       setSources(srcs)
       setSummary(sum)
     } catch (err) {
-      console.error('Error loading funding data:', err)
+      console.error('[ProjectFundingPanel] funding data load failed:', err)
     } finally {
       setLoading(false)
     }
@@ -63,6 +64,17 @@ export default function ProjectFundingPanel({ projectId }: Props) {
     loadData()
   }, [projectId])
 
+  const resetForm = () => {
+    setFormData({
+      source_name: '',
+      source_type: 'equity',
+      amount: 0,
+      currency: 'EUR',
+      status: 'projected',
+      notes: '',
+    })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -71,35 +83,28 @@ export default function ProjectFundingPanel({ projectId }: Props) {
 
     try {
       await projectFundingApi.createSource(projectId, formData)
-      setSuccessMsg('Fuente creada correctamente')
+      setSuccessMsg(t('components.projectFundingPanel.messages.sourceCreated'))
       setIsCreating(false)
-      setFormData({
-        source_name: '',
-        source_type: 'equity',
-        amount: 0,
-        currency: 'EUR',
-        status: 'projected',
-        notes: '',
-      })
+      resetForm()
       await loadData()
       setTimeout(() => setSuccessMsg(''), 2000)
-    } catch (err) {
-      setError('Error al crear fuente')
+    } catch {
+      setError(t('components.projectFundingPanel.errors.createSource'))
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (sourceId: string) => {
-    if (!confirm('¿Eliminar esta fuente?')) return
+    if (!confirm(t('components.projectFundingPanel.confirmDelete'))) return
 
     try {
       await projectFundingApi.deleteSource(projectId, sourceId)
-      setSuccessMsg('Fuente eliminada')
+      setSuccessMsg(t('components.projectFundingPanel.messages.sourceDeleted'))
       await loadData()
       setTimeout(() => setSuccessMsg(''), 2000)
-    } catch (err) {
-      setError('Error al eliminar')
+    } catch {
+      setError(t('components.projectFundingPanel.errors.deleteSource'))
     }
   }
 
@@ -123,19 +128,19 @@ export default function ProjectFundingPanel({ projectId }: Props) {
     setSaving(true)
     try {
       await projectFundingApi.updateSource(projectId, sourceId, formData)
-      setSuccessMsg('Fuente actualizada')
+      setSuccessMsg(t('components.projectFundingPanel.messages.sourceUpdated'))
       setEditingId(null)
       await loadData()
       setTimeout(() => setSuccessMsg(''), 2000)
-    } catch (err) {
-      setError('Error al actualizar')
+    } catch {
+      setError(t('components.projectFundingPanel.errors.updateSource'))
     } finally {
       setSaving(false)
     }
   }
 
   const formatCurrency = (amount: number, currency: string = 'EUR') => {
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat(t('components.projectFundingPanel.currencyLocale'), {
       style: 'currency',
       currency,
     }).format(amount)
@@ -148,7 +153,12 @@ export default function ProjectFundingPanel({ projectId }: Props) {
 
   const getStatusLabel = (status: string) => {
     const opt = STATUS_OPTIONS.find(s => s.value === status)
-    return opt?.label || status
+    return opt ? t(opt.labelKey) : status
+  }
+
+  const getSourceTypeLabel = (sourceType: string) => {
+    const opt = SOURCE_TYPES.find(st => st.value === sourceType)
+    return opt ? t(opt.labelKey) : sourceType
   }
 
   if (loading) {
@@ -177,25 +187,25 @@ export default function ProjectFundingPanel({ projectId }: Props) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-          <div className="text-sm text-gray-400 mb-1">Total Budget</div>
+          <div className="text-sm text-gray-400 mb-1">{t('components.projectFundingPanel.metrics.totalBudget')}</div>
           <div className="text-xl font-semibold text-white">
             {summary ? formatCurrency(summary.total_budget, summary.currency) : '-'}
           </div>
         </div>
         <div className="p-4 bg-green-500/5 rounded-lg border border-green-500/20">
-          <div className="text-sm text-green-400 mb-1">Secured</div>
+          <div className="text-sm text-green-400 mb-1">{t('components.projectFundingPanel.metrics.secured')}</div>
           <div className="text-xl font-semibold text-green-400">
             {summary ? formatCurrency(summary.total_secured_private_funds, summary.currency) : '-'}
           </div>
         </div>
         <div className="p-4 bg-amber-500/5 rounded-lg border border-amber-500/20">
-          <div className="text-sm text-amber-400 mb-1">Negotiating</div>
+          <div className="text-sm text-amber-400 mb-1">{t('components.projectFundingPanel.metrics.negotiating')}</div>
           <div className="text-xl font-semibold text-amber-400">
             {summary ? formatCurrency(summary.total_negotiating_private_funds, summary.currency) : '-'}
           </div>
         </div>
         <div className="p-4 bg-blue-500/5 rounded-lg border border-blue-500/20">
-          <div className="text-sm text-blue-400 mb-1">Projected</div>
+          <div className="text-sm text-blue-400 mb-1">{t('components.projectFundingPanel.metrics.projected')}</div>
           <div className="text-xl font-semibold text-blue-400">
             {summary ? formatCurrency(summary.total_projected_private_funds, summary.currency) : '-'}
           </div>
@@ -204,13 +214,13 @@ export default function ProjectFundingPanel({ projectId }: Props) {
 
       <div className="grid grid-cols-2 gap-4 p-4 bg-red-500/10 rounded-lg border border-red-500/20">
         <div>
-          <div className="text-sm text-red-300 mb-1">Funding Gap (Actual)</div>
+          <div className="text-sm text-red-300 mb-1">{t('components.projectFundingPanel.metrics.currentFundingGap')}</div>
           <div className="text-2xl font-bold text-red-400">
             {summary ? formatCurrency(summary.current_funding_gap, summary.currency) : '-'}
           </div>
         </div>
         <div>
-          <div className="text-sm text-gray-400 mb-1">Funding Gap (Optimista)</div>
+          <div className="text-sm text-gray-400 mb-1">{t('components.projectFundingPanel.metrics.optimisticFundingGap')}</div>
           <div className="text-2xl font-semibold text-gray-300">
             {summary ? formatCurrency(summary.optimistic_funding_gap, summary.currency) : '-'}
           </div>
@@ -219,13 +229,13 @@ export default function ProjectFundingPanel({ projectId }: Props) {
 
       <div className="border-t border-white/10 pt-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Fuentes Privadas</h3>
+          <h3 className="text-lg font-semibold text-white">{t('components.projectFundingPanel.privateSourcesTitle')}</h3>
           <button
             onClick={() => setIsCreating(true)}
             className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Nueva Fuente
+            {t('components.projectFundingPanel.newSource')}
           </button>
         </div>
 
@@ -233,7 +243,7 @@ export default function ProjectFundingPanel({ projectId }: Props) {
           <form onSubmit={handleSubmit} className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Nombre</label>
+                <label className="block text-sm text-gray-400 mb-1">{t('components.projectFundingPanel.form.name')}</label>
                 <input
                   type="text"
                   value={formData.source_name}
@@ -243,19 +253,19 @@ export default function ProjectFundingPanel({ projectId }: Props) {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Tipo</label>
+                <label className="block text-sm text-gray-400 mb-1">{t('components.projectFundingPanel.form.type')}</label>
                 <select
                   value={formData.source_type}
                   onChange={e => setFormData({ ...formData, source_type: e.target.value })}
                   className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
                 >
                   {SOURCE_TYPES.map(st => (
-                    <option key={st.value} value={st.value}>{st.label}</option>
+                    <option key={st.value} value={st.value}>{t(st.labelKey)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Monto</label>
+                <label className="block text-sm text-gray-400 mb-1">{t('components.projectFundingPanel.form.amount')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -266,20 +276,20 @@ export default function ProjectFundingPanel({ projectId }: Props) {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Estado</label>
+                <label className="block text-sm text-gray-400 mb-1">{t('components.projectFundingPanel.form.status')}</label>
                 <select
                   value={formData.status}
                   onChange={e => setFormData({ ...formData, status: e.target.value })}
                   className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
                 >
                   {STATUS_OPTIONS.map(s => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
+                    <option key={s.value} value={s.value}>{t(s.labelKey)}</option>
                   ))}
                 </select>
               </div>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Notas</label>
+              <label className="block text-sm text-gray-400 mb-1">{t('components.projectFundingPanel.form.notes')}</label>
               <textarea
                 value={formData.notes}
                 onChange={e => setFormData({ ...formData, notes: e.target.value })}
@@ -294,25 +304,18 @@ export default function ProjectFundingPanel({ projectId }: Props) {
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white text-sm transition-colors disabled:opacity-50"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Guardar
+                {t('components.projectFundingPanel.actions.save')}
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setIsCreating(false)
-                  setFormData({
-                    source_name: '',
-                    source_type: 'equity',
-                    amount: 0,
-                    currency: 'EUR',
-                    status: 'projected',
-                    notes: '',
-                  })
+                  resetForm()
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-white text-sm transition-colors"
               >
                 <X className="w-4 h-4" />
-                Cancelar
+                {t('components.projectFundingPanel.actions.cancel')}
               </button>
             </div>
           </form>
@@ -321,8 +324,8 @@ export default function ProjectFundingPanel({ projectId }: Props) {
         {sources.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p>No hay fuentes privadas registradas</p>
-            <p className="text-sm">Añade fuentes para calcular la brecha de financiación</p>
+            <p>{t('components.projectFundingPanel.empty.title')}</p>
+            <p className="text-sm">{t('components.projectFundingPanel.empty.help')}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -353,12 +356,14 @@ export default function ProjectFundingPanel({ projectId }: Props) {
                         onClick={() => handleSaveEdit(source.id)}
                         disabled={saving}
                         className="flex items-center gap-1 px-2 py-1 bg-green-600 rounded text-white text-xs"
+                        title={t('components.projectFundingPanel.actions.save')}
                       >
                         <Save className="w-3 h-3" />
                       </button>
                       <button
                         onClick={() => handleEdit(source)}
                         className="flex items-center gap-1 px-2 py-1 bg-gray-600 rounded text-white text-xs"
+                        title={t('components.projectFundingPanel.actions.cancel')}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -373,7 +378,7 @@ export default function ProjectFundingPanel({ projectId }: Props) {
                           {getStatusLabel(source.status)}
                         </span>
                         <span className="text-xs text-gray-400">
-                          {SOURCE_TYPES.find(st => st.value === source.source_type)?.label || source.source_type}
+                          {getSourceTypeLabel(source.source_type)}
                         </span>
                       </div>
                       <div className="text-sm text-gray-400">
@@ -387,12 +392,14 @@ export default function ProjectFundingPanel({ projectId }: Props) {
                       <button
                         onClick={() => handleEdit(source)}
                         className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
+                        title={t('components.projectFundingPanel.actions.edit')}
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(source.id)}
                         className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-red-400 transition-colors"
+                        title={t('components.projectFundingPanel.actions.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

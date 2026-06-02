@@ -1669,6 +1669,62 @@
         "errorAlignmentFailed": "Could not compare with the script",
         "errorAlignment": "Script comparison error"
       }
+    },
+    "projectFundingPanel": {
+      "currencyLocale": "en-US",
+      "confirmDelete": "Delete this funding source?",
+      "privateSourcesTitle": "Private sources",
+      "newSource": "New source",
+      "sourceTypes": {
+        "equity": "Equity",
+        "privateInvestor": "Private investor",
+        "preSale": "Pre-sale",
+        "minimumGuarantee": "Minimum guarantee",
+        "inKind": "In-kind",
+        "brandPartnership": "Brand partnership",
+        "loan": "Loan",
+        "other": "Other"
+      },
+      "status": {
+        "secured": "Secured",
+        "negotiating": "Negotiating",
+        "projected": "Projected"
+      },
+      "metrics": {
+        "totalBudget": "Total budget",
+        "secured": "Secured",
+        "negotiating": "Negotiating",
+        "projected": "Projected",
+        "currentFundingGap": "Current funding gap",
+        "optimisticFundingGap": "Optimistic funding gap"
+      },
+      "form": {
+        "name": "Name",
+        "type": "Type",
+        "amount": "Amount",
+        "status": "Status",
+        "notes": "Notes"
+      },
+      "actions": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "empty": {
+        "title": "No private sources registered",
+        "help": "Add sources to calculate the funding gap"
+      },
+      "messages": {
+        "sourceCreated": "Source created successfully",
+        "sourceDeleted": "Source deleted",
+        "sourceUpdated": "Source updated"
+      },
+      "errors": {
+        "createSource": "Error creating source",
+        "deleteSource": "Error deleting source",
+        "updateSource": "Error updating source"
+      }
     }
   },
   "modules": {

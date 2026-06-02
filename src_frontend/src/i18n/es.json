@@ -1501,18 +1501,24 @@
         },
         "presets": {
           "realistic_client_review": {
-            "description": "Presentación recomendada para revisión de cliente"
+            "description": "Presentación recomendada para revisión de cliente",
+            "label": "Revisión realista para cliente"
           },
           "cinematic_pitch": {
-            "description": "Look editorial para presentación narrativa"
+            "description": "Look editorial para presentación narrativa",
+            "label": "Pitch cinematográfico"
           },
           "production_sheet": {
-            "description": "Formato operativo orientado a producción"
+            "description": "Formato operativo orientado a producción",
+            "label": "Hoja de producción"
           },
           "clean_corporate": {
-            "description": "Acabado sobrio y limpio para entregables"
+            "description": "Acabado sobrio y limpio para entregables",
+            "label": "Corporativo limpio"
           }
-        }
+        },
+        "previewAlt": "Vista previa del Storyboard Sheet exportado",
+        "pageRangePlaceholder": "1-3"
       },
       "directorFeedback": {
         "title": "Notas del director",

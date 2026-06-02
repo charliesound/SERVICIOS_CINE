@@ -37,11 +37,11 @@ const layoutOptions: Array<{ value: StoryboardSheetLayoutName; label: string; fr
   { value: 'grid_3x3', label: 'Grid 3x3', frames: 9 },
 ]
 
-const presetOptions: Array<{ value: StoryboardSheetPreset; label: string; description: string }> = [
-  { value: 'realistic_client_review', label: 'Realistic Client Review', description: 'components.storyboard.sheetExportPanel.presets.realistic_client_review.description' },
-  { value: 'cinematic_pitch', label: 'Cinematic Pitch', description: 'components.storyboard.sheetExportPanel.presets.cinematic_pitch.description' },
-  { value: 'production_sheet', label: 'Production Sheet', description: 'components.storyboard.sheetExportPanel.presets.production_sheet.description' },
-  { value: 'clean_corporate', label: 'Clean Corporate', description: 'components.storyboard.sheetExportPanel.presets.clean_corporate.description' },
+const presetOptions: Array<{ value: StoryboardSheetPreset; labelKey: string; description: string }> = [
+  { value: 'realistic_client_review', labelKey: 'components.storyboard.sheetExportPanel.presets.realistic_client_review.label', description: 'components.storyboard.sheetExportPanel.presets.realistic_client_review.description' },
+  { value: 'cinematic_pitch', labelKey: 'components.storyboard.sheetExportPanel.presets.cinematic_pitch.label', description: 'components.storyboard.sheetExportPanel.presets.cinematic_pitch.description' },
+  { value: 'production_sheet', labelKey: 'components.storyboard.sheetExportPanel.presets.production_sheet.label', description: 'components.storyboard.sheetExportPanel.presets.production_sheet.description' },
+  { value: 'clean_corporate', labelKey: 'components.storyboard.sheetExportPanel.presets.clean_corporate.label', description: 'components.storyboard.sheetExportPanel.presets.clean_corporate.description' },
 ]
 
 const outputFormatOptions: Array<{ value: StoryboardSheetOutputFormat; label: string }> = [
@@ -273,11 +273,11 @@ function StoryboardSheetResult({
             <p className="text-sm font-semibold text-white">{t('components.storyboard.sheetExportPanel.generated')}</p>
           </div>
           <p className="text-xs text-slate-400">
-            {t('components.storyboard.sheetExportPanel.result')}: {result.output_format.toUpperCase()} · layout {result.layout} · preset {result.preset}
+            {t('components.storyboard.sheetExportPanel.result')}: {result.output_format.toUpperCase()} · {t('components.storyboard.common.layout').toLowerCase()} {result.layout} · {t('components.storyboard.sheetExportPanel.preset').toLowerCase()} {result.preset}
           </p>
           {templateMetadata && (
             <p className="text-xs text-slate-500">
-              Template: {templateMetadata.sheet_template || t('components.storyboard.sheetExportPanel.currentMode')} · {t('components.storyboard.sheetExportPanel.orientation')} {templateMetadata.orientation}
+              {t('components.storyboard.sheetExportPanel.template')}: {templateMetadata.sheet_template || t('components.storyboard.sheetExportPanel.currentMode')} · {t('components.storyboard.sheetExportPanel.orientation')} {templateMetadata.orientation}
             </p>
           )}
         </div>
@@ -382,7 +382,7 @@ function StoryboardSheetResult({
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-2">
             <img
               src={previewUrl}
-              alt="Storyboard sheet export preview"
+              alt={t('components.storyboard.sheetExportPanel.previewAlt')}
               className="h-auto w-full rounded-xl object-cover"
             />
           </div>
@@ -577,7 +577,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             className="w-full rounded-xl border border-white/10 bg-dark-300/70 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-amber-500/50"
           >
             {presetOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
+              <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
             ))}
           </select>
           <p className="text-xs text-slate-500">
@@ -649,7 +649,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
               type="text"
               value={pageRange}
               onChange={(e) => setPageRange(e.target.value)}
-              placeholder="1-3"
+              placeholder={t('components.storyboard.sheetExportPanel.pageRangePlaceholder')}
               className="w-20 rounded-lg border border-white/10 bg-dark-300/70 px-2 py-1 text-sm text-white outline-none"
             />
           )}

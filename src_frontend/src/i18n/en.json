@@ -1501,18 +1501,24 @@
         },
         "presets": {
           "realistic_client_review": {
-            "description": "Recommended presentation for client review"
+            "description": "Recommended presentation for client review",
+            "label": "Realistic Client Review"
           },
           "cinematic_pitch": {
-            "description": "Editorial look for narrative presentation"
+            "description": "Editorial look for narrative presentation",
+            "label": "Cinematic Pitch"
           },
           "production_sheet": {
-            "description": "Operational format oriented to production"
+            "description": "Operational format oriented to production",
+            "label": "Production Sheet"
           },
           "clean_corporate": {
-            "description": "Sober, clean finish for deliverables"
+            "description": "Sober, clean finish for deliverables",
+            "label": "Clean Corporate"
           }
-        }
+        },
+        "previewAlt": "Storyboard sheet export preview",
+        "pageRangePlaceholder": "1-3"
       },
       "directorFeedback": {
         "title": "Director's Notes",

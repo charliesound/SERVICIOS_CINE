@@ -5,27 +5,28 @@ import { scriptAnalysisApi } from '@/api/scriptAnalysis'
 import { projectsApi, type Project } from '@/api'
 import { getApiErrorMessage } from '@/utils/apiErrors'
 import type { ScriptAnalysisSummary, ScriptAnalysisExportFormat } from '@/types/scriptAnalysis'
+import { t } from '@/i18n'
 
 type PageState = 'loading' | 'ready' | 'error' | 'blocked'
 
 const DOWNSTREAM_MODULES = [
-  { key: 'breakdown', label: 'Breakdown', icon: Layers, description: 'Desglose técnico por escenas y departamentos.', href: '#' },
-  { key: 'pitch_deck', label: 'Pitch Deck', icon: Briefcase, description: 'Presentación ejecutable del proyecto para inversores.', href: '#' },
-  { key: 'storyboard_ai', label: 'Storyboard', icon: Film, description: 'Guion gráfico con planos sugeridos por IA.', href: '#' },
-  { key: 'budget_lite', label: 'Budget Lite', icon: WalletCards, description: 'Estimación rápida de presupuesto desde el análisis.', href: '#' },
+  { key: 'breakdown', label: 'Breakdown', icon: Layers, description: t('internal.scriptAnalysisPro.connected.breakdown'), href: '#' },
+  { key: 'pitch_deck', label: 'Pitch Deck', icon: Briefcase, description: t('internal.scriptAnalysisPro.connected.pitchDeck'), href: '#' },
+  { key: 'storyboard_ai', label: 'Storyboard', icon: Film, description: t('internal.scriptAnalysisPro.connected.storyboard'), href: '#' },
+  { key: 'budget_lite', label: 'Budget Lite', icon: WalletCards, description: t('internal.scriptAnalysisPro.connected.budgetLite'), href: '#' },
 ]
 
 const WHAT_YOU_GET = [
-  'Logline — una línea que captura la esencia de la historia',
-  'Sinopsis extendida — resumen narrativo completo',
-  'Premisa y tema — el "de qué trata realmente"',
-  'Género(s) y tono — clasificación y atmósfera emocional',
-  'Personajes detectados — lista con roles y arcos',
-  'Localizaciones — lugares donde transcurre la acción',
-  'Estructura dramática — actos, puntos de giro, ritmo',
-  'Escenas detalladas — desglose técnico por escena',
-  'Departamentos — necesidades técnicas por área',
-  'Informe exportable — JSON y Markdown para compartir',
+  t('internal.scriptAnalysisPro.deliverables.logline'),
+  t('internal.scriptAnalysisPro.deliverables.synopsis'),
+  t('internal.scriptAnalysisPro.deliverables.premiseTheme'),
+  t('internal.scriptAnalysisPro.deliverables.genreTone'),
+  t('internal.scriptAnalysisPro.deliverables.characters'),
+  t('internal.scriptAnalysisPro.deliverables.locations'),
+  t('internal.scriptAnalysisPro.deliverables.structure'),
+  t('internal.scriptAnalysisPro.deliverables.scenes'),
+  t('internal.scriptAnalysisPro.deliverables.departments'),
+  t('internal.scriptAnalysisPro.deliverables.exportableReport'),
 ]
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -68,7 +69,7 @@ export default function ScriptAnalysisProPage() {
       if (status === 403 && details?.code === 'MODULE_ACCESS_BLOCKED') {
         setPageState('blocked')
       } else {
-        setPageError(getApiErrorMessage(err, 'No se pudo cargar el proyecto.'))
+        setPageError(getApiErrorMessage(err, t('internal.scriptAnalysisPro.errors.loadProject')))
         setPageState('error')
       }
     }
@@ -129,8 +130,8 @@ export default function ScriptAnalysisProPage() {
   if (!projectId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-gray-400">Proyecto no encontrado</p>
-        <Link to="/projects" className="mt-4 text-amber-400 hover:underline">Volver a proyectos</Link>
+        <p className="text-gray-400">{t('internal.common.projectNotFound')}</p>
+        <Link to="/projects" className="mt-4 text-amber-400 hover:underline">{t('internal.common.backToProjects')}</Link>
       </div>
     )
   }
@@ -140,7 +141,7 @@ export default function ScriptAnalysisProPage() {
       <div className="flex items-center justify-center py-20">
         <div className="flex items-center gap-3 text-amber-400">
           <Loader2 className="w-6 h-6 animate-spin" />
-          <span className="text-sm">Cargando análisis de guion...</span>
+          <span className="text-sm">{t('internal.scriptAnalysisPro.loading')}</span>
         </div>
       </div>
     )
@@ -151,15 +152,15 @@ export default function ScriptAnalysisProPage() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <Link to={`/projects/${projectId}`} className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Volver al proyecto
+            <ArrowLeft className="w-4 h-4" /> {t('internal.scriptAnalysisPro.backToProject')}
           </Link>
         </div>
         <div className="card p-12 flex flex-col items-center justify-center gap-4 text-center border border-amber-500/20">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
             <Lock className="w-8 h-8 text-amber-400" />
           </div>
-          <h2 className="text-xl font-semibold">Módulo bloqueado</h2>
-          <p className="text-gray-400 max-w-md">El módulo CID Script Analysis Pro no está disponible en tu plan actual. Actualiza tu plan para acceder al análisis completo de guion.</p>
+          <h2 className="text-xl font-semibold">{t('internal.scriptAnalysisPro.lockedTitle')}</h2>
+          <p className="text-gray-400 max-w-md">{t('internal.scriptAnalysisPro.lockedDescription')}</p>
           <Link to="/plans" className="btn-primary mt-2 inline-flex items-center gap-2">
             <WalletCards className="w-4 h-4" /> Ver planes
           </Link>
@@ -173,14 +174,14 @@ export default function ScriptAnalysisProPage() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <Link to={`/projects/${projectId}`} className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Volver al proyecto
+            <ArrowLeft className="w-4 h-4" /> {t('internal.scriptAnalysisPro.backToProject')}
           </Link>
         </div>
         <div className="card p-12 flex flex-col items-center justify-center gap-4 text-center border border-red-500/20">
           <AlertCircle className="w-10 h-10 text-red-400" />
-          <h2 className="text-xl font-semibold">Error al cargar</h2>
+          <h2 className="text-xl font-semibold">{t('internal.scriptAnalysisPro.loadErrorTitle')}</h2>
           <p className="text-gray-400 max-w-md">{pageError}</p>
-          <button onClick={loadData} className="btn-primary mt-2">Reintentar</button>
+          <button onClick={loadData} className="btn-primary mt-2">{t('internal.common.retry')}</button>
         </div>
       </div>
     )
@@ -194,7 +195,7 @@ export default function ScriptAnalysisProPage() {
           to={`/projects/${projectId}`}
           className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Volver al proyecto
+          <ArrowLeft className="w-4 h-4" /> {t('internal.scriptAnalysisPro.backToProject')}
         </Link>
         <div className="flex items-center gap-2">
           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${
@@ -207,7 +208,7 @@ export default function ScriptAnalysisProPage() {
             ) : (
               <AlertCircle className="w-3.5 h-3.5" />
             )}
-            {hasAnalysis ? 'Análisis completado' : 'Sin análisis'}
+            {hasAnalysis ? t('internal.scriptAnalysisPro.status.completed') : t('internal.scriptAnalysisPro.status.empty')}
           </span>
         </div>
       </div>
@@ -218,17 +219,17 @@ export default function ScriptAnalysisProPage() {
         <div className="relative">
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-100 mb-4">
             <Sparkles className="h-3.5 w-3.5" />
-            Módulo
+            {t('internal.scriptAnalysisPro.moduleLabel')}
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">CID Script Analysis Pro</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('internal.scriptAnalysisPro.title')}</h1>
           <p className="mt-2 text-gray-400 max-w-2xl">
-            Analiza tu guion cinematográfico con IA: extrae escenas, personajes, localizaciones, estructura narrativa, género, tono y genera informes exportables. Diseñado para productores, guionistas y equipos de desarrollo.
+            {t('internal.scriptAnalysisPro.subtitle')}
           </p>
           {project && (
             <p className="mt-3 text-sm text-gray-500">
-              Proyecto: <span className="text-gray-300">{project.name}</span>
-              {hasScript && <span className="ml-2 text-emerald-400">· Guion cargado ({project.script_text?.length.toLocaleString()} caracteres)</span>}
-              {!hasScript && <span className="ml-2 text-amber-400">· Sin guion</span>}
+              {t('internal.scriptAnalysisPro.projectLabel')}: <span className="text-gray-300">{project.name}</span>
+              {hasScript && <span className="ml-2 text-emerald-400">· {t('internal.scriptAnalysisPro.scriptLoaded')} ({project.script_text?.length.toLocaleString()} {t('internal.scriptAnalysisPro.characters')})</span>}
+              {!hasScript && <span className="ml-2 text-amber-400">· {t('internal.scriptAnalysisPro.noScript')}</span>}
             </p>
           )}
         </div>
@@ -249,7 +250,7 @@ export default function ScriptAnalysisProPage() {
             )}
           </div>
           <div>
-            <p className="font-semibold text-sm">{isAnalyzing ? 'Analizando...' : 'Analizar guion'}</p>
+            <p className="font-semibold text-sm">{isAnalyzing ? t('internal.scriptAnalysisPro.analyzing') : t('internal.scriptAnalysisPro.analyzeScript')}</p>
             <p className="text-gray-400 text-xs mt-0.5">{isAnalyzing ? 'Procesando el guion...' : 'Extrae escenas, personajes y estructura'}</p>
           </div>
         </button>
@@ -267,8 +268,8 @@ export default function ScriptAnalysisProPage() {
             )}
           </div>
           <div>
-            <p className="font-semibold text-sm">{exportingFormat === 'json' ? 'Exportando...' : 'Exportar JSON'}</p>
-            <p className="text-gray-400 text-xs mt-0.5">Descarga el análisis completo en formato JSON</p>
+            <p className="font-semibold text-sm">{exportingFormat === 'json' ? t('internal.scriptAnalysisPro.exporting') : t('internal.scriptAnalysisPro.exportJson')}</p>
+            <p className="text-gray-400 text-xs mt-0.5">{t('internal.scriptAnalysisPro.exportJsonHelp')}</p>
           </div>
         </button>
 
@@ -285,8 +286,8 @@ export default function ScriptAnalysisProPage() {
             )}
           </div>
           <div>
-            <p className="font-semibold text-sm">{exportingFormat === 'md' ? 'Exportando...' : 'Exportar Markdown'}</p>
-            <p className="text-gray-400 text-xs mt-0.5">Descarga el informe legible en Markdown</p>
+            <p className="font-semibold text-sm">{exportingFormat === 'md' ? t('internal.scriptAnalysisPro.exporting') : t('internal.scriptAnalysisPro.exportMarkdown')}</p>
+            <p className="text-gray-400 text-xs mt-0.5">{t('internal.scriptAnalysisPro.exportMarkdownHelp')}</p>
           </div>
         </button>
       </div>
@@ -299,23 +300,23 @@ export default function ScriptAnalysisProPage() {
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-amber-400" />
               </div>
-              <h3 className="font-semibold">Resumen del análisis</h3>
+              <h3 className="font-semibold">{t('internal.scriptAnalysisPro.summaryTitle')}</h3>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 bg-white/5 rounded-xl">
-                <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Escenas</p>
+                <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">{t('internal.scriptAnalysisPro.metrics.scenes')}</p>
                 <p className="text-white font-semibold text-lg">{analysis.scenes_count ?? analysis.scenes?.length ?? 0}</p>
               </div>
               <div className="p-4 bg-white/5 rounded-xl">
-                <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Personajes</p>
+                <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">{t('internal.scriptAnalysisPro.metrics.characters')}</p>
                 <p className="text-white font-semibold text-lg">{analysis.characters_count ?? '—'}</p>
               </div>
               <div className="p-4 bg-white/5 rounded-xl">
-                <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Localizaciones</p>
+                <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">{t('internal.scriptAnalysisPro.metrics.locations')}</p>
                 <p className="text-white font-semibold text-lg">{analysis.locations_count ?? '—'}</p>
               </div>
               <div className="p-4 bg-white/5 rounded-xl">
-                <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Secuencias</p>
+                <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">{t('internal.scriptAnalysisPro.metrics.sequences')}</p>
                 <p className="text-white font-semibold text-lg">{analysis.sequences_count ?? '—'}</p>
               </div>
             </div>
@@ -323,7 +324,7 @@ export default function ScriptAnalysisProPage() {
 
           {analysis.summary && (
             <div className="card bg-dark-200/80 border border-white/5 p-6">
-              <h4 className="text-sm font-semibold mb-3 text-gray-300">Detalles del análisis</h4>
+              <h4 className="text-sm font-semibold mb-3 text-gray-300">{t('internal.scriptAnalysisPro.detailsTitle')}</h4>
               <pre className="text-sm text-gray-400 overflow-auto max-h-60 whitespace-pre-wrap font-sans">
                 {JSON.stringify(analysis.summary, null, 2)}
               </pre>
@@ -336,11 +337,11 @@ export default function ScriptAnalysisProPage() {
             <BookOpen className="w-7 h-7 text-gray-500" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-300">Sin análisis todavía</h3>
+            <h3 className="text-lg font-semibold text-gray-300">{t('internal.scriptAnalysisPro.emptyTitle')}</h3>
             <p className="text-gray-500 text-sm mt-1 max-w-md">
               {!hasScript
-                ? 'Carga un guion en el proyecto para poder analizarlo. Ve a la vista de proyecto y añade el texto del guion.'
-                : 'Pulsa "Analizar guion" para extraer escenas, personajes, localizaciones y estructura narrativa.'}
+                ? t('internal.scriptAnalysisPro.emptyNeedsScript')
+                : t('internal.scriptAnalysisPro.emptyReady')}
             </p>
           </div>
           {!hasScript && (
@@ -358,11 +359,11 @@ export default function ScriptAnalysisProPage() {
             <Lightbulb className="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <p className="font-medium text-sm text-amber-200">Cómo probar este módulo</p>
+            <p className="font-medium text-sm text-amber-200">{t('internal.scriptAnalysisPro.howToTitle')}</p>
             <p className="text-gray-400 text-sm mt-1 leading-relaxed">
               Selecciona un proyecto con guion cargado desde <span className="text-gray-300">Proyectos</span>,
               pulsa <span className="text-gray-300">Script Analysis Pro</span> en el encabezado del proyecto y luego
-              haz clic en <span className="text-gray-300">Analizar guion</span>.
+              {t('internal.scriptAnalysisPro.howToClickAnalyze')}
               Una vez completado, podrás exportar el análisis en JSON o Markdown.
             </p>
           </div>
@@ -375,7 +376,7 @@ export default function ScriptAnalysisProPage() {
           <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-amber-400" />
           </div>
-          <h3 className="font-semibold">Qué entrega este análisis</h3>
+          <h3 className="font-semibold">{t('internal.scriptAnalysisPro.whatItDeliversTitle')}</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {WHAT_YOU_GET.map((item) => (
@@ -393,10 +394,10 @@ export default function ScriptAnalysisProPage() {
           <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
             <Layers className="w-4 h-4 text-blue-400" />
           </div>
-          <h3 className="font-semibold">Conecta con otros módulos</h3>
+          <h3 className="font-semibold">{t('internal.scriptAnalysisPro.connectTitle')}</h3>
         </div>
         <p className="text-gray-400 text-sm mb-4">
-          El análisis de guion es la base de estos módulos. Actívalos para ampliar el flujo de producción.
+          {t('internal.scriptAnalysisPro.connectDescription')}
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {DOWNSTREAM_MODULES.map((mod) => {

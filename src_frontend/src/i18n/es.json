@@ -911,6 +911,68 @@
       "projectDetails": "Detalles del proyecto",
       "yourPlan": "Tu plan",
       "activeJobs": "Jobs activos"
+    },
+    "scriptAnalysisPro": {
+      "title": "CID Script Analysis Pro",
+      "moduleLabel": "Módulo",
+      "subtitle": "Analiza tu guion cinematográfico con IA: extrae escenas, personajes, localizaciones, estructura narrativa, género, tono y genera informes exportables. Diseñado para productores, guionistas y equipos de desarrollo.",
+      "loading": "Cargando análisis de guion...",
+      "backToProject": "Volver al proyecto",
+      "projectLabel": "Proyecto",
+      "scriptLoaded": "Guion cargado",
+      "characters": "caracteres",
+      "noScript": "Sin guion",
+      "analyzing": "Analizando...",
+      "analyzeScript": "Analizar guion",
+      "exporting": "Exportando...",
+      "exportJson": "Exportar JSON",
+      "exportMarkdown": "Exportar Markdown",
+      "exportJsonHelp": "Descarga el análisis completo en formato JSON",
+      "exportMarkdownHelp": "Descarga el informe legible en Markdown",
+      "summaryTitle": "Resumen del análisis",
+      "detailsTitle": "Detalles del análisis",
+      "emptyTitle": "Sin análisis todavía",
+      "emptyNeedsScript": "Carga un guion en el proyecto para poder analizarlo. Ve a la vista de proyecto y añade el texto del guion.",
+      "emptyReady": "Pulsa “Analizar guion” para extraer escenas, personajes, localizaciones y estructura narrativa.",
+      "howToTitle": "Cómo probar este módulo",
+      "howToText": "Selecciona un proyecto con guion cargado desde Proyectos, pulsa Script Analysis Pro en el encabezado del proyecto y luego haz clic en Analizar guion. Una vez completado, podrás exportar el análisis en JSON o Markdown.",
+      "whatItDeliversTitle": "Qué entrega este análisis",
+      "connectTitle": "Conecta con otros módulos",
+      "connectDescription": "El análisis de guion es la base de estos módulos. Actívalos para ampliar el flujo de producción.",
+      "lockedTitle": "Módulo bloqueado",
+      "lockedDescription": "El módulo CID Script Analysis Pro no está disponible en tu plan actual. Actualiza tu plan para acceder al análisis completo de guion.",
+      "loadErrorTitle": "Error al cargar",
+      "errors": {
+        "loadProject": "No se pudo cargar el proyecto."
+      },
+      "status": {
+        "completed": "Análisis completado",
+        "empty": "Sin análisis"
+      },
+      "metrics": {
+        "scenes": "Escenas",
+        "characters": "Personajes",
+        "locations": "Localizaciones",
+        "sequences": "Secuencias"
+      },
+      "connected": {
+        "breakdown": "Desglose técnico por escenas y departamentos.",
+        "pitchDeck": "Presentación ejecutable del proyecto para inversores.",
+        "storyboard": "Guion gráfico con planos sugeridos por IA.",
+        "budgetLite": "Estimación rápida de presupuesto desde el análisis."
+      },
+      "deliverables": {
+        "logline": "Logline — una línea que captura la esencia de la historia",
+        "synopsis": "Sinopsis extendida — resumen narrativo completo",
+        "premiseTheme": "Premisa y tema — el “de qué trata realmente”",
+        "genreTone": "Género(s) y tono — clasificación y atmósfera emocional",
+        "characters": "Personajes detectados — lista con roles y arcos",
+        "locations": "Localizaciones — lugares donde transcurre la acción",
+        "structure": "Estructura dramática — actos, puntos de giro, ritmo",
+        "scenes": "Escenas detalladas — desglose técnico por escena",
+        "departments": "Departamentos — necesidades técnicas por área",
+        "exportableReport": "Informe exportable — JSON y Markdown para compartir"
+      }
     }
   },
   "components": {

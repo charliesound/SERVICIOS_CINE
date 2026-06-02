@@ -911,6 +911,68 @@
       "projectDetails": "Project Details",
       "yourPlan": "Your Plan",
       "activeJobs": "Active Jobs"
+    },
+    "scriptAnalysisPro": {
+      "title": "CID Script Analysis Pro",
+      "moduleLabel": "Module",
+      "subtitle": "Analyze your screenplay with AI: extract scenes, characters, locations, narrative structure, genre, tone and exportable reports. Designed for producers, screenwriters and development teams.",
+      "loading": "Loading screenplay analysis...",
+      "backToProject": "Back to project",
+      "projectLabel": "Project",
+      "scriptLoaded": "Script loaded",
+      "characters": "characters",
+      "noScript": "No script",
+      "analyzing": "Analyzing...",
+      "analyzeScript": "Analyze script",
+      "exporting": "Exporting...",
+      "exportJson": "Export JSON",
+      "exportMarkdown": "Export Markdown",
+      "exportJsonHelp": "Download the full analysis in JSON format",
+      "exportMarkdownHelp": "Download the readable report in Markdown",
+      "summaryTitle": "Analysis summary",
+      "detailsTitle": "Analysis details",
+      "emptyTitle": "No analysis yet",
+      "emptyNeedsScript": "Upload a script to the project before analyzing it. Go to the project view and add the script text.",
+      "emptyReady": "Click “Analyze script” to extract scenes, characters, locations and narrative structure.",
+      "howToTitle": "How to test this module",
+      "howToText": "Select a project with an uploaded script from Projects, click Script Analysis Pro in the project header and then click Analyze script. Once completed, you can export the analysis as JSON or Markdown.",
+      "whatItDeliversTitle": "What this analysis delivers",
+      "connectTitle": "Connect with other modules",
+      "connectDescription": "Script analysis is the foundation for these modules. Activate them to expand the production workflow.",
+      "lockedTitle": "Module locked",
+      "lockedDescription": "CID Script Analysis Pro is not available in your current plan. Upgrade your plan to access the full script analysis.",
+      "loadErrorTitle": "Load error",
+      "errors": {
+        "loadProject": "Unable to load the project."
+      },
+      "status": {
+        "completed": "Analysis completed",
+        "empty": "No analysis"
+      },
+      "metrics": {
+        "scenes": "Scenes",
+        "characters": "Characters",
+        "locations": "Locations",
+        "sequences": "Sequences"
+      },
+      "connected": {
+        "breakdown": "Technical breakdown by scenes and departments.",
+        "pitchDeck": "Executable project presentation for investors.",
+        "storyboard": "Storyboard with AI-suggested shots.",
+        "budgetLite": "Fast budget estimate from the analysis."
+      },
+      "deliverables": {
+        "logline": "Logline — one line that captures the essence of the story",
+        "synopsis": "Extended synopsis — complete narrative summary",
+        "premiseTheme": "Premise and theme — what it is really about",
+        "genreTone": "Genre(s) and tone — classification and emotional atmosphere",
+        "characters": "Detected characters — list with roles and arcs",
+        "locations": "Locations — places where the action happens",
+        "structure": "Dramatic structure — acts, turning points, pacing",
+        "scenes": "Detailed scenes — technical breakdown by scene",
+        "departments": "Departments — technical needs by area",
+        "exportableReport": "Exportable report — JSON and Markdown for sharing"
+      }
     }
   },
   "components": {

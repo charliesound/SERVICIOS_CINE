@@ -6,6 +6,7 @@ import { FileText, RefreshCw } from 'lucide-react'
 import StorageStatusBadge from '@/components/StorageStatusBadge'
 import { useCreateDocument, useDocuments } from '@/hooks'
 import { DocumentAssetCreatePayload } from '@/types'
+import { useLanguage } from '@/i18n'
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
@@ -19,6 +20,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export default function DocumentsPage() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -64,7 +66,7 @@ export default function DocumentsPage() {
       const document = await createDocument.mutateAsync(payload)
       navigate(`/documents/${document.id}`)
     } catch (error) {
-      setSubmitError(getErrorMessage(error, 'Unable to create document'))
+      setSubmitError(getErrorMessage(error, t('internal.documentsPage.createError')))
     }
   }
 
@@ -72,24 +74,24 @@ export default function DocumentsPage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="heading-lg flex items-center gap-3">
-            <FileText className="h-6 w-6 text-amber-400" />
-            Documentos
-          </h1>
-          <p className="mt-1 text-slate-400">CID ingiere reports, script notes, camera reports y otros documentos. Se extraen, clasifican y estructuran.</p>
+            <h1 className="heading-lg flex items-center gap-3">
+              <FileText className="h-6 w-6 text-amber-400" />
+              {t('internal.documentsPage.title')}
+            </h1>
+            <p className="mt-1 text-slate-400">{t('internal.documentsPage.description')}</p>
         </div>
         <button className="btn-secondary flex items-center gap-2" onClick={() => documentsQuery.refetch()}>
           <RefreshCw className={`h-4 w-4 ${documentsQuery.isFetching ? 'animate-spin' : ''}`} />
-          Refresh
+          {t('internal.documentsPage.refresh')}
         </button>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr,1.45fr]">
         <section className="card card-hover">
           <div className="mb-5">
-            <h2 className="heading-md">Register Document</h2>
+            <h2 className="heading-md">{t('internal.documentsPage.registerDocument')}</h2>
             <p className="mt-1 text-sm text-slate-400">
-              Prefer `media_asset_id` when the file already exists in indexed ingest assets.
+              {t('internal.documentsPage.registerDocumentHelp')}
             </p>
           </div>
 
@@ -101,51 +103,51 @@ export default function DocumentsPage() {
 
           <form className="space-y-4" onSubmit={handleCreateDocument}>
             <div>
-              <label className="label" htmlFor="document_media_asset_id">Media Asset ID</label>
+              <label className="label" htmlFor="document_media_asset_id">{t('internal.documentsPage.mediaAssetId')}</label>
               <input
                 id="document_media_asset_id"
                 className="input"
                 value={mediaAssetId}
                 onChange={(event) => setMediaAssetId(event.target.value)}
-                placeholder="Preferred when document comes from ingest assets"
+                placeholder={t('internal.documentsPage.mediaAssetIdPlaceholder')}
               />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="label" htmlFor="document_org_id">Organization ID</label>
+                <label className="label" htmlFor="document_org_id">{t('internal.documentsPage.organizationId')}</label>
                 <input id="document_org_id" className="input" value={organizationId} onChange={(event) => setOrganizationId(event.target.value)} />
               </div>
               <div>
-                <label className="label" htmlFor="document_project_id">Project ID</label>
+                <label className="label" htmlFor="document_project_id">{t('internal.documentsPage.projectId')}</label>
                 <input id="document_project_id" className="input" value={projectId} onChange={(event) => setProjectId(event.target.value)} />
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="label" htmlFor="document_storage_source_id">Storage Source ID</label>
+                <label className="label" htmlFor="document_storage_source_id">{t('internal.documentsPage.storageSourceId')}</label>
                 <input id="document_storage_source_id" className="input" value={storageSourceId} onChange={(event) => setStorageSourceId(event.target.value)} />
               </div>
               <div>
-                <label className="label" htmlFor="document_file_name">File Name</label>
+                <label className="label" htmlFor="document_file_name">{t('internal.documentsPage.fileName')}</label>
                 <input id="document_file_name" className="input" value={fileName} onChange={(event) => setFileName(event.target.value)} />
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="label" htmlFor="document_mime_type">MIME Type</label>
+                <label className="label" htmlFor="document_mime_type">{t('internal.documentsPage.mimeType')}</label>
                 <input id="document_mime_type" className="input" value={mimeType} onChange={(event) => setMimeType(event.target.value)} />
               </div>
               <div>
-                <label className="label" htmlFor="document_original_path">Original Path</label>
+                <label className="label" htmlFor="document_original_path">{t('internal.documentsPage.originalPath')}</label>
                 <input id="document_original_path" className="input" value={originalPath} onChange={(event) => setOriginalPath(event.target.value)} />
               </div>
             </div>
 
             <button className="btn-primary" type="submit" disabled={createDocument.isPending}>
-              {createDocument.isPending ? 'Creating...' : 'Create Document'}
+              {createDocument.isPending ? t('internal.documentsPage.creating') : t('internal.documentsPage.createDocument')}
             </button>
           </form>
         </section>
@@ -154,14 +156,14 @@ export default function DocumentsPage() {
           <div className="card card-hover">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="label" htmlFor="document_status_filter">Status</label>
+                <label className="label" htmlFor="document_status_filter">{t('internal.documentsPage.status')}</label>
                 <select
                   id="document_status_filter"
                   className="input"
                   value={filters.status ?? ''}
                   onChange={(event) => applyFilter('status', event.target.value)}
                 >
-                  <option value="">All statuses</option>
+                  <option value="">{t('internal.documentsPage.allStatuses')}</option>
                   <option value="registered">registered</option>
                   <option value="extracted">extracted</option>
                   <option value="classified">classified</option>
@@ -173,14 +175,14 @@ export default function DocumentsPage() {
                 </select>
               </div>
               <div>
-                <label className="label" htmlFor="document_doc_type_filter">Doc Type</label>
+                <label className="label" htmlFor="document_doc_type_filter">{t('internal.documentsPage.docType')}</label>
                 <select
                   id="document_doc_type_filter"
                   className="input"
                   value={filters.doc_type ?? ''}
                   onChange={(event) => applyFilter('doc_type', event.target.value)}
                 >
-                  <option value="">All document types</option>
+                  <option value="">{t('internal.documentsPage.allDocTypes')}</option>
                   <option value="camera_report">camera_report</option>
                   <option value="sound_report">sound_report</option>
                   <option value="script_note">script_note</option>
@@ -195,15 +197,15 @@ export default function DocumentsPage() {
           <section className="card card-hover space-y-4">
             {documentsQuery.error && (
               <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                {getErrorMessage(documentsQuery.error, 'Unable to load documents')}
+                {getErrorMessage(documentsQuery.error, t('internal.documentsPage.loadError'))}
               </div>
             )}
 
-            {documentsQuery.isLoading && <div className="text-sm text-slate-400">Loading documents...</div>}
+            {documentsQuery.isLoading && <div className="text-sm text-slate-400">{t('internal.documentsPage.loading')}</div>}
 
             {!documentsQuery.isLoading && !documentsQuery.error && (!documentsQuery.data || documentsQuery.data.length === 0) && (
               <div className="rounded-xl border border-dashed border-white/10 px-6 py-10 text-center text-sm text-slate-400">
-                No documents found for the current filters.
+                {t('internal.documentsPage.empty')}
               </div>
             )}
 
@@ -216,16 +218,16 @@ export default function DocumentsPage() {
                       <StorageStatusBadge status={document.status} />
                     </div>
                     <div className="grid gap-2 text-sm text-slate-300 md:grid-cols-2">
-                      <p><span className="text-slate-500">ID:</span> {document.id}</p>
-                      <p><span className="text-slate-500">Extension:</span> {document.file_extension}</p>
-                      <p><span className="text-slate-500">Source Kind:</span> {document.source_kind}</p>
-                      <p><span className="text-slate-500">Media Asset:</span> {document.media_asset_id || 'n/a'}</p>
-                      <p><span className="text-slate-500">Doc Type:</span> {document.classification?.doc_type || 'Pending classification'}</p>
+                      <p><span className="text-slate-500">{t('internal.documentsPage.id')}</span> {document.id}</p>
+                      <p><span className="text-slate-500">{t('internal.documentsPage.extension')}</span> {document.file_extension}</p>
+                      <p><span className="text-slate-500">{t('internal.documentsPage.sourceKind')}</span> {document.source_kind}</p>
+                      <p><span className="text-slate-500">{t('internal.documentsPage.mediaAsset')}</span> {document.media_asset_id || 'n/a'}</p>
+                      <p><span className="text-slate-500">{t('internal.documentsPage.docType')}</span> {document.classification?.doc_type || t('internal.documentsPage.pendingClassification')}</p>
                     </div>
                   </div>
 
                   <Link to={`/documents/${document.id}`} className="btn-secondary">
-                    Open Detail
+                    {t('internal.documentsPage.openDetail')}
                   </Link>
                 </div>
               </article>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, ChevronLeft, ChevronRight, GitBranch, Image, Link2, Loader2, Plus, Save, Shield, Sparkles, UserRound } from 'lucide-react'
 import { characterBibleApi } from '@/api/characterBible'
 import { storyboardApi } from '@/api/storyboard'
+import { useLanguage } from '@/i18n'
 import type {
   CharacterBibleApprovedAssetType,
   CharacterBibleEntry,
@@ -137,6 +138,7 @@ function toDraft(entry?: CharacterBibleEntry | null, characterName = ''): Charac
 }
 
 export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: CharacterBiblePanelProps) {
+  const { t } = useLanguage()
   const [entries, setEntries] = useState<CharacterBibleEntry[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState('')
   const [draft, setDraft] = useState<CharacterBibleDraft>(EMPTY_DRAFT)
@@ -185,7 +187,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
       setAssetsMeta(response.meta)
       setSelectedAsset((current) => response.items.find((asset) => asset.asset_id === current?.asset_id) || current)
     } catch (loadError) {
-      setAssetsError(parseApiError(loadError, 'No se pudieron cargar los assets del proyecto'))
+      setAssetsError(parseApiError(loadError, t('components.storyboard.characterBible.errorLoadAssets')))
     } finally {
       setIsAssetsLoading(false)
     }
@@ -209,7 +211,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
       setResolveResult(null)
       setTraceResult(null)
     } catch (loadError) {
-      setError(parseApiError(loadError, 'No se pudo cargar Character Bible'))
+      setError(parseApiError(loadError, t('components.storyboard.characterBible.errorLoadCharacterBible')))
     } finally {
       setIsLoading(false)
     }
@@ -242,7 +244,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
       const entry = await characterBibleApi.getCharacterBibleEntry(projectId, characterId)
       setDraft(toDraft(entry))
     } catch (loadError) {
-      setError(parseApiError(loadError, 'No se pudo cargar el personaje'))
+      setError(parseApiError(loadError, t('components.storyboard.characterBible.errorLoadCharacter')))
       setDraft(toDraft(null, fallbackName))
     }
   }
@@ -250,7 +252,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
   const handleSaveCharacter = async () => {
     const normalizedCharacterId = draft.characterId.trim() || slugifyCharacterId(draft.characterName)
     if (!normalizedCharacterId || !draft.characterName.trim()) {
-      setError('Completa el ID y el nombre del personaje antes de guardar')
+      setError(t('components.storyboard.characterBible.errorCompleteCharacter'))
       return
     }
 
@@ -274,9 +276,9 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
       const saved = await characterBibleApi.upsertCharacterBibleEntry(projectId, normalizedCharacterId, payload)
       await loadCharacterBible(saved.character_id)
       setDraft(toDraft(saved))
-      setSuccess('Personaje guardado correctamente')
+      setSuccess(t('components.storyboard.characterBible.successSaveCharacter'))
     } catch (saveError) {
-      setError(parseApiError(saveError, 'No se pudo guardar el personaje'))
+      setError(parseApiError(saveError, t('components.storyboard.characterBible.errorSaveCharacter')))
     } finally {
       setIsSaving(false)
     }
@@ -284,7 +286,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
 
   const handleAddLookVariant = async () => {
     if (!selectedCharacterId || !lookVariant.look_id.trim() || !lookVariant.look_name.trim()) {
-      setError('Selecciona un personaje y completa look_id y look_name')
+      setError(t('components.storyboard.characterBible.errorCompleteLookVariant'))
       return
     }
 
@@ -301,9 +303,9 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
       })
       setLookVariant(EMPTY_LOOK_VARIANT)
       await loadCharacterBible(selectedCharacterId)
-      setSuccess('Variante añadida correctamente')
+      setSuccess(t('components.storyboard.characterBible.successAddVariant'))
     } catch (saveError) {
-      setError(parseApiError(saveError, 'No se pudo añadir la variante'))
+      setError(parseApiError(saveError, t('components.storyboard.characterBible.errorAddVariant')))
     } finally {
       setIsSaving(false)
     }
@@ -311,7 +313,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
 
   const handleAddReference = async () => {
     if (!selectedCharacterId || !referencePayload.asset_id.trim()) {
-      setError('Selecciona un personaje e introduce un MediaAsset ID válido')
+      setError(t('components.storyboard.characterBible.errorSelectCharacter'))
       return
     }
 
@@ -330,9 +332,9 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
       setReferencePayload(EMPTY_REFERENCE)
       setSelectedAsset(null)
       await loadCharacterBible(selectedCharacterId)
-      setSuccess('Referencia vinculada correctamente')
+      setSuccess(t('components.storyboard.characterBible.successReferenceLinked'))
     } catch (saveError) {
-      setError(parseApiError(saveError, 'No se pudo vincular la referencia'))
+      setError(parseApiError(saveError, t('components.storyboard.characterBible.errorLinkReference')))
     } finally {
       setIsSaving(false)
     }
@@ -340,7 +342,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
 
   const handleResolveCharacter = async () => {
     if (!selectedCharacterId) {
-      setError('Selecciona un personaje antes de resolver continuidad')
+      setError(t('components.storyboard.characterBible.errorSelectCharacterResolve'))
       return
     }
 
@@ -357,9 +359,9 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
         scene_id: null,
       })
       setResolveResult(result)
-      setSuccess('Continuidad resuelta correctamente')
+      setSuccess(t('components.storyboard.characterBible.successContinuityResolved'))
     } catch (resolveError) {
-      setError(parseApiError(resolveError, 'No se pudo resolver continuidad'))
+      setError(parseApiError(resolveError, t('components.storyboard.characterBible.errorResolveContinuity')))
     } finally {
       setIsSaving(false)
     }
@@ -367,7 +369,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
 
   const handleLoadTrace = async () => {
     if (!selectedCharacterId) {
-      setError('Selecciona un personaje antes de consultar trazabilidad')
+      setError(t('components.storyboard.characterBible.errorSelectCharacterTrace'))
       return
     }
 
@@ -380,7 +382,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
       const trace = await characterBibleApi.getCharacterBibleTrace(projectId, selectedCharacterId)
       setTraceResult(trace)
     } catch (traceError) {
-      setError(parseApiError(traceError, 'No se pudo cargar la trazabilidad'))
+      setError(parseApiError(traceError, t('components.storyboard.characterBible.errorLoadTraceability')))
     } finally {
       setIsSaving(false)
     }
@@ -402,19 +404,19 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
       asset_id: asset.asset_id,
       asset_file_name: asset.file_name,
     }))
-    setSuccess('Asset seleccionado. Puedes vincularlo como referencia aprobada.')
+    setSuccess(t('components.storyboard.characterBible.successAssetSelected'))
   }
 
   return (
     <section className="rounded-2xl border border-white/10 bg-dark-200/80 p-5 space-y-5">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-white">Character Bible</h3>
-          <p className="text-sm text-slate-400">Control de continuidad visual de personajes, referencias aprobadas y variantes de look.</p>
+          <h3 className="text-lg font-semibold text-white">{t('components.storyboard.characterBible.title')}</h3>
+          <p className="text-sm text-slate-400">{t('components.storyboard.characterBible.subtitle')}</p>
         </div>
         <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3 text-xs text-cyan-100 max-w-xl">
-          <p className="flex items-center gap-2 text-cyan-300 font-medium"><Shield className="w-3.5 h-3.5" /> Seguridad UI</p>
-          <p className="mt-1 text-slate-300">Introduce un MediaAsset ID ya existente para vincular una referencia aprobada. CID solo guarda el identificador y la URL API segura, nunca rutas internas del sistema.</p>
+          <p className="flex items-center gap-2 text-cyan-300 font-medium"><Shield className="w-3.5 h-3.5" /> {t('components.storyboard.characterBible.securityUi')}</p>
+          <p className="mt-1 text-slate-300">{t('components.storyboard.characterBible.securityUiHelp')}</p>
         </div>
       </div>
 
@@ -423,19 +425,19 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
 
       {isLoading ? (
         <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-6 text-sm text-slate-300">
-          <Loader2 className="w-4 h-4 animate-spin text-amber-400" /> Cargando Character Bible...
+          <Loader2 className="w-4 h-4 animate-spin text-amber-400" /> {t('components.storyboard.characterBible.loadingCharacterBible')}
         </div>
       ) : (
         <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="space-y-4">
             <div className="rounded-xl border border-white/10 bg-black/20 p-3 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Personajes</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{t('components.storyboard.characterBible.characters')}</p>
                 <span className="text-[11px] text-slate-500">{entries.length}</span>
               </div>
               {entries.length === 0 && suggestedOnlyCharacters.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-white/10 px-3 py-4 text-xs text-slate-500">
-                  No hay personajes cargados todavia.
+                  {t('components.storyboard.characterBible.noCharacters')}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -458,7 +460,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                       className="w-full rounded-xl border border-dashed border-cyan-500/30 bg-cyan-500/5 px-3 py-2 text-left transition-colors hover:bg-cyan-500/10"
                     >
                       <p className="text-sm font-medium text-cyan-200">{name}</p>
-                      <p className="mt-1 text-[11px] text-cyan-400/70">Sugerido por secuencias</p>
+                      <p className="mt-1 text-[11px] text-cyan-400/70">{t('components.storyboard.characterBible.suggestedBySequences')}</p>
                     </button>
                   ))}
                 </div>
@@ -468,7 +470,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 onClick={() => void handleSelectEntry('')}
                 className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-200 hover:bg-white/5"
               >
-                <Plus className="w-3.5 h-3.5" /> Nuevo personaje
+                <Plus className="w-3.5 h-3.5" /> {t('components.storyboard.characterBible.newCharacter')}
               </button>
             </div>
           </aside>
@@ -476,7 +478,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
           <div className="space-y-5">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-xs font-medium text-slate-300">Character ID</span>
+                <span className="text-xs font-medium text-slate-300">{t('components.storyboard.characterBible.characterId')}</span>
                 <input
                   value={draft.characterId}
                   onChange={(event) => setDraft((current) => ({ ...current, characterId: event.target.value }))}
@@ -485,7 +487,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-xs font-medium text-slate-300">Nombre del personaje</span>
+                <span className="text-xs font-medium text-slate-300">{t('components.storyboard.characterBible.characterName')}</span>
                 <input
                   value={draft.characterName}
                   onChange={(event) => setDraft((current) => ({ ...current, characterName: event.target.value }))}
@@ -494,7 +496,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 />
               </label>
               <label className="space-y-2 md:col-span-2">
-                <span className="text-xs font-medium text-slate-300">Visual description</span>
+                <span className="text-xs font-medium text-slate-300">{t('components.storyboard.characterBible.visualDescription')}</span>
                 <textarea
                   value={draft.visualDescription}
                   onChange={(event) => setDraft((current) => ({ ...current, visualDescription: event.target.value }))}
@@ -503,7 +505,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-xs font-medium text-slate-300">Wardrobe</span>
+                <span className="text-xs font-medium text-slate-300">{t('components.storyboard.characterBible.wardrobe')}</span>
                 <textarea
                   value={draft.wardrobe}
                   onChange={(event) => setDraft((current) => ({ ...current, wardrobe: event.target.value }))}
@@ -512,7 +514,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-xs font-medium text-slate-300">Hair & makeup</span>
+                <span className="text-xs font-medium text-slate-300">{t('components.storyboard.characterBible.hairMakeup')}</span>
                 <textarea
                   value={draft.hairMakeup}
                   onChange={(event) => setDraft((current) => ({ ...current, hairMakeup: event.target.value }))}
@@ -521,7 +523,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-xs font-medium text-slate-300">Associated props</span>
+                <span className="text-xs font-medium text-slate-300">{t('components.storyboard.characterBible.associatedProps')}</span>
                 <textarea
                   value={draft.associatedProps}
                   onChange={(event) => setDraft((current) => ({ ...current, associatedProps: event.target.value }))}
@@ -531,7 +533,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-xs font-medium text-slate-300">Negative constraints</span>
+                <span className="text-xs font-medium text-slate-300">{t('components.storyboard.characterBible.negativeConstraints')}</span>
                 <textarea
                   value={draft.negativeConstraints}
                   onChange={(event) => setDraft((current) => ({ ...current, negativeConstraints: event.target.value }))}
@@ -549,7 +551,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 disabled={isSaving}
                 className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/20 disabled:opacity-40"
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar personaje
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {t('components.storyboard.characterBible.saveCharacter')}
               </button>
               <button
                 type="button"
@@ -557,7 +559,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 disabled={isSaving || !hasPersistedEntry}
                 className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-300 hover:bg-cyan-500/20 disabled:opacity-40"
               >
-                <Sparkles className="w-4 h-4" /> Resolver continuidad
+                <Sparkles className="w-4 h-4" /> {t('components.storyboard.characterBible.resolveContinuity')}
               </button>
               <button
                 type="button"
@@ -565,20 +567,20 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 disabled={isSaving || !hasPersistedEntry}
                 className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/10 disabled:opacity-40"
               >
-                <GitBranch className="w-4 h-4" /> Ver trazabilidad
+                <GitBranch className="w-4 h-4" /> {t('components.storyboard.characterBible.viewTraceability')}
               </button>
             </div>
 
             <div className="grid gap-5 xl:grid-cols-2">
               <section className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
-                <div className="flex items-center gap-2 text-white"><UserRound className="w-4 h-4 text-cyan-400" /> <h4 className="font-medium">Variantes de look</h4></div>
+                <div className="flex items-center gap-2 text-white"><UserRound className="w-4 h-4 text-cyan-400" /> <h4 className="font-medium">{t('components.storyboard.characterBible.lookVariants')}</h4></div>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <input value={lookVariant.look_id} onChange={(event) => setLookVariant((current: CharacterBibleLookVariantPayload) => ({ ...current, look_id: event.target.value }))} placeholder="look-night-exterior" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
-                  <input value={lookVariant.look_name} onChange={(event) => setLookVariant((current: CharacterBibleLookVariantPayload) => ({ ...current, look_name: event.target.value }))} placeholder="Night exterior" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
-                  <input value={lookVariant.narrative_phase || ''} onChange={(event) => setLookVariant((current: CharacterBibleLookVariantPayload) => ({ ...current, narrative_phase: event.target.value }))} placeholder="Acto 2" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none md:col-span-2" />
+                  <input value={lookVariant.look_id} onChange={(event) => setLookVariant((current: CharacterBibleLookVariantPayload) => ({ ...current, look_id: event.target.value }))} placeholder={t('components.storyboard.characterBible.lookIdPlaceholder')} className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
+                  <input value={lookVariant.look_name} onChange={(event) => setLookVariant((current: CharacterBibleLookVariantPayload) => ({ ...current, look_name: event.target.value }))} placeholder={t('components.storyboard.characterBible.lookNamePlaceholder')} className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
+                  <input value={lookVariant.narrative_phase || ''} onChange={(event) => setLookVariant((current: CharacterBibleLookVariantPayload) => ({ ...current, narrative_phase: event.target.value }))} placeholder={t('components.storyboard.characterBible.narrativePhasePlaceholder')} className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none md:col-span-2" />
                 </div>
                 <button type="button" onClick={() => void handleAddLookVariant()} disabled={isSaving || !hasPersistedEntry} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 hover:bg-white/10 disabled:opacity-40">
-                  <Plus className="w-4 h-4" /> Añadir variante
+                  <Plus className="w-4 h-4" /> {t('components.storyboard.characterBible.addVariant')}
                 </button>
                 {selectedEntry?.look_variants.length ? (
                   <div className="space-y-2">
@@ -590,12 +592,12 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-500">Todavia no hay variantes cargadas.</p>
+                  <p className="text-xs text-slate-500">{t('components.storyboard.characterBible.noVariants')}</p>
                 )}
               </section>
 
               <section className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
-                <div className="flex items-center gap-2 text-white"><Link2 className="w-4 h-4 text-amber-400" /> <h4 className="font-medium">Referencias aprobadas</h4></div>
+                <div className="flex items-center gap-2 text-white"><Link2 className="w-4 h-4 text-amber-400" /> <h4 className="font-medium">{t('components.storyboard.characterBible.approvedReferences')}</h4></div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <input value={referencePayload.asset_id} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, asset_id: event.target.value }))} placeholder="MediaAsset ID" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
                   <select value={referencePayload.asset_type} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, asset_type: event.target.value as CharacterBibleApprovedAssetType }))} className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none">
@@ -603,23 +605,23 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                       <option key={assetType} value={assetType}>{assetType}</option>
                     ))}
                   </select>
-                  <input value={referencePayload.description || ''} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, description: event.target.value }))} placeholder="Descripcion opcional" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none md:col-span-2" />
+                  <input value={referencePayload.description || ''} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, description: event.target.value }))} placeholder={t('components.storyboard.characterBible.descPlaceholder')} className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none md:col-span-2" />
                 </div>
                 <label className="inline-flex items-center gap-2 text-xs text-slate-300">
-                  <input type="checkbox" checked={referencePayload.is_primary} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, is_primary: event.target.checked }))} /> Referencia principal
+                  <input type="checkbox" checked={referencePayload.is_primary} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, is_primary: event.target.checked }))} /> {t('components.storyboard.characterBible.primaryRefCheckbox')}
                 </label>
                 <div className="flex flex-wrap gap-3">
                   <button type="button" onClick={() => void handleAddReference()} disabled={isSaving || !hasPersistedEntry} className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/20 disabled:opacity-40">
-                    <Link2 className="w-4 h-4" /> Vincular referencia
+                    <Link2 className="w-4 h-4" /> {t('components.storyboard.characterBible.linkReference')}
                   </button>
                   <button type="button" onClick={() => void handleToggleAssetSelector()} disabled={isSaving} className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-300 hover:bg-cyan-500/20 disabled:opacity-40">
-                    <Image className="w-4 h-4" /> Seleccionar asset existente
+                    <Image className="w-4 h-4" /> {t('components.storyboard.characterBible.selectExistingAsset')}
                   </button>
                 </div>
 
                 {selectedReferencePreview && (
                   <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-sm text-slate-200">
-                    <p className="font-medium text-white">Asset seleccionado</p>
+                    <p className="font-medium text-white">{t('components.storyboard.characterBible.selectedAsset')}</p>
                     <div className="mt-3 flex flex-wrap gap-3">
                       {isSafeAssetUrl(selectedReferencePreview.thumbnail_url) && (
                         <img
@@ -646,11 +648,11 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                   <div className="rounded-xl border border-white/10 bg-dark-300/40 p-4 space-y-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <p className="text-sm font-medium text-white">Assets existentes del proyecto</p>
-                        <p className="text-xs text-slate-400">Selecciona un asset visual ya disponible en el proyecto o usa el campo manual de MediaAsset ID.</p>
+                        <p className="text-sm font-medium text-white">{t('components.storyboard.characterBible.existingProjectAssets')}</p>
+                        <p className="text-xs text-slate-400">{t('components.storyboard.characterBible.selectExistingAssetHelp')}</p>
                       </div>
                       <button type="button" onClick={() => void fetchAssets(assetsMeta?.page || 1)} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-200 hover:bg-white/5">
-                        {isAssetsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Image className="w-3.5 h-3.5" />} Recargar assets
+                        {isAssetsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Image className="w-3.5 h-3.5" />} {t('components.storyboard.characterBible.reloadAssets')}
                       </button>
                     </div>
 
@@ -662,11 +664,11 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
 
                     {isAssetsLoading ? (
                       <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-6 text-sm text-slate-300">
-                        <Loader2 className="w-4 h-4 animate-spin text-amber-400" /> Cargando assets...
+                        <Loader2 className="w-4 h-4 animate-spin text-amber-400" /> {t('components.storyboard.characterBible.loadingAssets')}
                       </div>
                     ) : availableAssets.length === 0 ? (
                       <div className="rounded-lg border border-dashed border-white/10 px-3 py-6 text-sm text-slate-500">
-                        Empty assets: no hay assets visuales disponibles en este proyecto. Puedes seguir vinculando referencias mediante MediaAsset ID manual.
+                        {t('components.storyboard.characterBible.noAssets')}
                       </div>
                     ) : (
                       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -695,9 +697,9 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                                 <div className="min-w-0 flex-1">
                                   <p className="truncate text-sm font-medium text-white">{asset.file_name}</p>
                                   <p className="mt-1 truncate text-[11px] text-slate-500">{asset.asset_id}</p>
-                                  <p className="mt-2 text-[11px] text-slate-400">{safePreviewUrl ? 'Preview segura disponible' : 'Sin preview segura'}</p>
+                                  <p className="mt-2 text-[11px] text-slate-400">{safePreviewUrl ? t('components.storyboard.characterBible.previewSecure') : t('components.storyboard.characterBible.noPreviewSecure')}</p>
                                   <span className="mt-2 inline-flex rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-300">
-                                    Usar como referencia
+                                    {t('components.storyboard.characterBible.useAsReference')}
                                   </span>
                                 </div>
                               </div>
@@ -709,7 +711,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
 
                     {assetsMeta && assetsMeta.total_pages > 1 && (
                       <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-400">
-                        <span>Pagina {assetsMeta.page} de {assetsMeta.total_pages} ({assetsMeta.total_items} assets)</span>
+                        <span>{t('components.storyboard.characterBible.pageOf').replace('{page}', String(assetsMeta.page)).replace('{totalPages}', String(assetsMeta.total_pages)).replace('{totalItems}', String(assetsMeta.total_items))}</span>
                         <div className="flex gap-2">
                           <button type="button" onClick={() => void fetchAssets(assetsMeta.page - 1)} disabled={!assetsMeta.has_prev || isAssetsLoading} className="rounded-lg border border-white/10 px-2 py-1 text-slate-200 hover:bg-white/5 disabled:opacity-40">
                             <ChevronLeft className="w-3.5 h-3.5" />
@@ -730,7 +732,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium text-white">{reference.asset_file_name || reference.asset_id}</span>
                           <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-slate-400">{reference.asset_type}</span>
-                          {reference.is_primary && <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-300">Primary</span>}
+                          {reference.is_primary && <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-300">{t('components.storyboard.characterBible.primary')}</span>}
                         </div>
                         <p className="mt-1 text-xs text-slate-500">asset_id: {reference.asset_id}</p>
                         {reference.description && <p className="mt-1 text-xs text-slate-400">{reference.description}</p>}
@@ -748,34 +750,34 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-500">Todavia no hay referencias aprobadas.</p>
+                  <p className="text-xs text-slate-500">{t('components.storyboard.characterBible.noReferences')}</p>
                 )}
               </section>
             </div>
 
             {resolveResult && (
               <section className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4 space-y-2 text-sm text-slate-200">
-                <h4 className="font-medium text-cyan-300">Resolucion de continuidad</h4>
-                <p><span className="text-slate-400">Personaje:</span> {resolveResult.character_name}</p>
-                <p><span className="text-slate-400">Look resuelto:</span> {resolveResult.resolved_look?.look_name || 'No disponible'}</p>
-                <p><span className="text-slate-400">Referencia primaria:</span> {resolveResult.primary_reference?.asset_id || 'No disponible'}</p>
-                {resolveResult.prompt_lock_block && <p><span className="text-slate-400">Prompt lock:</span> {resolveResult.prompt_lock_block}</p>}
-                {resolveResult.prompt_negative_block && <p><span className="text-slate-400">Negative block:</span> {resolveResult.prompt_negative_block}</p>}
-                {resolveResult.continuity_block && <p><span className="text-slate-400">Continuity block:</span> {resolveResult.continuity_block}</p>}
+                <h4 className="font-medium text-cyan-300">{t('components.storyboard.characterBible.continuityResolution')}</h4>
+                <p><span className="text-slate-400">{t('components.storyboard.characterBible.character')}</span> {resolveResult.character_name}</p>
+                <p><span className="text-slate-400">{t('components.storyboard.characterBible.resolvedLook')}</span> {resolveResult.resolved_look?.look_name || t('components.storyboard.characterBible.unavailable')}</p>
+                <p><span className="text-slate-400">{t('components.storyboard.characterBible.primaryReference')}</span> {resolveResult.primary_reference?.asset_id || t('components.storyboard.characterBible.unavailable')}</p>
+                {resolveResult.prompt_lock_block && <p><span className="text-slate-400">{t('components.storyboard.characterBible.promptLock')}</span> {resolveResult.prompt_lock_block}</p>}
+                {resolveResult.prompt_negative_block && <p><span className="text-slate-400">{t('components.storyboard.characterBible.negativeBlock')}</span> {resolveResult.prompt_negative_block}</p>}
+                {resolveResult.continuity_block && <p><span className="text-slate-400">{t('components.storyboard.characterBible.continuityBlock')}</span> {resolveResult.continuity_block}</p>}
               </section>
             )}
 
             {traceOpen && (
               <section className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-2 text-sm text-slate-200">
-                <h4 className="font-medium text-white">Trazabilidad</h4>
+                <h4 className="font-medium text-white">{t('components.storyboard.characterBible.traceability')}</h4>
                 {traceResult ? (
                   Object.entries(traceResult.trace_metadata).length > 0 ? (
                     <pre className="max-h-64 overflow-auto rounded-lg border border-white/10 bg-black/30 p-3 text-xs text-slate-400">{JSON.stringify(traceResult.trace_metadata, null, 2)}</pre>
                   ) : (
-                    <p className="text-xs text-slate-500">No hay metadata de trazabilidad para este personaje.</p>
+                    <p className="text-xs text-slate-500">{t('components.storyboard.characterBible.noTraceabilityMetadata')}</p>
                   )
                 ) : (
-                  <p className="text-xs text-slate-500">Trazabilidad no disponible.</p>
+                  <p className="text-xs text-slate-500">{t('components.storyboard.characterBible.traceabilityUnavailable')}</p>
                 )}
               </section>
             )}

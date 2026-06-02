@@ -1312,7 +1312,8 @@
       "noEditorialReason": "Sin razón editorial",
       "assemblyOrder": "Orden de montaje",
       "noAssemblyYet": "Todavía no existe un AssemblyCut para este proyecto.",
-      "noEditorialMotive": "Sin motivo editorial"
+      "noEditorialMotive": "Sin motivo editorial",
+      "platformOfflineRelink": "Offline / relink manual"
     }
   },
   "components": {

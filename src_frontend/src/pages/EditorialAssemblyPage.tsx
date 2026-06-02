@@ -324,7 +324,7 @@ export default function EditorialAssemblyPage() {
               <option value="windows">Windows</option>
               <option value="mac">macOS</option>
               <option value="linux">Linux</option>
-              <option value="offline">Offline / relink manual</option>
+              <option value="offline">{t('internal.editorialAssembly.platformOfflineRelink')}</option>
             </select>
           </div>
           <div>

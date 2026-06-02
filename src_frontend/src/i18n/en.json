@@ -1312,7 +1312,8 @@
       "noEditorialReason": "No editorial reason",
       "assemblyOrder": "Assembly order",
       "noAssemblyYet": "There is no AssemblyCut for this project yet.",
-      "noEditorialMotive": "No editorial motive"
+      "noEditorialMotive": "No editorial motive",
+      "platformOfflineRelink": "Offline / manual relink"
     }
   },
   "components": {

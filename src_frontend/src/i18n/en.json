@@ -704,6 +704,33 @@
       "modules": "Modules",
       "history": "History",
       "external": "External"
+    },
+    "appRegistry": {
+      "title": "CID Ecosystem",
+      "all": "All",
+      "includedInCid": "Included in CID",
+      "noInterface": "No interface",
+      "noAppsInCategory": "No apps were found in this category."
+    },
+    "plans": {
+      "title": "Commercial plans",
+      "subtitle": "Activate the right plan for your organization and keep the demo immediately operational.",
+      "sprintNotice": "Sprint 13 uses immediate internal activation. No real payments are processed yet.",
+      "currentPlan": "Current plan",
+      "activeCapacity": "Active capacity",
+      "exportJsonEnabled": "JSON export enabled",
+      "exportUpgradeRequired": "Upgrade required to export",
+      "commercialZipIncluded": "Commercial ZIP included",
+      "zipAvailableWithExportPlans": "ZIP available from export plans",
+      "recommendedUpgrade": "Recommended upgrade",
+      "activeJobs": "Active jobs",
+      "queuedJobs": "Queued jobs",
+      "totalJobs": "Total jobs",
+      "priority": "Priority",
+      "exportZip": "ZIP export",
+      "includes": "Includes:",
+      "allowedTypes": "Allowed types:",
+      "activateError": "Could not activate the plan"
     }
   },
   "components": {

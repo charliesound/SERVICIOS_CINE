@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Check, Crown, Star, Zap } from 'lucide-react'
 import clsx from 'clsx'
 import { useState } from 'react'
+import { t } from '@/i18n'
 
 function getApiMessage(err: unknown, fallback: string) {
   const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
@@ -50,10 +51,10 @@ export default function PlansPage() {
       <div className="text-center">
         <h1 className="heading-lg flex items-center justify-center gap-3">
           <Crown className="w-7 h-7 text-amber-400" />
-          Planes comerciales
+          {t('internal.plans.title')}
         </h1>
-        <p className="text-slate-400 mt-2">Activa el plan adecuado para tu organizacion y deja la demo operativa al instante.</p>
-        <p className="text-xs text-slate-500 mt-2">Sprint 13 usa activacion interna inmediata. No se procesan pagos reales todavia.</p>
+        <p className="text-slate-400 mt-2">{t('internal.plans.subtitle')}</p>
+        <p className="text-xs text-slate-500 mt-2">{t('internal.plans.sprintNotice')}</p>
       </div>
 
       {planMessage && (
@@ -72,7 +73,7 @@ export default function PlansPage() {
         <div className="card bg-gradient-to-r from-amber-500/5 to-transparent border-amber-500/20">
           <div className="flex items-start justify-between gap-6">
             <div>
-              <p className="text-sm text-slate-400 mb-1">Plan actual</p>
+              <p className="text-sm text-slate-400 mb-1">{t('internal.plans.currentPlan')}</p>
               <div className="flex items-center gap-3">
                 <span className="text-2xl font-bold text-white">{currentPlan?.display_name}</span>
                 <span className={clsx(
@@ -86,25 +87,25 @@ export default function PlansPage() {
               </div>
               <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div className="rounded-xl bg-dark-300/50 p-3">
-                  <p className="text-slate-500">Proyectos</p>
+                  <p className="text-slate-500">{t('internal.common.projects')}</p>
                   <p className="text-white font-semibold">
                     {currentPlanStatus.projects_count}/{currentPlanStatus.max_projects === -1 ? '∞' : currentPlanStatus.max_projects}
                   </p>
                 </div>
                 <div className="rounded-xl bg-dark-300/50 p-3">
-                  <p className="text-slate-500">Jobs</p>
+                  <p className="text-slate-500">{t('internal.common.jobs')}</p>
                   <p className="text-white font-semibold">
                     {currentPlanStatus.jobs_count}/{currentPlanStatus.max_total_jobs === -1 ? '∞' : currentPlanStatus.max_total_jobs}
                   </p>
                 </div>
                 <div className="rounded-xl bg-dark-300/50 p-3">
-                  <p className="text-slate-500">Analisis</p>
+                  <p className="text-slate-500">{t('internal.common.analysis')}</p>
                   <p className="text-white font-semibold">
                     {currentPlanStatus.analyses_count}/{currentPlanStatus.max_analyses === -1 ? '∞' : currentPlanStatus.max_analyses}
                   </p>
                 </div>
                 <div className="rounded-xl bg-dark-300/50 p-3">
-                  <p className="text-slate-500">Storyboards</p>
+                  <p className="text-slate-500">{t('internal.common.storyboards')}</p>
                   <p className="text-white font-semibold">
                     {currentPlanStatus.storyboards_count}/{currentPlanStatus.max_storyboards === -1 ? '∞' : currentPlanStatus.max_storyboards}
                   </p>
@@ -112,7 +113,7 @@ export default function PlansPage() {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-slate-400">Capacidad activa</p>
+              <p className="text-sm text-slate-400">{t('internal.plans.activeCapacity')}</p>
               <p className="text-2xl font-bold text-white">
                 {currentPlanStatus.active_jobs + currentPlanStatus.queued_jobs}
                 <span className="text-sm text-slate-500 font-normal">
@@ -124,14 +125,14 @@ export default function PlansPage() {
                 </span>
               </p>
               <p className={`mt-3 text-sm font-medium ${currentPlanStatus.export_json ? 'text-green-400' : 'text-amber-400'}`}>
-                {currentPlanStatus.export_json ? 'Export JSON habilitado' : 'Upgrade necesario para exportar'}
+                {currentPlanStatus.export_json ? t('internal.plans.exportJsonEnabled') : t('internal.plans.exportUpgradeRequired')}
               </p>
               <p className={`mt-1 text-xs font-medium ${currentPlanStatus.export_zip ? 'text-green-400' : 'text-slate-500'}`}>
-                {currentPlanStatus.export_zip ? 'ZIP comercial incluido' : 'ZIP disponible desde planes con export'}
+                {currentPlanStatus.export_zip ? t('internal.plans.commercialZipIncluded') : t('internal.plans.zipAvailableWithExportPlans')}
               </p>
               {currentPlanStatus.recommended_upgrade && (
                 <p className="mt-1 text-xs text-slate-500">
-                  Upgrade recomendado: <span className="text-amber-400 capitalize">{currentPlanStatus.recommended_upgrade}</span>
+                  {t('internal.plans.recommendedUpgrade')}: <span className="text-amber-400 capitalize">{currentPlanStatus.recommended_upgrade}</span>
                 </p>
               )}
             </div>
@@ -170,35 +171,35 @@ export default function PlansPage() {
 
               <div className="space-y-3 mb-6 p-4 rounded-xl bg-dark-300/50">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Jobs activos</span>
+                  <span className="text-slate-400">{t('internal.plans.activeJobs')}</span>
                   <span className="text-white font-medium">{plan.limits.max_active_jobs === -1 ? '∞' : plan.limits.max_active_jobs}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Jobs en cola</span>
+                  <span className="text-slate-400">{t('internal.plans.queuedJobs')}</span>
                   <span className="text-white font-medium">{plan.limits.max_queued_jobs === -1 ? '∞' : plan.limits.max_queued_jobs}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Proyectos</span>
+                  <span className="text-slate-400">{t('internal.common.projects')}</span>
                   <span className="text-white font-medium">{plan.limits.max_projects === -1 ? '∞' : plan.limits.max_projects}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Jobs totales</span>
+                  <span className="text-slate-400">{t('internal.plans.totalJobs')}</span>
                   <span className="text-white font-medium">{plan.limits.max_total_jobs === -1 ? '∞' : plan.limits.max_total_jobs}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Analisis</span>
+                  <span className="text-slate-400">{t('internal.common.analysis')}</span>
                   <span className="text-white font-medium">{plan.limits.max_analyses === -1 ? '∞' : plan.limits.max_analyses}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Storyboards</span>
+                  <span className="text-slate-400">{t('internal.common.storyboards')}</span>
                   <span className="text-white font-medium">{plan.limits.max_storyboards === -1 ? '∞' : plan.limits.max_storyboards}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Prioridad</span>
+                  <span className="text-slate-400">{t('internal.plans.priority')}</span>
                   <span className="text-amber-400 font-medium">Nivel {plan.limits.priority_score}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Export ZIP</span>
+                  <span className="text-slate-400">{t('internal.plans.exportZip')}</span>
                   <span className={clsx('font-medium', plan.limits.export_zip ? 'text-green-400' : 'text-slate-500')}>
                     {plan.limits.export_zip ? 'Incluido' : 'No incluido'}
                   </span>
@@ -206,7 +207,7 @@ export default function PlansPage() {
               </div>
 
               <div className="pt-4 border-t border-white/5">
-                <p className="text-sm font-medium text-slate-300 mb-3">Incluye:</p>
+                <p className="text-sm font-medium text-slate-300 mb-3">{t('internal.plans.includes')}</p>
                 <ul className="space-y-2">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2 text-sm">
@@ -220,7 +221,7 @@ export default function PlansPage() {
               </div>
 
               <div className="mt-4 pt-4 border-t border-white/5">
-                <p className="text-xs text-slate-500 mb-2">Tipos permitidos:</p>
+                <p className="text-xs text-slate-500 mb-2">{t('internal.plans.allowedTypes')}</p>
                 <div className="flex flex-wrap gap-1">
                   {plan.limits.allowed_task_types.map((type) => (
                     <span key={type} className="px-2 py-1 bg-white/5 rounded text-xs text-slate-400 capitalize">
@@ -242,7 +243,7 @@ export default function PlansPage() {
                     await queryClient.invalidateQueries({ queryKey: ['userPlan'] })
                     setPlanMessage(result.message)
                   } catch (err: unknown) {
-                    setPlanError(getApiMessage(err, 'No se pudo activar el plan'))
+                    setPlanError(getApiMessage(err, t('internal.plans.activateError')))
                   } finally {
                     setUpdatingPlan(null)
                   }
@@ -258,7 +259,7 @@ export default function PlansPage() {
                 disabled={isCurrentPlan || updatingPlan === plan.id}
               >
                 {isCurrentPlan ? (
-                  'Plan actual'
+                  t('internal.plans.currentPlan')
                 ) : updatingPlan === plan.id ? (
                   'Activando...'
                 ) : (

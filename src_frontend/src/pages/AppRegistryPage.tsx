@@ -5,6 +5,7 @@ import {
   Film, Music, Palette, DollarSign, RefreshCw, Puzzle, FolderOpen,
   Maximize2, X,
 } from 'lucide-react'
+import { t } from '@/i18n'
 
 const iconMap: Record<string, any> = {
   search: Search, mic: Mic, calculator: Calculator, film: Film,
@@ -74,7 +75,7 @@ export default function AppRegistryPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Ecosistema CID</h1>
+          <h1 className="text-2xl font-bold text-white">{t('internal.appRegistry.title')}</h1>
           <p className="text-cine-400 mt-1">
             {apps.length} apps · {onlineCount} online
           </p>
@@ -95,7 +96,7 @@ export default function AppRegistryPage() {
           className={`px-3 py-1.5 rounded-lg text-xs border transition-colors ${
             filter === 'all' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-dark-600 border-white/10 text-cine-300 hover:border-white/20'
           }`}
-        >Todas</button>
+        >{t('internal.appRegistry.all')}</button>
         {categories.map((cat) => (
           <button
             key={cat}
@@ -108,7 +109,7 @@ export default function AppRegistryPage() {
       </div>
 
       {loading ? (
-        <div className="text-cine-400 text-center py-12">Cargando...</div>
+        <div className="text-cine-400 text-center py-12">{t('internal.common.loading')}</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((app) => {
@@ -148,7 +149,7 @@ export default function AppRegistryPage() {
                     {isOnline ? `${health.latency_ms ?? ''}ms` : 'offline'}
                   </span>
                   {app.pricing?.included_in_cid && (
-                    <span className="badge text-xs border-amber-500/30 text-amber-400">Incluida en CID</span>
+                    <span className="badge text-xs border-amber-500/30 text-amber-400">{t('internal.appRegistry.includedInCid')}</span>
                   )}
                 </div>
 
@@ -178,7 +179,7 @@ export default function AppRegistryPage() {
                       </a>
                     )
                   ) : (
-                    <span className="text-xs text-cine-500">Sin interfaz</span>
+                    <span className="text-xs text-cine-500">{t('internal.appRegistry.noInterface')}</span>
                   )}
 
                   {app.pricing?.standalone_monthly_eur && (
@@ -194,7 +195,7 @@ export default function AppRegistryPage() {
           {filtered.length === 0 && (
             <div className="card col-span-full text-center py-12">
               <Cpu className="w-12 h-12 text-cine-600 mx-auto mb-4" />
-              <p className="text-cine-400">No se encontraron apps en esta categoría.</p>
+              <p className="text-cine-400">{t('internal.appRegistry.noAppsInCategory')}</p>
             </div>
           )}
         </div>

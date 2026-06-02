@@ -8,6 +8,7 @@ import {
 import { useProjectDashboard } from '@/hooks'
 import { StatusBadge } from '@/components/StatusBadge'
 import DemoModePanel from '@/components/DemoModePanel'
+import { t } from '@/i18n'
 
 function getModuleIcon(moduleKey: string) {
   const icons: Record<string, React.ElementType> = {
@@ -27,38 +28,38 @@ function getModuleIcon(moduleKey: string) {
 }
 
 const MODULE_DISPLAY_NAMES: Record<string, string> = {
-  script: 'Guion y versiones',
-  storyboard: 'Storyboard',
+  script: t('internal.projectDashboard.modules.script'),
+  storyboard: t('internal.projectDashboard.modules.storyboard'),
   breakdown: 'Desglose',
-  budget: 'Presupuesto estimado',
-  funding: 'Ayudas y financiación',
+  budget: t('internal.projectDashboard.modules.budget'),
+  funding: t('internal.projectDashboard.modules.funding'),
   producer_pack: 'Dossier para productores',
-  distribution: 'Pack de distribución',
+  distribution: t('internal.projectDashboard.modules.distribution'),
   crm: 'Seguimiento comercial',
   media: 'Media indexada',
   documents: 'Ingesta documental',
-  editorial: 'Premontaje / DaVinci',
+  editorial: t('internal.projectDashboard.modules.editorial'),
 }
 
 const DASHBOARD_PHASES = [
   {
     title: 'Desarrollo',
-    description: 'Guion, versiones, desglose y storyboard.',
+    description: t('internal.projectDashboard.groups.development.description'),
     keys: ['script', 'breakdown', 'storyboard'],
   },
   {
-    title: 'Producción y financiación',
-    description: 'Presupuesto, ayudas, cambios aprobables y planificación.',
+    title: t('internal.projectDashboard.groups.productionFunding.title'),
+    description: t('internal.projectDashboard.groups.productionFunding.description'),
     keys: ['budget', 'funding'],
   },
   {
     title: 'Comercial',
-    description: 'Dossier, distribución, cines, plataformas y seguimiento comercial.',
+    description: t('internal.projectDashboard.groups.commercial.description'),
     keys: ['producer_pack', 'distribution', 'crm'],
   },
   {
-    title: 'Postproducción',
-    description: 'Media indexada, documentación de rodaje y premontaje para DaVinci.',
+    title: t('internal.projectDashboard.groups.postproduction.title'),
+    description: t('internal.projectDashboard.groups.postproduction.description'),
     keys: ['media', 'documents', 'editorial'],
   },
 ]
@@ -132,7 +133,7 @@ export default function ProjectDashboardPage() {
   if (dashboardQuery.error) {
     return (
       <div className="card">
-        <div className="text-red-400">Error loading dashboard</div>
+        <div className="text-red-400">{t('internal.projectDashboard.errorLoading')}</div>
         <Link to={`/projects/${projectId}`} className="btn-secondary mt-4">
           Volver al proyecto
         </Link>
@@ -148,7 +149,7 @@ export default function ProjectDashboardPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="heading-lg">{data?.title || 'Proyecto'}</h1>
+            <h1 className="heading-lg">{data?.title || t('internal.common.project')}</h1>
             <span className="badge badge-amber">{data?.status || 'active'}</span>
           </div>
           <p className="mt-1 text-slate-400">
@@ -173,19 +174,17 @@ export default function ProjectDashboardPage() {
       {/* Commercial Description */}
       <section className="space-y-4">
         <p className="text-slate-400 max-w-lg">
-          CID Core acompaña el proyecto desde el guion hasta la previs básica,
-          organizando análisis cinematográfico, storyboard, presupuesto,
-          financiación, dossier y documentación de producción.
+          {t('internal.projectDashboard.intro')}
         </p>
       </section>
 
       {/* Disclaimers */}
       <section className="space-y-2 text-xs text-slate-500">
-        <p>• Presupuesto: “Estimación orientativa. Validar con producción.”</p>
+        <p>{t('internal.projectDashboard.disclaimers.budget')}</p>
         <p>• Ayudas: “Verificar siempre con fuentes oficiales.”</p>
-        <p>• Distribución: “No garantiza aceptación por distribuidoras, cines o plataformas.”</p>
-        <p>• CRM: “Registro manual. No envía emails automáticamente.”</p>
-        <p>• DaVinci: “Export FCPXML conservador validado. Audio experimental requiere validación.”</p>
+        <p>{t('internal.projectDashboard.disclaimers.distribution')}</p>
+        <p>{t('internal.projectDashboard.disclaimers.crm')}</p>
+        <p>{t('internal.projectDashboard.disclaimers.davinci')}</p>
       </section>
 
       {/* Demo Mode Panel */}
@@ -241,7 +240,7 @@ export default function ProjectDashboardPage() {
       {/* Próximas acciones */}
       {actions.length > 0 && (
         <section className="space-y-4">
-          <h2 className="heading-md">Próximas acciones</h2>
+          <h2 className="heading-md">{t('internal.projectDashboard.nextActions')}</h2>
           <div className="space-y-2">
             {actions.map((action, i) => (
               <Link
@@ -256,7 +255,7 @@ export default function ProjectDashboardPage() {
               >
                 <span>{action.label}</span>
                 {action.locked ? (
-                  <span className="text-xs px-2 py-1 rounded bg-gray-500/20">Sin permiso</span>
+                  <span className="text-xs px-2 py-1 rounded bg-gray-500/20">{t('internal.projectDashboard.noPermission')}</span>
                 ) : (
                   <ArrowRight className="w-4 h-4" />
                 )}

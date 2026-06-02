@@ -321,7 +321,8 @@
       "noDescription": "Sin descripción",
       "scriptLoaded": "Guion cargado",
       "loading": "Cargando...",
-      "verifyingAccess": "Verificando acceso..."
+      "verifyingAccess": "Verificando acceso...",
+      "project": "Proyecto"
     },
     "modulesCatalog": {
       "seoTitle": "Módulos CID | Suite modular vendible",
@@ -731,6 +732,42 @@
       "includes": "Incluye:",
       "allowedTypes": "Tipos permitidos:",
       "activateError": "No se pudo activar el plan"
+    },
+    "projectDashboard": {
+      "errorLoading": "Error al cargar el dashboard",
+      "intro": "CID Core acompaña el proyecto desde el guion hasta la previs básica, organizando análisis cinematográfico, storyboard, presupuesto, financiación, dossier y documentación de producción.",
+      "nextActions": "Próximas acciones",
+      "noPermission": "Sin permiso",
+      "modules": {
+        "script": "Guion y versiones",
+        "storyboard": "Storyboard",
+        "budget": "Presupuesto estimado",
+        "funding": "Ayudas y financiación",
+        "distribution": "Pack de distribución",
+        "editorial": "Premontaje / DaVinci"
+      },
+      "groups": {
+        "development": {
+          "description": "Guion, versiones, desglose y storyboard."
+        },
+        "productionFunding": {
+          "title": "Producción y financiación",
+          "description": "Presupuesto, ayudas, cambios aprobables y planificación."
+        },
+        "commercial": {
+          "description": "Dossier, distribución, cines, plataformas y seguimiento comercial."
+        },
+        "postproduction": {
+          "title": "Postproducción",
+          "description": "Media indexada, documentación de rodaje y premontaje para DaVinci."
+        }
+      },
+      "disclaimers": {
+        "budget": "• Presupuesto: “Estimación orientativa. Validar con producción.”",
+        "distribution": "• Distribución: “No garantiza aceptación por distribuidoras, cines o plataformas.”",
+        "crm": "• CRM: “Registro manual. No envía emails automáticamente.”",
+        "davinci": "• DaVinci: “Export FCPXML conservador validado. Audio experimental requiere validación.”"
+      }
     }
   },
   "components": {

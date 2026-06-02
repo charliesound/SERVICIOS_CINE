@@ -321,7 +321,8 @@
       "noDescription": "No description",
       "scriptLoaded": "Script loaded",
       "loading": "Loading...",
-      "verifyingAccess": "Verifying access..."
+      "verifyingAccess": "Verifying access...",
+      "project": "Project"
     },
     "modulesCatalog": {
       "seoTitle": "CID Modules | Sellable modular suite",
@@ -731,6 +732,42 @@
       "includes": "Includes:",
       "allowedTypes": "Allowed types:",
       "activateError": "Could not activate the plan"
+    },
+    "projectDashboard": {
+      "errorLoading": "Error loading dashboard",
+      "intro": "CID Core supports the project from script to basic previs, organizing cinematic analysis, storyboard, budget, funding, dossier and production documentation.",
+      "nextActions": "Next actions",
+      "noPermission": "No permission",
+      "modules": {
+        "script": "Script and versions",
+        "storyboard": "Storyboard",
+        "budget": "Estimated budget",
+        "funding": "Grants and funding",
+        "distribution": "Distribution pack",
+        "editorial": "Rough cut / DaVinci"
+      },
+      "groups": {
+        "development": {
+          "description": "Script, versions, breakdown and storyboard."
+        },
+        "productionFunding": {
+          "title": "Production and funding",
+          "description": "Budget, grants, approvable changes and planning."
+        },
+        "commercial": {
+          "description": "Dossier, distribution, cinemas, platforms and commercial tracking."
+        },
+        "postproduction": {
+          "title": "Post-production",
+          "description": "Indexed media, shooting documentation and rough cut for DaVinci."
+        }
+      },
+      "disclaimers": {
+        "budget": "• Budget: “Indicative estimate. Validate with real production.”",
+        "distribution": "• Distribution: “Does not guarantee acceptance by distributors, cinemas or platforms.”",
+        "crm": "• CRM: “Manual record. Does not send emails automatically.”",
+        "davinci": "• DaVinci: “Conservative FCPXML export validated. Experimental audio requires validation.”"
+      }
     }
   },
   "components": {

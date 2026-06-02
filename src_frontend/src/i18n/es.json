@@ -1648,7 +1648,12 @@
         "resolveContinuity": "Resolver continuidad",
         "noAssets": "No hay assets visuales disponibles en este proyecto. Puedes seguir vinculando referencias mediante MediaAsset ID manual.",
         "unavailable": "No disponible",
-        "thumbnailUrl": "thumbnail_url"
+        "thumbnailUrl": "thumbnail_url",
+        "characterIdPlaceholder": "protagonista-01",
+        "characterNamePlaceholder": "Lucía",
+        "associatedPropsPlaceholder": "cámara, anillo, cuaderno",
+        "negativeConstraintsPlaceholder": "sin casco, sin mochila",
+        "mediaAssetIdPlaceholder": "MediaAsset ID"
       },
       "directorVisualReference": {
         "title": "Referencia visual del director",

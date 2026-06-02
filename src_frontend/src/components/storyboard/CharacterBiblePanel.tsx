@@ -482,7 +482,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 <input
                   value={draft.characterId}
                   onChange={(event) => setDraft((current) => ({ ...current, characterId: event.target.value }))}
-                  placeholder="protagonist-01"
+                  placeholder={t('components.storyboard.characterBible.characterIdPlaceholder')}
                   className="w-full rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none"
                 />
               </label>
@@ -491,7 +491,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                 <input
                   value={draft.characterName}
                   onChange={(event) => setDraft((current) => ({ ...current, characterName: event.target.value }))}
-                  placeholder="Lucia"
+                  placeholder={t('components.storyboard.characterBible.characterNamePlaceholder')}
                   className="w-full rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none"
                 />
               </label>
@@ -528,7 +528,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                   value={draft.associatedProps}
                   onChange={(event) => setDraft((current) => ({ ...current, associatedProps: event.target.value }))}
                   rows={3}
-                  placeholder="camera, ring, notebook"
+                  placeholder={t('components.storyboard.characterBible.associatedPropsPlaceholder')}
                   className="w-full rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none"
                 />
               </label>
@@ -538,7 +538,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
                   value={draft.negativeConstraints}
                   onChange={(event) => setDraft((current) => ({ ...current, negativeConstraints: event.target.value }))}
                   rows={3}
-                  placeholder="no helmet, no backpack"
+                  placeholder={t('components.storyboard.characterBible.negativeConstraintsPlaceholder')}
                   className="w-full rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none"
                 />
               </label>
@@ -599,7 +599,7 @@ export function CharacterBiblePanel({ projectId, suggestedCharacters = [] }: Cha
               <section className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-white"><Link2 className="w-4 h-4 text-amber-400" /> <h4 className="font-medium">{t('components.storyboard.characterBible.approvedReferences')}</h4></div>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <input value={referencePayload.asset_id} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, asset_id: event.target.value }))} placeholder="MediaAsset ID" className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
+                  <input value={referencePayload.asset_id} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, asset_id: event.target.value }))} placeholder={t('components.storyboard.characterBible.mediaAssetIdPlaceholder')} className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none" />
                   <select value={referencePayload.asset_type} onChange={(event) => setReferencePayload((current: CharacterBibleReferencePayload) => ({ ...current, asset_type: event.target.value as CharacterBibleApprovedAssetType }))} className="rounded-xl border border-white/10 bg-dark-300/60 px-3 py-2 text-sm text-white outline-none">
                     {APPROVED_ASSET_TYPES.map((assetType) => (
                       <option key={assetType} value={assetType}>{assetType}</option>

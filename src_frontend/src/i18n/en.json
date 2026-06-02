@@ -1648,7 +1648,12 @@
         "resolveContinuity": "Resolve continuity",
         "noAssets": "No visual assets are available in this project. You can still link references using a manual MediaAsset ID.",
         "unavailable": "Unavailable",
-        "thumbnailUrl": "thumbnail_url"
+        "thumbnailUrl": "thumbnail_url",
+        "characterIdPlaceholder": "protagonist-01",
+        "characterNamePlaceholder": "Lucia",
+        "associatedPropsPlaceholder": "camera, ring, notebook",
+        "negativeConstraintsPlaceholder": "no helmet, no backpack",
+        "mediaAssetIdPlaceholder": "MediaAsset ID"
       },
       "directorVisualReference": {
         "title": "Director's Visual Reference",

@@ -445,6 +445,18 @@
       "queueStatus": "Queue status",
       "recentJobs": "Recent jobs"
     },
+    "deliveryOverview": {
+      "loadingFinalDeliverables": "Loading final deliverables...",
+      "title": "Deliverables Library",
+      "subtitle": "Approved, traceable files ready for final post-production.",
+      "emptyTitle": "No approved deliverables",
+      "emptyText": "Deliverables appear here automatically after a review is approved.",
+      "masterLabel": "PRORES_422_MASTER",
+      "officialBadge": "Official",
+      "sourceReviewLabel": "Review",
+      "details": "Details",
+      "downloadAriaLabel": "Download deliverable"
+    },
     "projectDetail": {
       "exportingJson": "Exporting JSON...",
       "exportJson": "Export JSON",

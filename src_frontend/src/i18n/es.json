@@ -445,6 +445,18 @@
       "queueStatus": "Estado de cola",
       "recentJobs": "Jobs recientes"
     },
+    "deliveryOverview": {
+      "loadingFinalDeliverables": "Cargando entregables finales...",
+      "title": "Librería de entregables",
+      "subtitle": "Archivos aprobados y trazables listos para postproducción final.",
+      "emptyTitle": "No hay entregables aprobados",
+      "emptyText": "Los entregables aparecen aquí automáticamente tras la aprobación de una revisión.",
+      "masterLabel": "PRORES_422_MASTER",
+      "officialBadge": "Oficial",
+      "sourceReviewLabel": "Revisión",
+      "details": "Detalles",
+      "downloadAriaLabel": "Descargar entregable"
+    },
     "projectDetail": {
       "exportingJson": "Exportando JSON...",
       "exportJson": "Export JSON",

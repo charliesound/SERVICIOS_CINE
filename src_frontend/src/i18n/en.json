@@ -360,12 +360,81 @@
         "warnings": "Warnings"
       },
       "credits": {
-        "estimating": "Estimating credits..."
+        "estimating": "Estimating credits...",
+        "title": "Credit estimate",
+        "estimatedScenes": "Estimated scenes",
+        "baseShots": "Base shots",
+        "coverageShots": "Coverage shots",
+        "totalImages": "Total images",
+        "totalCredits": "Total credits",
+        "notes": "Notes",
+        "cancel": "Cancel",
+        "confirmGeneration": "Confirm generation"
       },
       "selectSequenceFirst": "First select a sequence. CID generates storyboards by sequence to preserve narrative logic.",
       "renderOnCompleteHelp": "When enabled, CID will enqueue still renders after storyboard generation finishes.",
       "noCharacterData": "No character data yet. Analyze the full script first.",
-      "selectSequenceFirstFromTab": "First select a sequence in the \"Sequences\" tab. CID generates storyboards by sequence to preserve narrative logic."
+      "selectSequenceFirstFromTab": "First select a sequence in the \"Sequences\" tab. CID generates storyboards by sequence to preserve narrative logic.",
+      "shots": {
+        "shotsCountLabel": "shots",
+        "repairing": "Repairing...",
+        "sequenceOption": "Sequence",
+        "sort": {
+          "sequenceNumber": "Sequence number",
+          "location": "Location",
+          "characters": "Characters",
+          "status": "Status"
+        },
+        "group": {
+          "none": "Ungrouped",
+          "sequence": "By sequence",
+          "location": "By location",
+          "character": "By character"
+        },
+        "retryRegeneration": "Retry regeneration",
+        "updatingRenderState": "Updating render status...",
+        "cinematicStoryboard": "Cinematic storyboard",
+        "filmstripHorizontal": "Horizontal filmstrip",
+        "contactSheetGrid": "Contact sheet grid",
+        "noThumbnail": "No thumbnail",
+        "renderQueued": "Render queued",
+        "renderFailed": "Render failed",
+        "noAssetAssociated": "No associated asset",
+        "sequence": "Sequence:",
+        "sourceScene": "Source scene:",
+        "shot": "Shot:",
+        "render": "Render:",
+        "validation": "Validation:",
+        "shotDetails": "Shot details",
+        "closeNotes": "Close notes",
+        "directorNotes": "Director notes",
+        "hide": "Hide",
+        "metadata": "Metadata",
+        "version": "Version:",
+        "asset": "Asset:",
+        "renderJob": "Render job:",
+        "workflowProfile": "Workflow profile:",
+        "workflow": "Workflow:",
+        "model": "Model:",
+        "beat": "Beat:",
+        "scope": "Scope:",
+        "reason": "Reason:",
+        "lens": "Lens:",
+        "intentId": "Intent ID:",
+        "purpose": "Purpose:",
+        "cut": "Cut:",
+        "montage": "Montage:",
+        "direction": "Direction:",
+        "valid": "Valid",
+        "invalid": "Invalid"
+      },
+      "autoExport": {
+        "title": "Also create Storyboard Sheet PNG/PDF",
+        "help": "When generating the storyboard, CID will automatically create editorial sheets",
+        "generated": "Storyboard Sheet generated",
+        "frames": "frames",
+        "pages": "pages"
+      }
     }
   },
   "components": {

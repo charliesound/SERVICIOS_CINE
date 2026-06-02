@@ -1185,7 +1185,7 @@ export default function StoryboardBuilderPage() {
                   <p className="text-slate-400 mb-4">{t('internal.storyboardBuilder.noCharacterData')}</p>
                   <button onClick={handleAnalyzeFullScript} disabled={isAnalyzing}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300">
-                    <FileText className="w-4 h-4" /> Analizar guion completo
+                    <FileText className="w-4 h-4" /> {t('internal.storyboardBuilder.analyzeFullScript')}
                   </button>
                 </div>
               </div>
@@ -1200,7 +1200,7 @@ export default function StoryboardBuilderPage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-lg font-semibold text-white">{t('internal.storyboardBuilder.generatedShots')}</h2>
-                  <p className="text-sm text-slate-400">{filteredShots.length} planos</p>
+                  <p className="text-sm text-slate-400">{filteredShots.length} {t('internal.storyboardBuilder.shots.shotsCountLabel')}</p>
                 </div>
                 <div className="flex gap-2">
                   {selectedSequenceId && (
@@ -1216,13 +1216,13 @@ export default function StoryboardBuilderPage() {
                     className="px-3 py-2 text-xs border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 rounded-xl hover:bg-cyan-500/20 transition-all disabled:opacity-50 inline-flex items-center gap-1"
                   >
                     <Wrench className="w-3 h-3" />
-                    {isRepairing ? 'Reparando...' : t('internal.storyboardBuilder.repairThumbnails')}
+                    {isRepairing ? t('internal.storyboardBuilder.shots.repairing') : t('internal.storyboardBuilder.repairThumbnails')}
                   </button>
                   <select className="input text-sm w-auto" value={selectedSequenceId}
                     onChange={(e) => setSelectedSequenceId(e.target.value)}>
                     <option value="">{t('internal.storyboardBuilder.allSequences')}</option>
                     {sequences.map((s) => (
-                      <option key={s.sequence_id} value={s.sequence_id}>Secuencia {s.sequence_number} — {s.title}</option>
+                      <option key={s.sequence_id} value={s.sequence_id}>{t('internal.storyboardBuilder.shots.sequenceOption')} {s.sequence_number} — {s.title}</option>
                     ))}
                   </select>
                 </div>
@@ -1233,10 +1233,10 @@ export default function StoryboardBuilderPage() {
                   onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                   className="rounded-xl border border-white/10 bg-dark-300/70 px-3 py-2 text-xs text-white outline-none"
                 >
-                  <option value="number">Número secuencia</option>
-                  <option value="location">Localización</option>
-                  <option value="characters">Personajes</option>
-                  <option value="status">Estado</option>
+                  <option value="number">{t('internal.storyboardBuilder.shots.sort.sequenceNumber')}</option>
+                  <option value="location">{t('internal.storyboardBuilder.shots.sort.location')}</option>
+                  <option value="characters">{t('internal.storyboardBuilder.shots.sort.characters')}</option>
+                  <option value="status">{t('internal.storyboardBuilder.shots.sort.status')}</option>
                 </select>
                 <button
                   onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
@@ -1249,10 +1249,10 @@ export default function StoryboardBuilderPage() {
                   onChange={(e) => setGroupBy(e.target.value as typeof groupBy)}
                   className="rounded-xl border border-white/10 bg-dark-300/70 px-3 py-2 text-xs text-white outline-none"
                 >
-                  <option value="none">Sin agrupar</option>
-                  <option value="sequence">Por secuencia</option>
-                  <option value="location">Por localización</option>
-                  <option value="character">Por personaje</option>
+                  <option value="none">{t('internal.storyboardBuilder.shots.group.none')}</option>
+                  <option value="sequence">{t('internal.storyboardBuilder.shots.group.sequence')}</option>
+                  <option value="location">{t('internal.storyboardBuilder.shots.group.location')}</option>
+                  <option value="character">{t('internal.storyboardBuilder.shots.group.character')}</option>
                 </select>
               </div>
               {repairResult && (
@@ -1264,12 +1264,12 @@ export default function StoryboardBuilderPage() {
                 <ActionProgressPanel
                   progress={regenerationProgress}
                   onRetry={() => handleGenerate(true)}
-                  retryLabel="Reintentar regeneración"
+                  retryLabel={t('internal.storyboardBuilder.shots.retryRegeneration')}
                 />
               )}
               {isPollingRenderState && (
                 <div className="px-4 py-2 text-xs bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 inline-flex items-center gap-2">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Actualizando estado de renders...
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('internal.storyboardBuilder.shots.updatingRenderState')}
                 </div>
               )}
             </section>
@@ -1283,9 +1283,9 @@ export default function StoryboardBuilderPage() {
                   className="w-4 h-4 rounded border-amber-500/50 text-amber-500 focus:ring-amber-500/30"
                 />
                 <div>
-                  <p className="text-sm font-medium text-white">Crear también Storyboard Sheet PNG/PDF</p>
+                  <p className="text-sm font-medium text-white">{t('internal.storyboardBuilder.autoExport.title')}</p>
                   <p className="text-xs text-slate-400">
-                    Al generar el storyboard se crearán automáticamente los sheets editoriales
+                    {t('internal.storyboardBuilder.autoExport.help')}
                   </p>
                 </div>
               </label>
@@ -1293,7 +1293,7 @@ export default function StoryboardBuilderPage() {
 
             {autoExportResponse && autoExportResponse.length > 0 && (
               <section className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-emerald-400">Storyboard Sheet generado</p>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-emerald-400">{t('internal.storyboardBuilder.autoExport.generated')}</p>
                 <div className="flex flex-wrap gap-3">
                   {autoExportResponse.map((item) => {
                     const extension = item.output_format === 'pdf' ? 'pdf' : 'png'
@@ -1325,18 +1325,18 @@ export default function StoryboardBuilderPage() {
                     return (
                       <div key={item.output_format} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                         <span className="text-sm font-medium text-white uppercase">{item.output_format}</span>
-                        <span className="text-xs text-slate-400">{item.frame_count} frames · {item.page_count} páginas</span>
+                        <span className="text-xs text-slate-400">{item.frame_count} {t('internal.storyboardBuilder.autoExport.frames')} · {item.page_count} {t('internal.storyboardBuilder.autoExport.pages')}</span>
                         {item.artifact_url && (
                           <>
                             <button type="button" onClick={handleOpen}
                               className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10">
                               <Download className="h-3.5 w-3.5" />
-                              Abrir
+                              {t('components.storyboard.common.open')}
                             </button>
                             <button type="button" onClick={handleDownload}
                               className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20">
                               <ExternalLink className="h-3.5 w-3.5" />
-                              Descargar
+                              {t('components.storyboard.common.download')}
                             </button>
                           </>
                         )}
@@ -1366,19 +1366,19 @@ export default function StoryboardBuilderPage() {
               <div className="space-y-6">
                 <section className="card bg-dark-200/80 border border-white/5 p-4">
                   <div className="flex items-center justify-between gap-3 mb-4">
-                    <h3 className="text-white font-semibold">Storyboard cinematográfico</h3>
+                    <h3 className="text-white font-semibold">{t('internal.storyboardBuilder.shots.cinematicStoryboard')}</h3>
                     <div className="flex gap-2 text-xs">
                       <button
                         onClick={() => setCinematicViewMode('filmstrip')}
                         className={`px-3 py-1.5 rounded-lg border ${cinematicViewMode === 'filmstrip' ? 'border-amber-400 text-amber-300 bg-amber-500/10' : 'border-white/10 text-slate-300 bg-white/5'}`}
                       >
-                        Filmstrip horizontal
+                        {t('internal.storyboardBuilder.shots.filmstripHorizontal')}
                       </button>
                       <button
                         onClick={() => setCinematicViewMode('contact_sheet')}
                         className={`px-3 py-1.5 rounded-lg border ${cinematicViewMode === 'contact_sheet' ? 'border-amber-400 text-amber-300 bg-amber-500/10' : 'border-white/10 text-slate-300 bg-white/5'}`}
                       >
-                        Contact sheet grid
+                        {t('internal.storyboardBuilder.shots.contactSheetGrid')}
                       </button>
                     </div>
                   </div>
@@ -1409,22 +1409,22 @@ export default function StoryboardBuilderPage() {
                                     shotId={shot.id}
                                     alt={shot.asset_file_name || `shot-${shot.sequence_order}`}
                                     className="w-full h-full object-cover"
-                                    fallbackLabel="Sin miniatura"
+                                    fallbackLabel={t('internal.storyboardBuilder.shots.noThumbnail')}
                                   />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-xs text-slate-500 px-3 text-center">
-                                    {renderState.state === 'rendering' ? 'Render encolado' : renderState.state === 'failed' ? 'Render fallido' : 'Sin asset asociado'}
+                                    {renderState.state === 'rendering' ? t('internal.storyboardBuilder.shots.renderQueued') : renderState.state === 'failed' ? t('internal.storyboardBuilder.shots.renderFailed') : t('internal.storyboardBuilder.shots.noAssetAssociated')}
                                   </div>
                                 )}
                               </div>
                               <div className="p-2 space-y-1 text-xs text-slate-300 border-t border-white/10">
-                                <p><span className="text-slate-500">Secuencia:</span> {getShotSequenceLabel(shot) || shot.sequence_id || 'n/a'}</p>
-                                <p><span className="text-slate-500">Escena fuente:</span> {shot.scene_number ?? 'n/a'}</p>
-                                <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
-                                <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
+                                <p><span className="text-slate-500">{t('internal.storyboardBuilder.shots.sequence')}</span> {getShotSequenceLabel(shot) || shot.sequence_id || 'n/a'}</p>
+                                <p><span className="text-slate-500">{t('internal.storyboardBuilder.shots.sourceScene')}</span> {shot.scene_number ?? 'n/a'}</p>
+                                <p><span className="text-slate-500">{t('internal.storyboardBuilder.shots.shot')}</span> {shot.sequence_order}</p>
+                                <p><span className="text-slate-500">{t('internal.storyboardBuilder.shots.render')}</span> {shot.render_status || 'no_asset'}</p>
                                 {shot.render_error && <p className="text-red-300/80">{shot.render_error}</p>}
                                 <p className="text-slate-200 line-clamp-3">{displayText}</p>
-                                <p><span className="text-slate-500">Validación:</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
+                                <p><span className="text-slate-500">{t('internal.storyboardBuilder.shots.validation')}</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
                                 <StoryboardTracePanel projectId={projectId || shot.project_id} shotId={shot.id} compact />
                               </div>
                             </div>
@@ -1457,22 +1457,22 @@ export default function StoryboardBuilderPage() {
                                   shotId={shot.id}
                                   alt={shot.asset_file_name || `shot-${shot.sequence_order}`}
                                   className="w-full h-full object-cover"
-                                  fallbackLabel="Sin miniatura"
+                                  fallbackLabel={t('internal.storyboardBuilder.shots.noThumbnail')}
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center text-xs text-slate-500 px-3 text-center">
-                                  {renderState.state === 'rendering' ? 'Render encolado' : renderState.state === 'failed' ? 'Render fallido' : 'Sin asset asociado'}
+                                  {renderState.state === 'rendering' ? t('internal.storyboardBuilder.shots.renderQueued') : renderState.state === 'failed' ? t('internal.storyboardBuilder.shots.renderFailed') : t('internal.storyboardBuilder.shots.noAssetAssociated')}
                                 </div>
                               )}
                             </div>
                             <div className="p-2 space-y-1 text-xs text-slate-300">
-                              <p><span className="text-slate-500">Secuencia:</span> {getShotSequenceLabel(shot) || shot.sequence_id || 'n/a'}</p>
-                              <p><span className="text-slate-500">Escena fuente:</span> {shot.scene_number ?? 'n/a'}</p>
-                              <p><span className="text-slate-500">Plano:</span> {shot.sequence_order}</p>
-                              <p><span className="text-slate-500">Render:</span> {shot.render_status || 'no_asset'}</p>
+                              <p><span className="text-slate-500">{t('internal.storyboardBuilder.shots.sequence')}</span> {getShotSequenceLabel(shot) || shot.sequence_id || 'n/a'}</p>
+                              <p><span className="text-slate-500">{t('internal.storyboardBuilder.shots.sourceScene')}</span> {shot.scene_number ?? 'n/a'}</p>
+                              <p><span className="text-slate-500">{t('internal.storyboardBuilder.shots.shot')}</span> {shot.sequence_order}</p>
+                              <p><span className="text-slate-500">{t('internal.storyboardBuilder.shots.render')}</span> {shot.render_status || 'no_asset'}</p>
                               {shot.render_error && <p className="text-red-300/80">{shot.render_error}</p>}
                               <p className="text-slate-200 line-clamp-3">{displayText}</p>
-                              <p><span className="text-slate-500">Validación:</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
+                              <p><span className="text-slate-500">{t('internal.storyboardBuilder.shots.validation')}</span> {validationScore != null ? String(validationScore) : 'n/a'}</p>
                               <StoryboardTracePanel projectId={projectId || shot.project_id} shotId={shot.id} compact />
                             </div>
                           </div>
@@ -1483,7 +1483,7 @@ export default function StoryboardBuilderPage() {
                 </section>
 
                 <details>
-                  <summary className="cursor-pointer text-sm text-slate-300 mb-3">Detalles de planos</summary>
+                  <summary className="cursor-pointer text-sm text-slate-300 mb-3">{t('internal.storyboardBuilder.shots.shotDetails')}</summary>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredShots.map((shot) => (
                     <div key={shot.id} className="space-y-1">
@@ -1493,13 +1493,13 @@ export default function StoryboardBuilderPage() {
                         <button onClick={() => setExpandedFeedback(expandedFeedback === shot.id ? null : shot.id)}
                           className="flex items-center gap-1.5 flex-1 px-3 py-1.5 text-xs text-cyan-400/70 hover:text-cyan-300 bg-dark-300/40 border border-white/5 rounded-lg transition-colors">
                           <MessageSquare className="w-3 h-3" />
-                          {expandedFeedback === shot.id ? 'Cerrar notas' : 'Notas del director'}
+                          {expandedFeedback === shot.id ? t('internal.storyboardBuilder.shots.closeNotes') : t('internal.storyboardBuilder.shots.directorNotes')}
                         </button>
                         {shot.metadata_json && (
                           <button onClick={() => setExpandedMetadata(expandedMetadata === shot.id ? null : shot.id)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-400/70 hover:text-amber-300 bg-dark-300/40 border border-white/5 rounded-lg transition-colors">
                             <Eye className="w-3 h-3" />
-                            {expandedMetadata === shot.id ? 'Ocultar' : 'Metadatos'}
+                            {expandedMetadata === shot.id ? t('internal.storyboardBuilder.shots.hide') : t('internal.storyboardBuilder.shots.metadata')}
                           </button>
                         )}
                       </div>
@@ -1517,33 +1517,33 @@ export default function StoryboardBuilderPage() {
                             const workflowKey = rawMeta.workflow_key || (rawMeta.workflow as Record<string, unknown> | undefined)?.workflow_key
                             return (
                               <>
-                                <p><span className="text-amber-400">Versión:</span> {shot.version}</p>
-                                {shot.asset_id && <p><span className="text-amber-400">Asset:</span> {shot.asset_id}</p>}
-                                {shot.render_job_id && <p><span className="text-amber-400">Render job:</span> {shot.render_job_id}</p>}
-                                {workflowProfile && <p><span className="text-amber-400">Workflow profile:</span> {String(workflowProfile)}</p>}
-                                {workflowKey && <p><span className="text-amber-400">Workflow:</span> {String(workflowKey)}</p>}
-                                {rawMeta.model_family && <p><span className="text-amber-400">Modelo:</span> {String(rawMeta.model_family)}</p>}
-                                {rawMeta.beat_type && <p><span className="text-amber-400">Beat:</span> {String(rawMeta.beat_type)}</p>}
-                                {meta.source_scope && <p><span className="text-amber-400">Scope:</span> {meta.source_scope}</p>}
-                                {meta.sequence_title && <p><span className="text-amber-400">Secuencia:</span> {meta.sequence_title}</p>}
-                                {meta.shot_plan_reason && <p><span className="text-amber-400">Razón:</span> {meta.shot_plan_reason}</p>}
-                                {meta.director_lens_id && <p><span className="text-amber-400">Lente:</span> {meta.director_lens_id}</p>}
-                                {meta.cinematic_intent_id && <p><span className="text-amber-400">Intent ID:</span> {meta.cinematic_intent_id}</p>}
+                                <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.version')}</span> {shot.version}</p>
+                                {shot.asset_id && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.asset')}</span> {shot.asset_id}</p>}
+                                {shot.render_job_id && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.renderJob')}</span> {shot.render_job_id}</p>}
+                                {workflowProfile && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.workflowProfile')}</span> {String(workflowProfile)}</p>}
+                                {workflowKey && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.workflow')}</span> {String(workflowKey)}</p>}
+                                {rawMeta.model_family && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.model')}</span> {String(rawMeta.model_family)}</p>}
+                                {rawMeta.beat_type && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.beat')}</span> {String(rawMeta.beat_type)}</p>}
+                                {meta.source_scope && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.scope')}</span> {meta.source_scope}</p>}
+                                {meta.sequence_title && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.sequence')}</span> {meta.sequence_title}</p>}
+                                {meta.shot_plan_reason && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.reason')}</span> {meta.shot_plan_reason}</p>}
+                                {meta.director_lens_id && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.lens')}</span> {meta.director_lens_id}</p>}
+                                {meta.cinematic_intent_id && <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.intentId')}</span> {meta.cinematic_intent_id}</p>}
                                 {meta.shot_editorial_purpose && (
                                   <>
-                                    <p><span className="text-amber-400">Propósito:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).purpose || '')}</p>
-                                    <p><span className="text-amber-400">Corte:</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).cut_reason || '')}</p>
+                                    <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.purpose')}</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).purpose || '')}</p>
+                                    <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.cut')}</span> {String((meta.shot_editorial_purpose as Record<string, unknown>).cut_reason || '')}</p>
                                   </>
                                 )}
                                 {meta.montage_intent && (
-                                  <p><span className="text-amber-400">Montaje:</span> {String((meta.montage_intent as Record<string, unknown>).editorial_function || '')}</p>
+                                  <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.montage')}</span> {String((meta.montage_intent as Record<string, unknown>).editorial_function || '')}</p>
                                 )}
                                 {meta.directorial_intent && (
-                                  <p><span className="text-amber-400">Dirección:</span> {String((meta.directorial_intent as Record<string, unknown>).mise_en_scene || '').substring(0, 120)}</p>
+                                  <p><span className="text-amber-400">{t('internal.storyboardBuilder.shots.direction')}</span> {String((meta.directorial_intent as Record<string, unknown>).mise_en_scene || '').substring(0, 120)}</p>
                                 )}
                                 {meta.validation && (
                                   <p className={Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'text-green-400' : 'text-red-400'}>
-                                    Validación: {Boolean((meta.validation as Record<string, unknown>).is_valid) ? 'Válido' : 'Inválido'} (score: {String((meta.validation as Record<string, unknown>).score)})
+                                    {t('internal.storyboardBuilder.shots.validation')} {Boolean((meta.validation as Record<string, unknown>).is_valid) ? t('internal.storyboardBuilder.shots.valid') : t('internal.storyboardBuilder.shots.invalid')} (score: {String((meta.validation as Record<string, unknown>).score)})
                                   </p>
                                 )}
                                 {meta.script_visual_alignment && (
@@ -1575,32 +1575,32 @@ export default function StoryboardBuilderPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div className="w-full max-w-lg mx-4 rounded-2xl border border-white/10 bg-dark-200 p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Estimación de créditos</h3>
+                <h3 className="text-lg font-semibold text-white">{t('internal.storyboardBuilder.credits.title')}</h3>
                 <button onClick={handleCancelGenerate} className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-white/5 p-3">
-                  <p className="text-xs text-slate-400">Escenas estimadas</p>
+                  <p className="text-xs text-slate-400">{t('internal.storyboardBuilder.credits.estimatedScenes')}</p>
                   <p className="text-xl font-bold text-white">{creditEstimate.estimated_scenes}</p>
                 </div>
                 <div className="rounded-xl bg-white/5 p-3">
-                  <p className="text-xs text-slate-400">Planos base</p>
+                  <p className="text-xs text-slate-400">{t('internal.storyboardBuilder.credits.baseShots')}</p>
                   <p className="text-xl font-bold text-white">{creditEstimate.base_shots}</p>
                 </div>
                 <div className="rounded-xl bg-white/5 p-3">
-                  <p className="text-xs text-slate-400">Planos cobertura</p>
+                  <p className="text-xs text-slate-400">{t('internal.storyboardBuilder.credits.coverageShots')}</p>
                   <p className="text-xl font-bold text-white">{creditEstimate.coverage_shots}</p>
                 </div>
                 <div className="rounded-xl bg-white/5 p-3">
-                  <p className="text-xs text-slate-400">Total imágenes</p>
+                  <p className="text-xs text-slate-400">{t('internal.storyboardBuilder.credits.totalImages')}</p>
                   <p className="text-xl font-bold text-amber-400">{creditEstimate.total_images}</p>
                 </div>
               </div>
               <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-amber-300">Créditos total</p>
+                  <p className="text-sm font-medium text-amber-300">{t('internal.storyboardBuilder.credits.totalCredits')}</p>
                   <p className="text-2xl font-bold text-amber-400">{creditEstimate.total_credits}</p>
                 </div>
               </div>
@@ -1614,7 +1614,7 @@ export default function StoryboardBuilderPage() {
               )}
               {(creditEstimate.notes ?? []).length > 0 && (
                 <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-1">
-                  <p className="text-xs font-medium text-slate-400">Notas</p>
+                  <p className="text-xs font-medium text-slate-400">{t('internal.storyboardBuilder.credits.notes')}</p>
                   {(creditEstimate.notes ?? []).map((n, i) => (
                     <p key={i} className="text-xs text-slate-300">{n}</p>
                   ))}
@@ -1623,11 +1623,11 @@ export default function StoryboardBuilderPage() {
               <div className="flex gap-3 pt-2">
                 <button onClick={handleCancelGenerate}
                   className="flex-1 px-4 py-2.5 border border-white/10 text-slate-300 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium">
-                  Cancelar
+                  {t('internal.storyboardBuilder.credits.cancel')}
                 </button>
                 <button onClick={handleConfirmGenerate}
                   className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-medium transition-colors text-sm">
-                  Confirmar generación
+                  {t('internal.storyboardBuilder.credits.confirmGeneration')}
                 </button>
               </div>
             </div>

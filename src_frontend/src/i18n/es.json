@@ -360,12 +360,81 @@
         "warnings": "Advertencias"
       },
       "credits": {
-        "estimating": "Estimando créditos..."
+        "estimating": "Estimando créditos...",
+        "title": "Estimación de créditos",
+        "estimatedScenes": "Escenas estimadas",
+        "baseShots": "Planos base",
+        "coverageShots": "Planos cobertura",
+        "totalImages": "Total imágenes",
+        "totalCredits": "Créditos total",
+        "notes": "Notas",
+        "cancel": "Cancelar",
+        "confirmGeneration": "Confirmar generación"
       },
       "selectSequenceFirst": "Primero selecciona una secuencia. CID genera storyboards por secuencia para preservar la lógica narrativa.",
       "renderOnCompleteHelp": "Si está activado, CID encolará render still al finalizar la generación del storyboard.",
       "noCharacterData": "No hay datos de personajes. Analiza el guion completo primero.",
-      "selectSequenceFirstFromTab": "Primero selecciona una secuencia en la pestaña \"Secuencias\". CID genera storyboards por secuencia para preservar la lógica narrativa."
+      "selectSequenceFirstFromTab": "Primero selecciona una secuencia en la pestaña \"Secuencias\". CID genera storyboards por secuencia para preservar la lógica narrativa.",
+      "shots": {
+        "shotsCountLabel": "planos",
+        "repairing": "Reparando...",
+        "sequenceOption": "Secuencia",
+        "sort": {
+          "sequenceNumber": "Número secuencia",
+          "location": "Localización",
+          "characters": "Personajes",
+          "status": "Estado"
+        },
+        "group": {
+          "none": "Sin agrupar",
+          "sequence": "Por secuencia",
+          "location": "Por localización",
+          "character": "Por personaje"
+        },
+        "retryRegeneration": "Reintentar regeneración",
+        "updatingRenderState": "Actualizando estado de renders...",
+        "cinematicStoryboard": "Storyboard cinematográfico",
+        "filmstripHorizontal": "Filmstrip horizontal",
+        "contactSheetGrid": "Contact sheet grid",
+        "noThumbnail": "Sin miniatura",
+        "renderQueued": "Render encolado",
+        "renderFailed": "Render fallido",
+        "noAssetAssociated": "Sin asset asociado",
+        "sequence": "Secuencia:",
+        "sourceScene": "Escena fuente:",
+        "shot": "Plano:",
+        "render": "Render:",
+        "validation": "Validación:",
+        "shotDetails": "Detalles de planos",
+        "closeNotes": "Cerrar notas",
+        "directorNotes": "Notas del director",
+        "hide": "Ocultar",
+        "metadata": "Metadatos",
+        "version": "Versión:",
+        "asset": "Asset:",
+        "renderJob": "Render job:",
+        "workflowProfile": "Workflow profile:",
+        "workflow": "Workflow:",
+        "model": "Modelo:",
+        "beat": "Beat:",
+        "scope": "Scope:",
+        "reason": "Razón:",
+        "lens": "Lente:",
+        "intentId": "Intent ID:",
+        "purpose": "Propósito:",
+        "cut": "Corte:",
+        "montage": "Montaje:",
+        "direction": "Dirección:",
+        "valid": "Válido",
+        "invalid": "Inválido"
+      },
+      "autoExport": {
+        "title": "Crear también Storyboard Sheet PNG/PDF",
+        "help": "Al generar el storyboard se crearán automáticamente los sheets editoriales",
+        "generated": "Storyboard Sheet generado",
+        "frames": "frames",
+        "pages": "páginas"
+      }
     }
   },
   "components": {

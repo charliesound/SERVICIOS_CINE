@@ -25,7 +25,6 @@ import type {
   FundingRequirementEvaluation,
 } from '@/api/projectFunding'
 import {
-import { t } from '@/i18n'
   useFundingChecklist,
   useFundingMatchEvidence,
   useFundingMatcherStatus,
@@ -33,6 +32,7 @@ import { t } from '@/i18n'
   useFundingProfile,
   useRecomputeFundingMatches,
 } from '@/hooks'
+import { t } from '@/i18n'
 
 interface Props {
   projectId: string

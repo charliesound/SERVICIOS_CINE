@@ -571,7 +571,7 @@ export default function ProjectDetailPage() {
       setStoryboardSequences([])
       setStoryboardCandidates(parsed)
       if (!parsed.length) {
-        setStoryboardCandidateError('No se pudieron detectar escenas para storyboard')
+        setStoryboardCandidateError(t('internal.projectDetail.storyboard.noSceneCandidates'))
       }
     } finally {
       setIsLoadingStoryboardCandidates(false)
@@ -790,7 +790,7 @@ export default function ProjectDetailPage() {
       await projectsApi.updateScript(projectId, { script_text: scriptText })
       const stopPolling = pollJobsUntilSettled('analyze', (job) => {
         setAnalysisProgress((current) => buildProgressState(
-          'Analizar guion',
+          t('internal.projectDetail.analysis.title'),
           job,
           t('internal.projectDetail.analysis.analyzingScript'),
           job?.progress_stage ? undefined : t('internal.projectDetail.analysis.estimatedProgress'),
@@ -827,11 +827,11 @@ export default function ProjectDetailPage() {
 
   const openStoryboardSelector = async () => {
     if (!projectId) {
-      setError('No se encontro el proyecto para generar storyboard')
+      setError(t('internal.projectDetail.storyboard.projectMissing'))
       return
     }
     if (!scriptText.trim()) {
-      setError('Carga un guion antes de generar storyboard')
+      setError(t('internal.projectDetail.storyboard.scriptRequired'))
       setActiveTab('script')
       return
     }
@@ -856,13 +856,13 @@ export default function ProjectDetailPage() {
     setSuccessMsg('')
     setActiveTab('storyboard')
     setStoryboardProgress({
-      title: 'Generar storyboard',
+      title: t('internal.projectDetail.storyboard.title'),
       status: 'queued',
       percent: 0,
-      label: 'Preparando storyboard...',
+      label: t('internal.projectDetail.storyboard.preparing'),
       helperText: selectedSceneCount > 0
-        ? `Progreso estimado hasta que el backend devuelva progreso real por escena. ${selectedSceneCount} escenas seleccionadas.`
-        : 'Preparando generación de storyboard.',
+        ? t('internal.projectDetail.storyboard.estimatedSceneProgress').replace('{count}', String(selectedSceneCount))
+        : t('internal.projectDetail.storyboard.preparingGeneration'),
       estimated: true,
     })
     try {
@@ -893,11 +893,11 @@ export default function ProjectDetailPage() {
           'Generar storyboard',
           job,
           selectedSceneCount > 0
-            ? `Procesando selección de ${selectedSceneCount} escena(s)`
-            : 'Generando storyboard...',
+            ? t('internal.projectDetail.storyboard.processingSelection').replace('{count}', String(selectedSceneCount))
+            : t('internal.projectDetail.storyboard.generatingStoryboard'),
           selectedSceneCount > 0
-            ? `Progreso estimado hasta que el backend devuelva progreso real por escena. ${selectedSceneCount} escenas seleccionadas.`
-            : 'Progreso estimado hasta que el backend devuelva progreso real.',
+            ? t('internal.projectDetail.storyboard.estimatedSceneProgress').replace('{count}', String(selectedSceneCount))
+            : t('internal.projectDetail.storyboard.estimatedProgress'),
           current?.percent || 0,
         ))
       })
@@ -909,25 +909,25 @@ export default function ProjectDetailPage() {
       await loadStoryboardState()
       await loadAssets()
       setStoryboardProgress((current) => ({
-        ...(current || { title: 'Generar storyboard', estimated: false }),
+        ...(current || { title: t('internal.projectDetail.storyboard.title'), estimated: false }),
         status: 'completed',
         percent: 100,
-        label: 'Storyboard completado',
+        label: t('internal.projectDetail.storyboard.completed'),
         helperText: response.total_scenes
-          ? `${response.total_scenes} escenas y ${response.total_shots} planos generados.`
-          : 'Storyboard completado correctamente.',
+          ? t('internal.projectDetail.storyboard.completedSummary').replace('{scenes}', String(response.total_scenes)).replace('{shots}', String(response.total_shots))
+          : t('internal.projectDetail.storyboard.completedOk'),
         jobId: response.job_id,
       }))
       stopPolling()
-      showSuccess('Storyboard generado correctamente')
+      showSuccess(t('internal.projectDetail.storyboard.success'))
     } catch (err) {
       console.error('[ProjectDetail] storyboard failed', err)
-      setError(parseApiError('Error al generar el storyboard. Asegurate de que el guion tenga contenido.')(err))
+      setError(parseApiError(t('internal.projectDetail.storyboard.errorDetail'))(err))
       setStoryboardProgress((current) => ({
-        ...(current || { title: 'Generar storyboard', percent: 0 }),
+        ...(current || { title: t('internal.projectDetail.storyboard.title'), percent: 0 }),
         status: 'failed',
-        label: 'Error generando storyboard',
-        errorMessage: parseApiError('Error al generar el storyboard. Asegurate de que el guion tenga contenido.')(err),
+        label: t('internal.projectDetail.storyboard.errorGenerating'),
+        errorMessage: parseApiError(t('internal.projectDetail.storyboard.errorDetail'))(err),
       }))
       setActiveTab('script')
     } finally {
@@ -961,7 +961,7 @@ export default function ProjectDetailPage() {
         downloadExport(blob, format)
       }
     } catch (err) {
-      setError(parseApiError(`No se pudo exportar el proyecto en ${format.toUpperCase()}.`)(err))
+      setError(parseApiError(t('internal.projectDetail.exports.exportError').replace('{format}', format.toUpperCase()))(err))
     } finally {
       setExportingFormat(null)
     }
@@ -982,7 +982,7 @@ export default function ProjectDetailPage() {
             downloadExport(blob, 'zip')
           }
         } else if (job.status === 'failed') {
-          setError(parseApiError('La exportación ZIP ha fallado.')(null))
+          setError(parseApiError(t('internal.projectDetail.exports.zipFailed'))(null))
         } else {
           // Still running, poll again
           setTimeout(checkStatus, 2000)
@@ -1528,23 +1528,23 @@ export default function ProjectDetailPage() {
                 className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1"
               >
                 <ChevronRight className="w-4 h-4" />
-                Volver al guion
+                {t('internal.projectDetail.storyboard.backToScript')}
               </button>
             </div>
           ) : (
             <div className="card p-12 flex flex-col items-center justify-center gap-3 text-center">
               <Layers className="w-10 h-10 text-gray-600" />
               <div>
-                <p className="text-gray-300 font-medium">Sin analisis aun</p>
+                <p className="text-gray-300 font-medium">{t('internal.projectDetail.storyboard.noAnalysisYet')}</p>
                 <p className="text-gray-500 text-sm mt-1">
-                  Ve a la pestana Guion y pulsa "Analizar guion" para comenzar.
+                  {t('internal.projectDetail.storyboard.goToScriptAnalyze')}
                 </p>
               </div>
               <button
                 onClick={() => setActiveTab('script')}
                 className="mt-2 px-4 py-2 text-sm border border-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/10 transition-colors"
               >
-                Ir al guion
+                {t('internal.projectDetail.storyboard.goToScript')}
               </button>
             </div>
           )}
@@ -1563,8 +1563,8 @@ export default function ProjectDetailPage() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
               <div>
-                <p className="text-gray-300 font-medium">Generando storyboard...</p>
-                <p className="text-gray-400 text-sm mt-1">Parseando escenas y sugiriendo planos</p>
+                <p className="text-gray-300 font-medium">{t('internal.projectDetail.storyboard.generatingStoryboard')}</p>
+                <p className="text-gray-400 text-sm mt-1">{t('internal.projectDetail.storyboard.parsingScenes')}</p>
               </div>
             </div>
           ) : storyboardViewData ? (
@@ -1575,20 +1575,20 @@ export default function ProjectDetailPage() {
                   <Film className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-300">
                     <span className="font-semibold text-white">{storyboardViewData.total_scenes}</span>{' '}
-                    escena{storyboardViewData.total_scenes !== 1 ? 's' : ''} detectada{storyboardViewData.total_scenes !== 1 ? 's' : ''}
+                    {storyboardViewData.total_scenes === 1 ? t('internal.projectDetail.storyboard.sceneDetected') : t('internal.projectDetail.storyboard.scenesDetected')}
                   </span>
                 </div>
                 {storyboardShotCount != null && (
                   <div className="flex items-center gap-2 text-sm text-slate-400">
                     <span className="font-semibold text-white">{storyboardShotCount}</span>
-                    plano{storyboardShotCount !== 1 ? 's' : ''}
+                    {storyboardShotCount === 1 ? t('internal.projectDetail.storyboard.shotSingular') : t('internal.projectDetail.storyboard.shotPlural')}
                   </div>
                 )}
                 <div className="flex-1 h-px bg-white/10" />
               </div>
 
               <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-                Storyboard generado. Usa Exportar Storyboard Sheet para generar PNG/PDF.
+                {t('internal.projectDetail.storyboard.generatedBanner')}
               </div>
 
               {/* Scene cards */}
@@ -1600,7 +1600,7 @@ export default function ProjectDetailPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 text-xs font-bold">
-                            ESC {String(scene.scene_number).padStart(2, '0')}
+                            {t('internal.projectDetail.storyboard.sceneCode')} {String(scene.scene_number).padStart(2, '0')}
                           </span>
                           {scene.time_of_day && (
                             <span className="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-xs flex items-center gap-1">
@@ -1637,7 +1637,7 @@ export default function ProjectDetailPage() {
                               shotId={shot.shot_id}
                               alt={shot.asset_file_name || `Storyboard ${shot.shot_number}`}
                               className="absolute inset-0 w-full h-full object-cover"
-                              fallbackLabel="Sin miniatura"
+                              fallbackLabel={t('internal.projectDetail.storyboard.noThumbnail')}
                             />
                             <div className="relative z-10 bg-black/45 px-1.5 py-1 rounded-md text-center">
                               <span className="text-[10px] font-bold text-gray-200 leading-none block">
@@ -1662,7 +1662,7 @@ export default function ProjectDetailPage() {
                               onClick={() => void openStoryboardShotImage(shot.shot_id, 'image')}
                               className="mt-2 inline-flex text-[11px] text-amber-300 hover:text-amber-200"
                             >
-                              Ver imagen
+                              {t('internal.projectDetail.storyboard.viewImage')}
                             </button>
                             <StoryboardTracePanel projectId={projectId || ''} shotId={shot.shot_id} compact />
                           </div>
@@ -1671,7 +1671,7 @@ export default function ProjectDetailPage() {
                     </div>
                   ) : (
                     <div className="p-6 text-center">
-                      <p className="text-gray-500 text-sm">Sin planos detectados en esta escena.</p>
+                      <p className="text-gray-500 text-sm">{t('internal.projectDetail.storyboard.noShotsInScene')}</p>
                     </div>
                   )}
                 </div>
@@ -1682,31 +1682,31 @@ export default function ProjectDetailPage() {
                 className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1"
               >
                 <ChevronRight className="w-4 h-4" />
-                Volver al guion
+                {t('internal.projectDetail.storyboard.backToScript')}
               </button>
             </div>
           ) : hasStoryboardGenerated ? (
             <div className="space-y-4">
               <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-200">
-                Storyboard generado. Usa Exportar Storyboard Sheet para generar PNG/PDF.
+                {t('internal.projectDetail.storyboard.generatedBanner')}
               </div>
               <div className="card p-6 border border-white/5 bg-dark-200/80">
                 <div className="flex flex-wrap items-center gap-6 text-sm text-slate-300">
                   {storyboardSceneCount != null && (
                     <div>
-                      <span className="text-slate-500">Escenas:</span>{' '}
+                      <span className="text-slate-500">{t('internal.projectDetail.storyboard.scenesLabel')}</span>{' '}
                       <span className="font-semibold text-white">{storyboardSceneCount}</span>
                     </div>
                   )}
                   {storyboardShotCount != null && (
                     <div>
-                      <span className="text-slate-500">Planos:</span>{' '}
+                      <span className="text-slate-500">{t('internal.projectDetail.storyboard.shotsLabel')}</span>{' '}
                       <span className="font-semibold text-white">{storyboardShotCount}</span>
                     </div>
                   )}
                   {latestCompletedStoryboardJob?.id && (
                     <div>
-                      <span className="text-slate-500">Job:</span>{' '}
+                      <span className="text-slate-500">{t('internal.projectDetail.storyboard.jobLabel')}</span>{' '}
                       <span className="font-mono text-white">{latestCompletedStoryboardJob.id}</span>
                     </div>
                   )}
@@ -1717,16 +1717,16 @@ export default function ProjectDetailPage() {
             <div className="card p-12 flex flex-col items-center justify-center gap-3 text-center">
               <Eye className="w-10 h-10 text-gray-600" />
               <div>
-                <p className="text-gray-300 font-medium">Sin storyboard aun</p>
+                <p className="text-gray-300 font-medium">{t('internal.projectDetail.storyboard.noStoryboardYet')}</p>
                 <p className="text-gray-500 text-sm mt-1">
-                  Ve a la pestana Guion y pulsa "Generar storyboard" para comenzar.
+                  {t('internal.projectDetail.storyboard.goToScriptGenerate')}
                 </p>
               </div>
               <button
                 onClick={() => setActiveTab('script')}
                 className="mt-2 px-4 py-2 text-sm border border-white/10 text-gray-300 rounded-xl hover:bg-white/5 transition-colors"
               >
-                Ir al guion
+                {t('internal.projectDetail.storyboard.goToScript')}
               </button>
             </div>
           )}
@@ -1931,7 +1931,7 @@ export default function ProjectDetailPage() {
                               )}
                               {rd.total_scenes != null && (
                                 <span className="text-xs text-gray-400">
-                                  Escenas: <span className="text-gray-300">{rd.total_scenes}</span>
+                                  {t('internal.projectDetail.storyboard.scenesLabel')} <span className="text-gray-300">{rd.total_scenes}</span>
                                 </span>
                               )}
                             </div>
@@ -1976,7 +1976,7 @@ export default function ProjectDetailPage() {
                           <div className="mt-3 pt-3 border-t border-white/5">
                             <p className="text-xs text-gray-500 mb-2 flex items-center gap-1.5">
                               <FileJson className="w-3 h-3" />
-                              Assets del job
+                              {t('internal.projectDetail.assets.jobAssets')}
                             </p>
                             <div className="flex flex-wrap gap-2">
                               {job.assets.map((asset, idx) => (
@@ -2000,7 +2000,7 @@ export default function ProjectDetailPage() {
                 <div className="flex items-center gap-2">
                   <FolderOpen className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-300 text-sm font-medium">
-                    Assets generados
+                    {t('internal.projectDetail.assets.generatedAssets')}
                   </span>
                   {assetsLoading && (
                     <Loader2 className="w-3 h-3 animate-spin text-gray-500" />
@@ -2012,19 +2012,19 @@ export default function ProjectDetailPage() {
                       onClick={() => setViewMode('list')}
                       className={`px-2 py-1 rounded text-xs ${viewMode === 'list' ? 'bg-amber-500/20 text-amber-400' : 'text-gray-500 hover:text-gray-400'}`}
                     >
-                      Lista
+                      {t('internal.projectDetail.assets.listView')}
                     </button>
                     <button
                       onClick={() => setViewMode('grid')}
                       className={`px-2 py-1 rounded text-xs ${viewMode === 'grid' ? 'bg-amber-500/20 text-amber-400' : 'text-gray-500 hover:text-gray-400'}`}
                     >
-                      Grid
+                      {t('internal.projectDetail.assets.gridView')}
                     </button>
                     <button
                       onClick={() => setViewMode('presentation')}
                       className={`px-2 py-1 rounded text-xs ${viewMode === 'presentation' ? 'bg-amber-500/20 text-amber-400' : 'text-gray-500 hover:text-gray-400'}`}
                     >
-                      Presentacion
+                      {t('internal.projectDetail.assets.presentationView')}
                     </button>
                   </div>
                 )}
@@ -2032,7 +2032,7 @@ export default function ProjectDetailPage() {
 
               {assets.length === 0 && !assetsLoading ? (
                 <p className="text-gray-600 text-xs text-center py-4">
-                  No hay assets generados aun.
+                  {t('internal.projectDetail.assets.empty')}
                 </p>
               ) : viewMode === 'grid' ? (
                 /* GRID VIEW BY SEQUENCE */
@@ -2045,7 +2045,7 @@ export default function ProjectDetailPage() {
                           <div className="flex items-center gap-2">
                             <Film className="w-4 h-4 text-amber-400" />
                             <span className="text-amber-300 font-semibold text-sm">
-                              Secuencia {seqId.toUpperCase()}
+                              {t('internal.projectDetail.assets.sequence')} {seqId.toUpperCase()}
                             </span>
                             <span className="text-gray-500 text-xs">
                               ({seqAssets.length} shot{seqAssets.length !== 1 ? 's' : ''})
@@ -2085,7 +2085,7 @@ export default function ProjectDetailPage() {
                                 )}
                                 <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
                                   <p className="text-white text-xs font-medium truncate">
-                                    Shot {shotOrder}
+                                    {t('internal.projectDetail.assets.shot')} {shotOrder}
                                   </p>
                                   <div className="flex items-center gap-1 mt-0.5">
                                     <span className={`px-1.5 py-0.5 rounded text-[10px] ${isPremium ? 'bg-purple-500/20 text-purple-400' : 'bg-amber-500/20 text-amber-400'}`}>
@@ -2121,7 +2121,7 @@ export default function ProjectDetailPage() {
                               <Film className="w-5 h-5 text-amber-400" />
                               <div>
                                 <h3 className="text-lg font-semibold text-white">
-                                  Secuencia {seqId.toUpperCase()}
+                                  {t('internal.projectDetail.assets.sequence')} {seqId.toUpperCase()}
                                 </h3>
                                 <p className="text-sm text-gray-400">
                                   {seqAssets.length} shot{seqAssets.length !== 1 ? 's' : ''} · {seqModes.includes('flux') ? 'Premium' : 'Realistic'}

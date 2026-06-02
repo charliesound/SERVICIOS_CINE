@@ -1131,6 +1131,63 @@
       "packTypes": {
         "cinema": "Cines"
       }
+    },
+    "commercialCrmPage": {
+      "loading": "Cargando...",
+      "title": "CRM Comercial",
+      "subtitle": "Seguimiento de oportunidades comerciales",
+      "manualNotice": "Registro manual de oportunidades. No envía correos automáticamente.",
+      "stats": {
+        "opportunities": "Oportunidades",
+        "interested": "Interesadas",
+        "pending": "Pendientes",
+        "tasks": "Tareas"
+      },
+      "tabs": {
+        "opportunities": "Oportunidades",
+        "tasks": "Tareas"
+      },
+      "headers": {
+        "type": "Tipo",
+        "status": "Estado",
+        "priority": "Prioridad",
+        "fit": "Fit",
+        "nextAction": "Próxima acción",
+        "actions": "Acciones",
+        "title": "Título",
+        "dueDate": "Fecha límite"
+      },
+      "empty": {
+        "opportunities": "No hay oportunidades comerciales.",
+        "tasks": "No hay tareas pendientes."
+      },
+      "actions": {
+        "view": "Ver",
+        "complete": "Completar"
+      },
+      "status": {
+        "new": "Nueva",
+        "prepared": "Preparada",
+        "contacted": "Contactada",
+        "followUp": "Seguimiento",
+        "interested": "Interesada",
+        "meetingScheduled": "Reunión",
+        "negotiating": "Negociando",
+        "accepted": "Aceptada",
+        "rejected": "Rechazada",
+        "closed": "Cerrada"
+      },
+      "priority": {
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Baja",
+        "unknown": "Sin prioridad"
+      },
+      "taskStatus": {
+        "pending": "Pendiente",
+        "completed": "Completada",
+        "unknown": "Sin estado"
+      }
     }
   },
   "components": {
@@ -1644,4 +1701,4 @@
       "nles": "Compatible en la narrativa comercial con DaVinci Resolve, Avid Media Composer y Adobe Premiere Pro."
     }
   }
-}
+}\n

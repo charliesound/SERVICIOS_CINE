@@ -1,19 +1,39 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { t } from '@/i18n'
 import { crmApi, CRMOpportunity, CRMTask, CRMSummary } from '../api/crm'
 
 const OPPORTUNITY_STATUS = [
-  { value: 'new', label: 'Nueva' },
-  { value: 'prepared', label: 'Preparada' },
-  { value: 'contacted', label: 'Contactada' },
-  { value: 'follow_up', label: 'Seguimiento' },
-  { value: 'interested', label: 'Interesada' },
-  { value: 'meeting_scheduled', label: 'Reunión' },
-  { value: 'negotiating', label: 'Negociando' },
-  { value: 'accepted', label: 'Aceptada' },
-  { value: 'rejected', label: 'Rechazada' },
-  { value: 'closed', label: 'Cerrada' },
+  { value: 'new', labelKey: 'internal.commercialCrmPage.status.new' },
+  { value: 'prepared', labelKey: 'internal.commercialCrmPage.status.prepared' },
+  { value: 'contacted', labelKey: 'internal.commercialCrmPage.status.contacted' },
+  { value: 'follow_up', labelKey: 'internal.commercialCrmPage.status.followUp' },
+  { value: 'interested', labelKey: 'internal.commercialCrmPage.status.interested' },
+  { value: 'meeting_scheduled', labelKey: 'internal.commercialCrmPage.status.meetingScheduled' },
+  { value: 'negotiating', labelKey: 'internal.commercialCrmPage.status.negotiating' },
+  { value: 'accepted', labelKey: 'internal.commercialCrmPage.status.accepted' },
+  { value: 'rejected', labelKey: 'internal.commercialCrmPage.status.rejected' },
+  { value: 'closed', labelKey: 'internal.commercialCrmPage.status.closed' },
 ]
+
+const PRIORITY_KEYS: Record<string, string> = {
+  high: 'internal.commercialCrmPage.priority.high',
+  medium: 'internal.commercialCrmPage.priority.medium',
+  low: 'internal.commercialCrmPage.priority.low',
+}
+
+const TASK_STATUS_KEYS: Record<string, string> = {
+  pending: 'internal.commercialCrmPage.taskStatus.pending',
+  completed: 'internal.commercialCrmPage.taskStatus.completed',
+}
+
+function getPriorityLabel(priority: string) {
+  return t(PRIORITY_KEYS[priority] || 'internal.commercialCrmPage.priority.unknown')
+}
+
+function getTaskStatusLabel(status: string) {
+  return t(TASK_STATUS_KEYS[status] || 'internal.commercialCrmPage.taskStatus.unknown')
+}
 
 export default function CommercialCrmPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -68,7 +88,7 @@ export default function CommercialCrmPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Cargando...</div>
+        <div className="text-gray-500">{t('internal.commercialCrmPage.loading')}</div>
       </div>
     )
   }
@@ -76,30 +96,30 @@ export default function CommercialCrmPage() {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">CRM Comercial</h1>
-        <p className="text-gray-600">Seguimiento de oportunidades comerciales</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('internal.commercialCrmPage.title')}</h1>
+        <p className="text-gray-600">{t('internal.commercialCrmPage.subtitle')}</p>
       </div>
 
       <div className="mb-4 p-3 bg-yellow-50 text-yellow-800 rounded text-sm">
-        <em>Registro manual de oportunidades. No envía correos automáticamente.</em>
+        <em>{t('internal.commercialCrmPage.manualNotice')}</em>
       </div>
 
       <div className="mb-6 grid grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded shadow">
           <div className="text-2xl font-bold">{summary?.total_opportunities || 0}</div>
-          <div className="text-sm text-gray-500">Oportunidades</div>
+          <div className="text-sm text-gray-500">{t('internal.commercialCrmPage.stats.opportunities')}</div>
         </div>
         <div className="bg-white p-4 rounded shadow">
           <div className="text-2xl font-bold text-green-600">{summary?.interested_count || 0}</div>
-          <div className="text-sm text-gray-500">Interesadas</div>
+          <div className="text-sm text-gray-500">{t('internal.commercialCrmPage.stats.interested')}</div>
         </div>
         <div className="bg-white p-4 rounded shadow">
           <div className="text-2xl font-bold text-yellow-600">{summary?.pending_count || 0}</div>
-          <div className="text-sm text-gray-500">Pendientes</div>
+          <div className="text-sm text-gray-500">{t('internal.commercialCrmPage.stats.pending')}</div>
         </div>
         <div className="bg-white p-4 rounded shadow">
           <div className="text-2xl font-bold">{summary?.total_tasks || 0}</div>
-          <div className="text-sm text-gray-500">Tareas</div>
+          <div className="text-sm text-gray-500">{t('internal.commercialCrmPage.stats.tasks')}</div>
         </div>
       </div>
 
@@ -108,13 +128,13 @@ export default function CommercialCrmPage() {
           onClick={() => setActiveTab('opportunities')}
           className={`px-4 py-2 ${activeTab === 'opportunities' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
         >
-          Oportunidades
+          {t('internal.commercialCrmPage.tabs.opportunities')}
         </button>
         <button
           onClick={() => setActiveTab('tasks')}
           className={`px-4 py-2 ${activeTab === 'tasks' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
         >
-          Tareas
+          {t('internal.commercialCrmPage.tabs.tasks')}
         </button>
       </div>
 
@@ -123,19 +143,19 @@ export default function CommercialCrmPage() {
           <table className="min-w-full bg-white border">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Tipo</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Estado</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Prioridad</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Fit</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Próxima acción</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Acciones</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.type')}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.status')}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.priority')}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.fit')}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.nextAction')}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {opportunities.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                    No hay oportunidades comerciales.
+                    {t('internal.commercialCrmPage.empty.opportunities')}
                   </td>
                 </tr>
               ) : (
@@ -149,7 +169,7 @@ export default function CommercialCrmPage() {
                         className="border rounded px-2 py-1 text-sm"
                       >
                         {OPPORTUNITY_STATUS.map((s) => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
+                          <option key={s.value} value={s.value}>{t(s.labelKey)}</option>
                         ))}
                       </select>
                     </td>
@@ -159,13 +179,13 @@ export default function CommercialCrmPage() {
                         opp.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {opp.priority}
+                        {getPriorityLabel(opp.priority)}
                       </span>
                     </td>
                     <td className="px-4 py-2 text-sm">{opp.fit_score}%</td>
                     <td className="px-4 py-2 text-sm">{opp.next_action || '-'}</td>
                     <td className="px-4 py-2 text-sm">
-                      <button className="text-blue-600 hover:underline">Ver</button>
+                      <button className="text-blue-600 hover:underline">{t('internal.commercialCrmPage.actions.view')}</button>
                     </td>
                   </tr>
                 ))
@@ -180,18 +200,18 @@ export default function CommercialCrmPage() {
           <table className="min-w-full bg-white border">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Título</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Prioridad</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Fecha límite</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Estado</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Acciones</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.title')}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.priority')}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.dueDate')}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.status')}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">{t('internal.commercialCrmPage.headers.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {tasks.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                    No hay tareas pendientes.
+                    {t('internal.commercialCrmPage.empty.tasks')}
                   </td>
                 </tr>
               ) : (
@@ -204,18 +224,18 @@ export default function CommercialCrmPage() {
                         task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {task.priority}
+                        {getPriorityLabel(task.priority)}
                       </span>
                     </td>
                     <td className="px-4 py-2 text-sm">{task.due_date || '-'}</td>
-                    <td className="px-4 py-2 text-sm capitalize">{task.status}</td>
+                    <td className="px-4 py-2 text-sm">{getTaskStatusLabel(task.status)}</td>
                     <td className="px-4 py-2 text-sm">
                       {task.status === 'pending' && (
                         <button
                           onClick={() => handleCompleteTask(task.id)}
                           className="text-green-600 hover:underline"
                         >
-                          Completar
+                          {t('internal.commercialCrmPage.actions.complete')}
                         </button>
                       )}
                     </td>

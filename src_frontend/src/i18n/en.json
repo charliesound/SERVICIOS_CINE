@@ -434,6 +434,16 @@
         "generated": "Storyboard Sheet generated",
         "frames": "frames",
         "pages": "pages"
+      },
+      "remaining": {
+        "startingRegeneration": "Starting regeneration...",
+        "generatingStoryboardProgress": "Generating storyboard — {shots} shots in {scenes} scenes",
+        "selectedSequence": "Selected sequence: Sequence",
+        "sequenceLabel": "Sequence",
+        "shotLabel": "Shot",
+        "charactersBreakdownBySequence": "Characters and breakdown by sequences",
+        "alignment": "Alignment:",
+        "prompt": "Prompt:"
       }
     }
   },

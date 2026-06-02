@@ -502,7 +502,7 @@ export default function StoryboardBuilderPage() {
           title: 'Regenerar storyboard',
           status: 'queued',
           percent: 0,
-          label: 'Iniciando regeneración...',
+          label: t('internal.storyboardBuilder.remaining.startingRegeneration'),
         })
         const result = await storyboardApi.regenerateSequence(projectId, selectedSequenceId, {
           style_preset: stylePreset,
@@ -513,7 +513,9 @@ export default function StoryboardBuilderPage() {
           title: 'Regenerar storyboard',
           status: 'processing',
           percent: 50,
-          label: `Generando storyboard — ${result.total_shots} planos en ${result.total_scenes} escenas`,
+          label: t('internal.storyboardBuilder.remaining.generatingStoryboardProgress')
+            .replace('{shots}', String(result.total_shots))
+            .replace('{scenes}', String(result.total_scenes)),
           helperText: (result.render_jobs ?? []).length > 0
             ? `${(result.render_jobs ?? []).length} render(s) encolados`
             : 'Estructura generada sin renders',
@@ -1023,7 +1025,7 @@ export default function StoryboardBuilderPage() {
                   </p>
                   {currentSequence && (
                     <p className="text-xs text-amber-300 mt-2">
-                      Secuencia seleccionada: Secuencia {currentSequence.sequence_number} — {currentSequence.title}
+                      {t('internal.storyboardBuilder.remaining.selectedSequence')} {currentSequence.sequence_number} — {currentSequence.title}
                     </p>
                   )}
                 </div>
@@ -1094,7 +1096,7 @@ export default function StoryboardBuilderPage() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-400">Secuencia {sequence.sequence_number}</p>
+                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-400">{t('internal.storyboardBuilder.remaining.sequenceLabel')} {sequence.sequence_number}</p>
                             <h3 className="mt-1 text-sm font-semibold text-white">{sequence.title}</h3>
                           </div>
                           <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] text-slate-300">{sequence.storyboard_status}</span>
@@ -1129,7 +1131,7 @@ export default function StoryboardBuilderPage() {
                   {shotPlan.shot_plan.map((shot) => (
                     <div key={shot.shot_number} className="rounded-xl border border-white/10 bg-[#0a1016] p-3">
                       <div className="flex items-center justify-between gap-3 mb-1">
-                        <span className="text-xs font-bold text-cyan-400">Plano {shot.shot_number} · {shot.shot_type}</span>
+                        <span className="text-xs font-bold text-cyan-400">{t('internal.storyboardBuilder.remaining.shotLabel')} {shot.shot_number} · {shot.shot_type}</span>
                         <span className="text-[10px] text-slate-500">{shot.framing} · {shot.camera_angle}</span>
                       </div>
                       <p className="text-xs text-slate-300">{shot.action || shot.prompt_brief}</p>
@@ -1147,7 +1149,7 @@ export default function StoryboardBuilderPage() {
             <section className="card bg-dark-200/80 border border-white/5 p-6">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-cyan-400" />
-                Personajes y desglose por secuencias
+                {t('internal.storyboardBuilder.remaining.charactersBreakdownBySequence')}
               </h2>
               <p className="text-sm text-slate-400 mt-1">
                 {sequences.length > 0
@@ -1547,9 +1549,9 @@ export default function StoryboardBuilderPage() {
                                   </p>
                                 )}
                                 {meta.script_visual_alignment && (
-                                  <p><span className="text-cyan-400">Alignment:</span> {String((meta.script_visual_alignment as Record<string, unknown>).alignment_score || '')}</p>
+                                  <p><span className="text-cyan-400">{t('internal.storyboardBuilder.remaining.alignment')}</span> {String((meta.script_visual_alignment as Record<string, unknown>).alignment_score || '')}</p>
                                 )}
-                                {positivePrompt && <p><span className="text-cyan-400">Prompt:</span> {positivePrompt.substring(0, 160)}</p>}
+                                {positivePrompt && <p><span className="text-cyan-400">{t('internal.storyboardBuilder.remaining.prompt')}</span> {positivePrompt.substring(0, 160)}</p>}
                               </>
                             )
                           })()}

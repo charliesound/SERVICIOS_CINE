@@ -434,6 +434,16 @@
         "generated": "Storyboard Sheet generado",
         "frames": "frames",
         "pages": "páginas"
+      },
+      "remaining": {
+        "startingRegeneration": "Iniciando regeneración...",
+        "generatingStoryboardProgress": "Generando storyboard — {shots} planos en {scenes} escenas",
+        "selectedSequence": "Secuencia seleccionada: Secuencia",
+        "sequenceLabel": "Secuencia",
+        "shotLabel": "Plano",
+        "charactersBreakdownBySequence": "Personajes y desglose por secuencias",
+        "alignment": "Alignment:",
+        "prompt": "Prompt:"
       }
     }
   },

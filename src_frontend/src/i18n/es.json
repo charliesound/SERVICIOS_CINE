@@ -281,6 +281,52 @@
       "reviewedByTeam": "está siendo revisada por el equipo de AILinkCinema.",
       "emailNotice": "Recibirás un email en:",
       "responseTime": "Tiempo de respuesta habitual: 24-48h"
+    },
+    "registerPartner": {
+      "seo": {
+        "title": "Programa partner",
+        "successTitle": "Solicitud partner enviada",
+        "description": "Formulario privado para partners, integradores y colaboraciones de AILinkCinema."
+      },
+      "requestError": "Error en la solicitud",
+      "back": "← Volver",
+      "badge": "Programa Partner",
+      "title": "Ser partner de AILinkCinema",
+      "subtitle": "Únete como partner estratégico. Te contactaremos para explorar la colaboración.",
+      "success": {
+        "title": "¡Solicitud enviada!",
+        "message": "Hemos recibido tu interés como partner. El equipo de AILinkCinema se pondrá en contacto contigo.",
+        "dashboard": "Ir al dashboard"
+      },
+      "fields": {
+        "fullName": "Nombre completo *",
+        "email": "Email *",
+        "company": "Empresa *",
+        "collaborationType": "Tipo de colaboración *",
+        "message": "Mensaje (opcional)"
+      },
+      "placeholders": {
+        "fullName": "Tu nombre",
+        "company": "Nombre de tu empresa",
+        "message": "Cuéntanos sobre tu propuesta de colaboración..."
+      },
+      "options": {
+        "select": "Selecciona una opción",
+        "integrator": "Integrador tecnológico",
+        "distributor": "Distribuidor regional",
+        "whiteLabel": "White-label",
+        "productionAgency": "Agencia de producción",
+        "other": "Otro"
+      },
+      "legal": {
+        "prefix": "Al enviar esta solicitud aceptas que AILinkCinema trate tus datos para valorar la colaboración, de acuerdo con la",
+        "privacy": "política de privacidad",
+        "legalNotice": "aviso legal",
+        "andConditions": "y las condiciones de",
+        "aiContent": "IA y contenidos"
+      },
+      "sending": "Enviando...",
+      "submit": "Enviar solicitud"
     }
   },
   "pages": {

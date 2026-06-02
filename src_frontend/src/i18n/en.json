@@ -281,6 +281,52 @@
       "reviewedByTeam": "is being reviewed by the AILinkCinema team.",
       "emailNotice": "You will receive an email at:",
       "responseTime": "Usual response time: 24-48h"
+    },
+    "registerPartner": {
+      "seo": {
+        "title": "Partner program",
+        "successTitle": "Partner request sent",
+        "description": "Private form for AILinkCinema partners, integrators and collaborations."
+      },
+      "requestError": "Error submitting the request",
+      "back": "← Back",
+      "badge": "Partner Program",
+      "title": "Become an AILinkCinema partner",
+      "subtitle": "Join as a strategic partner. We will contact you to explore the collaboration.",
+      "success": {
+        "title": "Request sent!",
+        "message": "We have received your partner interest. The AILinkCinema team will contact you.",
+        "dashboard": "Go to dashboard"
+      },
+      "fields": {
+        "fullName": "Full name *",
+        "email": "Email *",
+        "company": "Company *",
+        "collaborationType": "Collaboration type *",
+        "message": "Message (optional)"
+      },
+      "placeholders": {
+        "fullName": "Your name",
+        "company": "Your company name",
+        "message": "Tell us about your collaboration proposal..."
+      },
+      "options": {
+        "select": "Select an option",
+        "integrator": "Technology integrator",
+        "distributor": "Regional distributor",
+        "whiteLabel": "White-label",
+        "productionAgency": "Production agency",
+        "other": "Other"
+      },
+      "legal": {
+        "prefix": "By submitting this request, you agree that AILinkCinema may process your data to assess the collaboration, according to the",
+        "privacy": "privacy policy",
+        "legalNotice": "legal notice",
+        "andConditions": "and the terms for",
+        "aiContent": "AI and content"
+      },
+      "sending": "Sending...",
+      "submit": "Send request"
     }
   },
   "pages": {

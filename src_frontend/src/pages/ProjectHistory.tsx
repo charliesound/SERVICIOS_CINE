@@ -4,12 +4,13 @@ import { useJobs } from '@/hooks'
 import { Search, Download, Calendar, Clock, CheckCircle, AlertCircle, Play, Eye, Link as LinkIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
+import { t } from '@/i18n'
 
 const statusConfig: Record<string, { color: string; bg: string; label: string; icon: any }> = {
-  queued: { color: 'text-amber-400', bg: 'bg-amber-500/10', label: 'Queued', icon: Clock },
-  running: { color: 'text-blue-400', bg: 'bg-blue-500/10', label: 'Processing', icon: Play },
-  succeeded: { color: 'text-green-400', bg: 'bg-green-500/10', label: 'Completed', icon: CheckCircle },
-  failed: { color: 'text-red-400', bg: 'bg-red-500/10', label: 'Failed', icon: AlertCircle },
+  queued: { color: 'text-amber-400', bg: 'bg-amber-500/10', label: 'internal.status.queued', icon: Clock },
+  running: { color: 'text-blue-400', bg: 'bg-blue-500/10', label: 'internal.status.processing', icon: Play },
+  succeeded: { color: 'text-green-400', bg: 'bg-green-500/10', label: 'internal.status.completed', icon: CheckCircle },
+  failed: { color: 'text-red-400', bg: 'bg-red-500/10', label: 'internal.status.failed', icon: AlertCircle },
 }
 
 interface ProjectHistoryFilters {
@@ -48,13 +49,13 @@ export default function ProjectHistory() {
         <div>
           <h1 className="heading-lg flex items-center gap-3">
             <Calendar className="w-6 h-6 text-amber-400" />
-            Project History
+            {t('internal.projectHistory.title')}
           </h1>
-          <p className="text-slate-400 mt-1">View and manage all your generated projects</p>
+          <p className="text-slate-400 mt-1">{t('internal.projectHistory.subtitle')}</p>
         </div>
         <button className="btn-secondary flex items-center gap-2">
           <Download className="w-4 h-4" />
-          Export
+          {t('internal.projectHistory.export')}
         </button>
       </div>
 
@@ -68,7 +69,7 @@ export default function ProjectHistory() {
                 type="text"
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                placeholder="Search projects..."
+                placeholder={t('internal.projectHistory.filters.searchPlaceholder')}
                 className="input pl-10"
               />
             </div>
@@ -80,11 +81,11 @@ export default function ProjectHistory() {
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
               className="input w-auto"
             >
-              <option value="all">All Status</option>
-              <option value="succeeded">Completed</option>
-              <option value="failed">Failed</option>
-              <option value="running">Processing</option>
-              <option value="queued">Queued</option>
+              <option value="all">{t('internal.projectHistory.filters.allStatus')}</option>
+              <option value="succeeded">{t('internal.status.completed')}</option>
+              <option value="failed">{t('internal.status.failed')}</option>
+              <option value="running">{t('internal.status.processing')}</option>
+              <option value="queued">{t('internal.status.queued')}</option>
             </select>
 
             <select
@@ -92,10 +93,10 @@ export default function ProjectHistory() {
               onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
               className="input w-auto"
             >
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="all">All time</option>
+              <option value="7">{t('internal.projectHistory.filters.last7Days')}</option>
+              <option value="30">{t('internal.projectHistory.filters.last30Days')}</option>
+              <option value="90">{t('internal.projectHistory.filters.last90Days')}</option>
+              <option value="all">{t('internal.projectHistory.filters.allTime')}</option>
             </select>
 
             <div className="flex rounded-xl border border-white/10 overflow-hidden">
@@ -129,7 +130,7 @@ export default function ProjectHistory() {
       {/* Results count */}
       <div className="flex items-center justify-between text-sm">
         <span className="text-slate-400">
-          Showing <span className="text-white font-medium">{filteredJobs.length}</span> projects
+          {t('internal.projectHistory.showingPrefix')} <span className="text-white font-medium">{filteredJobs.length}</span> {t('internal.projectHistory.showingSuffix')}
         </span>
       </div>
 
@@ -139,8 +140,8 @@ export default function ProjectHistory() {
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
             <Search className="w-8 h-8 text-amber-400" />
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No projects found</h3>
-          <p className="text-slate-400">Try adjusting your search or filters</p>
+          <h3 className="text-lg font-semibold text-white mb-2">{t('internal.projectHistory.emptyTitle')}</h3>
+          <p className="text-slate-400">{t('internal.projectHistory.emptyHelp')}</p>
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-3 gap-4">
@@ -155,7 +156,7 @@ export default function ProjectHistory() {
                     </span>
                   </div>
                   <span className={clsx('px-2.5 py-1 rounded-full text-xs font-medium border', statusStyle.bg, statusStyle.color, statusStyle.color.replace('text-', 'border-'))}>
-                    {statusStyle.label}
+                    {t(statusStyle.label)}
                   </span>
                 </div>
                 
@@ -192,11 +193,11 @@ export default function ProjectHistory() {
           <table className="w-full">
             <thead className="bg-dark-300/50 border-b border-white/5">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Project</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Created</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">{t('internal.projectHistory.table.project')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">{t('internal.projectHistory.table.type')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">{t('internal.projectHistory.table.status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">{t('internal.projectHistory.table.created')}</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">{t('internal.projectHistory.table.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -219,7 +220,7 @@ export default function ProjectHistory() {
                     <td className="px-4 py-4">
                       <span className={clsx('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border', statusStyle.bg, statusStyle.color, statusStyle.color.replace('text-', 'border-'))}>
                         <StatusIcon className="w-3 h-3" />
-                        {statusStyle.label}
+                        {t(statusStyle.label)}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-500">

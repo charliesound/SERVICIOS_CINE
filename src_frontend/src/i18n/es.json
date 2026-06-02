@@ -842,6 +842,54 @@
         "nameRequired": "El nombre del proyecto es obligatorio",
         "createError": "Error al crear el proyecto"
       }
+    },
+    "status": {
+      "queued": "En cola",
+      "running": "Ejecutando",
+      "processing": "Procesando",
+      "completed": "Completado",
+      "failed": "Fallido",
+      "timeout": "Tiempo agotado",
+      "canceled": "Cancelado"
+    },
+    "queue": {
+      "title": "Cola de proyectos",
+      "subtitle": "Monitoriza y gestiona tus tareas de generación con IA",
+      "emptyTitle": "No se encontraron proyectos",
+      "emptyHelp": "Crea un nuevo proyecto para empezar",
+      "backendStatus": "Estado del backend",
+      "table": {
+        "project": "Proyecto",
+        "type": "Tipo",
+        "backend": "Backend",
+        "status": "Estado",
+        "created": "Creado",
+        "actions": "Acciones"
+      }
+    },
+    "projectHistory": {
+      "title": "Historial de proyectos",
+      "subtitle": "Consulta y gestiona todos tus proyectos generados",
+      "export": "Exportar",
+      "showingPrefix": "Mostrando",
+      "showingSuffix": "proyectos",
+      "emptyTitle": "No se encontraron proyectos",
+      "emptyHelp": "Prueba a ajustar la búsqueda o los filtros",
+      "filters": {
+        "allStatus": "Todos los estados",
+        "last7Days": "Últimos 7 días",
+        "last30Days": "Últimos 30 días",
+        "last90Days": "Últimos 90 días",
+        "allTime": "Todo el tiempo",
+        "searchPlaceholder": "Buscar proyectos..."
+      },
+      "table": {
+        "project": "Proyecto",
+        "type": "Tipo",
+        "status": "Estado",
+        "created": "Creado",
+        "actions": "Acciones"
+      }
     }
   },
   "components": {

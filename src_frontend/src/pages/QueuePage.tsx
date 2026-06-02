@@ -4,14 +4,15 @@ import { queueApi } from '@/api'
 import { useQueueStatus, useJobs } from '@/hooks'
 import { ListOrdered, RefreshCw, XCircle, RotateCcw, Clock, Play, CheckCircle, AlertCircle, Zap } from 'lucide-react'
 import clsx from 'clsx'
+import { t } from '@/i18n'
 
 const statusConfig: Record<string, { color: string; bg: string; label: string; icon: any }> = {
-  queued: { color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', label: 'Queued', icon: Clock },
-  running: { color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', label: 'Running', icon: Play },
-  succeeded: { color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20', label: 'Completed', icon: CheckCircle },
-  failed: { color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', label: 'Failed', icon: AlertCircle },
-  timeout: { color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20', label: 'Timeout', icon: AlertCircle },
-  canceled: { color: 'text-slate-400', bg: 'bg-slate-500/10 border-slate-500/20', label: 'Canceled', icon: XCircle },
+  queued: { color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', label: 'internal.status.queued', icon: Clock },
+  running: { color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', label: 'internal.status.running', icon: Play },
+  succeeded: { color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20', label: 'internal.status.completed', icon: CheckCircle },
+  failed: { color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', label: 'internal.status.failed', icon: AlertCircle },
+  timeout: { color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20', label: 'internal.status.timeout', icon: AlertCircle },
+  canceled: { color: 'text-slate-400', bg: 'bg-slate-500/10 border-slate-500/20', label: 'internal.status.canceled', icon: XCircle },
 }
 
 export default function QueuePage() {
@@ -36,10 +37,10 @@ export default function QueuePage() {
 
   const filterTabs = [
     { key: 'all', label: 'All' },
-    { key: 'queued', label: 'Queued' },
-    { key: 'running', label: 'Running' },
-    { key: 'succeeded', label: 'Completed' },
-    { key: 'failed', label: 'Failed' },
+    { key: 'queued', label: 'internal.status.queued' },
+    { key: 'running', label: 'internal.status.running' },
+    { key: 'succeeded', label: 'internal.status.completed' },
+    { key: 'failed', label: 'internal.status.failed' },
   ]
 
   return (
@@ -49,9 +50,9 @@ export default function QueuePage() {
         <div>
           <h1 className="heading-lg flex items-center gap-3">
             <Zap className="w-6 h-6 text-amber-400" />
-            Project Queue
+            {t('internal.queue.title')}
           </h1>
-          <p className="text-slate-400 mt-1">Monitor and manage your AI generation tasks</p>
+          <p className="text-slate-400 mt-1">{t('internal.queue.subtitle')}</p>
         </div>
         <button 
           onClick={() => refetchJobs()} 
@@ -91,8 +92,8 @@ export default function QueuePage() {
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
             <ListOrdered className="w-8 h-8 text-amber-400" />
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No projects found</h3>
-          <p className="text-slate-400">Create a new project to get started</p>
+          <h3 className="text-lg font-semibold text-white mb-2">{t('internal.queue.emptyTitle')}</h3>
+          <p className="text-slate-400">{t('internal.queue.emptyHelp')}</p>
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
@@ -100,12 +101,12 @@ export default function QueuePage() {
             <table className="w-full">
               <thead className="bg-dark-300/50 border-b border-white/5">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Project</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Backend</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Created</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('internal.queue.table.project')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('internal.queue.table.type')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('internal.queue.table.backend')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('internal.queue.table.status')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{t('internal.queue.table.created')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">{t('internal.queue.table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -129,7 +130,7 @@ export default function QueuePage() {
                       <td className="px-4 py-4">
                         <span className={clsx('inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border', statusStyle.bg, statusStyle.color)}>
                           <StatusIcon className="w-3 h-3" />
-                          {statusStyle.label}
+                          {t(statusStyle.label)}
                         </span>
                       </td>
                       <td className="px-4 py-4 text-sm text-slate-500">
@@ -169,7 +170,7 @@ export default function QueuePage() {
       {/* Backend Summary */}
       {queueStatus && (
         <div className="card">
-          <h2 className="heading-md mb-4">Backend Status</h2>
+          <h2 className="heading-md mb-4">{t('internal.queue.backendStatus')}</h2>
           <div className="grid grid-cols-4 gap-4">
             {Object.entries(queueStatus.backends).map(([backend, status]) => (
               <div key={backend} className="p-4 rounded-xl bg-dark-300/50 border border-white/5 hover:border-amber-500/20 transition-all">
@@ -182,11 +183,11 @@ export default function QueuePage() {
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Running</span>
+                    <span className="text-slate-500">{t('internal.status.running')}</span>
                     <span className="text-blue-400 font-medium">{status.running}/{status.max_concurrent}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Queued</span>
+                    <span className="text-slate-500">{t('internal.status.queued')}</span>
                     <span className="text-amber-400 font-medium">{status.queue_size}</span>
                   </div>
                 </div>

@@ -842,6 +842,54 @@
         "nameRequired": "Project name is required",
         "createError": "Error creating the project"
       }
+    },
+    "status": {
+      "queued": "Queued",
+      "running": "Running",
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed",
+      "timeout": "Timeout",
+      "canceled": "Canceled"
+    },
+    "queue": {
+      "title": "Project Queue",
+      "subtitle": "Monitor and manage your AI generation tasks",
+      "emptyTitle": "No projects found",
+      "emptyHelp": "Create a new project to get started",
+      "backendStatus": "Backend Status",
+      "table": {
+        "project": "Project",
+        "type": "Type",
+        "backend": "Backend",
+        "status": "Status",
+        "created": "Created",
+        "actions": "Actions"
+      }
+    },
+    "projectHistory": {
+      "title": "Project History",
+      "subtitle": "View and manage all your generated projects",
+      "export": "Export",
+      "showingPrefix": "Showing",
+      "showingSuffix": "projects",
+      "emptyTitle": "No projects found",
+      "emptyHelp": "Try adjusting your search or filters",
+      "filters": {
+        "allStatus": "All Status",
+        "last7Days": "Last 7 days",
+        "last30Days": "Last 30 days",
+        "last90Days": "Last 90 days",
+        "allTime": "All time",
+        "searchPlaceholder": "Search projects..."
+      },
+      "table": {
+        "project": "Project",
+        "type": "Type",
+        "status": "Status",
+        "created": "Created",
+        "actions": "Actions"
+      }
     }
   },
   "components": {

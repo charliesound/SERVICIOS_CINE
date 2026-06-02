@@ -1325,6 +1325,56 @@
         "distribution": "• Distribución: “No garantiza aceptación por distribuidoras, cines o plataformas.”",
         "crm": "• CRM: “Registro manual. No envía emails automáticamente.”",
         "davinci": "• DaVinci: “Export FCPXML conservador validado. Audio experimental requiere validación.”"
+      },
+      "producer": {
+        "heroEyebrow": "Panel de decisión",
+        "heroSubtitle": "Prioriza presupuesto, financiación y dossier productor para avanzar el proyecto con criterio operativo.",
+        "projectStatus": "Estado del proyecto",
+        "overallProgress": "Progreso general",
+        "quickActionsTitle": "Quick actions",
+        "openAction": "Abrir",
+        "viewProject": "Ver proyecto",
+        "recommendedFlowTitle": "Flujo recomendado",
+        "recommendedFlowSubtitle": "Sigue esta secuencia para preparar el proyecto desde la perspectiva de producción.",
+        "currentRisks": "Riesgos actuales",
+        "quickActions": {
+          "budget": "Presupuesto",
+          "funding": "Financiación",
+          "producerPack": "Dossier productor"
+        },
+        "modules": {
+          "breakdown": "Guion y desglose",
+          "producerPack": "Dossier productor",
+          "crm": "Distribución y CRM",
+          "media": "Media y rodaje",
+          "documents": "Documentación del proyecto"
+        },
+        "groups": {
+          "priority": {
+            "title": "Prioridad productor",
+            "description": "Los tres frentes clave para mover el proyecto: presupuesto, financiación y dossier ejecutivo."
+          },
+          "development": {
+            "title": "Base creativa y técnica",
+            "description": "Guion, desglose y storyboard para sostener decisiones de producción."
+          },
+          "commercial": {
+            "title": "Salida comercial",
+            "description": "Distribución y seguimiento comercial para preparar circulación y partners."
+          },
+          "operational": {
+            "title": "Operación y materiales",
+            "description": "Media, documentación y editorial como soporte operativo del proyecto."
+          }
+        },
+        "flow": {
+          "scriptBreakdown": "Guion y desglose",
+          "budget": "Presupuesto",
+          "funding": "Financiación",
+          "storyboard": "Storyboard",
+          "producerPack": "Dossier productor",
+          "distributionCrm": "Distribución y CRM"
+        }
       }
     },
     "projectMembers": {

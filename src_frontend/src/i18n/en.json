@@ -1325,6 +1325,56 @@
         "distribution": "• Distribution: “Does not guarantee acceptance by distributors, cinemas or platforms.”",
         "crm": "• CRM: “Manual record. Does not send emails automatically.”",
         "davinci": "• DaVinci: “Conservative FCPXML export validated. Experimental audio requires validation.”"
+      },
+      "producer": {
+        "heroEyebrow": "Decision panel",
+        "heroSubtitle": "Prioritize budget, funding and producer dossier to move the project forward with operational clarity.",
+        "projectStatus": "Project status",
+        "overallProgress": "Overall progress",
+        "quickActionsTitle": "Quick actions",
+        "openAction": "Open",
+        "viewProject": "View project",
+        "recommendedFlowTitle": "Recommended flow",
+        "recommendedFlowSubtitle": "Follow this sequence to prepare the project from a producer perspective.",
+        "currentRisks": "Current risks",
+        "quickActions": {
+          "budget": "Budget",
+          "funding": "Funding",
+          "producerPack": "Producer dossier"
+        },
+        "modules": {
+          "breakdown": "Script and breakdown",
+          "producerPack": "Producer dossier",
+          "crm": "Distribution and CRM",
+          "media": "Media and shooting",
+          "documents": "Project documents"
+        },
+        "groups": {
+          "priority": {
+            "title": "Producer priority",
+            "description": "The three key fronts to move the project: budget, funding and executive dossier."
+          },
+          "development": {
+            "title": "Creative and technical base",
+            "description": "Script, breakdown and storyboard to support production decisions."
+          },
+          "commercial": {
+            "title": "Commercial output",
+            "description": "Distribution and commercial follow-up to prepare circulation and partners."
+          },
+          "operational": {
+            "title": "Operations and materials",
+            "description": "Media, documentation and editorial as operational support for the project."
+          }
+        },
+        "flow": {
+          "scriptBreakdown": "Script and breakdown",
+          "budget": "Budget",
+          "funding": "Funding",
+          "storyboard": "Storyboard",
+          "producerPack": "Producer dossier",
+          "distributionCrm": "Distribution and CRM"
+        }
       }
     },
     "projectMembers": {

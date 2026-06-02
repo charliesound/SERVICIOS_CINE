@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react'
+import { useLanguage } from '@/i18n'
 import { StorageSource, StorageSourceCreatePayload, StorageSourceUpdatePayload } from '@/types'
 
 interface StorageSourceCreateFormProps {
@@ -26,6 +27,7 @@ export default function StorageSourceForm({
   isSubmitting = false,
   onSubmit,
 }: StorageSourceFormProps) {
+  const { t } = useLanguage()
   const [organizationId, setOrganizationId] = useState(initialValues?.organization_id ?? '')
   const [projectId, setProjectId] = useState(initialValues?.project_id ?? '')
   const [name, setName] = useState(initialValues?.name ?? '')
@@ -59,24 +61,24 @@ export default function StorageSourceForm({
         <>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="label" htmlFor="organization_id">Organization ID</label>
+              <label className="label" htmlFor="organization_id">{t('internal.storageSourceForm.organizationId')}</label>
               <input
                 id="organization_id"
                 className="input"
                 value={organizationId}
                 onChange={(event) => setOrganizationId(event.target.value)}
-                placeholder="org-uuid"
+                placeholder={t('internal.storageSourceForm.organizationIdPlaceholder')}
                 required
               />
             </div>
             <div>
-              <label className="label" htmlFor="project_id">Project ID</label>
+              <label className="label" htmlFor="project_id">{t('internal.storageSourceForm.projectId')}</label>
               <input
                 id="project_id"
                 className="input"
                 value={projectId}
                 onChange={(event) => setProjectId(event.target.value)}
-                placeholder="project-uuid"
+                placeholder={t('internal.storageSourceForm.projectIdPlaceholder')}
                 required
               />
             </div>
@@ -84,37 +86,37 @@ export default function StorageSourceForm({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="label" htmlFor="source_name">Name</label>
+              <label className="label" htmlFor="source_name">{t('internal.storageSourceForm.name')}</label>
               <input
                 id="source_name"
                 className="input"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Primary NAS"
+                placeholder={t('internal.storageSourceForm.namePlaceholder')}
                 required
               />
             </div>
             <div>
-              <label className="label" htmlFor="source_type">Source Type</label>
+              <label className="label" htmlFor="source_type">{t('internal.storageSourceForm.sourceType')}</label>
               <input
                 id="source_type"
                 className="input"
                 value={sourceType}
                 onChange={(event) => setSourceType(event.target.value)}
-                placeholder="local"
+                placeholder={t('internal.storageSourceForm.sourceTypePlaceholder')}
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="label" htmlFor="mount_path">Mount Path</label>
+            <label className="label" htmlFor="mount_path">{t('internal.storageSourceForm.mountPath')}</label>
             <input
               id="mount_path"
               className="input"
               value={mountPath}
               onChange={(event) => setMountPath(event.target.value)}
-              placeholder="/mnt/storage/project-a"
+              placeholder={t('internal.storageSourceForm.mountPathPlaceholder')}
               required
             />
           </div>
@@ -124,7 +126,7 @@ export default function StorageSourceForm({
       {mode === 'edit' && (
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="label" htmlFor="edit_name">Name</label>
+            <label className="label" htmlFor="edit_name">{t('internal.storageSourceForm.name')}</label>
             <input
               id="edit_name"
               className="input"
@@ -134,7 +136,7 @@ export default function StorageSourceForm({
             />
           </div>
           <div>
-            <label className="label" htmlFor="edit_status">Status</label>
+            <label className="label" htmlFor="edit_status">{t('internal.storageSourceForm.status')}</label>
             <select
               id="edit_status"
               className="input"
@@ -150,7 +152,7 @@ export default function StorageSourceForm({
       )}
 
       <button className="btn-primary" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Saving...' : submitLabel}
+        {isSubmitting ? t('internal.storageSourceForm.saving') : submitLabel}
       </button>
     </form>
   )

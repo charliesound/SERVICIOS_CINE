@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { useLanguage } from '@/i18n'
 
 interface StorageStatusBadgeProps {
   status: string
@@ -17,7 +18,9 @@ const statusStyles: Record<string, string> = {
 }
 
 export default function StorageStatusBadge({ status }: StorageStatusBadgeProps) {
+  const { t } = useLanguage()
   const normalizedStatus = status.trim().toLowerCase()
+  const known = normalizedStatus in statusStyles
 
   return (
     <span
@@ -26,7 +29,7 @@ export default function StorageStatusBadge({ status }: StorageStatusBadgeProps) 
         statusStyles[normalizedStatus] ?? 'bg-blue-500/10 text-blue-300 border border-blue-500/20',
       )}
     >
-      {normalizedStatus}
+      {known ? t(`internal.storageStatusBadge.${normalizedStatus}`) : normalizedStatus}
     </span>
   )
 }

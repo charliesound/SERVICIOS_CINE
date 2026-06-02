@@ -2585,7 +2585,46 @@
         "none": "None",
         "openStorageSource": "Abrir Storage Source",
         "browseRelatedAssets": "Ver Assets Relacionados"
-      }
+      },
+        "storageSourcesPage": {
+          "title": "Fuentes de almacenamiento",
+          "description": "Registra montajes, valida accesos y prepara entradas de handshake para ingestión.",
+          "refresh": "Actualizar",
+          "createHeading": "Crear fuente de almacenamiento",
+          "createDescription": "Usa tu proyecto demo activo o sobrescribe los valores por defecto si es necesario.",
+          "demoDefaultsLoaded": "Valores del demo cargados:",
+          "demoDefaultsOrg": "org",
+          "demoDefaultsProject": "project",
+          "loadingProjectDefaults": "Cargando valores por defecto del proyecto...",
+          "loadingProjectDefaultsError": "No se pudieron cargar los valores por defecto del proyecto",
+          "createSubmitLabel": "Crear fuente",
+          "createError": "No se pudo crear la fuente de almacenamiento",
+          "availableSources": "Fuentes disponibles",
+          "availableDescription": "Fuentes visibles en el alcance de tu organización actual.",
+          "sourcesCount": "{count} fuentes",
+          "loadError": "No se pudieron cargar las fuentes de almacenamiento",
+          "loading": "Cargando fuentes de almacenamiento...",
+          "empty": "Aún no hay fuentes de almacenamiento registradas.",
+          "fieldType": "Tipo:",
+          "fieldMount": "Montaje:",
+          "fieldOrganization": "Organización:",
+          "fieldProject": "Proyecto:",
+          "openDetail": "Abrir detalle"
+        },
+        "storageSourceForm": {
+          "organizationId": "ID de organización",
+          "organizationIdPlaceholder": "org-uuid",
+          "projectId": "ID de proyecto",
+          "projectIdPlaceholder": "project-uuid",
+          "name": "Nombre",
+          "namePlaceholder": "Primary NAS",
+          "sourceType": "Tipo de fuente",
+          "sourceTypePlaceholder": "local",
+          "mountPath": "Ruta de montaje",
+          "mountPathPlaceholder": "/mnt/storage/project-a",
+          "status": "Estado",
+          "saving": "Guardando..."
+        }
     },
     "projectFundingPanel": {
       "currencyLocale": "es-ES",
@@ -2742,6 +2781,17 @@
       "independent": "Se vende como producto independiente para equipos de edición y postproducción.",
       "included": "También forma parte de CID Studio como solución estratégica de alto valor.",
       "nles": "Compatible en la narrativa comercial con DaVinci Resolve, Avid Media Composer y Adobe Premiere Pro."
+    },
+    "storageStatusBadge": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "running": "En ejecución",
+      "completed": "Completado",
+      "indexed": "Indexado",
+      "error": "Error",
+      "failed": "Fallido",
+      "revoked": "Revocado",
+      "expired": "Expirado"
     }
   }
 }

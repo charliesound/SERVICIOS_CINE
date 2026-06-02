@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 import { Link, useNavigate } from 'react-router-dom'
 import { Database, FolderOpen, HardDrive, RefreshCw } from 'lucide-react'
+import { useLanguage } from '@/i18n'
 import api from '@/api/client'
 import StorageSourceForm from '@/components/StorageSourceForm'
 import StorageStatusBadge from '@/components/StorageStatusBadge'
@@ -30,6 +31,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export default function StorageSourcesPage() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const { data: sources, isLoading, error, refetch, isFetching } = useStorageSources()
   const createSource = useCreateStorageSource()
@@ -51,7 +53,7 @@ export default function StorageSourcesPage() {
         setProjectOptions(data.projects ?? [])
       } catch (projectError) {
         if (!active) return
-        setProjectsError(getErrorMessage(projectError, 'Unable to load project defaults'))
+        setProjectsError(getErrorMessage(projectError, t('internal.storageSourcesPage.loadingProjectDefaultsError')))
       } finally {
         if (active) setProjectsLoading(false)
       }
@@ -86,7 +88,7 @@ export default function StorageSourcesPage() {
       const source = await createSource.mutateAsync(payload)
       navigate(`/storage-sources/${source.id}`)
     } catch (mutationError) {
-      setSubmitError(getErrorMessage(mutationError, 'Unable to create storage source'))
+      setSubmitError(getErrorMessage(mutationError, t('internal.storageSourcesPage.createError')))
     }
   }
 
@@ -96,16 +98,16 @@ export default function StorageSourcesPage() {
         <div>
           <h1 className="heading-lg flex items-center gap-3">
             <HardDrive className="h-6 w-6 text-amber-400" />
-            Storage Sources
+            {t('internal.storageSourcesPage.title')}
           </h1>
           <p className="mt-1 text-slate-400">
-            Register mounts, validate access, and prepare handshake inputs for ingestion.
+            {t('internal.storageSourcesPage.description')}
           </p>
         </div>
 
         <button className="btn-secondary flex items-center gap-2" onClick={() => refetch()}>
           <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-          Refresh
+          {t('internal.storageSourcesPage.refresh')}
         </button>
       </div>
 
@@ -116,15 +118,15 @@ export default function StorageSourcesPage() {
               <Database className="h-5 w-5 text-amber-400" />
             </div>
             <div>
-              <h2 className="heading-md">Create Storage Source</h2>
-              <p className="text-sm text-slate-400">Use your active demo project or override the defaults if needed.</p>
+              <h2 className="heading-md">{t('internal.storageSourcesPage.createHeading')}</h2>
+              <p className="text-sm text-slate-400">{t('internal.storageSourcesPage.createDescription')}</p>
             </div>
           </div>
 
           {defaultProject && (
             <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-              Demo defaults loaded: <span className="font-medium">{defaultProject.name}</span> · org
-              <span className="font-mono"> {defaultProject.organization_id}</span> · project
+              {t('internal.storageSourcesPage.demoDefaultsLoaded')} <span className="font-medium">{defaultProject.name}</span> · {t('internal.storageSourcesPage.demoDefaultsOrg')}
+              <span className="font-mono"> {defaultProject.organization_id}</span> · {t('internal.storageSourcesPage.demoDefaultsProject')}
               <span className="font-mono"> {defaultProject.id}</span>
             </div>
           )}
@@ -142,13 +144,13 @@ export default function StorageSourcesPage() {
           )}
 
           {projectsLoading ? (
-            <div className="text-sm text-slate-400">Loading project defaults...</div>
+            <div className="text-sm text-slate-400">{t('internal.storageSourcesPage.loadingProjectDefaults')}</div>
           ) : (
             <StorageSourceForm
               key={defaultProject?.id ?? 'manual-storage-source-form'}
               mode="create"
               initialValues={defaultFormValues}
-              submitLabel="Create Source"
+              submitLabel={t('internal.storageSourcesPage.createSubmitLabel')}
               isSubmitting={createSource.isPending}
               onSubmit={handleCreateSource}
             />
@@ -158,26 +160,26 @@ export default function StorageSourcesPage() {
         <div className="card card-hover">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h2 className="heading-md">Available Sources</h2>
-              <p className="text-sm text-slate-400">Visible sources in your current organization scope.</p>
+              <h2 className="heading-md">{t('internal.storageSourcesPage.availableSources')}</h2>
+              <p className="text-sm text-slate-400">{t('internal.storageSourcesPage.availableDescription')}</p>
             </div>
             <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
-              {sources?.length ?? 0} sources
+              {t('internal.storageSourcesPage.sourcesCount').replace('{count}', String(sources?.length ?? 0))}
             </span>
           </div>
 
           {error && (
             <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-              {getErrorMessage(error, 'Unable to load storage sources')}
+              {getErrorMessage(error, t('internal.storageSourcesPage.loadError'))}
             </div>
           )}
 
-          {isLoading && <div className="text-sm text-slate-400">Loading storage sources...</div>}
+          {isLoading && <div className="text-sm text-slate-400">{t('internal.storageSourcesPage.loading')}</div>}
 
           {!isLoading && !error && (!sources || sources.length === 0) && (
             <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-10 text-center">
               <FolderOpen className="mx-auto mb-3 h-10 w-10 text-slate-500" />
-              <p className="text-sm text-slate-400">No storage sources registered yet.</p>
+              <p className="text-sm text-slate-400">{t('internal.storageSourcesPage.empty')}</p>
             </div>
           )}
 
@@ -191,15 +193,15 @@ export default function StorageSourcesPage() {
                       <StorageStatusBadge status={source.status} />
                     </div>
                     <div className="grid gap-2 text-sm text-slate-300 md:grid-cols-2">
-                      <p><span className="text-slate-500">Type:</span> {source.source_type}</p>
-                      <p><span className="text-slate-500">Mount:</span> {source.mount_path}</p>
-                      <p><span className="text-slate-500">Organization:</span> {source.organization_id}</p>
-                      <p><span className="text-slate-500">Project:</span> {source.project_id}</p>
+                      <p><span className="text-slate-500">{t('internal.storageSourcesPage.fieldType')}</span> {source.source_type}</p>
+                      <p><span className="text-slate-500">{t('internal.storageSourcesPage.fieldMount')}</span> {source.mount_path}</p>
+                      <p><span className="text-slate-500">{t('internal.storageSourcesPage.fieldOrganization')}</span> {source.organization_id}</p>
+                      <p><span className="text-slate-500">{t('internal.storageSourcesPage.fieldProject')}</span> {source.project_id}</p>
                     </div>
                   </div>
 
                   <Link to={`/storage-sources/${source.id}`} className="btn-secondary text-center">
-                    Open Detail
+                    {t('internal.storageSourcesPage.openDetail')}
                   </Link>
                 </div>
               </article>

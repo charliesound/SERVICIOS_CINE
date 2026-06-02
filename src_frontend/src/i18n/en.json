@@ -2585,6 +2585,45 @@
         "none": "None",
         "openStorageSource": "Open Storage Source",
         "browseRelatedAssets": "Browse Related Assets"
+      },
+      "storageSourcesPage": {
+        "title": "Storage Sources",
+        "description": "Register mounts, validate access, and prepare handshake inputs for ingestion.",
+        "refresh": "Refresh",
+        "createHeading": "Create Storage Source",
+        "createDescription": "Use your active demo project or override the defaults if needed.",
+        "demoDefaultsLoaded": "Demo defaults loaded:",
+        "demoDefaultsOrg": "org",
+        "demoDefaultsProject": "project",
+        "loadingProjectDefaults": "Loading project defaults...",
+        "loadingProjectDefaultsError": "Unable to load project defaults",
+        "createSubmitLabel": "Create Source",
+        "createError": "Unable to create storage source",
+        "availableSources": "Available Sources",
+        "availableDescription": "Visible sources in your current organization scope.",
+        "sourcesCount": "{count} sources",
+        "loadError": "Unable to load storage sources",
+        "loading": "Loading storage sources...",
+        "empty": "No storage sources registered yet.",
+        "fieldType": "Type:",
+        "fieldMount": "Mount:",
+        "fieldOrganization": "Organization:",
+        "fieldProject": "Project:",
+        "openDetail": "Open Detail"
+      },
+      "storageSourceForm": {
+        "organizationId": "Organization ID",
+        "organizationIdPlaceholder": "org-uuid",
+        "projectId": "Project ID",
+        "projectIdPlaceholder": "project-uuid",
+        "name": "Name",
+        "namePlaceholder": "Primary NAS",
+        "sourceType": "Source Type",
+        "sourceTypePlaceholder": "local",
+        "mountPath": "Mount Path",
+        "mountPathPlaceholder": "/mnt/storage/project-a",
+        "status": "Status",
+        "saving": "Saving..."
       }
     },
     "projectFundingPanel": {
@@ -2742,6 +2781,17 @@
       "independent": "Sold as a standalone product for editorial and post-production teams.",
       "included": "Also included inside CID Studio as a strategic high-value solution.",
       "nles": "Commercially positioned around DaVinci Resolve, Avid Media Composer and Adobe Premiere Pro interoperability."
+    },
+    "storageStatusBadge": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "running": "Running",
+      "completed": "Completed",
+      "indexed": "Indexed",
+      "error": "Error",
+      "failed": "Failed",
+      "revoked": "Revoked",
+      "expired": "Expired"
     }
   }
 }

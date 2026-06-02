@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Sparkles, Upload, Eye, Image, Palette, Lightbulb, Camera, LayoutGrid, AlignStartHorizontal, AlertTriangle, CheckCircle2, FileText } from 'lucide-react'
+import { useLanguage } from '@/i18n'
 
 type ReferencePurpose =
   | 'global_project_style'
@@ -34,27 +35,28 @@ interface DirectorVisualReferencePanelProps {
 }
 
 const PURPOSE_OPTIONS: { value: ReferencePurpose; label: string }[] = [
-  { value: 'global_project_style', label: 'Estilo global del proyecto' },
-  { value: 'scene_mood', label: 'Atmósfera de escena' },
-  { value: 'character_visual_reference', label: 'Referencia visual de personaje' },
-  { value: 'location_reference', label: 'Referencia de localización' },
-  { value: 'lighting_reference', label: 'Referencia de iluminación' },
-  { value: 'color_palette_reference', label: 'Referencia de paleta de color' },
-  { value: 'composition_reference', label: 'Referencia de composición' },
-  { value: 'storyboard_reference', label: 'Referencia de storyboard' },
+  { value: 'global_project_style', label: 'components.storyboard.directorVisualReference.purposes.global_project_style' },
+  { value: 'scene_mood', label: 'components.storyboard.directorVisualReference.purposes.scene_mood' },
+  { value: 'character_visual_reference', label: 'components.storyboard.directorVisualReference.purposes.character_visual_reference' },
+  { value: 'location_reference', label: 'components.storyboard.directorVisualReference.purposes.location_reference' },
+  { value: 'lighting_reference', label: 'components.storyboard.directorVisualReference.purposes.lighting_reference' },
+  { value: 'color_palette_reference', label: 'components.storyboard.directorVisualReference.purposes.color_palette_reference' },
+  { value: 'composition_reference', label: 'components.storyboard.directorVisualReference.purposes.composition_reference' },
+  { value: 'storyboard_reference', label: 'components.storyboard.directorVisualReference.purposes.storyboard_reference' },
 ]
 
 const MODE_OPTIONS: { value: ReferenceMode; label: string; description: string }[] = [
-  { value: 'mood_only', label: 'Solo atmósfera', description: 'Transfiere solo el ambiente y la sensación visual' },
-  { value: 'palette_lighting', label: 'Paleta y luz', description: 'Transfiere color e iluminación' },
-  { value: 'composition_guidance', label: 'Guía de composición', description: 'Transfiere encuadre y composición' },
-  { value: 'full_art_direction', label: 'Dirección artística completa', description: 'Transfiere todos los aspectos visuales' },
+  { value: 'mood_only', label: 'components.storyboard.directorVisualReference.modes.mood_only.label', description: 'components.storyboard.directorVisualReference.modes.mood_only.description' },
+  { value: 'palette_lighting', label: 'components.storyboard.directorVisualReference.modes.palette_lighting.label', description: 'components.storyboard.directorVisualReference.modes.palette_lighting.description' },
+  { value: 'composition_guidance', label: 'components.storyboard.directorVisualReference.modes.composition_guidance.label', description: 'components.storyboard.directorVisualReference.modes.composition_guidance.description' },
+  { value: 'full_art_direction', label: 'components.storyboard.directorVisualReference.modes.full_art_direction.label', description: 'components.storyboard.directorVisualReference.modes.full_art_direction.description' },
 ]
 
 export default function DirectorVisualReferencePanel({
   onApplyReference,
   projectId,
 }: DirectorVisualReferencePanelProps) {
+  const { t } = useLanguage()
   const [referenceUrl, setReferenceUrl] = useState('')
   const [purpose, setPurpose] = useState<ReferencePurpose>('scene_mood')
   const [intensity, setIntensity] = useState<ReferenceIntensity>('medium')
@@ -98,11 +100,11 @@ export default function DirectorVisualReferencePanel({
           forbid_identity_copy: true,
         }),
       })
-      if (!response.ok) throw new Error('Analysis failed')
+      if (!response.ok) throw new Error(t('components.storyboard.directorVisualReference.errorAnalysisFailed'))
       const result = await response.json()
       setProfile(result.profile)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      setError(err instanceof Error ? err.message : t('components.storyboard.directorVisualReference.errorUnknown'))
     } finally {
       setIsAnalyzing(false)
     }
@@ -128,11 +130,11 @@ export default function DirectorVisualReferencePanel({
           reference_profile: profile,
         }),
       })
-      if (!response.ok) throw new Error('Alignment failed')
+      if (!response.ok) throw new Error(t('components.storyboard.directorVisualReference.errorAlignmentFailed'))
       const result = await response.json()
       setAlignmentResult(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Alignment error')
+      setError(err instanceof Error ? err.message : t('components.storyboard.directorVisualReference.errorAlignment'))
     }
     try {
       const enrichedResp = await fetch('/api/cid/visual-reference/enriched-intent', {
@@ -159,9 +161,9 @@ export default function DirectorVisualReferencePanel({
           <Eye className="h-5 w-5 text-amber-400" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-white">Referencia visual del director</h3>
+          <h3 className="text-lg font-semibold text-white">{t('components.storyboard.directorVisualReference.title')}</h3>
           <p className="text-sm text-slate-400">
-            Sube una imagen de referencia para guiar el estilo visual de las generaciones
+            {t('components.storyboard.directorVisualReference.subtitle')}
           </p>
         </div>
       </div>
@@ -170,13 +172,13 @@ export default function DirectorVisualReferencePanel({
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5">
             <Upload className="inline h-3.5 w-3.5 mr-1.5" />
-            Imagen de referencia (URL o asset ID)
+            {t('components.storyboard.directorVisualReference.imageRefLabel')}
           </label>
           <input
             type="text"
             value={referenceUrl}
             onChange={(e) => setReferenceUrl(e.target.value)}
-            placeholder="https://ejemplo.com/referencia.webp o asset_id"
+            placeholder={t('components.storyboard.directorVisualReference.imageRefPlaceholder')}
             className="w-full rounded-xl border border-white/10 bg-[#0a1016] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500/50 focus:outline-none"
           />
         </div>
@@ -185,7 +187,7 @@ export default function DirectorVisualReferencePanel({
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">
               <Image className="inline h-3.5 w-3.5 mr-1.5" />
-              Propósito de la referencia
+              {t('components.storyboard.directorVisualReference.purposeLabel')}
             </label>
             <select
               value={purpose}
@@ -194,7 +196,7 @@ export default function DirectorVisualReferencePanel({
             >
               {PURPOSE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {t(opt.label)}
                 </option>
               ))}
             </select>
@@ -203,7 +205,7 @@ export default function DirectorVisualReferencePanel({
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">
               <Lightbulb className="inline h-3.5 w-3.5 mr-1.5" />
-              Intensidad
+              {t('components.storyboard.directorVisualReference.intensityLabel')}
             </label>
             <div className="flex gap-2">
               {(['low', 'medium', 'high'] as ReferenceIntensity[]).map((level) => (
@@ -216,7 +218,7 @@ export default function DirectorVisualReferencePanel({
                       : 'border-white/10 bg-[#0a1016] text-slate-400 hover:border-white/20'
                   }`}
                 >
-                  {level === 'low' ? 'Suave' : level === 'medium' ? 'Media' : 'Fuerte'}
+                  {t(`components.storyboard.directorVisualReference.intensities.${level}`)}
                 </button>
               ))}
             </div>
@@ -226,7 +228,7 @@ export default function DirectorVisualReferencePanel({
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5">
             <LayoutGrid className="inline h-3.5 w-3.5 mr-1.5" />
-            Modo de referencia
+            {t('components.storyboard.directorVisualReference.modeLabel')}
           </label>
           <div className="grid grid-cols-2 gap-2">
             {MODE_OPTIONS.map((opt) => (
@@ -244,20 +246,20 @@ export default function DirectorVisualReferencePanel({
                   {opt.value === 'palette_lighting' && <Palette className="h-3.5 w-3.5 text-amber-400" />}
                   {opt.value === 'composition_guidance' && <Camera className="h-3.5 w-3.5 text-amber-400" />}
                   {opt.value === 'full_art_direction' && <Sparkles className="h-3.5 w-3.5 text-amber-400" />}
-                  <span className="text-sm font-medium text-white">{opt.label}</span>
+                  <span className="text-sm font-medium text-white">{t(opt.label)}</span>
                 </div>
-                <p className="mt-1 text-xs text-slate-400">{opt.description}</p>
+                <p className="mt-1 text-xs text-slate-400">{t(opt.description)}</p>
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Notas del director</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('components.storyboard.directorVisualReference.notesLabel')}</label>
           <textarea
             value={directorNotes}
             onChange={(e) => setDirectorNotes(e.target.value)}
-            placeholder='Ej: "Quiero que esta escena tenga una luz suave como la del参考, pero con colores más cálidos"'
+            placeholder={t('components.storyboard.directorVisualReference.notesPlaceholder')}
             rows={2}
             className="w-full rounded-xl border border-white/10 bg-[#0a1016] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500/50 focus:outline-none resize-none"
           />
@@ -268,7 +270,7 @@ export default function DirectorVisualReferencePanel({
           disabled={isAnalyzing || !referenceUrl}
           className="w-full rounded-xl bg-amber-500/20 border border-amber-500/30 px-4 py-3 text-sm font-medium text-amber-300 hover:bg-amber-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {isAnalyzing ? 'Analizando referencia visual...' : 'Analizar referencia visual'}
+          {isAnalyzing ? t('components.storyboard.directorVisualReference.analyzingStatus') : t('components.storyboard.directorVisualReference.analyzeButton')}
         </button>
       </div>
 
@@ -280,16 +282,16 @@ export default function DirectorVisualReferencePanel({
 
       {profile && (
         <div className="space-y-3 rounded-xl border border-white/10 bg-[#0a1016] p-4">
-          <h4 className="text-sm font-semibold text-amber-300">Perfil de estilo extraído</h4>
+          <h4 className="text-sm font-semibold text-amber-300">{t('components.storyboard.directorVisualReference.styleProfileTitle')}</h4>
           <div className="space-y-2 text-sm text-slate-300">
-            <p><span className="text-slate-400">Resumen:</span> {profile.visual_summary}</p>
-            <p><span className="text-slate-400">Paleta:</span> {profile.palette_description}</p>
-            <p><span className="text-slate-400">Iluminación:</span> {profile.lighting_description}</p>
-            <p><span className="text-slate-400">Atmósfera:</span> {profile.atmosphere_description}</p>
+            <p><span className="text-slate-400">{t('components.storyboard.directorVisualReference.styleSummary')}</span> {profile.visual_summary}</p>
+            <p><span className="text-slate-400">{t('components.storyboard.directorVisualReference.stylePalette')}</span> {profile.palette_description}</p>
+            <p><span className="text-slate-400">{t('components.storyboard.directorVisualReference.styleLighting')}</span> {profile.lighting_description}</p>
+            <p><span className="text-slate-400">{t('components.storyboard.directorVisualReference.styleAtmosphere')}</span> {profile.atmosphere_description}</p>
           </div>
           {profile.transferable_traits.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-slate-400 mb-1">Rasgos transferibles:</p>
+              <p className="text-xs font-medium text-slate-400 mb-1">{t('components.storyboard.directorVisualReference.transferableTraits')}</p>
               <ul className="list-inside list-disc text-xs text-slate-500">
                 {profile.transferable_traits.map((trait, i) => (
                   <li key={i}>{trait}</li>
@@ -301,12 +303,12 @@ export default function DirectorVisualReferencePanel({
           <div className="border-t border-white/10 pt-4 mt-4">
             <h4 className="text-sm font-semibold text-amber-300 mb-3 flex items-center gap-2">
               <AlignStartHorizontal className="h-4 w-4" />
-              Cotejo con el guion
+              {t('components.storyboard.directorVisualReference.scriptMatchTitle')}
             </h4>
             <textarea
               value={scriptExcerpt}
               onChange={(e) => setScriptExcerpt(e.target.value)}
-              placeholder="Pega aquí el texto de la escena del guion para cotejarlo con la referencia visual..."
+              placeholder={t('components.storyboard.directorVisualReference.scriptMatchPlaceholder')}
               rows={3}
               className="w-full rounded-xl border border-white/10 bg-[#0a1016] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500/50 focus:outline-none resize-none mb-3"
             />
@@ -316,12 +318,12 @@ export default function DirectorVisualReferencePanel({
               className="w-full rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-300 hover:bg-cyan-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <FileText className="h-4 w-4" />
-              {isAligning ? 'Cotejando con el guion...' : 'Cotejar con el guion'}
+              {isAligning ? t('components.storyboard.directorVisualReference.scriptMatchingStatus') : t('components.storyboard.directorVisualReference.scriptMatchButton')}
             </button>
             {alignmentResult && (
               <div className="mt-3 space-y-3 rounded-xl border border-white/10 bg-[#0a1016] p-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-400">Score de alineación</span>
+                  <span className="text-xs font-medium text-slate-400">{t('components.storyboard.directorVisualReference.alignmentScoreLabel')}</span>
                   <span className={`text-sm font-bold ${
                     alignmentResult.alignment_score >= 0.7 ? 'text-green-400' :
                     alignmentResult.alignment_score >= 0.4 ? 'text-amber-400' : 'text-red-400'
@@ -332,7 +334,7 @@ export default function DirectorVisualReferencePanel({
                 {alignmentResult.matching_elements.length > 0 && (
                   <div>
                     <p className="text-xs font-medium text-green-400/80 mb-1 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> Coincidencias
+                      <CheckCircle2 className="h-3 w-3" /> {t('components.storyboard.directorVisualReference.matchesLabel')}
                     </p>
                     <ul className="list-inside list-disc text-xs text-slate-400 space-y-0.5">
                       {alignmentResult.matching_elements.map((m, i) => (
@@ -344,7 +346,7 @@ export default function DirectorVisualReferencePanel({
                 {alignmentResult.tension_points.length > 0 && (
                   <div>
                     <p className="text-xs font-medium text-amber-400/80 mb-1 flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" /> Tensiones detectadas
+                      <AlertTriangle className="h-3 w-3" /> {t('components.storyboard.directorVisualReference.tensionsLabel')}
                     </p>
                     <ul className="list-inside list-disc text-xs text-slate-400 space-y-0.5">
                       {alignmentResult.tension_points.map((t, i) => (
@@ -362,7 +364,7 @@ export default function DirectorVisualReferencePanel({
                 )}
                 {enrichedIntent && (
                   <div className="border-t border-white/10 pt-2">
-                    <p className="text-xs font-medium text-cyan-400/80 mb-1">Intención enriquecida</p>
+                    <p className="text-xs font-medium text-cyan-400/80 mb-1">{t('components.storyboard.directorVisualReference.enrichedIntentLabel')}</p>
                     <p className="text-xs text-slate-400">{enrichedIntent}</p>
                   </div>
                 )}
@@ -374,7 +376,7 @@ export default function DirectorVisualReferencePanel({
             onClick={handleApply}
             className="w-full rounded-xl bg-amber-500/20 border border-amber-500/30 px-4 py-2.5 text-sm font-medium text-amber-300 hover:bg-amber-500/30 transition-all"
           >
-            Usar esta referencia en storyboard
+            {t('components.storyboard.directorVisualReference.applyButton')}
           </button>
         </div>
       )}

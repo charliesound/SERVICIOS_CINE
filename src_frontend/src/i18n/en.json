@@ -762,7 +762,11 @@
           "low": "Soft",
           "medium": "Medium",
           "high": "Strong"
-        }
+        },
+        "errorAnalysisFailed": "Could not analyze the visual reference",
+        "errorUnknown": "Unknown error",
+        "errorAlignmentFailed": "Could not compare with the script",
+        "errorAlignment": "Script comparison error"
       }
     }
   },

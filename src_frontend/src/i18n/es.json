@@ -762,7 +762,11 @@
           "low": "Suave",
           "medium": "Media",
           "high": "Fuerte"
-        }
+        },
+        "errorAnalysisFailed": "No se pudo analizar la referencia visual",
+        "errorUnknown": "Error desconocido",
+        "errorAlignmentFailed": "No se pudo cotejar con el guion",
+        "errorAlignment": "Error al cotejar con el guion"
       }
     }
   },

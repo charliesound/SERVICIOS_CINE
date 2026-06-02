@@ -3,18 +3,19 @@ import { useParams, Link } from 'react-router-dom'
 import { Users, UserPlus, Shield, X } from 'lucide-react'
 import { projectMembersApi } from '@/api/projectMembers'
 import type { ProjectMember } from '@/api/projectMembers'
+import { t } from '@/i18n'
 
 const ROLE_LABELS: Record<string, string> = {
-  owner: 'Propietario',
-  producer: 'Productor',
-  executive_producer: 'Productor Ejecutivo',
-  production_manager: 'Gerente de Producción',
-  director: 'Director',
-  editor: 'Editor',
-  sound: 'Sonido',
-  dop: 'Director de Fotografía',
-  script_supervisor: 'Supervisor de Guion',
-  viewer: 'Visor',
+  owner: 'internal.projectMembers.roles.owner',
+  producer: 'internal.projectMembers.roles.producer',
+  executive_producer: 'internal.projectMembers.roles.executiveProducer',
+  production_manager: 'internal.projectMembers.roles.productionManager',
+  director: 'internal.projectMembers.roles.director',
+  editor: 'internal.projectMembers.roles.editor',
+  sound: 'internal.projectMembers.roles.sound',
+  dop: 'internal.projectMembers.roles.dop',
+  script_supervisor: 'internal.projectMembers.roles.scriptSupervisor',
+  viewer: 'internal.projectMembers.roles.viewer',
 }
 
 function RoleBadge({ role }: { role: string }) {
@@ -30,7 +31,7 @@ function RoleBadge({ role }: { role: string }) {
   const bg = labels[role] || labels.viewer
   return (
     <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${bg}`}>
-      {ROLE_LABELS[role] || role}
+      {ROLE_LABELS[role] ? t(ROLE_LABELS[role]) : role}
     </span>
   )
 }
@@ -62,7 +63,7 @@ export default function ProjectMembersPage() {
         is_owner: myInfoRes.is_owner,
       })
     } catch (e) {
-      setError('Error loading members')
+      setError(t('internal.projectMembers.errorLoading'))
     } finally {
       setIsLoading(false)
     }
@@ -81,7 +82,7 @@ export default function ProjectMembersPage() {
       <div className="card">
         <div className="text-red-400">{error}</div>
         <Link to={`/projects/${projectId}/dashboard`} className="btn-secondary mt-4">
-          Volver al dashboard
+          {t('internal.projectMembers.backToDashboard')}
         </Link>
       </div>
     )
@@ -92,7 +93,7 @@ export default function ProjectMembersPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="heading-lg">Miembros del Proyecto</h1>
+            <h1 className="heading-lg">{t('internal.projectMembers.title')}</h1>
           </div>
           <p className="mt-1 text-slate-400">
             {members.length} miembro{members.length !== 1 ? 's' : ''}
@@ -101,7 +102,7 @@ export default function ProjectMembersPage() {
 
         <div className="flex gap-3">
           <Link to={`/projects/${projectId}/dashboard`} className="btn-secondary">
-            Volver al dashboard
+            {t('internal.projectMembers.backToDashboard')}
           </Link>
           {myInfo?.can_manage_members && (
             <button
@@ -109,7 +110,7 @@ export default function ProjectMembersPage() {
               className="btn-primary flex items-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
-              Agregar miembro
+              {t('internal.projectMembers.addMember')}
             </button>
           )}
         </div>
@@ -119,7 +120,7 @@ export default function ProjectMembersPage() {
         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
           <div className="flex items-center gap-2 text-amber-400">
             <Shield className="w-5 h-5" />
-            <span className="font-medium">Tienes permisos delegados</span>
+            <span className="font-medium">{t('internal.projectMembers.delegatedPermissions')}</span>
           </div>
           <p className="mt-1 text-sm text-slate-400">
             Puedes gestionar permisos de otros miembros.
@@ -131,12 +132,12 @@ export default function ProjectMembersPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-white/10">
-              <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Usuario</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Rol</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Permisos</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Estado</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">{t('internal.projectMembers.table.user')}</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">{t('internal.projectMembers.table.role')}</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">{t('internal.projectMembers.table.permissions')}</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">{t('internal.projectMembers.table.status')}</th>
               {myInfo?.can_manage_members && (
-                <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">Acciones</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-slate-400">{t('internal.projectMembers.table.actions')}</th>
               )}
             </tr>
           </thead>
@@ -145,7 +146,7 @@ export default function ProjectMembersPage() {
               <tr key={member.id} className="border-b border-white/5 hover:bg-white/5">
                 <td className="py-3 px-4">
                   <div>
-                    <div className="font-medium">{member.user?.name || 'Usuario'}</div>
+                    <div className="font-medium">{member.user?.name || t('internal.projectMembers.fallbackUser')}</div>
                     <div className="text-sm text-slate-500">{member.user?.email || member.user_id}</div>
                   </div>
                 </td>
@@ -155,13 +156,13 @@ export default function ProjectMembersPage() {
                 <td className="py-3 px-4">
                   <div className="flex gap-2">
                     {member.can_manage_permissions && (
-                      <span className="badge badge-blue">Gestionar</span>
+                      <span className="badge badge-blue">{t('internal.projectMembers.permissions.manage')}</span>
                     )}
                     {member.can_manage_members && (
-                      <span className="badge badge-purple">Miembros</span>
+                      <span className="badge badge-purple">{t('internal.projectMembers.permissions.members')}</span>
                     )}
                     {!member.can_manage_permissions && !member.can_manage_members && (
-                      <span className="text-sm text-slate-500">Básico</span>
+                      <span className="text-sm text-slate-500">{t('internal.projectMembers.permissions.basic')}</span>
                     )}
                   </div>
                 </td>
@@ -191,7 +192,7 @@ export default function ProjectMembersPage() {
         {members.length === 0 && (
           <div className="p-8 text-center text-slate-500">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No hay miembros en este proyecto</p>
+            <p>{t('internal.projectMembers.noMembers')}</p>
           </div>
         )}
       </div>
@@ -200,42 +201,42 @@ export default function ProjectMembersPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="card w-full max-w-md space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="heading-md">Agregar Miembro</h2>
+              <h2 className="heading-md">{t('internal.projectMembers.addMemberTitle')}</h2>
               <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-slate-400">Seleccionar usuario</label>
+              <label className="text-sm text-slate-400">{t('internal.projectMembers.selectUser')}</label>
               <input
                 type="text"
-                placeholder="Buscar usuario por email..."
+                placeholder={t('internal.projectMembers.searchUserPlaceholder')}
                 className="input w-full"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-slate-400">Rol</label>
+              <label className="text-sm text-slate-400">{t('internal.projectMembers.role')}</label>
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
                 className="input w-full"
               >
-                <option value="viewer">Visor</option>
-                <option value="producer">Productor</option>
-                <option value="director">Director</option>
-                <option value="editor">Editor</option>
-                <option value="production_manager">Gerente de Producción</option>
+                <option value="viewer">{t('internal.projectMembers.roles.viewer')}</option>
+                <option value="producer">{t('internal.projectMembers.roles.producer')}</option>
+                <option value="director">{t('internal.projectMembers.roles.director')}</option>
+                <option value="editor">{t('internal.projectMembers.roles.editor')}</option>
+                <option value="production_manager">{t('internal.projectMembers.roles.productionManager')}</option>
               </select>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
               <button onClick={() => setShowAddModal(false)} className="btn-secondary">
-                Cancelar
+                {t('internal.common.cancel')}
               </button>
               <button className="btn-primary">
-                Agregar
+                {t('internal.projectMembers.add')}
               </button>
             </div>
           </div>

@@ -54,7 +54,7 @@ function resolveModuleAction(module: ModuleViewModel, t: (key: string) => string
     return {
       label: module.locked_reason?.startsWith('dependency_locked:') ? t('internal.modulesCatalog.requestActivation') : t('internal.modulesCatalog.upgradePlan'),
       href: module.locked_reason?.startsWith('dependency_locked:') ? '/pricing' : '/plans',
-      helperText: 'Activa este módulo a través de un plan superior o validación comercial.',
+      helperText: t('internal.modulesCatalog.helpers.activateWithHigherPlan'),
       variant: 'secondary',
     }
   }
@@ -64,14 +64,14 @@ function resolveModuleAction(module: ModuleViewModel, t: (key: string) => string
       return {
         label: t('internal.modulesCatalog.openModule'),
         href: '/projects',
-        helperText: 'La base operativa de CID arranca desde tus proyectos y dashboard.',
+        helperText: t('internal.modulesCatalog.helpers.cidBaseFromProjects'),
         variant: 'primary',
       }
     case 'script_analysis':
       return {
         label: t('internal.modulesCatalog.openModule'),
         href: '/projects',
-        helperText: 'Selecciona un proyecto y pulsa "Script Analysis Pro" desde la vista del proyecto para acceder al workspace dedicado.',
+        helperText: t('internal.modulesCatalog.helpers.scriptAnalysisWorkspace'),
         variant: 'primary',
       }
     case 'pitch_deck':
@@ -83,7 +83,7 @@ function resolveModuleAction(module: ModuleViewModel, t: (key: string) => string
       return {
         label: t('internal.modulesCatalog.openModule'),
         href: '/projects',
-        helperText: 'Selecciona un proyecto para abrir el flujo real de este módulo.',
+        helperText: t('internal.modulesCatalog.helpers.selectProjectRealFlow'),
         variant: 'primary',
       }
     case 'pipeline_builder':
@@ -97,14 +97,14 @@ function resolveModuleAction(module: ModuleViewModel, t: (key: string) => string
       return {
         label: t('internal.modulesCatalog.openModule'),
         href: '/documents',
-        helperText: 'La entrada actual es el workspace documental común del entorno CID.',
+        helperText: t('internal.modulesCatalog.helpers.documentalWorkspace'),
         variant: 'primary',
       }
     default:
       return {
         label: t('internal.modulesCatalog.comingSoon'),
         disabled: true,
-        helperText: 'La pantalla comercial existe, pero su workspace dedicado llegará en el siguiente bloque UX.',
+        helperText: t('internal.modulesCatalog.helpers.commercialScreenNextUx'),
         variant: 'secondary',
       }
   }
@@ -171,7 +171,7 @@ export default function ModulesCatalogPage() {
   const planName = myModulesQuery.data?.plan || user?.plan || 'free'
   const planLabel = formatPlanLabel(planName, t)
   const myModulesError = myModulesQuery.error
-    ? getApiErrorMessage(myModulesQuery.error, 'No pudimos resolver tu acceso por plan en este momento.')
+    ? getApiErrorMessage(myModulesQuery.error, t('internal.modulesCatalog.planAccessError'))
     : null
 
   if (catalogQuery.isLoading) {
@@ -305,7 +305,7 @@ export default function ModulesCatalogPage() {
               <p className="editorial-kicker text-emerald-200">{t('internal.modulesCatalog.activeAccess')}</p>
               <h2 className="mt-2 text-2xl font-semibold text-white">{t('internal.modulesCatalog.availableInPlan')}</h2>
             </div>
-            <span className="text-sm text-slate-400">{availableModules.length} módulo(s)</span>
+            <span className="text-sm text-slate-400">{availableModules.length} {t('internal.modulesCatalog.moduleCountLabel')}</span>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {availableModules.map((module) => (
@@ -328,7 +328,7 @@ export default function ModulesCatalogPage() {
               <p className="editorial-kicker text-amber-200">{t('internal.modulesCatalog.commercialExpansion')}</p>
               <h2 className="mt-2 text-2xl font-semibold text-white">{t('internal.modulesCatalog.lockedTitle')}</h2>
             </div>
-            <span className="text-sm text-slate-400">{lockedModules.length} módulo(s)</span>
+            <span className="text-sm text-slate-400">{lockedModules.length} {t('internal.modulesCatalog.moduleCountLabel')}</span>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {lockedModules.map((module) => (

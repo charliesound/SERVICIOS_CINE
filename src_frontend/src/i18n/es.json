@@ -322,7 +322,8 @@
       "scriptLoaded": "Guion cargado",
       "loading": "Cargando...",
       "verifyingAccess": "Verificando acceso...",
-      "project": "Proyecto"
+      "project": "Proyecto",
+      "cancel": "Cancelar"
     },
     "modulesCatalog": {
       "seoTitle": "Módulos CID | Suite modular vendible",
@@ -365,7 +366,17 @@
       "comingSoon": "Próximamente",
       "planMissing": "No incluido en tu plan actual",
       "dependencyMissing": "Requiere activar otro módulo primero",
-      "commercialAccess": "Acceso sujeto a activación comercial"
+      "commercialAccess": "Acceso sujeto a activación comercial",
+      "planAccessError": "No pudimos resolver tu acceso por plan en este momento.",
+      "moduleCountLabel": "módulo(s)",
+      "helpers": {
+        "activateWithHigherPlan": "Activa este módulo a través de un plan superior o validación comercial.",
+        "cidBaseFromProjects": "La base operativa de CID arranca desde tus proyectos y dashboard.",
+        "scriptAnalysisWorkspace": "Selecciona un proyecto y pulsa \"Script Analysis Pro\" desde la vista del proyecto para acceder al workspace dedicado.",
+        "selectProjectRealFlow": "Selecciona un proyecto para abrir el flujo real de este módulo.",
+        "documentalWorkspace": "La entrada actual es el workspace documental común del entorno CID.",
+        "commercialScreenNextUx": "La pantalla comercial existe, pero su workspace dedicado llegará en el siguiente bloque UX."
+      }
     },
     "dashboard": {
       "title": "Dashboard",
@@ -767,6 +778,44 @@
         "distribution": "• Distribución: “No garantiza aceptación por distribuidoras, cines o plataformas.”",
         "crm": "• CRM: “Registro manual. No envía emails automáticamente.”",
         "davinci": "• DaVinci: “Export FCPXML conservador validado. Audio experimental requiere validación.”"
+      }
+    },
+    "projectMembers": {
+      "title": "Miembros del Proyecto",
+      "backToDashboard": "Volver al dashboard",
+      "addMember": "Agregar miembro",
+      "addMemberTitle": "Agregar Miembro",
+      "delegatedPermissions": "Tienes permisos delegados",
+      "errorLoading": "Error al cargar miembros",
+      "fallbackUser": "Usuario",
+      "noMembers": "No hay miembros en este proyecto",
+      "selectUser": "Seleccionar usuario",
+      "searchUserPlaceholder": "Buscar usuario por email...",
+      "role": "Rol",
+      "add": "Agregar",
+      "roles": {
+        "producer": "Productor",
+        "executiveProducer": "Productor Ejecutivo",
+        "productionManager": "Gerente de Producción",
+        "director": "Director",
+        "editor": "Editor",
+        "dop": "Director de Fotografía",
+        "scriptSupervisor": "Supervisor de Guion",
+        "viewer": "Visor",
+        "owner": "Propietario",
+        "sound": "Sonido"
+      },
+      "table": {
+        "user": "Usuario",
+        "role": "Rol",
+        "permissions": "Permisos",
+        "status": "Estado",
+        "actions": "Acciones"
+      },
+      "permissions": {
+        "manage": "Gestionar",
+        "members": "Miembros",
+        "basic": "Básico"
       }
     }
   },

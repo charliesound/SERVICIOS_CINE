@@ -322,7 +322,8 @@
       "scriptLoaded": "Script loaded",
       "loading": "Loading...",
       "verifyingAccess": "Verifying access...",
-      "project": "Project"
+      "project": "Project",
+      "cancel": "Cancel"
     },
     "modulesCatalog": {
       "seoTitle": "CID Modules | Sellable modular suite",
@@ -365,7 +366,17 @@
       "comingSoon": "Coming soon",
       "planMissing": "Not included in your current plan",
       "dependencyMissing": "Requires activating another module first",
-      "commercialAccess": "Access subject to commercial activation"
+      "commercialAccess": "Access subject to commercial activation",
+      "planAccessError": "We could not resolve your plan access right now.",
+      "moduleCountLabel": "module(s)",
+      "helpers": {
+        "activateWithHigherPlan": "Activate this module through a higher plan or commercial validation.",
+        "cidBaseFromProjects": "CID’s operational base starts from your projects and dashboard.",
+        "scriptAnalysisWorkspace": "Select a project and click \"Script Analysis Pro\" from the project view to access the dedicated workspace.",
+        "selectProjectRealFlow": "Select a project to open the real flow for this module.",
+        "documentalWorkspace": "The current entry point is the shared documentary workspace in the CID environment.",
+        "commercialScreenNextUx": "The commercial screen exists, but its dedicated workspace will arrive in the next UX block."
+      }
     },
     "dashboard": {
       "title": "Dashboard",
@@ -767,6 +778,44 @@
         "distribution": "• Distribution: “Does not guarantee acceptance by distributors, cinemas or platforms.”",
         "crm": "• CRM: “Manual record. Does not send emails automatically.”",
         "davinci": "• DaVinci: “Conservative FCPXML export validated. Experimental audio requires validation.”"
+      }
+    },
+    "projectMembers": {
+      "title": "Project Members",
+      "backToDashboard": "Back to dashboard",
+      "addMember": "Add member",
+      "addMemberTitle": "Add Member",
+      "delegatedPermissions": "You have delegated permissions",
+      "errorLoading": "Error loading members",
+      "fallbackUser": "User",
+      "noMembers": "There are no members in this project",
+      "selectUser": "Select user",
+      "searchUserPlaceholder": "Search user by email...",
+      "role": "Role",
+      "add": "Add",
+      "roles": {
+        "producer": "Producer",
+        "executiveProducer": "Executive Producer",
+        "productionManager": "Production Manager",
+        "director": "Director",
+        "editor": "Editor",
+        "dop": "Director of Photography",
+        "scriptSupervisor": "Script Supervisor",
+        "viewer": "Viewer",
+        "owner": "Owner",
+        "sound": "Sound"
+      },
+      "table": {
+        "user": "User",
+        "role": "Role",
+        "permissions": "Permissions",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "permissions": {
+        "manage": "Manage",
+        "members": "Members",
+        "basic": "Basic"
       }
     }
   },

@@ -1188,6 +1188,17 @@
         "completed": "Completed",
         "unknown": "No status"
       }
+    },
+    "projectFundingPage": {
+      "title": "Project funding",
+      "subtitle": "Review enriched opportunities and keep private funding management",
+      "projectNotFound": "Project not found",
+      "errorTitle": "Loading error",
+      "backToProjects": "Back to projects",
+      "backToProject": "Back to project",
+      "errors": {
+        "loadProject": "Could not load the project."
+      }
     }
   },
   "components": {

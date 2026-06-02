@@ -4,6 +4,7 @@ import { AlertCircle, ArrowLeft, Briefcase, Loader2, WalletCards } from 'lucide-
 import FundingOpportunitiesDashboard from '@/components/FundingOpportunitiesDashboard'
 import ProjectFundingPanel from '@/components/ProjectFundingPanel'
 import { projectsApi } from '@/api'
+import { t } from '@/i18n'
 
 export default function ProjectFundingPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -18,7 +19,7 @@ export default function ProjectFundingPage() {
     projectsApi.get(projectId)
       .then(() => setLoading(false))
       .catch(() => {
-        setError('No se pudo cargar el proyecto.')
+        setError(t('internal.projectFundingPage.errors.loadProject'))
         setLoading(false)
       })
   }, [projectId])
@@ -26,7 +27,7 @@ export default function ProjectFundingPage() {
   if (!projectId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-gray-400">Proyecto no encontrado</p>
+        <p className="text-gray-400">{t('internal.projectFundingPage.projectNotFound')}</p>
         <Link to="/projects" className="mt-4 text-blue-400 hover:underline">
           Volver a proyectos
         </Link>
@@ -47,10 +48,10 @@ export default function ProjectFundingPage() {
       <div className="min-h-screen bg-gray-900">
         <div className="max-w-lg mx-auto pt-24 text-center">
           <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
-          <h2 className="text-xl font-semibold text-white mb-2">Error al cargar</h2>
+          <h2 className="text-xl font-semibold text-white mb-2">{t('internal.projectFundingPage.errorTitle')}</h2>
           <p className="text-slate-400 mb-6">{error}</p>
           <div className="flex justify-center gap-3">
-            <button onClick={() => { setError(null); setLoading(true); projectsApi.get(projectId!).then(() => setLoading(false)).catch(() => { setError('No se pudo cargar el proyecto.'); setLoading(false) }) }} className="btn-primary">
+            <button onClick={() => { setError(null); setLoading(true); projectsApi.get(projectId!).then(() => setLoading(false)).catch(() => { setError(t('internal.projectFundingPage.errors.loadProject')); setLoading(false) }) }} className="btn-primary">
               Reintentar
             </button>
             <Link to="/projects" className="btn-secondary">
@@ -76,8 +77,8 @@ export default function ProjectFundingPage() {
         </div>
 
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">Financiación del proyecto</h1>
-          <p className="text-gray-400">Consulta oportunidades enriquecidas y conserva la gestión de financiación privada</p>
+          <h1 className="text-2xl font-bold text-white">{t('internal.projectFundingPage.title')}</h1>
+          <p className="text-gray-400">{t('internal.projectFundingPage.subtitle')}</p>
         </div>
 
         <div className="mb-6 inline-flex rounded-2xl border border-white/10 bg-white/5 p-1">

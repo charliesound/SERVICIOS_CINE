@@ -1188,6 +1188,17 @@
         "completed": "Completada",
         "unknown": "Sin estado"
       }
+    },
+    "projectFundingPage": {
+      "title": "Financiación del proyecto",
+      "subtitle": "Consulta oportunidades enriquecidas y conserva la gestión de financiación privada",
+      "projectNotFound": "Proyecto no encontrado",
+      "errorTitle": "Error al cargar",
+      "backToProjects": "Volver a proyectos",
+      "backToProject": "Volver al proyecto",
+      "errors": {
+        "loadProject": "No se pudo cargar el proyecto."
+      }
     }
   },
   "components": {

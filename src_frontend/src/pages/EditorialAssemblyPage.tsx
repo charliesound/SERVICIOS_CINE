@@ -3,8 +3,10 @@ import { Link, useParams } from 'react-router-dom'
 import { AlertCircle, Clapperboard, Download, Layers, RefreshCw, Scissors } from 'lucide-react'
 import { editorialApi, projectsApi } from '@/api'
 import type { AssemblyCut, EditorialFCPXMLStatus, EditorialRecommendedTake, EditorialTake, DavinciPlatformExportRequest } from '@/api/editorial'
+import { useLanguage } from '@/i18n'
 
 export default function EditorialAssemblyPage() {
+  const { t } = useLanguage()
   const { projectId = '' } = useParams()
   const [projectName, setProjectName] = useState('')
   const [takes, setTakes] = useState<EditorialTake[]>([])
@@ -50,7 +52,7 @@ export default function EditorialAssemblyPage() {
         setFcpxmlStatus(null)
       }
     } catch (err) {
-      setError('No se pudo cargar el estado editorial.')
+      setError(t('internal.editorialAssembly.loadStateError'))
     } finally {
       setLoading(false)
     }
@@ -79,7 +81,7 @@ export default function EditorialAssemblyPage() {
       await callback()
       await loadState()
     } catch {
-      setError(`No se pudo ejecutar: ${label}`)
+      setError(t('internal.editorialAssembly.actionFailed').replace('{action}', label))
     } finally {
       setAction(null)
     }
@@ -98,9 +100,9 @@ export default function EditorialAssemblyPage() {
       }
       const blob = await editorialApi.exportDavinciPackage(projectId, payload)
       downloadBlob(blob, `${projectName || 'project'}_davinci_${davinciPlatform}.fcpxml`)
-      setMessage(`Paquete DaVinci (${davinciPlatform}) exportado`)
+      setMessage(t('internal.editorialAssembly.davinciExported').replace('{platform}', davinciPlatform))
     } catch (err) {
-      setError(`Error exportando paquete DaVinci: ${err}`)
+      setError(t('internal.editorialAssembly.davinciExportError').replace('{err}', String(err)))
     } finally {
       setDavinciExporting(false)
     }
@@ -127,18 +129,18 @@ export default function EditorialAssemblyPage() {
       <div className="space-y-6">
         <h1 className="heading-lg text-white flex items-center gap-3">
           <Clapperboard className="h-6 w-6 text-amber-400" />
-          Premontaje / Assembly
+          {t('internal.editorialAssembly.title')}
         </h1>
         <div className="card">
           <div className="text-center p-12">
             <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400" />
-            <h2 className="heading-md mb-2">Error al cargar</h2>
+            <h2 className="heading-md mb-2">{t('internal.editorialAssembly.loadErrorTitle')}</h2>
             <p className="text-slate-400 mb-6">{error}</p>
             <button onClick={loadState} className="btn-primary">
-              Reintentar
+              {t('internal.common.retry')}
             </button>
             <Link to={`/projects/${projectId}/dashboard`} className="btn-secondary ml-3">
-              Volver al proyecto
+              {t('internal.editorialAssembly.backToProject')}
             </Link>
           </div>
         </div>
@@ -153,17 +155,17 @@ export default function EditorialAssemblyPage() {
       <div className="space-y-6">
         <h1 className="heading-lg text-white flex items-center gap-3">
           <Clapperboard className="h-6 w-6 text-amber-400" />
-          Premontaje / Assembly
+          {t('internal.editorialAssembly.title')}
         </h1>
         <div className="card">
           <div className="text-center p-12">
             <Scissors className="w-16 h-16 mx-auto mb-4 text-slate-500" />
-            <h2 className="heading-md mb-2">Sin datos editoriales</h2>
+            <h2 className="heading-md mb-2">{t('internal.editorialAssembly.emptyTitle')}</h2>
             <p className="text-slate-400 mb-6">
-              Aún no hay material editorial cargado. Sube media o analiza el guion para comenzar.
+              {t('internal.editorialAssembly.emptyText')}
             </p>
             <Link to={`/projects/${projectId}/dashboard`} className="btn-primary">
-              Ir al proyecto
+              {t('internal.editorialAssembly.goToProject')}
             </Link>
           </div>
         </div>
@@ -176,140 +178,140 @@ export default function EditorialAssemblyPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <Link to={`/projects/${projectId}`} className="text-sm text-amber-400 hover:text-amber-300">
-            ← Volver al proyecto
+            {t('internal.editorialAssembly.backToProjectArrow')}
           </Link>
           <h1 className="mt-2 text-2xl font-semibold text-white flex items-center gap-3">
             <Clapperboard className="h-6 w-6 text-amber-400" />
-            Premontaje / Assembly
+            {t('internal.editorialAssembly.title')}
           </h1>
-          <p className="mt-1 text-sm text-slate-400">{projectName || 'Proyecto'} · flujo editorial MVP</p>
+          <p className="mt-1 text-sm text-slate-400">{projectName || t('internal.common.project')} · {t('internal.editorialAssembly.mvpFlow')}</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <button className="btn-secondary" onClick={loadState}>
             <RefreshCw className="h-4 w-4" />
-            Refresh
+            {t('internal.editorialAssembly.refresh')}
           </button>
           <button
             className="btn-secondary"
             disabled={!!action}
-            onClick={() => runAction('Reconciliar material', async () => {
+            onClick={() => runAction(t('internal.editorialAssembly.reconcileMaterial'), async () => {
               await editorialApi.reconcile(projectId)
-              setMessage('Reconciliación completada')
+              setMessage(t('internal.editorialAssembly.reconciliationCompleted'))
             })}
           >
             <Layers className="h-4 w-4" />
-            Reconciliar material
+            {t('internal.editorialAssembly.reconcileMaterial')}
           </button>
           <button
             className="btn-secondary"
             disabled={!!action}
-            onClick={() => runAction('Calcular tomas recomendadas', async () => {
+            onClick={() => runAction(t('internal.editorialAssembly.calculateRecommendedTakes'), async () => {
               await editorialApi.score(projectId)
-              setMessage('Scoring completado')
+              setMessage(t('internal.editorialAssembly.scoringCompleted'))
             })}
           >
             <Scissors className="h-4 w-4" />
-            Calcular tomas recomendadas
+            {t('internal.editorialAssembly.calculateRecommendedTakes')}
           </button>
           <button
             className="btn-primary"
             disabled={!!action}
-            onClick={() => runAction('Generar AssemblyCut', async () => {
+            onClick={() => runAction(t('internal.editorialAssembly.generateAssemblyCut'), async () => {
               const result = await editorialApi.generateAssembly(projectId)
               setAssembly(result.assembly_cut)
-              setMessage(`AssemblyCut generado con ${result.items_created} items`)
+              setMessage(t('internal.editorialAssembly.assemblyGenerated').replace('{count}', String(result.items_created)))
             })}
           >
-            Generar AssemblyCut
+            {t('internal.editorialAssembly.generateAssemblyCut')}
           </button>
           <button
             className="btn-secondary"
             disabled={!!action || !assembly}
-            onClick={() => runAction('Validar FCPXML', async () => {
+            onClick={() => runAction(t('internal.editorialAssembly.validateFCPXML'), async () => {
               const validation = await editorialApi.validateFCPXML(projectId)
               setFcpxmlStatus((current) => current ? { ...current, validation } : current)
-              setMessage(validation.valid ? 'FCPXML validado' : `FCPXML con errores: ${validation.errors.length}`)
+              setMessage(validation.valid ? t('internal.editorialAssembly.fcpxmlValidated') : t('internal.editorialAssembly.fcpxmlErrors').replace('{count}', String(validation.errors.length)))
             })}
           >
-            Validar FCPXML
+            {t('internal.editorialAssembly.validateFCPXML')}
           </button>
           <button
             className="btn-primary"
             disabled={!!action || !assembly}
-            onClick={() => runAction('Exportar FCPXML', async () => {
+            onClick={() => runAction(t('internal.editorialAssembly.exportFCPXML'), async () => {
               const blob = await editorialApi.exportFCPXML(projectId)
               downloadBlob(blob, `${projectName || 'project'}_assembly.fcpxml`)
-              setMessage('FCPXML exportado')
+              setMessage(t('internal.editorialAssembly.fcpxmlExported'))
             })}
           >
             <Download className="h-4 w-4" />
-            Exportar FCPXML
+            {t('internal.editorialAssembly.exportFCPXML')}
           </button>
           <button
             className="btn-primary"
             disabled={!!action || !assembly}
-            onClick={() => runAction('Exportar paquete editorial ZIP', async () => {
+            onClick={() => runAction(t('internal.editorialAssembly.exportEditorialPackageZip'), async () => {
               const blob = await editorialApi.exportEditorialPackage(projectId)
               downloadBlob(blob, `${projectName || 'project'}_editorial_package.zip`)
-              setMessage('Paquete editorial exportado')
+              setMessage(t('internal.editorialAssembly.editorialPackageExported'))
             })}
           >
             <Download className="h-4 w-4" />
-            Exportar paquete editorial ZIP
+            {t('internal.editorialAssembly.exportEditorialPackageZip')}
           </button>
         </div>
       </div>
 
-      {action && <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">Ejecutando: {action}</div>}
+      {action && <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">{t('internal.editorialAssembly.runningAction').replace('{action}', action)}</div>}
       {message && <div className="rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-200">{message}</div>}
       {error && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>}
 
       <section className="card card-hover space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="heading-md">Exportacion DaVinci</h2>
-          <span className="text-sm text-slate-400">{fcpxmlStatus?.clip_count ?? assembly?.items.length ?? 0} clips</span>
+          <h2 className="heading-md">{t('internal.editorialAssembly.davinciExportTitle')}</h2>
+          <span className="text-sm text-slate-400">{fcpxmlStatus?.clip_count ?? assembly?.items.length ?? 0} {t('internal.editorialAssembly.clips')}</span>
         </div>
         {!assembly || !fcpxmlStatus ? (
-          <p className="text-sm text-slate-400">Genera un AssemblyCut para habilitar validacion, export y relink report.</p>
+          <p className="text-sm text-slate-400">{t('internal.editorialAssembly.generateAssemblyCutHint')}</p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <div className="rounded-xl border border-white/10 bg-dark-300/40 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Estado FCPXML</p>
-              <p className="mt-2 text-lg font-semibold text-white">{fcpxmlStatus.validation.valid ? 'Valido' : 'Con errores'}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('internal.editorialAssembly.fcpxmlStatus')}</p>
+              <p className="mt-2 text-lg font-semibold text-white">{fcpxmlStatus.validation.valid ? t('internal.editorialAssembly.valid') : t('internal.editorialAssembly.withErrors')}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-dark-300/40 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Media resuelta</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('internal.editorialAssembly.mediaResolved')}</p>
               <p className="mt-2 text-lg font-semibold text-white">{fcpxmlStatus.media_relink_report.resolved_media_count}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-dark-300/40 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Media offline</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('internal.editorialAssembly.mediaOffline')}</p>
               <p className="mt-2 text-lg font-semibold text-white">{fcpxmlStatus.media_relink_report.offline_media_count}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-dark-300/40 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Warnings</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('internal.editorialAssembly.warnings')}</p>
               <p className="mt-2 text-lg font-semibold text-white">{fcpxmlStatus.warnings.length}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-dark-300/40 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Archivo</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('internal.editorialAssembly.file')}</p>
               <p className="mt-2 text-sm font-medium text-slate-200 break-all">{fcpxmlStatus.file_name}</p>
             </div>
           </div>
         )}
         {fcpxmlStatus && (fcpxmlStatus.validation.errors.length > 0 || fcpxmlStatus.warnings.length > 0) && (
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100 space-y-2">
-            {fcpxmlStatus.validation.errors.length > 0 && <p>Errores: {fcpxmlStatus.validation.errors.join(' · ')}</p>}
-            {fcpxmlStatus.warnings.length > 0 && <p>Warnings: {fcpxmlStatus.warnings.join(' · ')}</p>}
+            {fcpxmlStatus.validation.errors.length > 0 && <p>{t('internal.editorialAssembly.errors')}: {fcpxmlStatus.validation.errors.join(' · ')}</p>}
+            {fcpxmlStatus.warnings.length > 0 && <p>{t('internal.editorialAssembly.warnings')}: {fcpxmlStatus.warnings.join(' · ')}</p>}
           </div>
         )}
       </section>
 
       <section className="card card-hover space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="heading-md">Exportacion DaVinci multiplataforma</h2>
+          <h2 className="heading-md">{t('internal.editorialAssembly.davinciExportMultiplatform')}</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div>
-            <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 mb-2">Plataforma</label>
+            <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 mb-2">{t('internal.editorialAssembly.platform')}</label>
             <select
               value={davinciPlatform}
               onChange={(e) => {
@@ -326,7 +328,7 @@ export default function EditorialAssemblyPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 mb-2">Ruta raiz</label>
+            <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 mb-2">{t('internal.editorialAssembly.rootPath')}</label>
             <input
               type="text"
               value={davinciRootPath}
@@ -337,7 +339,7 @@ export default function EditorialAssemblyPage() {
             />
           </div>
           <div>
-            <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 mb-2">Audio</label>
+            <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 mb-2">{t('internal.editorialAssembly.audio')}</label>
             <select
               value={davinciAudioMode}
               onChange={(e) => setDavinciAudioMode(e.target.value as DavinciPlatformExportRequest['audio_mode'])}
@@ -355,41 +357,41 @@ export default function EditorialAssemblyPage() {
                 onChange={(e) => setDavinciIncludeMedia(e.target.checked)}
                 className="checkbox"
               />
-              Incluir media
+              {t('internal.editorialAssembly.includeMedia')}
             </label>
           </div>
         </div>
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-100">
-          El modo conservative es el export seguro validado. El modo experimental intenta linked audio, pero todavia requiere validacion manual en DaVinci.
+          {t('internal.editorialAssembly.audioModeHelp')}
         </div>
         <button
           className="btn-primary"
           disabled={davinciExporting || !assembly}
           onClick={handleDavinciExport}
         >
-          {davinciExporting ? 'Exportando...' : 'Generar paquete DaVinci'}
+          {davinciExporting ? t('internal.editorialAssembly.exporting') : t('internal.editorialAssembly.generateDavinciPackage')}
         </button>
       </section>
 
       <section className="card card-hover space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="heading-md">Takes</h2>
+          <h2 className="heading-md">{t('internal.editorialAssembly.takes')}</h2>
           <span className="text-sm text-slate-400">{takes.length}</span>
         </div>
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="text-left text-slate-500">
-                <th className="py-2 pr-4">Escena</th>
-                <th className="py-2 pr-4">Plano</th>
-                <th className="py-2 pr-4">Toma</th>
-                <th className="py-2 pr-4">Estado</th>
-                <th className="py-2 pr-4">Camara</th>
-                <th className="py-2 pr-4">Sonido</th>
-                <th className="py-2 pr-4">Audio metadata</th>
-                <th className="py-2 pr-4">Dual-system</th>
-                <th className="py-2 pr-4">Sync</th>
-                <th className="py-2 pr-4">Score</th>
+                <th className="py-2 pr-4">{t('internal.editorialAssembly.scene')}</th>
+                <th className="py-2 pr-4">{t('internal.editorialAssembly.shot')}</th>
+                <th className="py-2 pr-4">{t('internal.editorialAssembly.take')}</th>
+                <th className="py-2 pr-4">{t('internal.editorialAssembly.status')}</th>
+                <th className="py-2 pr-4">{t('internal.editorialAssembly.camera')}</th>
+                <th className="py-2 pr-4">{t('internal.editorialAssembly.sound')}</th>
+                <th className="py-2 pr-4">{t('internal.editorialAssembly.audioMetadata')}</th>
+                <th className="py-2 pr-4">{t('internal.editorialAssembly.dualSystem')}</th>
+                <th className="py-2 pr-4">{t('internal.editorialAssembly.sync')}</th>
+                <th className="py-2 pr-4">{t('internal.editorialAssembly.score')}</th>
               </tr>
             </thead>
             <tbody>
@@ -399,8 +401,8 @@ export default function EditorialAssemblyPage() {
                   <td className="py-2 pr-4">{take.shot_number ?? '—'}</td>
                   <td className="py-2 pr-4">{take.take_number ?? '—'}</td>
                   <td className="py-2 pr-4">{take.reconciliation_status || 'partial'}</td>
-                  <td className="py-2 pr-4">{take.video_filename || 'missing camera'}</td>
-                  <td className="py-2 pr-4">{take.audio_filename || 'missing audio'}</td>
+                  <td className="py-2 pr-4">{take.video_filename || t('internal.editorialAssembly.missingCamera')}</td>
+                  <td className="py-2 pr-4">{take.audio_filename || t('internal.editorialAssembly.missingAudio')}</td>
                   <td className="py-2 pr-4">{take.audio_metadata_status || 'n/a'}</td>
                   <td className="py-2 pr-4">{take.dual_system_status || 'n/a'}</td>
                   <td className="py-2 pr-4">{take.sync_method ? `${take.sync_method}${take.sync_confidence ? ` (${take.sync_confidence.toFixed(2)})` : ''}` : 'n/a'}</td>
@@ -414,7 +416,7 @@ export default function EditorialAssemblyPage() {
 
       <section className="card card-hover space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="heading-md">Tomas recomendadas</h2>
+          <h2 className="heading-md">{t('internal.editorialAssembly.recommendedTakes')}</h2>
           <span className="text-sm text-slate-400">{recommended.length}</span>
         </div>
         <div className="space-y-3">
@@ -423,9 +425,9 @@ export default function EditorialAssemblyPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-medium text-white">
-                    Escena {item.scene_number ?? '—'} · Plano {item.shot_number ?? '—'} · Toma {item.take.take_number ?? '—'}
+                    {t('internal.editorialAssembly.scene')} {item.scene_number ?? '—'} · {t('internal.editorialAssembly.shot')} {item.shot_number ?? '—'} · {t('internal.editorialAssembly.take')} {item.take.take_number ?? '—'}
                   </p>
-                  <p className="mt-1 text-sm text-slate-400">{item.take.recommended_reason || 'Sin razón editorial'}</p>
+                  <p className="mt-1 text-sm text-slate-400">{item.take.recommended_reason || t('internal.editorialAssembly.noEditorialReason')}</p>
                   {(item.take.sync_warning || item.take.conflict_flags.length > 0) && (
                     <p className="mt-1 text-xs text-amber-300">{item.take.sync_warning || item.take.conflict_flags.join(' · ')}</p>
                   )}
@@ -439,11 +441,11 @@ export default function EditorialAssemblyPage() {
 
       <section className="card card-hover space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="heading-md">Orden de montaje</h2>
+          <h2 className="heading-md">{t('internal.editorialAssembly.assemblyOrder')}</h2>
           <span className="text-sm text-slate-400">{assembly?.items.length ?? 0}</span>
         </div>
         {!assembly ? (
-          <p className="text-sm text-slate-400">Todavía no existe un AssemblyCut para este proyecto.</p>
+          <p className="text-sm text-slate-400">{t('internal.editorialAssembly.noAssemblyYet')}</p>
         ) : (
           <div className="space-y-3">
             {assembly.items.map((item) => (
@@ -451,9 +453,9 @@ export default function EditorialAssemblyPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="font-medium text-white">
-                      #{item.order_index + 1} · Escena {item.scene_number ?? '—'} · Plano {item.shot_number ?? '—'} · Toma {item.take_number ?? '—'}
+                      #{item.order_index + 1} · {t('internal.editorialAssembly.scene')} {item.scene_number ?? '—'} · {t('internal.editorialAssembly.shot')} {item.shot_number ?? '—'} · {t('internal.editorialAssembly.take')} {item.take_number ?? '—'}
                     </p>
-                    <p className="mt-1 text-sm text-slate-400">{item.recommended_reason || 'Sin motivo editorial'}</p>
+                    <p className="mt-1 text-sm text-slate-400">{item.recommended_reason || t('internal.editorialAssembly.noEditorialMotive')}</p>
                   </div>
                   <div className="text-sm text-slate-400">
                     IN {item.timeline_in ?? 0} · OUT {item.timeline_out ?? 0}

@@ -248,8 +248,8 @@ export function StoryboardSequenceSelectorModal({
   const helperStatus = (() => {
     if (mode === 'SELECTED_SCENES') return `${selectedSequenceCount} ${t('components.storyboard.sequenceSelectorModal.selectedSequences')} · ${(selectedSceneNumbersForMulti ?? []).length} ${t('components.storyboard.sequenceSelectorModal.coveredScenes')}`
     if (mode === 'SEQUENCE') return selectedSequenceId ? t('components.storyboard.sequenceSelectorModal.oneSequenceSelected') : t('components.storyboard.sequenceSelectorModal.selectSequence')
-    if (mode === 'SINGLE_SCENE') return selectedSingleSceneNumber != null ? `Escena ${selectedSingleSceneNumber} seleccionada` : t('components.storyboard.sequenceSelectorModal.selectScene')
-    if (mode === 'SCENE_RANGE') return `Rango ${rangeStart || '1'}-${rangeEnd || rangeStart || '1'}`
+    if (mode === 'SINGLE_SCENE') return selectedSingleSceneNumber != null ? t('components.storyboard.sequenceSelectorModal.selectedScene').replace('{scene}', String(selectedSingleSceneNumber)) : t('components.storyboard.sequenceSelectorModal.selectScene')
+    if (mode === 'SCENE_RANGE') return t('components.storyboard.sequenceSelectorModal.rangeSelected').replace('{start}', rangeStart || '1').replace('{end}', rangeEnd || rangeStart || '1')
     return `${(scenes ?? []).length} ${t('components.storyboard.sequenceSelectorModal.detectedScenes')}`
   })()
 

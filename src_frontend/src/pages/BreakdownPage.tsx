@@ -11,6 +11,7 @@ import {
 import { breakdownApi } from '@/api'
 import { projectsApi } from '@/api'
 import { BreakdownExportFormat } from '@/types/breakdown'
+import { t } from '@/i18n'
 
 export default function BreakdownPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -60,7 +61,7 @@ export default function BreakdownPage() {
       document.body.removeChild(a)
     } catch (err) {
       console.error('Export failed', err)
-      alert('Error exportando el desglose. Por favor intente nuevamente.')
+      alert(t('internal.breakdownPage.errors.exportFailed'))
     } finally {
       setExporting(null)
     }
@@ -78,11 +79,10 @@ export default function BreakdownPage() {
           <div className="flex items-start">
             <AlertTriangle className="h-6 w-6 text-amber-400 mt-0.5 mr-4 flex-shrink-0" />
             <div>
-              <h3 className="text-lg font-medium text-amber-800">Módulo no disponible</h3>
+              <h3 className="text-lg font-medium text-amber-800">{t('internal.breakdownPage.blockedTitle')}</h3>
               <div className="mt-2 text-amber-700">
                 <p>
-                  No tienes acceso al módulo de CID Breakdown para este proyecto. Contacta con tu
-                  administrador para habilitar esta funcionalidad.
+                  {t('internal.breakdownPage.blockedDescription')}
                 </p>
               </div>
               <div className="mt-4">
@@ -90,7 +90,7 @@ export default function BreakdownPage() {
                   onClick={() => navigate(`/projects/${projectId}`)}
                   className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors font-medium text-sm"
                 >
-                  Volver al Proyecto
+                  {t('internal.breakdownPage.backToProject')}
                 </button>
               </div>
             </div>
@@ -116,21 +116,21 @@ export default function BreakdownPage() {
       {/* Breadcrumbs */}
       <nav className="flex items-center text-sm font-medium text-gray-500 space-x-2">
         <Link to="/projects" className="hover:text-gray-900 transition-colors">
-          Proyectos
+          {t('internal.common.projects')}
         </Link>
         <ChevronRight className="h-4 w-4" />
         <Link to={`/projects/${projectId}`} className="hover:text-gray-900 transition-colors">
-          {project?.name || 'Proyecto'}
+          {project?.name || t('internal.breakdownPage.projectFallback')}
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900">CID Breakdown</span>
+        <span className="text-gray-900">{t('internal.breakdownPage.title')}</span>
       </nav>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">CID Breakdown</h1>
-          <p className="text-gray-500 mt-1">Desglose técnico inteligente de guion</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('internal.breakdownPage.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('internal.breakdownPage.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -143,7 +143,7 @@ export default function BreakdownPage() {
             ) : (
               <Download className="h-4 w-4" />
             )}
-            JSON
+            {t('internal.breakdownPage.formats.json')}
           </button>
           <button
             onClick={() => handleExport('csv')}
@@ -155,7 +155,7 @@ export default function BreakdownPage() {
             ) : (
               <Download className="h-4 w-4" />
             )}
-            CSV
+            {t('internal.breakdownPage.formats.csv')}
           </button>
           <button
             onClick={() => handleExport('md')}
@@ -167,7 +167,7 @@ export default function BreakdownPage() {
             ) : (
               <FileText className="h-4 w-4" />
             )}
-            Markdown
+            {t('internal.breakdownPage.formats.md')}
           </button>
         </div>
       </div>
@@ -179,13 +179,12 @@ export default function BreakdownPage() {
             <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary-500" />
-                Escenas ({scenes.length})
+                {t('internal.breakdownPage.sections.scenes')} ({scenes.length})
               </h2>
             </div>
             {scenes.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                No hay escenas desglosadas todavía. Es necesario ejecutar Script Analysis Pro
-                previamente.
+                {t('internal.breakdownPage.empty.noScenes')}
               </div>
             ) : (
               <div className="divide-y divide-gray-100 max-h-[800px] overflow-y-auto">
@@ -197,7 +196,7 @@ export default function BreakdownPage() {
                           {scene.scene_number || idx + 1}
                         </span>
                         <h3 className="font-medium text-gray-900">
-                          {scene.heading || 'Sin encabezado'}
+                          {scene.heading || t('internal.breakdownPage.empty.noHeading')}
                         </h3>
                       </div>
                     </div>
@@ -221,7 +220,7 @@ export default function BreakdownPage() {
                     {scene.characters && scene.characters.length > 0 && (
                       <div className="mt-3">
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                          Personajes
+                          {t('internal.breakdownPage.sections.characters')}
                         </span>
                         <p className="text-sm text-gray-700">{scene.characters.join(', ')}</p>
                       </div>
@@ -239,11 +238,11 @@ export default function BreakdownPage() {
             <div className="p-4 border-b border-gray-100 bg-gray-50">
               <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                 <Settings className="h-5 w-5 text-secondary-500" />
-                Departamentos ({departments.length})
+                {t('internal.breakdownPage.sections.departments')} ({departments.length})
               </h2>
             </div>
             {departments.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">No hay datos de departamentos.</div>
+              <div className="p-8 text-center text-gray-500">{t('internal.breakdownPage.empty.noDepartments')}</div>
             ) : (
               <div className="divide-y divide-gray-100 max-h-[800px] overflow-y-auto">
                 {departments.map((dept, idx) => (
@@ -258,7 +257,7 @@ export default function BreakdownPage() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-gray-400 italic">Sin elementos detectados</p>
+                      <p className="text-sm text-gray-400 italic">{t('internal.breakdownPage.empty.noItems')}</p>
                     )}
                   </div>
                 ))}

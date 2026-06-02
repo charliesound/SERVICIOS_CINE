@@ -973,6 +973,33 @@
         "departments": "Departments — technical needs by area",
         "exportableReport": "Exportable report — JSON and Markdown for sharing"
       }
+    },
+    "breakdownPage": {
+      "title": "CID Breakdown",
+      "subtitle": "Intelligent technical script breakdown",
+      "projectFallback": "Project",
+      "backToProject": "Back to project",
+      "blockedTitle": "Module unavailable",
+      "blockedDescription": "You do not have access to the CID Breakdown module for this project. Contact your administrator to enable this feature.",
+      "formats": {
+        "json": "JSON",
+        "csv": "CSV",
+        "md": "Markdown"
+      },
+      "sections": {
+        "scenes": "Scenes",
+        "characters": "Characters",
+        "departments": "Departments"
+      },
+      "empty": {
+        "noScenes": "No breakdown scenes yet. Script Analysis Pro must be executed first.",
+        "noHeading": "No heading",
+        "noDepartments": "No department data.",
+        "noItems": "No detected items"
+      },
+      "errors": {
+        "exportFailed": "Error exporting the breakdown. Please try again."
+      }
     }
   },
   "components": {

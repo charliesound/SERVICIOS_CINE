@@ -973,6 +973,33 @@
         "departments": "Departamentos — necesidades técnicas por área",
         "exportableReport": "Informe exportable — JSON y Markdown para compartir"
       }
+    },
+    "breakdownPage": {
+      "title": "CID Breakdown",
+      "subtitle": "Desglose técnico inteligente de guion",
+      "projectFallback": "Proyecto",
+      "backToProject": "Volver al proyecto",
+      "blockedTitle": "Módulo no disponible",
+      "blockedDescription": "No tienes acceso al módulo de CID Breakdown para este proyecto. Contacta con tu administrador para habilitar esta funcionalidad.",
+      "formats": {
+        "json": "JSON",
+        "csv": "CSV",
+        "md": "Markdown"
+      },
+      "sections": {
+        "scenes": "Escenas",
+        "characters": "Personajes",
+        "departments": "Departamentos"
+      },
+      "empty": {
+        "noScenes": "No hay escenas desglosadas todavía. Es necesario ejecutar Script Analysis Pro previamente.",
+        "noHeading": "Sin encabezado",
+        "noDepartments": "No hay datos de departamentos.",
+        "noItems": "Sin elementos detectados"
+      },
+      "errors": {
+        "exportFailed": "Error exportando el desglose. Por favor intenta nuevamente."
+      }
     }
   },
   "components": {

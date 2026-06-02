@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   ChevronRight,
@@ -95,6 +95,48 @@ const mvpSteps = [
   { number: '05', title: 'Planificar y operar', text: 'Establece el plan de rodaje y haz seguimiento de la produccion real integrada en el sistema CID.' },
 ]
 
+const operationalSteps = [
+  {
+    title: 'Crear proyecto',
+    text: 'Arranca un proyecto nuevo en CID para centralizar la produccion desde el primer paso.',
+    route: '/projects/new',
+    cta: 'Abrir creador de proyecto',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Guion y analisis',
+    text: 'Accede a tus proyectos para cargar guiones, revisar contexto y activar analisis desde CID.',
+    route: '/projects',
+    cta: 'Ir a mis proyectos',
+    icon: FileSearch,
+  },
+  {
+    title: 'Presupuesto',
+    text: 'La capa presupuestaria se activa dentro del proyecto para conectar desglose, costes y control.',
+    icon: BarChart3,
+  },
+  {
+    title: 'Financiacion',
+    text: 'CID estructura la estrategia financiera y el seguimiento de ayudas sobre el proyecto activo.',
+    icon: Coins,
+  },
+  {
+    title: 'Storyboard',
+    text: 'La previsualizacion editorial y visual se articula dentro del flujo operativo del proyecto.',
+    icon: Clapperboard,
+  },
+  {
+    title: 'Dossier productor',
+    text: 'La documentacion ejecutiva se consolida como paquete de presentacion dentro del entorno CID.',
+    icon: FileStack,
+  },
+  {
+    title: 'Dashboard produccion',
+    text: 'El seguimiento operativo se presenta en paneles conectados a estado, costes y decisiones.',
+    icon: PieChart,
+  },
+]
+
 interface FormField {
   label: string
   name: string
@@ -112,8 +154,10 @@ const formFields: FormField[] = [
 ]
 
 export default function ProducerSolutionPage() {
+  const navigate = useNavigate()
   const { isAuthenticated, user } = useAuthStore()
   const cidTarget = user ? '/cid' : '/login'
+  const startRoute = isAuthenticated ? '/projects/new' : '/register/cid'
 
   useSeo({
     title: 'Producer AI Studio | AILinkCinema',
@@ -229,7 +273,7 @@ export default function ProducerSolutionPage() {
 
               <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <button
-                  onClick={scrollToForm}
+                  onClick={() => navigate(startRoute)}
                   className="landing-cta-primary"
                 >
                   Preparar mi proyecto
@@ -240,6 +284,71 @@ export default function ProducerSolutionPage() {
                   <ChevronRight className="h-4 w-4" />
                 </a>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FLUJO OPERATIVO CID */}
+        <section className="relative border-t border-white/5 bg-[#09111c]/30 py-24 md:py-32">
+          <div className="mx-auto max-w-7xl px-5 md:px-8">
+            <LandingReveal>
+              <div className="mx-auto max-w-3xl text-center">
+                <p className="editorial-kicker text-amber-300/90">Flujo operativo CID</p>
+                <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">
+                  De la entrada del proyecto al <span className="text-gradient-amber">control operativo</span>
+                </h2>
+                <p className="mt-4 text-lg leading-8 text-slate-400">
+                  Usa rutas ya activas de CID para arrancar proyecto y entender como se conectan las capas operativas.
+                </p>
+              </div>
+            </LandingReveal>
+
+            <div className="mt-14 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {operationalSteps.map((step, index) => {
+                const Icon = step.icon
+                const cardContent = (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
+                        <Icon className="h-5 w-5 text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-amber-300/70">
+                          Paso {String(index + 1).padStart(2, '0')}
+                        </p>
+                        <h3 className="mt-1 text-base font-semibold text-white">{step.title}</h3>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-sm leading-7 text-slate-400">{step.text}</p>
+                    <div className="mt-6">
+                      {step.route ? (
+                        <span className="inline-flex items-center gap-2 text-sm font-medium text-amber-300">
+                          {step.cta}
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-2 text-sm font-medium text-slate-400">
+                          Disponible dentro del proyecto activo en CID
+                        </span>
+                      )}
+                    </div>
+                  </>
+                )
+
+                return (
+                  <LandingReveal key={step.title} delay={index * 70}>
+                    {step.route ? (
+                      <Link to={step.route} className="landing-creative-card block h-full transition-transform hover:-translate-y-0.5">
+                        {cardContent}
+                      </Link>
+                    ) : (
+                      <div className="landing-creative-card h-full">
+                        {cardContent}
+                      </div>
+                    )}
+                  </LandingReveal>
+                )
+              })}
             </div>
           </div>
         </section>
@@ -422,13 +531,20 @@ export default function ProducerSolutionPage() {
                   Optimiza tus procesos y toma el control de tu proxima produccion.
                 </p>
                 <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                  <button
-                    onClick={scrollToForm}
-                    className="landing-cta-primary"
-                  >
-                    Solicitar acceso
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
+                  {isAuthenticated ? (
+                    <Link to="/projects" className="landing-cta-primary">
+                      Ir a mis proyectos
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={scrollToForm}
+                      className="landing-cta-primary"
+                    >
+                      Solicitar acceso
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  )}
                   <Link to="/solutions" className="landing-cta-secondary">
                     Ver todas las soluciones
                     <ChevronRight className="h-4 w-4" />
@@ -555,7 +671,7 @@ export default function ProducerSolutionPage() {
                 </p>
                 <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                   <button
-                    onClick={scrollToForm}
+                    onClick={() => navigate(startRoute)}
                     className="landing-cta-primary text-base"
                   >
                     Empezar ahora

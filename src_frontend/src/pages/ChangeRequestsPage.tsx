@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { FileText, Check, X } from 'lucide-react'
+import { useLanguage } from '@/i18n'
 
 interface ChangeRequest {
   id: string
@@ -14,23 +15,24 @@ interface ChangeRequest {
   created_at: string
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  proposed: 'Propuesto',
-  pending_approval: 'Pendiente aprobación',
-  approved: 'Aprobado',
-  rejected: 'Rechazado',
-  applied: 'Aplicado',
-  cancelled: 'Cancelado',
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  proposed: 'internal.changeRequests.status.proposed',
+  pending_approval: 'internal.changeRequests.status.pendingApproval',
+  approved: 'internal.changeRequests.status.approved',
+  rejected: 'internal.changeRequests.status.rejected',
+  applied: 'internal.changeRequests.status.applied',
+  cancelled: 'internal.changeRequests.status.cancelled',
 }
 
-const SEVERITY_LABELS: Record<string, string> = {
-  low: 'Baja',
-  medium: 'Media',
-  high: 'Alta',
-  critical: 'Crítica',
+const SEVERITY_LABEL_KEYS: Record<string, string> = {
+  low: 'internal.changeRequests.severity.low',
+  medium: 'internal.changeRequests.severity.medium',
+  high: 'internal.changeRequests.severity.high',
+  critical: 'internal.changeRequests.severity.critical',
 }
 
 export default function ChangeRequestsPage() {
+  const { t } = useLanguage()
   const { projectId = '' } = useParams()
   const [changes, setChanges] = useState<ChangeRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -95,23 +97,31 @@ export default function ChangeRequestsPage() {
     c => c.status === 'approved' || c.status === 'rejected' || c.status === 'applied'
   )
 
+  const getStatusLabel = (status: string) => {
+    const key = STATUS_LABEL_KEYS[status]
+    return key ? t(key) : status
+  }
+
+  const getSeverityLabel = (severityValue: string) => {
+    const key = SEVERITY_LABEL_KEYS[severityValue]
+    return key ? t(key) : severityValue
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="heading-lg">Cambios Pendientes</h1>
-          <p className="mt-1 text-slate-400">
-            Gestão de cambios y aprobacións
-          </p>
+          <h1 className="heading-lg">{t('internal.changeRequests.title')}</h1>
+          <p className="mt-1 text-slate-400">{t('internal.changeRequests.subtitle')}</p>
         </div>
         <Link to={`/projects/${projectId}/dashboard`} className="btn-secondary">
-          Volver al dashboard
+          {t('internal.changeRequests.backToDashboard')}
         </Link>
       </div>
 
       {pendingChanges.length > 0 && (
         <div className="space-y-4">
-          <h2 className="heading-md">Pendientes de Aprobación</h2>
+          <h2 className="heading-md">{t('internal.changeRequests.pendingApprovalTitle')}</h2>
           {pendingChanges.map(change => (
             <div key={change.id} className="card">
               <div className="flex items-start justify-between">
@@ -122,7 +132,7 @@ export default function ChangeRequestsPage() {
                       change.severity === 'high' ? 'badge-amber' :
                       'badge-blue'
                     }`}>
-                      {SEVERITY_LABELS[change.severity] || change.severity}
+                      {getSeverityLabel(change.severity)}
                     </span>
                     <span className="text-sm text-slate-400">
                       {change.target_module}
@@ -135,10 +145,10 @@ export default function ChangeRequestsPage() {
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => approveChange(change.id)} className="btn-primary text-sm">
-                    <Check className="w-4 h-4 mr-1" /> Aprobar
+                    <Check className="w-4 h-4 mr-1" /> {t('internal.changeRequests.approve')}
                   </button>
                   <button onClick={() => rejectChange(change.id)} className="btn-secondary text-sm">
-                    <X className="w-4 h-4 mr-1" /> Rechazar
+                    <X className="w-4 h-4 mr-1" /> {t('internal.changeRequests.reject')}
                   </button>
                 </div>
               </div>
@@ -149,7 +159,7 @@ export default function ChangeRequestsPage() {
 
       {processedChanges.length > 0 && (
         <div className="space-y-4">
-          <h2 className="heading-md">Historial de Cambios</h2>
+          <h2 className="heading-md">{t('internal.changeRequests.historyTitle')}</h2>
           {processedChanges.map(change => (
             <div key={change.id} className="card">
               <div className="flex items-start justify-between">
@@ -160,7 +170,7 @@ export default function ChangeRequestsPage() {
                       change.status === 'rejected' ? 'badge-red' :
                       'badge-blue'
                     }`}>
-                      {STATUS_LABELS[change.status] || change.status}
+                      {getStatusLabel(change.status)}
                     </span>
                     <span className="text-sm text-slate-400">
                       {change.target_module}
@@ -181,7 +191,7 @@ export default function ChangeRequestsPage() {
         <div className="card">
           <div className="text-center p-8">
             <FileText className="w-12 h-12 mx-auto mb-3 text-slate-500" />
-            <p className="text-slate-400">No hay cambios propuestos</p>
+            <p className="text-slate-400">{t('internal.changeRequests.empty')}</p>
           </div>
         </div>
       )}

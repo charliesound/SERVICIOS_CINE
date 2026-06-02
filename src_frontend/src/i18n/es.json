@@ -1314,6 +1314,30 @@
       "noAssemblyYet": "Todavía no existe un AssemblyCut para este proyecto.",
       "noEditorialMotive": "Sin motivo editorial",
       "platformOfflineRelink": "Offline / relink manual"
+    },
+    "changeRequests": {
+      "title": "Cambios pendientes",
+      "subtitle": "Gestión de cambios y aprobaciones",
+      "backToDashboard": "Volver al dashboard",
+      "pendingApprovalTitle": "Pendientes de aprobación",
+      "historyTitle": "Historial de cambios",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "empty": "No hay cambios propuestos",
+      "status": {
+        "proposed": "Propuesto",
+        "pendingApproval": "Pendiente aprobación",
+        "approved": "Aprobado",
+        "rejected": "Rechazado",
+        "applied": "Aplicado",
+        "cancelled": "Cancelado"
+      },
+      "severity": {
+        "low": "Baja",
+        "medium": "Media",
+        "high": "Alta",
+        "critical": "Crítica"
+      }
     }
   },
   "components": {

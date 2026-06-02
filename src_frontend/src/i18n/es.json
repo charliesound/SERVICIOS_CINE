@@ -2494,6 +2494,27 @@
         "saving": "Guardando...",
         "createReport": "Crear reporte",
         "saveChanges": "Guardar cambios"
+      },
+      "reportsPage": {
+        "title": "Reportes Estructurados",
+        "description": "Crea y mantiene reportes de rodaje manuales con precargas opcionales basadas en documentos.",
+        "refresh": "Actualizar",
+        "createHeading": "Crear {label}",
+        "createSubtitle": "Añade un reporte manual o pasa `document_asset_id` para reutilizar datos estructurados aprobados cuando sean compatibles.",
+        "creating": "Creando...",
+        "createButton": "Crear {label}",
+        "listDescription": "Registros manuales con referencias opcionales a documentos y media assets.",
+        "createError": "No se pudo crear el reporte",
+        "loadError": "No se pudieron cargar {label}",
+        "loading": "Cargando reportes...",
+        "empty": "Aún no hay reportes creados para este tipo.",
+        "fieldId": "ID:",
+        "fieldProject": "Proyecto:",
+        "fieldDocumentAsset": "Document Asset:",
+        "fieldMediaAsset": "Media Asset:",
+        "fieldReportDate": "Fecha del reporte:",
+        "fieldSummary": "Resumen:",
+        "openDetail": "Abrir detalle"
       }
     },
     "projectFundingPanel": {

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ClipboardList, RefreshCw } from 'lucide-react'
+import { useLanguage } from '@/i18n'
 import { useCreateReport, useReports } from '@/hooks'
 import { StructuredReportPayload } from '@/types'
 import {
@@ -30,6 +31,7 @@ export default function ReportsPage() {
   const { reportType } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [formValues, setFormValues] = useState<StructuredReportPayload>(buildInitialReportPayload(searchParams))
 
@@ -59,7 +61,7 @@ export default function ReportsPage() {
       const report = await createReport.mutateAsync(sanitizeReportPayload(formValues))
       navigate(`/reports/${reportType}/${report.id}`)
     } catch (error) {
-      setSubmitError(getErrorMessage(error, 'Unable to create report'))
+      setSubmitError(getErrorMessage(error, t('internal.reportsPage.createError')))
     }
   }
 
@@ -69,13 +71,13 @@ export default function ReportsPage() {
         <div>
           <h1 className="heading-lg flex items-center gap-3">
             <ClipboardList className="h-6 w-6 text-amber-400" />
-            Structured Reports
+            {t('internal.reportsPage.title')}
           </h1>
-          <p className="mt-1 text-slate-400">Create and maintain manual shooting reports with optional document-based prefills.</p>
+          <p className="mt-1 text-slate-400">{t('internal.reportsPage.description')}</p>
         </div>
         <button className="btn-secondary flex items-center gap-2" onClick={() => reportsQuery.refetch()}>
           <RefreshCw className={`h-4 w-4 ${reportsQuery.isFetching ? 'animate-spin' : ''}`} />
-          Refresh
+          {t('internal.reportsPage.refresh')}
         </button>
       </div>
 
@@ -94,9 +96,9 @@ export default function ReportsPage() {
       <div className="grid gap-6 xl:grid-cols-[1.15fr,1.45fr]">
         <section className="card card-hover">
           <div className="mb-5">
-            <h2 className="heading-md">Create {meta.label.slice(0, -1)}</h2>
+            <h2 className="heading-md">{t('internal.reportsPage.createHeading').replace('{label}', meta.label.slice(0, -1))}</h2>
             <p className="mt-1 text-sm text-slate-400">
-              Add a manual report or pass `document_asset_id` to reuse approved structured data when compatible.
+              {t('internal.reportsPage.createSubtitle')}
             </p>
           </div>
 
@@ -147,7 +149,7 @@ export default function ReportsPage() {
             </div>
 
             <button className="btn-primary" type="submit" disabled={createReport.isPending}>
-              {createReport.isPending ? 'Creating...' : `Create ${meta.label.slice(0, -1)}`}
+              {createReport.isPending ? t('internal.reportsPage.creating') : t('internal.reportsPage.createButton').replace('{label}', meta.label.slice(0, -1))}
             </button>
           </form>
         </section>
@@ -156,7 +158,7 @@ export default function ReportsPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="heading-md">{meta.label}</h2>
-              <p className="mt-1 text-sm text-slate-400">Manual records with optional document and media references.</p>
+              <p className="mt-1 text-sm text-slate-400">{t('internal.reportsPage.listDescription')}</p>
             </div>
             <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
               {reportsQuery.data?.length ?? 0}
@@ -165,15 +167,15 @@ export default function ReportsPage() {
 
           {reportsQuery.error && (
             <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-              {getErrorMessage(reportsQuery.error, `Unable to load ${meta.label.toLowerCase()}`)}
+              {getErrorMessage(reportsQuery.error, t('internal.reportsPage.loadError').replace('{label}', meta.label.toLowerCase()))}
             </div>
           )}
 
-          {reportsQuery.isLoading && <div className="text-sm text-slate-400">Loading reports...</div>}
+          {reportsQuery.isLoading && <div className="text-sm text-slate-400">{t('internal.reportsPage.loading')}</div>}
 
           {!reportsQuery.isLoading && !reportsQuery.error && (!reportsQuery.data || reportsQuery.data.length === 0) && (
             <div className="rounded-xl border border-dashed border-white/10 px-6 py-10 text-center text-sm text-slate-400">
-              No reports created yet for this type.
+              {t('internal.reportsPage.empty')}
             </div>
           )}
 
@@ -187,17 +189,17 @@ export default function ReportsPage() {
                       <h3 className="text-lg font-semibold text-white break-all">{summary.primary}</h3>
                     </div>
                     <div className="grid gap-2 text-sm text-slate-300 md:grid-cols-2">
-                      <p><span className="text-slate-500">ID:</span> {report.id}</p>
-                      <p><span className="text-slate-500">Project:</span> {report.project_id}</p>
-                      <p><span className="text-slate-500">Document Asset:</span> {report.document_asset_id || 'n/a'}</p>
-                      <p><span className="text-slate-500">Media Asset:</span> {report.media_asset_id || 'n/a'}</p>
-                      <p><span className="text-slate-500">Report Date:</span> {report.report_date}</p>
-                      <p><span className="text-slate-500">Summary:</span> {summary.secondary}</p>
+                      <p><span className="text-slate-500">{t('internal.reportsPage.fieldId')}</span> {report.id}</p>
+                      <p><span className="text-slate-500">{t('internal.reportsPage.fieldProject')}</span> {report.project_id}</p>
+                      <p><span className="text-slate-500">{t('internal.reportsPage.fieldDocumentAsset')}</span> {report.document_asset_id || 'n/a'}</p>
+                      <p><span className="text-slate-500">{t('internal.reportsPage.fieldMediaAsset')}</span> {report.media_asset_id || 'n/a'}</p>
+                      <p><span className="text-slate-500">{t('internal.reportsPage.fieldReportDate')}</span> {report.report_date}</p>
+                      <p><span className="text-slate-500">{t('internal.reportsPage.fieldSummary')}</span> {summary.secondary}</p>
                     </div>
                   </div>
 
                   <Link to={`/reports/${reportType}/${report.id}`} className="btn-secondary">
-                    Open Detail
+                    {t('internal.reportsPage.openDetail')}
                   </Link>
                 </div>
               </article>

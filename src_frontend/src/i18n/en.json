@@ -2494,6 +2494,27 @@
         "saving": "Saving...",
         "createReport": "Create report",
         "saveChanges": "Save changes"
+      },
+      "reportsPage": {
+        "title": "Structured Reports",
+        "description": "Create and maintain manual shooting reports with optional document-based prefills.",
+        "refresh": "Refresh",
+        "createHeading": "Create {label}",
+        "createSubtitle": "Add a manual report or pass `document_asset_id` to reuse approved structured data when compatible.",
+        "creating": "Creating...",
+        "createButton": "Create {label}",
+        "listDescription": "Manual records with optional document and media references.",
+        "createError": "Unable to create report",
+        "loadError": "Unable to load {label}",
+        "loading": "Loading reports...",
+        "empty": "No reports created yet for this type.",
+        "fieldId": "ID:",
+        "fieldProject": "Project:",
+        "fieldDocumentAsset": "Document Asset:",
+        "fieldMediaAsset": "Media Asset:",
+        "fieldReportDate": "Report Date:",
+        "fieldSummary": "Summary:",
+        "openDetail": "Open Detail"
       }
     },
     "projectFundingPanel": {

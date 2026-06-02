@@ -35,6 +35,7 @@ import {
 import LandingAmbientScene from '@/components/landing/LandingAmbientScene'
 import LandingReveal from '@/components/landing/LandingReveal'
 import { useSeo } from '@/hooks/useSeo'
+import { useLanguage } from '@/i18n'
 import { useAuthStore } from '@/store'
 import { buildAbsoluteUrl } from '@/utils/seo'
 
@@ -46,33 +47,28 @@ function trackEvent(eventName: string, payload?: Record<string, unknown>) {
 
 const audienceItems = [
   {
+    id: 'producers',
     icon: Briefcase,
-    title: 'Productores',
-    text: 'Valida el potencial de produccion de un proyecto antes de comprometer presupuesto, equipo o rodaje.',
     accent: 'amber',
   },
   {
+    id: 'directors',
     icon: Clapperboard,
-    title: 'Directores',
-    text: 'Obtén una lectura visual y estrategica de tu guion para alinear a tu equipo creativo y tecnico.',
     accent: 'violet',
   },
   {
+    id: 'screenwriters',
     icon: PenSquare,
-    title: 'Guionistas',
-    text: 'Descubre cómo se traduce tu escritura a terminos de produccion, riesgo narrativo y oportunidades de desarrollo.',
     accent: 'cyan',
   },
   {
+    id: 'editors',
     icon: Scissors,
-    title: 'Montadores',
-    text: 'Recibe un mapa de escenas clave, ritmo narrativo y material preparado para empezar la edición con criterio.',
     accent: 'emerald',
   },
   {
+    id: 'distributors',
     icon: Globe,
-    title: 'Distribuidores',
-    text: 'Evalúa la viabilidad comercial de un proyecto a partir del analisis de guion y el material de presentacion.',
     accent: 'rose',
   },
 ]
@@ -94,99 +90,69 @@ const accentDots: Record<string, string> = {
 }
 
 const deliverables = [
-  { icon: FileText, title: 'Analisis narrativo del guion', text: 'Lectura estructurada por actos, personajes, tramas y ritmo dramatico.' },
-  { icon: Search, title: 'Detección de fortalezas y riesgos', text: 'Puntos fuertes, carencias narrativas y riesgos de produccion detectados.' },
-  { icon: TrendingUp, title: 'Desglose inicial de producción', text: 'Estimacion de recursos, localizaciones, personajes y necesidades tecnicas.' },
-  { icon: Camera, title: 'Selección de secuencias clave', text: 'Identificacion de las escenas con mayor peso narrativo y visual.' },
-  { icon: Image, title: 'Storyboard o concept frames', text: 'Frames conceptuales de las secuencias clave para comunicar la vision.' },
-  { icon: Palette, title: 'Propuesta de tono visual', text: 'Paleta cromática, referencias de iluminacion y atmosfera por secuencia.' },
-  { icon: Users, title: 'Público objetivo', text: 'Perfil de audiencia potencial, demografia y canales de distribución optimos.' },
-  { icon: BookOpen, title: 'Mini dossier de pitching', text: 'Documento ejecutivo con los hallazgos clave para presentar el proyecto.' },
-  { icon: MessageCircle, title: 'Reunión de devolución', text: 'Sesión online para recorrer el analisis y resolver dudas con el equipo.' },
+  { id: 'scriptAnalysis', icon: FileText },
+  { id: 'strengthsRisks', icon: Search },
+  { id: 'productionBreakdown', icon: TrendingUp },
+  { id: 'keySequences', icon: Camera },
+  { id: 'storyboardFrames', icon: Image },
+  { id: 'visualTone', icon: Palette },
+  { id: 'targetAudience', icon: Users },
+  { id: 'pitchDossier', icon: BookOpen },
+  { id: 'feedbackSession', icon: MessageCircle },
 ]
 
 const steps = [
-  { number: '01', title: 'Envias tu guion o tratamiento', text: 'Sube tu material en formato digital. Aceptamos guiones, tratamientos, escaletas o documentacion de proyecto.' },
-  { number: '02', title: 'CID analiza la estructura narrativa y productiva', text: 'Nuestro sistema procesa el material y extrae personajes, escenas, localizaciones, dialogos y necesidades de produccion.' },
-  { number: '03', title: 'Seleccionamos las secuencias clave', text: 'Identificamos los momentos narrativos y visuales mas relevantes para el analisis y la presentacion.' },
-  { number: '04', title: 'Generamos concept frames o storyboard', text: 'Creamos representaciones visuales de las secuencias clave para comunicar la propuesta estetica.' },
-  { number: '05', title: 'Preparamos un mini dossier', text: 'Compilamos los hallazgos en un documento ejecutivo listo para pitching, financiacion o produccion.' },
-  { number: '06', title: 'Te damos una devolución profesional', text: 'Reunion online para presentar los resultados, resolver dudas y planificar los siguientes pasos.' },
+  { id: 'upload', number: '01' },
+  { id: 'analyze', number: '02' },
+  { id: 'selectSequences', number: '03' },
+  { id: 'generateFrames', number: '04' },
+  { id: 'prepareDossier', number: '05' },
+  { id: 'professionalReview', number: '06' },
 ]
 
 const plans = [
   {
-    name: 'Diagnóstico inicial',
+    id: 'initial',
     price: 'Gratuito',
-    period: 'para proyectos seleccionados',
-    description: 'Validacion ligera del potencial de tu proyecto.',
-    features: [
-      'Analisis narrativo basico',
-      'Detección de fortalezas y riesgos',
-      'Perfil de público objetivo',
-      'Resumen ejecutivo',
-    ],
-    cta: 'Solicitar selección',
     featured: false,
   },
   {
-    name: 'Sprint básico',
+    id: 'basic',
     price: '299 €',
-    period: 'por proyecto',
-    description: 'Analisis completo con material visual para pitching.',
-    features: [
-      'Todo lo del diagnóstico',
-      'Desglose inicial de producción',
-      'Selección de secuencias clave',
-      'Storyboard o concept frames',
-      'Mini dossier de pitching',
-    ],
-    cta: 'Contratar sprint',
     featured: true,
   },
   {
-    name: 'Sprint profesional',
+    id: 'pro',
     price: 'Bajo presupuesto',
-    period: 'consultar',
-    description: 'Analisis profundo con reunion de devolución incluida.',
-    features: [
-      'Todo lo del sprint básico',
-      'Propuesta de tono visual completa',
-      'Analisis de público objetivo detallado',
-      'Dossier de pitching profesional',
-      'Reunión de devolución online',
-    ],
-    cta: 'Consultar precio',
     featured: false,
   },
 ]
 
 const faqs = [
   {
-    q: '¿Tengo que tener un guion terminado?',
-    a: 'No. Aceptamos tratamientos, escaletas, documentacion de proyecto o incluso ideas desarrolladas. Cuanto mas material tengas, mas completo será el analisis.',
+    id: 'finishedScript',
   },
   {
-    q: '¿Se usa IA sin supervisión?',
-    a: 'No. La IA acelera el procesamiento, pero todo el analisis es revisado y validado por nuestro equipo profesional antes de entregartelo.',
+    id: 'aiSupervision',
   },
   {
-    q: '¿El material sigue siendo mío?',
-    a: 'Sí. Todo el material que nos envias sigue siendo 100% tuyo. No lo utilizamos para entrenar modelos ni lo compartimos con terceros sin tu autorización explicita.',
+    id: 'ownership',
   },
   {
-    q: '¿Sirve para pitching?',
-    a: 'Sí. El mini dossier de pitching esta diseñado especificamente para presentar tu proyecto a productoras, fondos de financiacion o plataformas.',
+    id: 'pitching',
   },
   {
-    q: '¿Puedo usarlo con una productora?',
-    a: 'Sí. De hecho esta pensado para que productoras y directores validen proyectos antes de invertir tiempo y recursos en desarrollo.',
+    id: 'productionCompany',
   },
   {
-    q: '¿Se puede generar storyboard de toda la película?',
-    a: 'El piloto se centra en secuencias clave. Si necesitas un storyboard completo, podemos diseñar un plan a medida con nuestro equipo.',
+    id: 'fullStoryboard',
   },
 ]
+
+const roleOptions = ['productor', 'director', 'guionista', 'montador', 'distribuidor', 'otro'] as const
+const projectTypeOptions = ['largometraje', 'cortometraje', 'serie', 'documental', 'animacion', 'otro'] as const
+const projectPhaseOptions = ['idea', 'tratamiento', 'guion', 'guion_terminado', 'preproduccion', 'produccion'] as const
+const mainGoalOptions = ['pitching', 'produccion', 'analisis', 'distribucion', 'presentacion', 'otro'] as const
 
 const initialFormState = {
   nombre: '',
@@ -206,6 +172,7 @@ type FormData = typeof initialFormState
 const DEMO_CID_WEBHOOK = import.meta.env.VITE_DEMO_CID_WEBHOOK_URL
 
 export default function DemoCIDPage() {
+  const { t } = useLanguage()
   const { isAuthenticated } = useAuthStore()
   const [form, setForm] = useState<FormData>(initialFormState)
   const [formSubmitted, setFormSubmitted] = useState(false)
@@ -214,9 +181,8 @@ export default function DemoCIDPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   useSeo({
-    title: 'Prueba CID con tu guion | AILinkCinema',
-    description:
-      'Convierte un guion o tratamiento en un análisis visual y estratégico para desarrollo, pitching, financiación o producción.',
+    title: t('pages.demoCid.seo.title'),
+    description: t('pages.demoCid.seo.description'),
     path: '/demo-cid',
     keywords: [
       'analisis de guion',
@@ -229,9 +195,8 @@ export default function DemoCIDPage() {
       {
         '@context': 'https://schema.org',
         '@type': 'WebPage',
-        name: 'Prueba CID con tu guion',
-        description:
-          'Convierte un guion o tratamiento en un análisis visual y estratégico para desarrollo, pitching, financiación o producción.',
+        name: t('pages.demoCid.seo.pageName'),
+        description: t('pages.demoCid.seo.description'),
         url: buildAbsoluteUrl('/demo-cid'),
         inLanguage: 'es',
       },
@@ -257,7 +222,7 @@ export default function DemoCIDPage() {
       trackEvent('submit_demo_cid_form', { ...form })
 
       if (!DEMO_CID_WEBHOOK) {
-        setFormError('El servicio de envio no esta configurado. Contacta con el equipo de AILinkCinema.')
+        setFormError(t('pages.demoCid.form.serviceNotConfigured'))
         setFormSubmitting(false)
         return
       }
@@ -272,8 +237,8 @@ export default function DemoCIDPage() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         setFormSubmitted(true)
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Error de conexion'
-        setFormError(`No se pudo enviar la solicitud (${msg}). Intentalo de nuevo o escribenos a contacto@ailinkcinema.com.`)
+        const msg = err instanceof Error ? err.message : t('pages.demoCid.form.connectionError')
+        setFormError(t('pages.demoCid.form.submitError').replace('{error}', msg))
         trackEvent('submit_demo_cid_form_error', { error: msg })
       } finally {
         setFormSubmitting(false)
@@ -305,16 +270,16 @@ export default function DemoCIDPage() {
             <div>
               <p className="text-xl font-bold tracking-tight text-white md:text-2xl landing-brand-name">AILinkCinema</p>
               <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-amber-400/60 md:text-[11px]">
-                CID &mdash; Cinematic Intelligence Director
+                {t('pages.demoCid.header.cidLabel')}
               </p>
             </div>
           </Link>
 
           <nav className="hidden items-center gap-7 text-sm text-slate-300 xl:flex">
-            <a href="#para-quien" className="transition-colors hover:text-white">Para quién es</a>
-            <a href="#que-incluye" className="transition-colors hover:text-white">Qué incluye</a>
-            <a href="#como-funciona" className="transition-colors hover:text-white">Cómo funciona</a>
-            <a href="#planes" className="transition-colors hover:text-white">Planes</a>
+            <a href="#para-quien" className="transition-colors hover:text-white">{t('pages.demoCid.nav.forWhom')}</a>
+            <a href="#que-incluye" className="transition-colors hover:text-white">{t('pages.demoCid.nav.whatIncluded')}</a>
+            <a href="#como-funciona" className="transition-colors hover:text-white">{t('pages.demoCid.nav.howItWorks')}</a>
+            <a href="#planes" className="transition-colors hover:text-white">{t('pages.demoCid.nav.plans')}</a>
             <a href="#faq" className="transition-colors hover:text-white">FAQ</a>
           </nav>
 
@@ -323,7 +288,7 @@ export default function DemoCIDPage() {
               <>
                 <Link to="/cid" className="landing-cta-secondary hidden sm:inline-flex">
                   <LayoutDashboard className="h-4 w-4" />
-                  Ir a CID
+                  {t('pages.demoCid.header.goToCid')}
                 </Link>
                 <button
                   onClick={() => {
@@ -333,20 +298,20 @@ export default function DemoCIDPage() {
                   className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-400 transition-colors hover:text-red-200"
                 >
                   <LogOut className="h-4 w-4" />
-                  Salir
+                  {t('public.header.logout')}
                 </button>
               </>
             ) : (
               <>
                 <Link to="/login" className="hidden rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200 transition-colors hover:border-white/20 hover:bg-white/5 sm:inline-flex">
-                  Iniciar sesion
+                  {t('auth.login.submit')}
                 </Link>
                 <Link
                   to="/register/demo"
                   className="landing-cta-primary hidden sm:inline-flex"
                   onClick={() => trackEvent('click_demo_cid_hero')}
                 >
-                  Solicitar demo
+                  {t('common.cta.requestDemo')}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </>
@@ -366,31 +331,31 @@ export default function DemoCIDPage() {
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.28em] text-amber-300">
                 <Sparkles className="h-3.5 w-3.5" />
-                CID &mdash; Prueba piloto
+                {t('pages.demoCid.hero.badge')}
               </div>
 
               <h1 className="mt-8 font-display text-5xl font-semibold leading-[0.92] tracking-[-0.04em] text-white sm:text-6xl md:text-7xl lg:text-8xl">
-                Prueba CID con <span className="text-gradient-amber">tu guion</span>
+                {t('pages.demoCid.hero.titleStart')} <span className="text-gradient-amber">{t('pages.demoCid.hero.titleHighlight')}</span>
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 md:text-xl md:leading-9">
-                Convierte un guion o tratamiento en un análisis visual y estratégico para desarrollo, pitching, financiación o producción.
+                {t('pages.demoCid.hero.subtitle')}
               </p>
 
               <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link
                   to="/register/demo"
                   className="landing-cta-primary"
-                  onClick={() => trackEvent('click_demo_cid_hero', { cta: 'Solicitar prueba piloto' })}
+                  onClick={() => trackEvent('click_demo_cid_hero', { cta: t('pages.demoCid.hero.primaryCta') })}
                 >
-                  Solicitar prueba piloto
+                  {t('pages.demoCid.hero.primaryCta')}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <button
                   onClick={scrollToForm}
                   className="landing-cta-secondary"
                 >
-                  Ver qué incluye
+                  {t('pages.demoCid.hero.secondaryCta')}
                   <ChevronDown className="h-4 w-4" />
                 </button>
               </div>
@@ -403,23 +368,23 @@ export default function DemoCIDPage() {
           <div className="mx-auto max-w-7xl px-5 md:px-8">
             <LandingReveal>
               <div className="mx-auto max-w-3xl text-center">
-                <p className="editorial-kicker text-amber-300/90">Para quién es</p>
+                <p className="editorial-kicker text-amber-300/90">{t('pages.demoCid.audience.eyebrow')}</p>
                 <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">
-                  Diseñado para <span className="text-gradient-amber">equipos audiovisuales</span>
+                  {t('pages.demoCid.audience.titleStart')} <span className="text-gradient-amber">{t('pages.demoCid.audience.titleHighlight')}</span>
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-slate-400">
-                  Si trabajas con guiones, proyectos o financiacion audiovisual, CID te da una ventaja real.
+                  {t('pages.demoCid.audience.subtitle')}
                 </p>
               </div>
             </LandingReveal>
 
             <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {audienceItems.map((item) => (
-                <LandingReveal key={item.title}>
+                <LandingReveal key={item.id}>
                   <div className={`landing-audience-card ${accentClasses[item.accent]}`}>
                     <item.icon className={`mb-3 h-5 w-5 ${accentDots[item.accent].replace('bg-', 'text-')}`} />
-                    <h3 className="text-base font-semibold text-white">{item.title}</h3>
-                    <p className="mt-2 text-sm leading-7 text-slate-400">{item.text}</p>
+                    <h3 className="text-base font-semibold text-white">{t(`pages.demoCid.audience.items.${item.id}.title`)}</h3>
+                    <p className="mt-2 text-sm leading-7 text-slate-400">{t(`pages.demoCid.audience.items.${item.id}.text`)}</p>
                   </div>
                 </LandingReveal>
               ))}
@@ -432,27 +397,27 @@ export default function DemoCIDPage() {
           <div className="mx-auto max-w-7xl px-5 md:px-8">
             <LandingReveal>
               <div className="mx-auto max-w-3xl text-center">
-                <p className="editorial-kicker text-amber-300/90">Qué recibe el usuario</p>
+                <p className="editorial-kicker text-amber-300/90">{t('pages.demoCid.includes.eyebrow')}</p>
                 <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">
-                  Todo lo que necesitas para <span className="text-gradient-amber">avanzar</span>
+                  {t('pages.demoCid.includes.titleStart')} <span className="text-gradient-amber">{t('pages.demoCid.includes.titleHighlight')}</span>
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-slate-400">
-                  Un paquete completo de análisis y materiales listos para presentar, producir o financiar.
+                  {t('pages.demoCid.includes.subtitle')}
                 </p>
               </div>
             </LandingReveal>
 
             <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {deliverables.map((item) => (
-                <LandingReveal key={item.title}>
+                <LandingReveal key={item.id}>
                   <div className="landing-creative-card h-full">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
                         <item.icon className="h-5 w-5 text-amber-400" />
                       </div>
-                      <h3 className="text-sm font-semibold text-white">{item.title}</h3>
+                      <h3 className="text-sm font-semibold text-white">{t(`pages.demoCid.includes.items.${item.id}.title`)}</h3>
                     </div>
-                    <p className="mt-3 text-sm leading-7 text-slate-400">{item.text}</p>
+                    <p className="mt-3 text-sm leading-7 text-slate-400">{t(`pages.demoCid.includes.items.${item.id}.text`)}</p>
                   </div>
                 </LandingReveal>
               ))}
@@ -465,12 +430,12 @@ export default function DemoCIDPage() {
           <div className="mx-auto max-w-7xl px-5 md:px-8">
             <LandingReveal>
               <div className="mx-auto max-w-3xl text-center">
-                <p className="editorial-kicker text-amber-300/90">Cómo funciona</p>
+                <p className="editorial-kicker text-amber-300/90">{t('pages.demoCid.steps.eyebrow')}</p>
                 <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">
-                  De tu guion al <span className="text-gradient-amber">análisis</span> en 6 pasos
+                  {t('pages.demoCid.steps.titleStart')} <span className="text-gradient-amber">{t('pages.demoCid.steps.titleHighlight')}</span> {t('pages.demoCid.steps.titleEnd')}
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-slate-400">
-                  Un proceso claro, rapido y sin complicaciones.
+                  {t('pages.demoCid.steps.subtitle')}
                 </p>
               </div>
             </LandingReveal>
@@ -484,8 +449,8 @@ export default function DemoCIDPage() {
                         {step.number}
                       </span>
                     </div>
-                    <h3 className="mt-4 text-base font-semibold text-white">{step.title}</h3>
-                    <p className="mt-3 text-sm leading-7 text-slate-400">{step.text}</p>
+                    <h3 className="mt-4 text-base font-semibold text-white">{t(`pages.demoCid.steps.items.${step.id}.title`)}</h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-400">{t(`pages.demoCid.steps.items.${step.id}.text`)}</p>
                   </div>
                 </LandingReveal>
               ))}
@@ -502,22 +467,22 @@ export default function DemoCIDPage() {
               <div className="landing-brand-final-cta rounded-[2.4rem] p-8 sm:p-10 lg:p-12">
                 <Sparkles className="mx-auto h-8 w-8 text-amber-400" />
                 <p className="mt-4 font-display text-2xl font-semibold leading-snug text-white md:text-3xl">
-                  Estamos seleccionando proyectos reales para probar CID en fase piloto con productoras, directores y equipos audiovisuales.
+                  {t('pages.demoCid.validationBlock.text')}
                 </p>
                 <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                   <Link
                     to="/register/demo"
                     className="landing-cta-primary"
-                    onClick={() => trackEvent('click_demo_cid_hero', { cta: 'Solicitar prueba piloto' })}
+                    onClick={() => trackEvent('click_demo_cid_hero', { cta: t('pages.demoCid.hero.primaryCta') })}
                   >
-                    Solicitar prueba piloto
+                    {t('pages.demoCid.hero.primaryCta')}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <button
                     onClick={scrollToForm}
                     className="landing-cta-secondary"
                   >
-                    Ver qué incluye
+                    {t('pages.demoCid.hero.secondaryCta')}
                     <ChevronDown className="h-4 w-4" />
                   </button>
                 </div>
@@ -531,19 +496,19 @@ export default function DemoCIDPage() {
           <div className="mx-auto max-w-7xl px-5 md:px-8">
             <LandingReveal>
               <div className="mx-auto max-w-3xl text-center">
-                <p className="editorial-kicker text-amber-300/90">Planes piloto</p>
+                <p className="editorial-kicker text-amber-300/90">{t('pages.demoCid.plans.eyebrow')}</p>
                 <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">
-                  Elige el plan que mejor se <span className="text-gradient-amber">adapte</span>
+                  {t('pages.demoCid.plans.titleStart')} <span className="text-gradient-amber">{t('pages.demoCid.plans.titleHighlight')}</span>
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-slate-400">
-                  Desde una validación gratuita hasta un análisis profesional completo.
+                  {t('pages.demoCid.plans.subtitle')}
                 </p>
               </div>
             </LandingReveal>
 
             <div className="mt-14 grid gap-6 md:grid-cols-3">
               {plans.map((plan) => (
-                <LandingReveal key={plan.name}>
+                <LandingReveal key={plan.id}>
                   <div
                     className={`relative flex h-full flex-col rounded-[2rem] border p-6 sm:p-8 ${
                       plan.featured
@@ -555,27 +520,31 @@ export default function DemoCIDPage() {
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-black">
                           <Star className="h-3 w-3" />
-                          Recomendado
+                          {t('pages.demoCid.plans.recommended')}
                         </span>
                       </div>
                     )}
 
                     <div>
-                      <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+                      <h3 className="text-lg font-semibold text-white">{t(`pages.demoCid.plans.items.${plan.id}.name`)}</h3>
                       <div className="mt-3">
                         <span className="font-display text-4xl text-white">{plan.price}</span>
-                        <span className="ml-2 text-sm text-slate-400">{plan.period}</span>
+                        <span className="ml-2 text-sm text-slate-400">{t(`pages.demoCid.plans.items.${plan.id}.period`)}</span>
                       </div>
-                      <p className="mt-3 text-sm leading-7 text-slate-400">{plan.description}</p>
+                      <p className="mt-3 text-sm leading-7 text-slate-400">{t(`pages.demoCid.plans.items.${plan.id}.description`)}</p>
                     </div>
 
                     <ul className="mt-6 flex-1 space-y-3">
-                      {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2 text-sm text-slate-300">
+                      {[0, 1, 2, 3, 4].map((featureIndex) => {
+                        const featureKey = `pages.demoCid.plans.items.${plan.id}.features.${featureIndex}`
+                        const featureText = t(featureKey)
+                        if (featureText === featureKey) return null
+                        return (
+                        <li key={`${plan.id}-${featureIndex}`} className="flex items-start gap-2 text-sm text-slate-300">
                           <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-                          {feature}
+                          {featureText}
                         </li>
-                      ))}
+                      )})}
                     </ul>
 
                     <div className="mt-8">
@@ -584,9 +553,9 @@ export default function DemoCIDPage() {
                         className={
                           plan.featured ? 'landing-cta-primary w-full justify-center' : 'landing-cta-secondary w-full justify-center'
                         }
-                        onClick={() => trackEvent('click_demo_cid_pricing', { plan: plan.name })}
+                        onClick={() => trackEvent('click_demo_cid_pricing', { plan: plan.id })}
                       >
-                        {plan.cta}
+                        {t(`pages.demoCid.plans.items.${plan.id}.cta`)}
                         <ArrowRight className="h-4 w-4" />
                       </Link>
                     </div>
@@ -602,12 +571,12 @@ export default function DemoCIDPage() {
           <div className="mx-auto max-w-3xl px-5 md:px-8">
             <LandingReveal>
               <div className="text-center">
-                <p className="editorial-kicker text-amber-300/90">Solicita tu prueba</p>
+                <p className="editorial-kicker text-amber-300/90">{t('pages.demoCid.form.eyebrow')}</p>
                 <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">
-                  Cuéntanos sobre <span className="text-gradient-amber">tu proyecto</span>
+                  {t('pages.demoCid.form.titleStart')} <span className="text-gradient-amber">{t('pages.demoCid.form.titleHighlight')}</span>
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-slate-400">
-                  Rellena el formulario y nuestro equipo te contactará para iniciar la prueba piloto.
+                  {t('pages.demoCid.form.subtitle')}
                 </p>
               </div>
             </LandingReveal>
@@ -617,16 +586,16 @@ export default function DemoCIDPage() {
                 {formSubmitted ? (
                   <div className="landing-brand-final-cta rounded-[2rem] p-10 text-center">
                     <CheckCircle className="mx-auto h-12 w-12 text-emerald-400" />
-                    <h3 className="mt-4 font-display text-2xl text-white">Solicitud enviada</h3>
+                    <h3 className="mt-4 font-display text-2xl text-white">{t('pages.demoCid.form.successTitle')}</h3>
                     <p className="mt-3 text-base leading-7 text-slate-300">
-                      Gracias por tu interes. Nuestro equipo revisará tu solicitud y te contactaremos pronto.
+                      {t('pages.demoCid.form.successText')}
                     </p>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid gap-5 sm:grid-cols-2">
                       <div>
-                        <label className="label" htmlFor="nombre">Nombre completo</label>
+                        <label className="label" htmlFor="nombre">{t('pages.demoCid.form.fields.fullName')}</label>
                         <div className="relative">
                           <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                           <input
@@ -637,7 +606,7 @@ export default function DemoCIDPage() {
                             value={form.nombre}
                             onChange={handleChange}
                             className="input pl-10"
-                            placeholder="Tu nombre"
+                            placeholder={t('pages.demoCid.form.placeholders.fullName')}
                           />
                         </div>
                       </div>
@@ -653,7 +622,7 @@ export default function DemoCIDPage() {
                             value={form.email}
                             onChange={handleChange}
                             className="input pl-10"
-                            placeholder="tu@email.com"
+                            placeholder={t('pages.demoCid.form.placeholders.email')}
                           />
                         </div>
                       </div>
@@ -661,7 +630,7 @@ export default function DemoCIDPage() {
 
                     <div className="grid gap-5 sm:grid-cols-2">
                       <div>
-                        <label className="label" htmlFor="empresa">Empresa o productora</label>
+                        <label className="label" htmlFor="empresa">{t('pages.demoCid.form.fields.company')}</label>
                         <div className="relative">
                           <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                           <input
@@ -671,12 +640,12 @@ export default function DemoCIDPage() {
                             value={form.empresa}
                             onChange={handleChange}
                             className="input pl-10"
-                            placeholder="Nombre de tu empresa"
+                            placeholder={t('pages.demoCid.form.placeholders.company')}
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="label" htmlFor="rol">Rol</label>
+                        <label className="label" htmlFor="rol">{t('pages.demoCid.form.fields.role')}</label>
                         <div className="relative">
                           <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                           <select
@@ -687,13 +656,10 @@ export default function DemoCIDPage() {
                             onChange={handleChange}
                             className="input pl-10 appearance-none"
                           >
-                            <option value="" disabled>Selecciona tu rol</option>
-                            <option value="productor">Productor</option>
-                            <option value="director">Director</option>
-                            <option value="guionista">Guionista</option>
-                            <option value="montador">Montador</option>
-                            <option value="distribuidor">Distribuidor</option>
-                            <option value="otro">Otro</option>
+                            <option value="" disabled>{t('pages.demoCid.form.selectRole')}</option>
+                            {roleOptions.map((option) => (
+                              <option key={option} value={option}>{t(`pages.demoCid.form.options.roles.${option}`)}</option>
+                            ))}
                           </select>
                         </div>
                       </div>
@@ -701,7 +667,7 @@ export default function DemoCIDPage() {
 
                     <div className="grid gap-5 sm:grid-cols-2">
                       <div>
-                        <label className="label" htmlFor="tipoProyecto">Tipo de proyecto</label>
+                        <label className="label" htmlFor="tipoProyecto">{t('pages.demoCid.form.fields.projectType')}</label>
                         <select
                           id="tipoProyecto"
                           name="tipoProyecto"
@@ -710,17 +676,14 @@ export default function DemoCIDPage() {
                           onChange={handleChange}
                           className="input"
                         >
-                          <option value="" disabled>Selecciona tipo</option>
-                          <option value="largometraje">Largometraje</option>
-                          <option value="cortometraje">Cortometraje</option>
-                          <option value="serie">Serie</option>
-                          <option value="documental">Documental</option>
-                          <option value="animacion">Animación</option>
-                          <option value="otro">Otro</option>
+                          <option value="" disabled>{t('pages.demoCid.form.selectType')}</option>
+                          {projectTypeOptions.map((option) => (
+                            <option key={option} value={option}>{t(`pages.demoCid.form.options.projectTypes.${option}`)}</option>
+                          ))}
                         </select>
                       </div>
                       <div>
-                        <label className="label" htmlFor="faseProyecto">Fase del proyecto</label>
+                        <label className="label" htmlFor="faseProyecto">{t('pages.demoCid.form.fields.projectPhase')}</label>
                         <select
                           id="faseProyecto"
                           name="faseProyecto"
@@ -729,19 +692,16 @@ export default function DemoCIDPage() {
                           onChange={handleChange}
                           className="input"
                         >
-                          <option value="" disabled>Selecciona fase</option>
-                          <option value="idea">Idea / Concepto</option>
-                          <option value="tratamiento">Tratamiento</option>
-                          <option value="guion">Guion en desarrollo</option>
-                          <option value="guion_terminado">Guion terminado</option>
-                          <option value="preproduccion">Preproducción</option>
-                          <option value="produccion">Producción</option>
+                          <option value="" disabled>{t('pages.demoCid.form.selectPhase')}</option>
+                          {projectPhaseOptions.map((option) => (
+                            <option key={option} value={option}>{t(`pages.demoCid.form.options.projectPhases.${option}`)}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
 
                     <div>
-                      <label className="label" htmlFor="objetivoPrincipal">Objetivo principal</label>
+                      <label className="label" htmlFor="objetivoPrincipal">{t('pages.demoCid.form.fields.mainGoal')}</label>
                       <select
                         id="objetivoPrincipal"
                         name="objetivoPrincipal"
@@ -750,18 +710,15 @@ export default function DemoCIDPage() {
                         onChange={handleChange}
                         className="input"
                       >
-                        <option value="" disabled>Selecciona tu objetivo</option>
-                        <option value="pitching">Pitching / financiación</option>
-                        <option value="produccion">Preparación de producción</option>
-                        <option value="analisis">Análisis narrativo</option>
-                        <option value="distribucion">Distribución</option>
-                        <option value="presentacion">Material de presentación</option>
-                        <option value="otro">Otro</option>
+                        <option value="" disabled>{t('pages.demoCid.form.selectGoal')}</option>
+                        {mainGoalOptions.map((option) => (
+                          <option key={option} value={option}>{t(`pages.demoCid.form.options.mainGoals.${option}`)}</option>
+                        ))}
                       </select>
                     </div>
 
                     <div>
-                      <label className="label" htmlFor="enlaceGuion">Enlace al guion o material</label>
+                      <label className="label" htmlFor="enlaceGuion">{t('pages.demoCid.form.fields.scriptLink')}</label>
                       <div className="relative">
                         <Upload className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-500" />
                         <input
@@ -771,14 +728,14 @@ export default function DemoCIDPage() {
                           value={form.enlaceGuion}
                           onChange={handleChange}
                           className="input pl-10"
-                          placeholder="Drive, Dropbox, o enlace directo"
+                          placeholder={t('pages.demoCid.form.placeholders.scriptLink')}
                         />
                       </div>
-                      <p className="mt-1 text-xs text-slate-500">Comparte un enlace a tu guion, tratamiento o documentación.</p>
+                      <p className="mt-1 text-xs text-slate-500">{t('pages.demoCid.form.scriptHelp')}</p>
                     </div>
 
                     <div>
-                      <label className="label" htmlFor="mensaje">Mensaje adicional</label>
+                      <label className="label" htmlFor="mensaje">{t('pages.demoCid.form.fields.message')}</label>
                       <textarea
                         id="mensaje"
                         name="mensaje"
@@ -786,7 +743,7 @@ export default function DemoCIDPage() {
                         value={form.mensaje}
                         onChange={handleChange}
                         className="input resize-none"
-                        placeholder="Cuéntanos más sobre tu proyecto..."
+                        placeholder={t('pages.demoCid.form.placeholders.message')}
                       />
                     </div>
 
@@ -800,7 +757,7 @@ export default function DemoCIDPage() {
                         className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/30"
                       />
                       <span className="text-sm text-slate-400">
-                        Acepto que me contacten para gestionar esta solicitud y recibir información sobre CID y AILinkCinema.
+                        {t('pages.demoCid.form.contactConsent')}
                       </span>
                     </label>
 
@@ -821,7 +778,7 @@ export default function DemoCIDPage() {
                       ) : (
                         <Send className="h-4 w-4" />
                       )}
-                      {formSubmitting ? 'Enviando...' : 'Enviar solicitud'}
+                      {formSubmitting ? t('pages.demoCid.form.submitting') : t('pages.demoCid.form.submit')}
                     </button>
                   </form>
                 )}
@@ -836,15 +793,13 @@ export default function DemoCIDPage() {
             <LandingReveal>
               <div className="text-center">
                 <p className="editorial-kicker text-amber-300/90">FAQ</p>
-                <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">
-                  Preguntas <span className="text-gradient-amber">frecuentes</span>
-                </h2>
+                <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-white md:text-5xl">{t('pages.demoCid.faq.titleStart')} <span className="text-gradient-amber">{t('pages.demoCid.faq.titleHighlight')}</span></h2>
               </div>
             </LandingReveal>
 
             <div className="mt-12 space-y-3">
               {faqs.map((faq, i) => (
-                <LandingReveal key={i}>
+                <LandingReveal key={faq.id}>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
                     <button
                       onClick={() => {
@@ -852,7 +807,7 @@ export default function DemoCIDPage() {
                       }}
                       className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition-colors hover:bg-white/[0.02]"
                     >
-                      <span className="text-sm font-semibold text-white">{faq.q}</span>
+                      <span className="text-sm font-semibold text-white">{t(`pages.demoCid.faq.items.${faq.id}.q`)}</span>
                       <ChevronDown
                         className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-300 ${
                           openFaq === i ? 'rotate-180' : ''
@@ -864,7 +819,7 @@ export default function DemoCIDPage() {
                         openFaq === i ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
                       }`}
                     >
-                      <p className="px-6 pb-5 text-sm leading-7 text-slate-400">{faq.a}</p>
+                      <p className="px-6 pb-5 text-sm leading-7 text-slate-400">{t(`pages.demoCid.faq.items.${faq.id}.a`)}</p>
                     </div>
                   </div>
                 </LandingReveal>
@@ -881,26 +836,26 @@ export default function DemoCIDPage() {
             <LandingReveal>
               <div className="landing-brand-final-cta rounded-[2.4rem] p-8 sm:p-10 lg:p-12">
                 <h2 className="font-display text-4xl font-semibold leading-[0.92] text-white md:text-6xl">
-                  Valida tu proyecto antes de invertir más tiempo y dinero
+                  {t('pages.demoCid.finalCta.title')}
                 </h2>
                 <p className="mt-6 max-w-2xl mx-auto text-lg leading-8 text-slate-300">
-                  Descubre el potencial real de tu guion con un análisis profesional. Sin compromiso.
+                  {t('pages.demoCid.finalCta.subtitle')}
                 </p>
                 <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                   <Link
                     to="/register/demo"
                     className="landing-cta-primary text-base"
-                    onClick={() => trackEvent('click_demo_cid_hero', { cta: 'Solicitar prueba piloto' })}
+                    onClick={() => trackEvent('click_demo_cid_hero', { cta: t('pages.demoCid.hero.primaryCta') })}
                   >
-                    Solicitar prueba piloto
+                    {t('pages.demoCid.hero.primaryCta')}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <Link
                     to="/solutions/cid"
                     className="landing-cta-secondary"
-                    onClick={() => trackEvent('click_demo_cid_secondary', { cta: 'Explorar CID' })}
+                    onClick={() => trackEvent('click_demo_cid_secondary', { cta: t('pages.demoCid.finalCta.secondaryCta') })}
                   >
-                    Explorar CID
+                    {t('pages.demoCid.finalCta.secondaryCta')}
                     <ChevronRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -916,37 +871,37 @@ export default function DemoCIDPage() {
           <div>
             <p className="font-display text-3xl text-white">AILinkCinema</p>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
-              Inteligencia artificial para cine, television y publicidad con software especializado, CID como sistema central y acompañamiento tecnico real.
+              {t('pages.demoCid.footer.description')}
             </p>
           </div>
 
           <div className="flex flex-col gap-4 sm:items-end">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center lg:justify-end">
               <Link to="/solutions/cid" className="text-sm text-slate-300 transition-colors hover:text-white">
-                Explorar CID
+                {t('pages.demoCid.finalCta.secondaryCta')}
               </Link>
               <Link to="/register/demo" className="text-sm text-slate-300 transition-colors hover:text-white">
-                Solicitar demo
+                {t('common.cta.requestDemo')}
               </Link>
               <Link to="/solutions" className="text-sm text-slate-300 transition-colors hover:text-white">
-                Ver soluciones
+                {t('common.cta.viewSolutions')}
               </Link>
               <Link to="/pricing" className="text-sm text-slate-300 transition-colors hover:text-white">
-                Precios
+                {t('public.nav.pricing')}
               </Link>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
               <Link to="/legal/privacidad" className="text-xs text-slate-500 transition-colors hover:text-slate-200">
-                Privacidad
+                {t('pages.demoCid.footer.privacy')}
               </Link>
               <Link to="/legal/aviso-legal" className="text-xs text-slate-500 transition-colors hover:text-slate-200">
-                Aviso legal
+                {t('pages.demoCid.footer.legalNotice')}
               </Link>
               <Link to="/legal/terminos" className="text-xs text-slate-500 transition-colors hover:text-slate-200">
-                Términos
+                {t('pages.demoCid.footer.terms')}
               </Link>
               <Link to="/legal/ia-y-contenidos" className="text-xs text-slate-500 transition-colors hover:text-slate-200">
-                IA y contenidos
+                {t('pages.demoCid.footer.aiContent')}
               </Link>
             </div>
           </div>
@@ -954,7 +909,7 @@ export default function DemoCIDPage() {
 
         <div className="mx-auto mt-8 flex max-w-7xl items-center gap-3 px-5 text-sm text-slate-500 md:px-6 lg:px-8">
           <Shield className="h-4 w-4 text-amber-300" />
-          <p>AILinkCinema posiciona a CID como sistema completo de producción audiovisual y articula soluciones especializadas para cada departamento.</p>
+          <p>{t('pages.demoCid.footer.note')}</p>
         </div>
       </footer>
     </div>

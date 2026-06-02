@@ -498,6 +498,299 @@
     }
   },
   "pages": {
+    "demoCid": {
+      "seo": {
+        "title": "Prueba CID con tu guion | AILinkCinema",
+        "description": "Convierte un guion o tratamiento en un análisis visual y estratégico para desarrollo, pitching, financiación o producción.",
+        "pageName": "Prueba CID con tu guion"
+      },
+      "header": {
+        "cidLabel": "CID - Cinematic Intelligence Director",
+        "goToCid": "Ir a CID"
+      },
+      "nav": {
+        "forWhom": "Para quién es",
+        "whatIncluded": "Qué incluye",
+        "howItWorks": "Cómo funciona",
+        "plans": "Planes"
+      },
+      "hero": {
+        "badge": "CID - Prueba piloto",
+        "titleStart": "Prueba CID con",
+        "titleHighlight": "tu guion",
+        "subtitle": "Convierte un guion o tratamiento en un análisis visual y estratégico para desarrollo, pitching, financiación o producción.",
+        "primaryCta": "Solicitar prueba piloto",
+        "secondaryCta": "Ver qué incluye"
+      },
+      "audience": {
+        "eyebrow": "Para quién es",
+        "titleStart": "Diseñado para",
+        "titleHighlight": "equipos audiovisuales",
+        "subtitle": "Si trabajas con guiones, proyectos o financiación audiovisual, CID te da una ventaja real.",
+        "items": {
+          "producers": {
+            "title": "Productores",
+            "text": "Valida el potencial de producción de un proyecto antes de comprometer presupuesto, equipo o rodaje."
+          },
+          "directors": {
+            "title": "Directores",
+            "text": "Obtén una lectura visual y estratégica de tu guion para alinear a tu equipo creativo y técnico."
+          },
+          "screenwriters": {
+            "title": "Guionistas",
+            "text": "Descubre cómo se traduce tu escritura a términos de producción, riesgo narrativo y oportunidades de desarrollo."
+          },
+          "editors": {
+            "title": "Montadores",
+            "text": "Recibe un mapa de escenas clave, ritmo narrativo y material preparado para empezar la edición con criterio."
+          },
+          "distributors": {
+            "title": "Distribuidores",
+            "text": "Evalúa la viabilidad comercial de un proyecto a partir del análisis de guion y el material de presentación."
+          }
+        }
+      },
+      "includes": {
+        "eyebrow": "Qué recibe el usuario",
+        "titleStart": "Todo lo que necesitas para",
+        "titleHighlight": "avanzar",
+        "subtitle": "Un paquete completo de análisis y materiales listos para presentar, producir o financiar.",
+        "items": {
+          "scriptAnalysis": {
+            "title": "Análisis narrativo del guion",
+            "text": "Lectura estructurada por actos, personajes, tramas y ritmo dramático."
+          },
+          "strengthsRisks": {
+            "title": "Detección de fortalezas y riesgos",
+            "text": "Puntos fuertes, carencias narrativas y riesgos de producción detectados."
+          },
+          "productionBreakdown": {
+            "title": "Desglose inicial de producción",
+            "text": "Estimación de recursos, localizaciones, personajes y necesidades técnicas."
+          },
+          "keySequences": {
+            "title": "Selección de secuencias clave",
+            "text": "Identificación de las escenas con mayor peso narrativo y visual."
+          },
+          "storyboardFrames": {
+            "title": "Storyboard o concept frames",
+            "text": "Frames conceptuales de las secuencias clave para comunicar la visión."
+          },
+          "visualTone": {
+            "title": "Propuesta de tono visual",
+            "text": "Paleta cromática, referencias de iluminación y atmósfera por secuencia."
+          },
+          "targetAudience": {
+            "title": "Público objetivo",
+            "text": "Perfil de audiencia potencial, demografía y canales de distribución óptimos."
+          },
+          "pitchDossier": {
+            "title": "Mini dossier de pitching",
+            "text": "Documento ejecutivo con los hallazgos clave para presentar el proyecto."
+          },
+          "feedbackSession": {
+            "title": "Reunión de devolución",
+            "text": "Sesión online para recorrer el análisis y resolver dudas con el equipo."
+          }
+        }
+      },
+      "steps": {
+        "eyebrow": "Cómo funciona",
+        "titleStart": "De tu guion al",
+        "titleHighlight": "análisis",
+        "titleEnd": "en 6 pasos",
+        "subtitle": "Un proceso claro, rápido y sin complicaciones.",
+        "items": {
+          "upload": {
+            "title": "Envías tu guion o tratamiento",
+            "text": "Sube tu material en formato digital. Aceptamos guiones, tratamientos, escaletas o documentación de proyecto."
+          },
+          "analyze": {
+            "title": "CID analiza la estructura narrativa y productiva",
+            "text": "Nuestro sistema procesa el material y extrae personajes, escenas, localizaciones, diálogos y necesidades de producción."
+          },
+          "selectSequences": {
+            "title": "Seleccionamos las secuencias clave",
+            "text": "Identificamos los momentos narrativos y visuales más relevantes para el análisis y la presentación."
+          },
+          "generateFrames": {
+            "title": "Generamos concept frames o storyboard",
+            "text": "Creamos representaciones visuales de las secuencias clave para comunicar la propuesta estética."
+          },
+          "prepareDossier": {
+            "title": "Preparamos un mini dossier",
+            "text": "Compilamos los hallazgos en un documento ejecutivo listo para pitching, financiación o producción."
+          },
+          "professionalReview": {
+            "title": "Te damos una devolución profesional",
+            "text": "Reunión online para presentar los resultados, resolver dudas y planificar los siguientes pasos."
+          }
+        }
+      },
+      "validationBlock": {
+        "text": "Estamos seleccionando proyectos reales para probar CID en fase piloto con productoras, directores y equipos audiovisuales."
+      },
+      "plans": {
+        "eyebrow": "Planes piloto",
+        "titleStart": "Elige el plan que mejor se",
+        "titleHighlight": "adapte",
+        "subtitle": "Desde una validación gratuita hasta un análisis profesional completo.",
+        "recommended": "Recomendado",
+        "items": {
+          "initial": {
+            "name": "Diagnóstico inicial",
+            "period": "para proyectos seleccionados",
+            "description": "Validación ligera del potencial de tu proyecto.",
+            "cta": "Solicitar selección",
+            "features": {
+              "0": "Análisis narrativo básico",
+              "1": "Detección de fortalezas y riesgos",
+              "2": "Perfil de público objetivo",
+              "3": "Resumen ejecutivo"
+            }
+          },
+          "basic": {
+            "name": "Sprint básico",
+            "period": "por proyecto",
+            "description": "Análisis completo con material visual para pitching.",
+            "cta": "Contratar sprint",
+            "features": {
+              "0": "Todo lo del diagnóstico",
+              "1": "Desglose inicial de producción",
+              "2": "Selección de secuencias clave",
+              "3": "Storyboard o concept frames",
+              "4": "Mini dossier de pitching"
+            }
+          },
+          "pro": {
+            "name": "Sprint profesional",
+            "period": "consultar",
+            "description": "Análisis profundo con reunión de devolución incluida.",
+            "cta": "Consultar precio",
+            "features": {
+              "0": "Todo lo del sprint básico",
+              "1": "Propuesta de tono visual completa",
+              "2": "Análisis de público objetivo detallado",
+              "3": "Dossier de pitching profesional",
+              "4": "Reunión de devolución online"
+            }
+          }
+        }
+      },
+      "form": {
+        "eyebrow": "Solicita tu prueba",
+        "titleStart": "Cuéntanos sobre",
+        "titleHighlight": "tu proyecto",
+        "subtitle": "Rellena el formulario y nuestro equipo te contactará para iniciar la prueba piloto.",
+        "successTitle": "Solicitud enviada",
+        "successText": "Gracias por tu interés. Nuestro equipo revisará tu solicitud y te contactaremos pronto.",
+        "serviceNotConfigured": "El servicio de envío no está configurado. Contacta con el equipo de AILinkCinema.",
+        "connectionError": "Error de conexión",
+        "submitError": "No se pudo enviar la solicitud ({error}). Inténtalo de nuevo o escríbenos a contacto@ailinkcinema.com.",
+        "fields": {
+          "fullName": "Nombre completo",
+          "company": "Empresa o productora",
+          "role": "Rol",
+          "projectType": "Tipo de proyecto",
+          "projectPhase": "Fase del proyecto",
+          "mainGoal": "Objetivo principal",
+          "scriptLink": "Enlace al guion o material",
+          "message": "Mensaje adicional"
+        },
+        "placeholders": {
+          "fullName": "Tu nombre",
+          "email": "tu@email.com",
+          "company": "Nombre de tu empresa",
+          "scriptLink": "Drive, Dropbox, o enlace directo",
+          "message": "Cuéntanos más sobre tu proyecto..."
+        },
+        "selectRole": "Selecciona tu rol",
+        "selectType": "Selecciona tipo",
+        "selectPhase": "Selecciona fase",
+        "selectGoal": "Selecciona tu objetivo",
+        "scriptHelp": "Comparte un enlace a tu guion, tratamiento o documentación.",
+        "contactConsent": "Acepto que me contacten para gestionar esta solicitud y recibir información sobre CID y AILinkCinema.",
+        "submitting": "Enviando...",
+        "submit": "Enviar solicitud",
+        "options": {
+          "roles": {
+            "productor": "Productor",
+            "director": "Director",
+            "guionista": "Guionista",
+            "montador": "Montador",
+            "distribuidor": "Distribuidor",
+            "otro": "Otro"
+          },
+          "projectTypes": {
+            "largometraje": "Largometraje",
+            "cortometraje": "Cortometraje",
+            "serie": "Serie",
+            "documental": "Documental",
+            "animacion": "Animación",
+            "otro": "Otro"
+          },
+          "projectPhases": {
+            "idea": "Idea / Concepto",
+            "tratamiento": "Tratamiento",
+            "guion": "Guion en desarrollo",
+            "guion_terminado": "Guion terminado",
+            "preproduccion": "Preproducción",
+            "produccion": "Producción"
+          },
+          "mainGoals": {
+            "pitching": "Pitching / financiación",
+            "produccion": "Preparación de producción",
+            "analisis": "Análisis narrativo",
+            "distribucion": "Distribución",
+            "presentacion": "Material de presentación",
+            "otro": "Otro"
+          }
+        }
+      },
+      "faq": {
+        "titleStart": "Preguntas",
+        "titleHighlight": "frecuentes",
+        "items": {
+          "finishedScript": {
+            "q": "¿Tengo que tener un guion terminado?",
+            "a": "No. Aceptamos tratamientos, escaletas, documentación de proyecto o incluso ideas desarrolladas. Cuanto más material tengas, más completo será el análisis."
+          },
+          "aiSupervision": {
+            "q": "¿Se usa IA sin supervisión?",
+            "a": "No. La IA acelera el procesamiento, pero todo el análisis es revisado y validado por nuestro equipo profesional antes de entregártelo."
+          },
+          "ownership": {
+            "q": "¿El material sigue siendo mío?",
+            "a": "Sí. Todo el material que nos envías sigue siendo 100% tuyo. No lo utilizamos para entrenar modelos ni lo compartimos con terceros sin tu autorización explícita."
+          },
+          "pitching": {
+            "q": "¿Sirve para pitching?",
+            "a": "Sí. El mini dossier de pitching está diseñado específicamente para presentar tu proyecto a productoras, fondos de financiación o plataformas."
+          },
+          "productionCompany": {
+            "q": "¿Puedo usarlo con una productora?",
+            "a": "Sí. De hecho está pensado para que productoras y directores validen proyectos antes de invertir tiempo y recursos en desarrollo."
+          },
+          "fullStoryboard": {
+            "q": "¿Se puede generar storyboard de toda la película?",
+            "a": "El piloto se centra en secuencias clave. Si necesitas un storyboard completo, podemos diseñar un plan a medida con nuestro equipo."
+          }
+        }
+      },
+      "finalCta": {
+        "title": "Valida tu proyecto antes de invertir más tiempo y dinero",
+        "subtitle": "Descubre el potencial real de tu guion con un análisis profesional. Sin compromiso.",
+        "secondaryCta": "Explorar CID"
+      },
+      "footer": {
+        "description": "Inteligencia artificial para cine, televisión y publicidad con software especializado, CID como sistema central y acompañamiento técnico real.",
+        "privacy": "Privacidad",
+        "legalNotice": "Aviso legal",
+        "terms": "Términos",
+        "aiContent": "IA y contenidos",
+        "note": "AILinkCinema posiciona a CID como sistema completo de producción audiovisual y articula soluciones especializadas para cada departamento."
+      }
+    },
     "pricing": {
       "customEyebrow": "Desarrollo a medida",
       "ruleEyebrow": "Regla comercial base",

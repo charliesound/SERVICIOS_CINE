@@ -498,6 +498,299 @@
     }
   },
   "pages": {
+    "demoCid": {
+      "seo": {
+        "title": "Try CID with your script | AILinkCinema",
+        "description": "Turn a script or treatment into a visual and strategic analysis for development, pitching, financing or production.",
+        "pageName": "Try CID with your script"
+      },
+      "header": {
+        "cidLabel": "CID - Cinematic Intelligence Director",
+        "goToCid": "Go to CID"
+      },
+      "nav": {
+        "forWhom": "Who it is for",
+        "whatIncluded": "What it includes",
+        "howItWorks": "How it works",
+        "plans": "Plans"
+      },
+      "hero": {
+        "badge": "CID - Pilot trial",
+        "titleStart": "Try CID with",
+        "titleHighlight": "your script",
+        "subtitle": "Turn a script or treatment into a visual and strategic analysis for development, pitching, financing or production.",
+        "primaryCta": "Request pilot trial",
+        "secondaryCta": "See what it includes"
+      },
+      "audience": {
+        "eyebrow": "Who it is for",
+        "titleStart": "Designed for",
+        "titleHighlight": "audiovisual teams",
+        "subtitle": "If you work with scripts, projects or audiovisual financing, CID gives you a real advantage.",
+        "items": {
+          "producers": {
+            "title": "Producers",
+            "text": "Validate a project's production potential before committing budget, team or shooting."
+          },
+          "directors": {
+            "title": "Directors",
+            "text": "Get a visual and strategic reading of your script to align your creative and technical team."
+          },
+          "screenwriters": {
+            "title": "Screenwriters",
+            "text": "Discover how your writing translates into production terms, narrative risk and development opportunities."
+          },
+          "editors": {
+            "title": "Editors",
+            "text": "Receive a map of key scenes, narrative rhythm and prepared material to begin editing with criteria."
+          },
+          "distributors": {
+            "title": "Distributors",
+            "text": "Evaluate the commercial viability of a project from script analysis and presentation materials."
+          }
+        }
+      },
+      "includes": {
+        "eyebrow": "What the user receives",
+        "titleStart": "Everything you need to",
+        "titleHighlight": "move forward",
+        "subtitle": "A complete package of analysis and materials ready to present, produce or finance.",
+        "items": {
+          "scriptAnalysis": {
+            "title": "Narrative script analysis",
+            "text": "Structured reading by acts, characters, plots and dramatic rhythm."
+          },
+          "strengthsRisks": {
+            "title": "Strengths and risks detection",
+            "text": "Strong points, narrative gaps and production risks identified."
+          },
+          "productionBreakdown": {
+            "title": "Initial production breakdown",
+            "text": "Estimate of resources, locations, characters and technical needs."
+          },
+          "keySequences": {
+            "title": "Selection of key sequences",
+            "text": "Identification of the scenes with the greatest narrative and visual weight."
+          },
+          "storyboardFrames": {
+            "title": "Storyboard or concept frames",
+            "text": "Conceptual frames of key sequences to communicate the vision."
+          },
+          "visualTone": {
+            "title": "Visual tone proposal",
+            "text": "Color palette, lighting references and atmosphere by sequence."
+          },
+          "targetAudience": {
+            "title": "Target audience",
+            "text": "Potential audience profile, demographics and optimal distribution channels."
+          },
+          "pitchDossier": {
+            "title": "Mini pitching dossier",
+            "text": "Executive document with the key findings to present the project."
+          },
+          "feedbackSession": {
+            "title": "Feedback session",
+            "text": "Online session to walk through the analysis and answer the team's questions."
+          }
+        }
+      },
+      "steps": {
+        "eyebrow": "How it works",
+        "titleStart": "From your script to the",
+        "titleHighlight": "analysis",
+        "titleEnd": "in 6 steps",
+        "subtitle": "A clear, fast and hassle-free process.",
+        "items": {
+          "upload": {
+            "title": "You send your script or treatment",
+            "text": "Upload your material in digital format. We accept scripts, treatments, outlines or project documentation."
+          },
+          "analyze": {
+            "title": "CID analyzes the narrative and production structure",
+            "text": "Our system processes the material and extracts characters, scenes, locations, dialogue and production needs."
+          },
+          "selectSequences": {
+            "title": "We select the key sequences",
+            "text": "We identify the most relevant narrative and visual moments for analysis and presentation."
+          },
+          "generateFrames": {
+            "title": "We generate concept frames or storyboard",
+            "text": "We create visual representations of the key sequences to communicate the aesthetic proposal."
+          },
+          "prepareDossier": {
+            "title": "We prepare a mini dossier",
+            "text": "We compile the findings into an executive document ready for pitching, financing or production."
+          },
+          "professionalReview": {
+            "title": "We give you professional feedback",
+            "text": "Online meeting to present the results, answer questions and plan the next steps."
+          }
+        }
+      },
+      "validationBlock": {
+        "text": "We are selecting real projects to test CID in pilot phase with production companies, directors and audiovisual teams."
+      },
+      "plans": {
+        "eyebrow": "Pilot plans",
+        "titleStart": "Choose the plan that best",
+        "titleHighlight": "fits",
+        "subtitle": "From free validation to complete professional analysis.",
+        "recommended": "Recommended",
+        "items": {
+          "initial": {
+            "name": "Initial diagnosis",
+            "period": "for selected projects",
+            "description": "Light validation of your project's potential.",
+            "cta": "Request selection",
+            "features": {
+              "0": "Basic narrative analysis",
+              "1": "Strengths and risks detection",
+              "2": "Target audience profile",
+              "3": "Executive summary"
+            }
+          },
+          "basic": {
+            "name": "Basic sprint",
+            "period": "per project",
+            "description": "Complete analysis with visual material for pitching.",
+            "cta": "Purchase sprint",
+            "features": {
+              "0": "Everything in the diagnosis",
+              "1": "Initial production breakdown",
+              "2": "Selection of key sequences",
+              "3": "Storyboard or concept frames",
+              "4": "Mini pitching dossier"
+            }
+          },
+          "pro": {
+            "name": "Professional sprint",
+            "period": "contact us",
+            "description": "In-depth analysis with feedback session included.",
+            "cta": "Check price",
+            "features": {
+              "0": "Everything in the basic sprint",
+              "1": "Complete visual tone proposal",
+              "2": "Detailed target audience analysis",
+              "3": "Professional pitching dossier",
+              "4": "Online feedback session"
+            }
+          }
+        }
+      },
+      "form": {
+        "eyebrow": "Request your trial",
+        "titleStart": "Tell us about",
+        "titleHighlight": "your project",
+        "subtitle": "Fill out the form and our team will contact you to start the pilot trial.",
+        "successTitle": "Request sent",
+        "successText": "Thank you for your interest. Our team will review your request and contact you soon.",
+        "serviceNotConfigured": "The sending service is not configured. Contact the AILinkCinema team.",
+        "connectionError": "Connection error",
+        "submitError": "Could not send the request ({error}). Try again or write to contacto@ailinkcinema.com.",
+        "fields": {
+          "fullName": "Full name",
+          "company": "Company or production company",
+          "role": "Role",
+          "projectType": "Project type",
+          "projectPhase": "Project stage",
+          "mainGoal": "Main goal",
+          "scriptLink": "Link to the script or material",
+          "message": "Additional message"
+        },
+        "placeholders": {
+          "fullName": "Your name",
+          "email": "you@email.com",
+          "company": "Your company name",
+          "scriptLink": "Drive, Dropbox, or direct link",
+          "message": "Tell us more about your project..."
+        },
+        "selectRole": "Select your role",
+        "selectType": "Select type",
+        "selectPhase": "Select stage",
+        "selectGoal": "Select your goal",
+        "scriptHelp": "Share a link to your script, treatment or documentation.",
+        "contactConsent": "I agree to be contacted to manage this request and receive information about CID and AILinkCinema.",
+        "submitting": "Sending...",
+        "submit": "Send request",
+        "options": {
+          "roles": {
+            "productor": "Producer",
+            "director": "Director",
+            "guionista": "Screenwriter",
+            "montador": "Editor",
+            "distribuidor": "Distributor",
+            "otro": "Other"
+          },
+          "projectTypes": {
+            "largometraje": "Feature film",
+            "cortometraje": "Short film",
+            "serie": "Series",
+            "documental": "Documentary",
+            "animacion": "Animation",
+            "otro": "Other"
+          },
+          "projectPhases": {
+            "idea": "Idea / Concept",
+            "tratamiento": "Treatment",
+            "guion": "Script in development",
+            "guion_terminado": "Completed script",
+            "preproduccion": "Pre-production",
+            "produccion": "Production"
+          },
+          "mainGoals": {
+            "pitching": "Pitching / financing",
+            "produccion": "Production preparation",
+            "analisis": "Narrative analysis",
+            "distribucion": "Distribution",
+            "presentacion": "Presentation material",
+            "otro": "Other"
+          }
+        }
+      },
+      "faq": {
+        "titleStart": "Frequently",
+        "titleHighlight": "asked questions",
+        "items": {
+          "finishedScript": {
+            "q": "Do I need to have a finished script?",
+            "a": "No. We accept treatments, outlines, project documentation or even developed ideas. The more material you have, the more complete the analysis will be."
+          },
+          "aiSupervision": {
+            "q": "Is AI used without supervision?",
+            "a": "No. AI accelerates processing, but all analysis is reviewed and validated by our professional team before being delivered to you."
+          },
+          "ownership": {
+            "q": "Does the material remain mine?",
+            "a": "Yes. All the material you send us remains 100% yours. We do not use it to train models or share it with third parties without your explicit authorization."
+          },
+          "pitching": {
+            "q": "Is it useful for pitching?",
+            "a": "Yes. The mini pitching dossier is specifically designed to present your project to production companies, financing funds or platforms."
+          },
+          "productionCompany": {
+            "q": "Can I use it with a production company?",
+            "a": "Yes. In fact, it is designed so production companies and directors can validate projects before investing time and resources in development."
+          },
+          "fullStoryboard": {
+            "q": "Can a storyboard be generated for the whole film?",
+            "a": "The pilot focuses on key sequences. If you need a full storyboard, we can design a custom plan with our team."
+          }
+        }
+      },
+      "finalCta": {
+        "title": "Validate your project before investing more time and money",
+        "subtitle": "Discover the real potential of your script with professional analysis. No commitment.",
+        "secondaryCta": "Explore CID"
+      },
+      "footer": {
+        "description": "Artificial intelligence for film, television and advertising with specialized software, CID as the central system and real technical support.",
+        "privacy": "Privacy",
+        "legalNotice": "Legal notice",
+        "terms": "Terms",
+        "aiContent": "AI and content",
+        "note": "AILinkCinema positions CID as a complete audiovisual production system and articulates specialized solutions for each department."
+      }
+    },
     "pricing": {
       "customEyebrow": "Custom development",
       "ruleEyebrow": "Base commercial rule",

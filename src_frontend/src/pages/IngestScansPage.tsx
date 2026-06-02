@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import axios from 'axios'
 import { Link, useSearchParams } from 'react-router-dom'
 import { RefreshCw, Search } from 'lucide-react'
+import { useLanguage } from '@/i18n'
 import StorageStatusBadge from '@/components/StorageStatusBadge'
 import { useIngestScans } from '@/hooks'
 
@@ -17,6 +18,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export default function IngestScansPage() {
+  const { t } = useLanguage()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const filters = useMemo(() => {
@@ -40,16 +42,16 @@ export default function IngestScansPage() {
         <div>
           <h1 className="heading-lg flex items-center gap-3">
             <Search className="h-6 w-6 text-amber-400" />
-            Media Scans
+            {t('internal.ingestScansPage.title')}
           </h1>
-          <p className="mt-1 text-slate-400">Escaneo de carpetas con media existente. CID lee y indexa, no mueve ni copia archivos.</p>
+          <p className="mt-1 text-slate-400">{t('internal.ingestScansPage.description')}</p>
         </div>
 
         <div className="flex gap-3">
-          <Link to="/ingest/assets" className="btn-secondary">View Assets</Link>
+          <Link to="/ingest/assets" className="btn-secondary">{t('internal.ingestScansPage.viewAssets')}</Link>
           <button className="btn-secondary flex items-center gap-2" onClick={() => scansQuery.refetch()}>
             <RefreshCw className={`h-4 w-4 ${scansQuery.isFetching ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('internal.ingestScansPage.refresh')}
           </button>
         </div>
       </div>
@@ -57,24 +59,24 @@ export default function IngestScansPage() {
       <section className="card card-hover">
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="label" htmlFor="scan_source_id">Source ID</label>
+            <label className="label" htmlFor="scan_source_id">{t('internal.ingestScansPage.filterSourceId')}</label>
             <input
               id="scan_source_id"
               className="input"
               defaultValue={filters.source_id ?? ''}
               onBlur={(event) => applyFilter('source_id', event.target.value)}
-              placeholder="Filter by storage source"
+              placeholder={t('internal.ingestScansPage.filterSourcePlaceholder')}
             />
           </div>
           <div>
-            <label className="label" htmlFor="scan_status">Status</label>
+            <label className="label" htmlFor="scan_status">{t('internal.ingestScansPage.filterStatus')}</label>
             <select
               id="scan_status"
               className="input"
               value={filters.status ?? ''}
               onChange={(event) => applyFilter('status', event.target.value)}
             >
-              <option value="">All statuses</option>
+              <option value="">{t('internal.ingestScansPage.filterStatusAll')}</option>
               <option value="running">running</option>
               <option value="completed">completed</option>
               <option value="failed">failed</option>
@@ -86,15 +88,15 @@ export default function IngestScansPage() {
       <section className="card card-hover space-y-4">
         {scansQuery.error && (
           <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {getErrorMessage(scansQuery.error, 'Unable to load ingest scans')}
+            {getErrorMessage(scansQuery.error, t('internal.ingestScansPage.loadError'))}
           </div>
         )}
 
-        {scansQuery.isLoading && <div className="text-sm text-slate-400">Loading media scans...</div>}
+        {scansQuery.isLoading && <div className="text-sm text-slate-400">{t('internal.ingestScansPage.loading')}</div>}
 
         {!scansQuery.isLoading && !scansQuery.error && (!scansQuery.data || scansQuery.data.length === 0) && (
           <div className="rounded-xl border border-dashed border-white/10 px-6 py-10 text-center text-sm text-slate-400">
-            No scans found for the current filters.
+            {t('internal.ingestScansPage.empty')}
           </div>
         )}
 
@@ -107,23 +109,23 @@ export default function IngestScansPage() {
                   <StorageStatusBadge status={scan.status} />
                 </div>
                 <div className="grid gap-2 text-sm text-slate-300 md:grid-cols-2">
-                  <p><span className="text-slate-500">Source:</span> {scan.storage_source_id}</p>
-                  <p><span className="text-slate-500">Watch Path:</span> {scan.watch_path_id || 'All eligible paths'}</p>
-                  <p><span className="text-slate-500">Started:</span> {new Date(scan.started_at).toLocaleString()}</p>
-                  <p><span className="text-slate-500">Finished:</span> {scan.finished_at ? new Date(scan.finished_at).toLocaleString() : 'In progress'}</p>
-                  <p><span className="text-slate-500">Discovered:</span> {scan.files_discovered_count}</p>
-                  <p><span className="text-slate-500">Indexed:</span> {scan.files_indexed_count}</p>
-                  <p><span className="text-slate-500">Skipped:</span> {scan.files_skipped_count}</p>
-                  <p><span className="text-slate-500">Error:</span> {scan.error_message || 'None'}</p>
+                  <p><span className="text-slate-500">{t('internal.ingestScansPage.fieldSource')}</span> {scan.storage_source_id}</p>
+                  <p><span className="text-slate-500">{t('internal.ingestScansPage.fieldWatchPath')}</span> {scan.watch_path_id || t('internal.ingestScansPage.allEligiblePaths')}</p>
+                  <p><span className="text-slate-500">{t('internal.ingestScansPage.fieldStarted')}</span> {new Date(scan.started_at).toLocaleString()}</p>
+                  <p><span className="text-slate-500">{t('internal.ingestScansPage.fieldFinished')}</span> {scan.finished_at ? new Date(scan.finished_at).toLocaleString() : t('internal.ingestScansPage.fieldInProgress')}</p>
+                  <p><span className="text-slate-500">{t('internal.ingestScansPage.fieldDiscovered')}</span> {scan.files_discovered_count}</p>
+                  <p><span className="text-slate-500">{t('internal.ingestScansPage.fieldIndexed')}</span> {scan.files_indexed_count}</p>
+                  <p><span className="text-slate-500">{t('internal.ingestScansPage.fieldSkipped')}</span> {scan.files_skipped_count}</p>
+                  <p><span className="text-slate-500">{t('internal.ingestScansPage.fieldError')}</span> {scan.error_message || t('internal.ingestScansPage.none')}</p>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-3">
                 <Link to={`/ingest/assets?source_id=${encodeURIComponent(scan.storage_source_id)}`} className="btn-secondary">
-                  View Assets
+                  {t('internal.ingestScansPage.viewAssetsAction')}
                 </Link>
                 <Link to={`/ingest/scans/${scan.id}`} className="btn-secondary">
-                  Open Detail
+                  {t('internal.ingestScansPage.openDetail')}
                 </Link>
               </div>
             </div>

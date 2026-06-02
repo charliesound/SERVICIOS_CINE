@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import axios from 'axios'
 import { Link, useSearchParams } from 'react-router-dom'
 import { FileSearch, RefreshCw } from 'lucide-react'
+import { useLanguage } from '@/i18n'
 import StorageStatusBadge from '@/components/StorageStatusBadge'
 import { useMediaAssets } from '@/hooks'
 
@@ -22,6 +23,7 @@ function formatBytes(value: number) {
 }
 
 export default function MediaAssetsPage() {
+  const { t } = useLanguage()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const filters = useMemo(() => {
@@ -46,16 +48,16 @@ export default function MediaAssetsPage() {
         <div>
           <h1 className="heading-lg flex items-center gap-3">
             <FileSearch className="h-6 w-6 text-amber-400" />
-            Media Indexada
+            {t('internal.mediaAssetsPage.title')}
           </h1>
-          <p className="mt-1 text-slate-400">Archivos indexados de rutas existentes. Son referencias, no copias. CID no mueve ni renombra.</p>
+          <p className="mt-1 text-slate-400">{t('internal.mediaAssetsPage.description')}</p>
         </div>
 
         <div className="flex gap-3">
-          <Link to="/ingest/scans" className="btn-secondary">View Scans</Link>
+          <Link to="/ingest/scans" className="btn-secondary">{t('internal.mediaAssetsPage.viewScans')}</Link>
           <button className="btn-secondary flex items-center gap-2" onClick={() => assetsQuery.refetch()}>
             <RefreshCw className={`h-4 w-4 ${assetsQuery.isFetching ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('internal.mediaAssetsPage.refresh')}
           </button>
         </div>
       </div>
@@ -63,36 +65,36 @@ export default function MediaAssetsPage() {
       <section className="card card-hover">
         <div className="grid gap-4 lg:grid-cols-3">
           <div>
-            <label className="label" htmlFor="asset_source_id">Source ID</label>
+            <label className="label" htmlFor="asset_source_id">{t('internal.mediaAssetsPage.filterSourceId')}</label>
             <input
               id="asset_source_id"
               className="input"
               defaultValue={filters.source_id ?? ''}
               onBlur={(event) => applyFilter('source_id', event.target.value)}
-              placeholder="Filter by storage source"
+              placeholder={t('internal.mediaAssetsPage.filterSourcePlaceholder')}
             />
           </div>
           <div>
-            <label className="label" htmlFor="asset_status">Status</label>
+            <label className="label" htmlFor="asset_status">{t('internal.mediaAssetsPage.filterStatus')}</label>
             <select
               id="asset_status"
               className="input"
               value={filters.status ?? ''}
               onChange={(event) => applyFilter('status', event.target.value)}
             >
-              <option value="">All statuses</option>
+              <option value="">{t('internal.mediaAssetsPage.filterStatusAll')}</option>
               <option value="indexed">indexed</option>
             </select>
           </div>
           <div>
-            <label className="label" htmlFor="asset_type">Asset Type</label>
+            <label className="label" htmlFor="asset_type">{t('internal.mediaAssetsPage.filterAssetType')}</label>
             <select
               id="asset_type"
               className="input"
               value={filters.asset_type ?? ''}
               onChange={(event) => applyFilter('asset_type', event.target.value)}
             >
-              <option value="">All asset types</option>
+              <option value="">{t('internal.mediaAssetsPage.filterAssetTypeAll')}</option>
               <option value="video">video</option>
               <option value="audio">audio</option>
               <option value="image">image</option>
@@ -106,15 +108,15 @@ export default function MediaAssetsPage() {
       <section className="card card-hover space-y-4">
         {assetsQuery.error && (
           <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {getErrorMessage(assetsQuery.error, 'Unable to load media assets')}
+            {getErrorMessage(assetsQuery.error, t('internal.mediaAssetsPage.loadError'))}
           </div>
         )}
 
-        {assetsQuery.isLoading && <div className="text-sm text-slate-400">Loading media assets...</div>}
+        {assetsQuery.isLoading && <div className="text-sm text-slate-400">{t('internal.mediaAssetsPage.loading')}</div>}
 
         {!assetsQuery.isLoading && !assetsQuery.error && (!assetsQuery.data || assetsQuery.data.length === 0) && (
           <div className="rounded-xl border border-dashed border-white/10 px-6 py-10 text-center text-sm text-slate-400">
-            No media assets found for the current filters.
+            {t('internal.mediaAssetsPage.empty')}
           </div>
         )}
 
@@ -130,18 +132,18 @@ export default function MediaAssetsPage() {
                   </span>
                 </div>
                 <div className="grid gap-2 text-sm text-slate-300 md:grid-cols-2">
-                  <p><span className="text-slate-500">Extension:</span> {asset.file_extension || 'n/a'}</p>
-                  <p><span className="text-slate-500">MIME:</span> {asset.mime_type || 'n/a'}</p>
-                  <p><span className="text-slate-500">Size:</span> {formatBytes(asset.file_size)}</p>
-                  <p><span className="text-slate-500">Status:</span> {asset.status}</p>
-                  <p><span className="text-slate-500">Source:</span> {asset.storage_source_id}</p>
-                  <p><span className="text-slate-500">Scan:</span> {asset.ingest_scan_id || 'n/a'}</p>
+                  <p><span className="text-slate-500">{t('internal.mediaAssetsPage.fieldExtension')}</span> {asset.file_extension || 'n/a'}</p>
+                  <p><span className="text-slate-500">{t('internal.mediaAssetsPage.fieldMime')}</span> {asset.mime_type || 'n/a'}</p>
+                  <p><span className="text-slate-500">{t('internal.mediaAssetsPage.fieldSize')}</span> {formatBytes(asset.file_size)}</p>
+                  <p><span className="text-slate-500">{t('internal.mediaAssetsPage.fieldStatus')}</span> {asset.status}</p>
+                  <p><span className="text-slate-500">{t('internal.mediaAssetsPage.fieldSource')}</span> {asset.storage_source_id}</p>
+                  <p><span className="text-slate-500">{t('internal.mediaAssetsPage.fieldScan')}</span> {asset.ingest_scan_id || 'n/a'}</p>
                 </div>
                 <p className="text-sm text-slate-400 break-all">{asset.relative_path}</p>
               </div>
 
               <Link to={`/ingest/assets/${asset.id}`} className="btn-secondary">
-                Open Detail
+                {t('internal.mediaAssetsPage.openDetail')}
               </Link>
             </div>
           </article>

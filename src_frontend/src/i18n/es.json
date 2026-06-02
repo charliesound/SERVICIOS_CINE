@@ -145,7 +145,11 @@
       "processing": "Procesando...",
       "noAccount": "¿No tienes cuenta?",
       "requestAccess": "Solicitar acceso",
-      "backHome": "← Volver al inicio"
+      "backHome": "← Volver al inicio",
+      "privateDescription": "Acceso privado a la plataforma CID de AILinkCinema.",
+      "authError": "Error de autenticación",
+      "demo": "Demo",
+      "logout": "Cerrar sesión"
     },
     "register": {
       "selectTitle": "Empieza con AILinkCinema",
@@ -160,6 +164,36 @@
       "cidSubtitle": "Selecciona el programa CID Studio que mejor se adapte a ti.",
       "continue": "Continuar",
       "changePlan": "← Cambiar plan"
+    },
+    "forgot": {
+      "title": "¿Has olvidado tu contraseña?",
+      "checkEmailTitle": "Revisa tu email",
+      "sentMessage": "Si el email está registrado, recibirás instrucciones para restablecer tu contraseña.",
+      "requestError": "Error al enviar la solicitud. Intenta de nuevo.",
+      "backToLogin": "Volver al inicio de sesión"
+    },
+    "reset": {
+      "title": "Restablecer contraseña",
+      "successTitle": "Contraseña restablecida",
+      "subtitle": "Introduce tu nueva contraseña.",
+      "successMessage": "Tu contraseña se ha actualizado correctamente.",
+      "passwordMismatch": "Las contraseñas no coinciden.",
+      "passwordMinLength": "La contraseña debe tener al menos 8 caracteres.",
+      "resetError": "Error al restablecer la contraseña. El enlace puede haber expirado.",
+      "invalidLinkTitle": "Enlace inválido",
+      "invalidLinkMessage": "El enlace de restablecimiento no es válido o falta el token.",
+      "redirecting": "Serás redirigido al inicio de sesión...",
+      "goToLogin": "Ir al inicio de sesión",
+      "newPassword": "Nueva contraseña",
+      "confirmPassword": "Confirmar contraseña",
+      "minPlaceholder": "Mínimo 8 caracteres",
+      "repeatPlaceholder": "Repite la contraseña",
+      "resetting": "Restableciendo...",
+      "submit": "Restablecer contraseña"
+    },
+    "password": {
+      "hide": "Ocultar contraseña",
+      "show": "Mostrar contraseña"
     }
   },
   "pages": {
@@ -198,7 +232,9 @@
       "loadingProject": "Cargando proyecto...",
       "projectNotFound": "Proyecto no encontrado.",
       "noDescription": "Sin descripción",
-      "scriptLoaded": "Guion cargado"
+      "scriptLoaded": "Guion cargado",
+      "loading": "Cargando...",
+      "verifyingAccess": "Verificando acceso..."
     },
     "modulesCatalog": {
       "seoTitle": "Módulos CID | Suite modular vendible",
@@ -574,6 +610,13 @@
         "storyboardRegeneratedSuccessfully": "Storyboard regenerado correctamente",
         "storyboardRegenerated": "Storyboard regenerado"
       }
+    },
+    "nav": {
+      "projects": "Proyectos",
+      "create": "Crear",
+      "modules": "Módulos",
+      "history": "Historial",
+      "external": "Externo"
     }
   },
   "components": {

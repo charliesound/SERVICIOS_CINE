@@ -19,7 +19,7 @@ export default function LoginPage() {
 
   useSeo({
     title: 'Iniciar sesion',
-    description: 'Acceso privado a la plataforma CID de AILinkCinema.',
+    description: t('auth.login.privateDescription'),
     path: '/login',
     robots: 'noindex, nofollow',
   })
@@ -44,7 +44,7 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Error de autenticación'
+        t('auth.login.authError')
       setError(message)
     } finally {
       setIsLoading(false)
@@ -151,7 +151,7 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center">
           <p className="text-slate-500 text-xs">
-            Demo: <span className="text-slate-400">admin@servicios-cine.com</span> / <span className="text-slate-400">admin123</span>
+            {t('auth.login.demo')}: <span className="text-slate-400">admin@servicios-cine.com</span> / <span className="text-slate-400">admin123</span>
           </p>
         </div>
 

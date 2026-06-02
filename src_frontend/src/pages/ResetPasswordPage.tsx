@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { KeyRound, Lock, CheckCircle } from 'lucide-react'
 import { authApi } from '@/api/auth'
 import { PasswordToggle } from '@/components/PasswordToggle'
+import { t } from '@/i18n'
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -22,11 +23,11 @@ export default function ResetPasswordPage() {
     setError('')
 
     if (newPassword !== confirmPassword) {
-      setError('Las contraseñas no coinciden.')
+      setError(t('auth.reset.passwordMismatch'))
       return
     }
     if (newPassword.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.')
+      setError(t('auth.reset.passwordMinLength'))
       return
     }
 
@@ -37,7 +38,7 @@ export default function ResetPasswordPage() {
       setTimeout(() => navigate('/login'), 3000)
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setError(detail || 'Error al restablecer la contraseña. El enlace puede haber expirado.')
+      setError(detail || t('auth.reset.resetError'))
     } finally {
       setIsLoading(false)
     }
@@ -50,9 +51,9 @@ export default function ResetPasswordPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/30 mb-4">
             <Lock className="w-8 h-8 text-red-400" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Enlace inválido</h1>
+          <h1 className="text-2xl font-bold text-white mb-2">{t('auth.reset.invalidLinkTitle')}</h1>
           <p className="text-slate-400 text-sm mb-6">
-            El enlace de restablecimiento no es válido o falta el token.
+            {t('auth.reset.invalidLinkMessage')}
           </p>
           <Link to="/forgot-password" className="text-indigo-400 hover:text-indigo-300 text-sm transition-colors">
             Solicitar un nuevo enlace
@@ -70,10 +71,10 @@ export default function ResetPasswordPage() {
             <KeyRound className="w-8 h-8 text-indigo-400" />
           </div>
           <h1 className="text-2xl font-bold text-white">
-            {success ? 'Contraseña restablecida' : 'Restablecer contraseña'}
+            {success ? t('auth.reset.successTitle') : t('auth.reset.title')}
           </h1>
           <p className="text-slate-400 mt-2 text-sm">
-            {success ? 'Tu contraseña se ha actualizado correctamente.' : 'Introduce tu nueva contraseña.'}
+            {success ? t('auth.reset.successMessage') : t('auth.reset.subtitle')}
           </p>
         </div>
 
@@ -82,26 +83,26 @@ export default function ResetPasswordPage() {
             <div className="text-center">
               <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
               <p className="text-slate-300 text-sm mb-4">
-                Serás redirigido al inicio de sesión...
+                {t('auth.reset.redirecting')}
               </p>
               <Link
                 to="/login"
                 className="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
               >
-                Ir al inicio de sesión
+                {t('auth.reset.goToLogin')}
               </Link>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="label">Nueva contraseña</label>
+                <label className="label">{t('auth.reset.newPassword')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Mínimo 8 caracteres"
+                    placeholder={t('auth.reset.minPlaceholder')}
                     className="input pl-10 pr-10"
                     required
                     minLength={8}
@@ -114,14 +115,14 @@ export default function ResetPasswordPage() {
               </div>
 
               <div>
-                <label className="label">Confirmar contraseña</label>
+                <label className="label">{t('auth.reset.confirmPassword')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repite la contraseña"
+                    placeholder={t('auth.reset.repeatPlaceholder')}
                     className="input pl-10 pr-10"
                     required
                     minLength={8}
@@ -142,7 +143,7 @@ export default function ResetPasswordPage() {
                 disabled={isLoading}
                 className="btn btn-primary w-full"
               >
-                {isLoading ? 'Restableciendo...' : 'Restablecer contraseña'}
+                {isLoading ? t('auth.reset.resetting') : t('auth.reset.submit')}
               </button>
             </form>
           )}

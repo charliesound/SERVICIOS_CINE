@@ -1,11 +1,11 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store'
-import { 
-  LayoutDashboard, 
-  PlusCircle, 
-  ListOrdered, 
-  GitBranch, 
-  CreditCard, 
+import {
+  LayoutDashboard,
+  PlusCircle,
+  ListOrdered,
+  GitBranch,
+  CreditCard,
   FileText,
   Search,
   ClipboardList,
@@ -19,11 +19,12 @@ import {
   HardDrive
 } from 'lucide-react'
 import clsx from 'clsx'
+import { t } from '@/i18n'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/create', icon: PlusCircle, label: 'Crear' },
-  { to: '/projects', icon: Folder, label: 'Proyectos' },
+  { to: '/create', icon: PlusCircle, label: t('internal.nav.create') },
+  { to: '/projects', icon: Folder, label: t('internal.nav.projects') },
   { to: '/producer', icon: Briefcase, label: 'Productor' },
   { to: '/queue', icon: ListOrdered, label: 'Cola' },
   { to: '/workflows', icon: GitBranch, label: 'Workflows' },
@@ -32,7 +33,7 @@ const navItems = [
   { to: '/ingest/scans', icon: Search, label: 'Escanear' },
   { to: '/documents', icon: FileText, label: 'Documentos' },
   { to: '/reports/camera', icon: ClipboardList, label: 'Reportes' },
-  { to: '/history', icon: History, label: 'Historial' },
+  { to: '/history', icon: History, label: t('internal.nav.history') },
   { to: '/admin', icon: Settings, label: 'Admin' },
 ]
 
@@ -85,10 +86,10 @@ export default function Layout() {
               </Link>
             )
           })}
-          
+
           {/* External Links - Separator */}
           <div className="pt-4 mt-4 border-t border-white/5">
-            <p className="px-4 pb-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Externo</p>
+            <p className="px-4 pb-2 text-xs font-medium text-gray-500 uppercase tracking-wider">{t('internal.nav.external')}</p>
             {externalLinks.map(({ to, icon: Icon, label }) => {
               const isActive = location.pathname === to
               return (
@@ -120,7 +121,7 @@ export default function Layout() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white">{user.username}</p>
-                  <span className={clsx('text-xs capitalize', 
+                  <span className={clsx('text-xs capitalize',
                     user.plan === 'studio' ? 'text-purple-400' :
                     user.plan === 'enterprise' ? 'text-amber-400' :
                     'text-gray-400'
@@ -132,7 +133,7 @@ export default function Layout() {
               <button
                 onClick={handleLogout}
                 className="p-2 text-gray-500 hover:text-amber-400 transition-colors"
-                title="Cerrar sesión"
+                title={t('auth.login.logout')}
               >
                 <LogOut className="w-4 h-4" />
               </button>

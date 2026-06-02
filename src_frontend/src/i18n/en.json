@@ -145,7 +145,11 @@
       "processing": "Processing...",
       "noAccount": "No account yet?",
       "requestAccess": "Request access",
-      "backHome": "← Back home"
+      "backHome": "← Back home",
+      "privateDescription": "Private access to the AILinkCinema CID platform.",
+      "authError": "Authentication error",
+      "demo": "Demo",
+      "logout": "Sign out"
     },
     "register": {
       "selectTitle": "Start with AILinkCinema",
@@ -160,6 +164,36 @@
       "cidSubtitle": "Select the CID Studio program that best fits you.",
       "continue": "Continue",
       "changePlan": "← Change plan"
+    },
+    "forgot": {
+      "title": "Forgot your password?",
+      "checkEmailTitle": "Check your email",
+      "sentMessage": "If the email is registered, you will receive instructions to reset your password.",
+      "requestError": "Error sending the request. Please try again.",
+      "backToLogin": "Back to sign in"
+    },
+    "reset": {
+      "title": "Reset password",
+      "successTitle": "Password reset",
+      "subtitle": "Enter your new password.",
+      "successMessage": "Your password has been updated successfully.",
+      "passwordMismatch": "Passwords do not match.",
+      "passwordMinLength": "Password must be at least 8 characters.",
+      "resetError": "Error resetting the password. The link may have expired.",
+      "invalidLinkTitle": "Invalid link",
+      "invalidLinkMessage": "The reset link is not valid or the token is missing.",
+      "redirecting": "You will be redirected to sign in...",
+      "goToLogin": "Go to sign in",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "minPlaceholder": "Minimum 8 characters",
+      "repeatPlaceholder": "Repeat the password",
+      "resetting": "Resetting...",
+      "submit": "Reset password"
+    },
+    "password": {
+      "hide": "Hide password",
+      "show": "Show password"
     }
   },
   "pages": {
@@ -198,7 +232,9 @@
       "loadingProject": "Loading project...",
       "projectNotFound": "Project not found.",
       "noDescription": "No description",
-      "scriptLoaded": "Script loaded"
+      "scriptLoaded": "Script loaded",
+      "loading": "Loading...",
+      "verifyingAccess": "Verifying access..."
     },
     "modulesCatalog": {
       "seoTitle": "CID Modules | Sellable modular suite",
@@ -574,6 +610,13 @@
         "storyboardRegeneratedSuccessfully": "Storyboard regenerated successfully",
         "storyboardRegenerated": "Storyboard regenerated"
       }
+    },
+    "nav": {
+      "projects": "Projects",
+      "create": "Create",
+      "modules": "Modules",
+      "history": "History",
+      "external": "External"
     }
   },
   "components": {

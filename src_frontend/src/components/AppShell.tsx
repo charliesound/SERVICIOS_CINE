@@ -24,17 +24,18 @@ import {
   Puzzle,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { t } from '@/i18n'
 
 const navItems = [
   { to: '/cid', icon: Film, label: 'CID' },
-  { to: '/projects', icon: FolderOpen, label: 'Proyectos' },
+  { to: '/projects', icon: FolderOpen, label: t('internal.nav.projects') },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/create', icon: PlusCircle, label: 'Crear' },
+  { to: '/create', icon: PlusCircle, label: t('internal.nav.create') },
   { to: '/queue', icon: ListOrdered, label: 'Cola' },
   { to: '/workflows', icon: GitBranch, label: 'Workflows' },
   { to: '/cid/pipeline-builder', icon: Sparkles, label: 'Pipeline Builder' },
   { to: '/solutions', icon: Grid2x2, label: 'Soluciones' },
-  { to: '/modules', icon: Layers3, label: 'Módulos' },
+  { to: '/modules', icon: Layers3, label: t('internal.nav.modules') },
   { to: '/apps', icon: Puzzle, label: 'Apps' },
   { to: '/pricing', icon: BadgeEuro, label: 'Precios' },
   { to: '/plans', icon: CreditCard, label: 'Planes' },
@@ -42,7 +43,7 @@ const navItems = [
   { to: '/ingest/scans', icon: Search, label: 'Escanear' },
   { to: '/documents', icon: FileText, label: 'Documentos' },
   { to: '/reports/camera', icon: ClipboardList, label: 'Reportes' },
-  { to: '/history', icon: History, label: 'Historial' },
+  { to: '/history', icon: History, label: t('internal.nav.history') },
   { to: '/admin', icon: Settings, label: 'Admin' },
 ]
 
@@ -118,7 +119,7 @@ export default function AppShell() {
               <button
                 onClick={handleLogout}
                 className="p-2 text-gray-500 hover:text-amber-400 transition-colors"
-                title="Cerrar sesión"
+                title={t('auth.login.logout')}
               >
                 <LogOut className="w-4 h-4" />
               </button>

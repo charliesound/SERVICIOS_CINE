@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store'
 import { Search, Image, Video, Mic, FlaskConical, Bookmark, GitBranch, Sparkles } from 'lucide-react'
 import clsx from 'clsx'
 import { isCidCoreVisibleWorkflowCategory } from '@/config/cidCoreScope'
+import { t } from '@/i18n'
 
 const categoryIcons: Record<string, typeof Image> = {
   still: Image,
@@ -43,9 +44,9 @@ export default function WorkflowsPage() {
         <div>
           <h1 className="heading-lg flex items-center gap-3">
             <GitBranch className="w-6 h-6 text-amber-400" />
-            Workflows
+            {t('internal.workflows.title')}
           </h1>
-          <p className="text-slate-400 mt-1">Explora pipelines visibles dentro de CID Core</p>
+          <p className="text-slate-400 mt-1">{t('internal.workflows.subtitle')}</p>
         </div>
       </div>
 
@@ -57,7 +58,7 @@ export default function WorkflowsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search workflows..."
+            placeholder={t('internal.workflows.searchPlaceholder')}
             className="input pl-12"
           />
         </div>
@@ -100,7 +101,7 @@ export default function WorkflowsPage() {
         <div className="card card-hover">
           <div className="flex items-center gap-2 mb-4">
             <Bookmark className="w-5 h-5 text-amber-400" />
-            <h2 className="text-lg font-semibold text-white">My Presets</h2>
+            <h2 className="text-lg font-semibold text-white">{t('internal.workflows.myPresets')}</h2>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {presets.map((preset) => (
@@ -163,8 +164,8 @@ export default function WorkflowsPage() {
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8 text-amber-400" />
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No workflows found</h3>
-          <p className="text-slate-400">Try adjusting your search or filters</p>
+          <h3 className="text-lg font-semibold text-white mb-2">{t('internal.workflows.emptyTitle')}</h3>
+          <p className="text-slate-400">{t('internal.workflows.emptyHelp')}</p>
         </div>
       )}
     </div>

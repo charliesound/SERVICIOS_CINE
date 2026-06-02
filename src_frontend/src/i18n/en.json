@@ -890,6 +890,27 @@
         "created": "Created",
         "actions": "Actions"
       }
+    },
+    "workflows": {
+      "title": "Workflows",
+      "subtitle": "Explore visible pipelines inside CID Core",
+      "searchPlaceholder": "Search workflows...",
+      "myPresets": "My Presets",
+      "emptyTitle": "No workflows found",
+      "emptyHelp": "Try adjusting your search or filters"
+    },
+    "createJob": {
+      "createdTitle": "Project Created!",
+      "createdMessagePrefix": "Your job",
+      "createdMessageSuffix": "has been queued for processing.",
+      "viewInQueue": "View in Queue",
+      "createAnother": "Create Another",
+      "title": "Create New Project",
+      "subtitle": "Describe your vision and let AI bring it to life",
+      "describeVision": "Describe Your Vision",
+      "projectDetails": "Project Details",
+      "yourPlan": "Your Plan",
+      "activeJobs": "Active Jobs"
     }
   },
   "components": {

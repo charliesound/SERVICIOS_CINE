@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { conceptArtApi } from '@/api/conceptArt'
 import type { ConceptArtDryRunResponse, ConceptArtJobSummary } from '@/types/conceptArt'
+import { useLanguage } from '@/i18n'
 import {
   Sparkles, Loader2, CheckCircle2, AlertCircle, Eye,
   Monitor, Hash, Layers, Cpu, Clock, FileText,
@@ -13,17 +14,21 @@ interface Props {
   projectId: string
 }
 
-const PHASE_LABELS: Record<Phase, string> = {
-  idle: '',
-  validating: 'Validando proyecto',
-  resolving: 'Resolviendo modelos Flux',
-  compiling: 'Compilando workflow',
-  validating_ph: 'Validando placeholders',
-  done: 'Listo para ComfyUI',
-  error: 'Error',
+function usePhaseLabels(t: (key: string) => string): Record<Phase, string> {
+  return {
+    idle: '',
+    validating: t('internal.conceptArtDryRunPanel.phaseValidating'),
+    resolving: t('internal.conceptArtDryRunPanel.phaseResolving'),
+    compiling: t('internal.conceptArtDryRunPanel.phaseCompiling'),
+    validating_ph: t('internal.conceptArtDryRunPanel.phaseValidatingPh'),
+    done: t('internal.conceptArtDryRunPanel.phaseDone'),
+    error: t('internal.conceptArtDryRunPanel.phaseError'),
+  }
 }
 
 export default function ConceptArtDryRunPanel({ projectId }: Props) {
+  const { t } = useLanguage()
+  const phaseLabels: Record<Phase, string> = usePhaseLabels(t)
   const [mode, setMode] = useState<Mode>('concept_art')
   const [prompt, setPrompt] = useState('')
   const [negativePrompt, setNegativePrompt] = useState('')
@@ -101,7 +106,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
       void fetchJobs()
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
-      setErrorMsg(typeof detail === 'string' ? detail : 'Error al preparar el workflow')
+      setErrorMsg(typeof detail === 'string' ? detail : t('internal.conceptArtDryRunPanel.errorFallback'))
       setPhase('error')
       setPhasePercent(0)
     }
@@ -122,8 +127,8 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
             <Sparkles className="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <h3 className="font-semibold">Concept Art / Key Visual</h3>
-            <p className="text-gray-400 text-xs">Dry-run con Flux. No se ejecuta render real.</p>
+            <h3 className="font-semibold">{t('internal.conceptArtDryRunPanel.heroTitle')}</h3>
+            <p className="text-gray-400 text-xs">{t('internal.conceptArtDryRunPanel.heroDescription')}</p>
           </div>
         </div>
 
@@ -138,7 +143,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
             }`}
           >
             <Sparkles className="w-4 h-4 inline mr-1.5" />
-            Concept Art
+            {t('internal.conceptArtDryRunPanel.modeConceptArt')}
           </button>
           <button
             type="button"
@@ -150,14 +155,14 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
             }`}
           >
             <Eye className="w-4 h-4 inline mr-1.5" />
-            Key Visual
+            {t('internal.conceptArtDryRunPanel.modeKeyVisual')}
           </button>
         </div>
 
         {/* Prompts */}
         <div className="space-y-3 mb-4">
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Prompt positivo</label>
+            <label className="text-xs text-gray-400 mb-1 block">{t('internal.conceptArtDryRunPanel.labelPromptPositivo')}</label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -168,7 +173,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
             />
           </div>
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Prompt negativo</label>
+            <label className="text-xs text-gray-400 mb-1 block">{t('internal.conceptArtDryRunPanel.labelPromptNegativo')}</label>
             <textarea
               value={negativePrompt}
               onChange={(e) => setNegativePrompt(e.target.value)}
@@ -184,7 +189,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
           <div>
             <label className="text-xs text-gray-400 mb-1 block flex items-center gap-1">
-              <Monitor className="w-3 h-3" /> Width
+              <Monitor className="w-3 h-3" /> {t('internal.conceptArtDryRunPanel.paramWidth')}
             </label>
             <input
               type="number"
@@ -196,7 +201,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
           </div>
           <div>
             <label className="text-xs text-gray-400 mb-1 block flex items-center gap-1">
-              <Monitor className="w-3 h-3" /> Height
+              <Monitor className="w-3 h-3" /> {t('internal.conceptArtDryRunPanel.paramHeight')}
             </label>
             <input
               type="number"
@@ -208,7 +213,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
           </div>
           <div>
             <label className="text-xs text-gray-400 mb-1 block flex items-center gap-1">
-              <Hash className="w-3 h-3" /> Steps
+              <Hash className="w-3 h-3" /> {t('internal.conceptArtDryRunPanel.paramSteps')}
             </label>
             <input
               type="number"
@@ -220,7 +225,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
           </div>
           <div>
             <label className="text-xs text-gray-400 mb-1 block flex items-center gap-1">
-              <Cpu className="w-3 h-3" /> CFG
+              <Cpu className="w-3 h-3" /> {t('internal.conceptArtDryRunPanel.paramCfg')}
             </label>
             <input
               type="number"
@@ -233,7 +238,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
           </div>
           <div>
             <label className="text-xs text-gray-400 mb-1 block flex items-center gap-1">
-              <Layers className="w-3 h-3" /> Seed
+              <Layers className="w-3 h-3" /> {t('internal.conceptArtDryRunPanel.paramSeed')}
             </label>
             <input
               type="number"
@@ -253,9 +258,9 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
           className="w-full px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 rounded-xl font-medium transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {phase !== 'idle' && phase !== 'error' ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Preparando...</>
+            <><Loader2 className="w-4 h-4 animate-spin" /> {t('internal.conceptArtDryRunPanel.btnPreparando')}</>
           ) : (
-            <><Sparkles className="w-4 h-4" /> {mode === 'concept_art' ? 'Preparar Concept Art' : 'Preparar Key Visual'}</>
+            <><Sparkles className="w-4 h-4" /> {mode === 'concept_art' ? t('internal.conceptArtDryRunPanel.btnPrepararConceptArt') : t('internal.conceptArtDryRunPanel.btnPrepararKeyVisual')}</>
           )}
         </button>
       </div>
@@ -264,7 +269,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
       {phase !== 'idle' && (
         <div className="card bg-dark-200/80 border border-white/5 p-4 space-y-3">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-300 font-medium">{PHASE_LABELS[phase]}</span>
+            <span className="text-gray-300 font-medium">{phaseLabels[phase]}</span>
             <div className="flex items-center gap-2">
               <PhaseIcon />
               <span className="text-xs text-gray-500">{phasePercent}%</span>
@@ -288,7 +293,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
                   idx < currentIdx ? 'text-emerald-400' : idx === currentIdx ? 'text-purple-300' : 'text-gray-600'
                 }`}>
                   {p === 'done' ? <CheckCircle2 className="w-3 h-3 inline" /> : <div className="w-1.5 h-1.5 rounded-full mx-auto bg-current" />}
-                  <span className="block mt-0.5">{PHASE_LABELS[p]}</span>
+                  <span className="block mt-0.5">{phaseLabels[p]}</span>
                 </div>
               )
             })}
@@ -308,27 +313,27 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
         <div className="card bg-dark-200/80 border border-white/5 p-5 space-y-4">
           <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
             <CheckCircle2 className="w-4 h-4" />
-            Workflow compilado correctamente
+            {t('internal.conceptArtDryRunPanel.resultSuccess')}
           </div>
 
           {/* Summary */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 bg-white/5 rounded-xl">
-              <p className="text-gray-500 text-xs uppercase tracking-wider">Workflow ID</p>
+              <p className="text-gray-500 text-xs uppercase tracking-wider">{t('internal.conceptArtDryRunPanel.labelWorkflowId')}</p>
               <p className="text-white font-mono text-sm mt-1 break-all">{result.workflow_id}</p>
             </div>
             <div className="p-3 bg-white/5 rounded-xl">
-              <p className="text-gray-500 text-xs uppercase tracking-wider">Familia</p>
+              <p className="text-gray-500 text-xs uppercase tracking-wider">{t('internal.conceptArtDryRunPanel.labelFamilia')}</p>
               <p className="text-purple-300 font-semibold text-sm mt-1 uppercase">{result.pipeline.model_family}</p>
             </div>
             <div className="p-3 bg-white/5 rounded-xl">
-              <p className="text-gray-500 text-xs uppercase tracking-wider">Safe to render</p>
+              <p className="text-gray-500 text-xs uppercase tracking-wider">{t('internal.conceptArtDryRunPanel.labelSafeToRender')}</p>
               <p className={`font-semibold text-sm mt-1 ${result.pipeline.safe_to_render ? 'text-emerald-400' : 'text-red-400'}`}>
-                {result.pipeline.safe_to_render ? 'Sí' : 'No'}
+                {result.pipeline.safe_to_render ? t('internal.conceptArtDryRunPanel.valueYes') : t('internal.conceptArtDryRunPanel.valueNo')}
               </p>
             </div>
             <div className="p-3 bg-white/5 rounded-xl">
-              <p className="text-gray-500 text-xs uppercase tracking-wider">Nodos</p>
+              <p className="text-gray-500 text-xs uppercase tracking-wider">{t('internal.conceptArtDryRunPanel.labelNodos')}</p>
               <p className="text-white font-semibold text-sm mt-1">{result.compiled_workflow_preview.validation.node_count}</p>
             </div>
           </div>
@@ -336,7 +341,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
           {/* Resolved models */}
           <div>
             <p className="text-gray-400 text-xs uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Cpu className="w-3 h-3" /> Modelos resueltos
+              <Cpu className="w-3 h-3" /> {t('internal.conceptArtDryRunPanel.sectionModelosResueltos')}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {(['unet', 'clip_l', 't5xxl', 'vae'] as const).map((key) => {
@@ -356,16 +361,16 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
           {/* Validation details */}
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <span className={`px-2 py-0.5 rounded ${result.compiled_workflow_preview.validation.valid ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-              Validation: {result.compiled_workflow_preview.validation.valid ? 'OK' : 'FAIL'}
+              {t('internal.conceptArtDryRunPanel.validationLabel').replace('{status}', result.compiled_workflow_preview.validation.valid ? 'OK' : 'FAIL')}
             </span>
             {result.compiled_workflow_preview.validation.missing_placeholders.length > 0 && (
               <span className="text-red-400">
-                Placeholders missing: {result.compiled_workflow_preview.validation.missing_placeholders.join(', ')}
+                {t('internal.conceptArtDryRunPanel.missingPlaceholders')} {result.compiled_workflow_preview.validation.missing_placeholders.join(', ')}
               </span>
             )}
             {result.pipeline.missing_models.length > 0 && (
               <span className="text-red-400">
-                Missing models: {result.pipeline.missing_models.join(', ')}
+                {t('internal.conceptArtDryRunPanel.missingModels')} {result.pipeline.missing_models.join(', ')}
               </span>
             )}
           </div>
@@ -373,7 +378,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
       {/* Warning */}
       <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-300 flex items-start gap-2">
         <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-        <span>Dry-run: no se ha ejecutado render real ni se ha llamado a /prompt de ComfyUI.</span>
+        <span>{t('internal.conceptArtDryRunPanel.warningDryRun')}</span>
       </div>
     </div>
       )}
@@ -383,7 +388,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-gray-400" />
-            <h3 className="font-semibold text-sm">Historial técnico</h3>
+            <h3 className="font-semibold text-sm">{t('internal.conceptArtDryRunPanel.sectionHistorial')}</h3>
           </div>
           <button
             type="button"
@@ -391,7 +396,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
             disabled={jobsLoading}
             className="text-xs text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-40"
           >
-            {jobsLoading ? 'Cargando...' : 'Recargar'}
+            {jobsLoading ? t('internal.conceptArtDryRunPanel.reloadLoading') : t('internal.conceptArtDryRunPanel.reloadLabel')}
           </button>
         </div>
         {jobsLoading && jobs.length === 0 ? (
@@ -400,7 +405,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
           </div>
         ) : jobs.length === 0 ? (
           <p className="text-gray-500 text-xs text-center py-6">
-            No hay dry-runs registrados. Ejecuta una preparación para ver el historial.
+            {t('internal.conceptArtDryRunPanel.emptyHistorial')}
           </p>
         ) : (
           <div className="space-y-2">
@@ -414,12 +419,12 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-white">
-                        {job.task_type === 'concept_art' ? 'Concept Art' : 'Key Visual'}
+                        {job.task_type === 'concept_art' ? t('internal.conceptArtDryRunPanel.jobTypeConceptArt') : t('internal.conceptArtDryRunPanel.jobTypeKeyVisual')}
                       </span>
                       <span className={`text-xs px-1.5 py-0.5 rounded ${
                         job.safe_to_render ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                       }`}>
-                        {job.safe_to_render ? 'safe' : 'unsafe'}
+                        {job.safe_to_render ? t('internal.conceptArtDryRunPanel.badgeSafe') : t('internal.conceptArtDryRunPanel.badgeUnsafe')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
@@ -428,16 +433,16 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
                     </div>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                        dry-run
+                        {t('internal.conceptArtDryRunPanel.badgeDryRun')}
                       </span>
                       {!job.render_executed && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                          render no ejecutado
+                          {t('internal.conceptArtDryRunPanel.badgeRenderNoEjecutado')}
                         </span>
                       )}
                       {!job.prompt_called && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                          /prompt no llamado
+                          {t('internal.conceptArtDryRunPanel.badgePromptNoLlamado')}
                         </span>
                       )}
                     </div>
@@ -448,7 +453,7 @@ export default function ConceptArtDryRunPanel({ projectId }: Props) {
                     ? 'bg-emerald-500/10 text-emerald-400'
                     : 'bg-gray-500/10 text-gray-400'
                 }`}>
-                  {job.status === 'dry_run_completed' ? 'completado' : job.status}
+                  {job.status === 'dry_run_completed' ? t('internal.conceptArtDryRunPanel.statusCompletado') : job.status}
                 </span>
               </div>
             ))}

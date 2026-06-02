@@ -1058,6 +1058,44 @@
         "recalculate": "No se pudo recalcular el presupuesto.",
         "activate": "No se pudo activar el presupuesto."
       }
+    },
+    "producerPitchPackPage": {
+      "title": "Dossier para productores",
+      "subtitle": "Documento de trabajo para pitching",
+      "errorTitle": "Error al cargar",
+      "backToProject": "Volver al proyecto",
+      "empty": "No hay dossier generado para este proyecto.",
+      "generate": "Generar dossier",
+      "generating": "Generando...",
+      "status": "Estado",
+      "disclaimer": "Documento de trabajo para pitching. Revisar antes de enviar.",
+      "errors": {
+        "generate": "Error generando el dossier para productores",
+        "export": "Error exportando el dossier"
+      },
+      "exports": {
+        "json": "Exportar JSON",
+        "markdown": "Exportar Markdown",
+        "zip": "Exportar ZIP"
+      },
+      "sections": {
+        "logline": "Logline",
+        "shortSynopsis": "Sinopsis corta",
+        "longSynopsis": "Sinopsis larga",
+        "intentionNote": "Nota de intención",
+        "genreFormat": "Género / formato",
+        "targetAudience": "Público objetivo",
+        "budgetSummary": "Resumen de presupuesto",
+        "funding": "Ayudas / funding",
+        "commercialStrengths": "Fortalezas comerciales",
+        "risks": "Riesgos"
+      },
+      "fields": {
+        "genre": "Género",
+        "format": "Formato",
+        "tone": "Tono",
+        "total": "Total"
+      }
     }
   },
   "components": {

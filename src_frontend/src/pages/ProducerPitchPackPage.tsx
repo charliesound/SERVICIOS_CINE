@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AlertCircle, FileText, RefreshCw } from 'lucide-react'
 import { producerPitchApi, ProducerPitchPack } from '../api/producerPitch'
+import { t } from '@/i18n'
 
 export default function ProducerPitchPackPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -38,7 +39,7 @@ export default function ProducerPitchPackPage() {
         setPack(packResult.pack)
       }
     } catch (e: any) {
-      setError(e.message || 'Error generating pitch pack')
+      setError(e.message || t('internal.producerPitchPackPage.errors.generate'))
     } finally {
       setGenerating(false)
     }
@@ -61,7 +62,7 @@ export default function ProducerPitchPackPage() {
         downloadBlob(blob, `pitch_pack_${pack.id}.zip`)
       }
     } catch (e: any) {
-      setError(e.message || 'Error exporting')
+      setError(e.message || t('internal.producerPitchPackPage.errors.export'))
     } finally {
       setExportFormat(null)
     }
@@ -87,16 +88,16 @@ export default function ProducerPitchPackPage() {
   if (error && !pack) {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-2xl font-bold text-white mb-4">Dossier para Productores</h1>
+        <h1 className="text-2xl font-bold text-white mb-4">{t('internal.producerPitchPackPage.title')}</h1>
         <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-8 text-center">
           <AlertCircle className="w-12 h-12 mx-auto mb-3 text-red-400" />
-          <h2 className="text-lg font-semibold text-white mb-2">Error al cargar</h2>
+          <h2 className="text-lg font-semibold text-white mb-2">{t('internal.producerPitchPackPage.errorTitle')}</h2>
           <p className="text-slate-400 mb-6">{error}</p>
           <button onClick={loadPack} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-            <RefreshCw className="w-4 h-4 inline mr-1" /> Reintentar
+            <RefreshCw className="w-4 h-4 inline mr-1" /> {t('internal.common.retry')}
           </button>
           <Link to={`/projects/${projectId}/dashboard`} className="px-4 py-2 ml-3 border border-white/10 rounded text-white hover:bg-white/5">
-            Volver al proyecto
+            {t('internal.producerPitchPackPage.backToProject')}
           </Link>
         </div>
       </div>
@@ -106,34 +107,34 @@ export default function ProducerPitchPackPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Dossier para Productores</h1>
-        <p className="text-slate-400">Documento de trabajo para pitching</p>
+        <h1 className="text-2xl font-bold text-white">{t('internal.producerPitchPackPage.title')}</h1>
+        <p className="text-slate-400">{t('internal.producerPitchPackPage.subtitle')}</p>
       </div>
 
       {error && (
         <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded flex items-center gap-2">
           <AlertCircle className="w-4 h-4" /> {error}
-          <button onClick={loadPack} className="ml-auto text-sm underline hover:no-underline">Reintentar</button>
+          <button onClick={loadPack} className="ml-auto text-sm underline hover:no-underline">{t('internal.common.retry')}</button>
         </div>
       )}
 
       {!pack ? (
         <div className="text-center py-12">
           <FileText className="w-16 h-16 mx-auto mb-4 text-slate-500" />
-          <p className="text-slate-400 mb-4">No hay dossier generado para este proyecto.</p>
+          <p className="text-slate-400 mb-4">{t('internal.producerPitchPackPage.empty')}</p>
           <button
             onClick={handleGenerate}
             disabled={generating}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {generating ? 'Generando...' : 'Generar Dossier'}
+            {generating ? t('internal.producerPitchPackPage.generating') : t('internal.producerPitchPackPage.generate')}
           </button>
         </div>
       ) : (
         <>
           <div className="mb-4 flex items-center justify-between">
             <span className="text-sm text-gray-500">
-              Estado: <span className="font-medium capitalize">{pack.status}</span>
+              {t('internal.producerPitchPackPage.status')}: <span className="font-medium capitalize">{pack.status}</span>
             </span>
             <div className="space-x-2">
               <button
@@ -163,69 +164,69 @@ export default function ProducerPitchPackPage() {
           <div className="space-y-6">
             {pack.logline && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Logline</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('internal.producerPitchPackPage.sections.logline')}</h2>
                 <p className="text-gray-700">{pack.logline}</p>
               </section>
             )}
 
             {pack.short_synopsis && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Sinopsis Corta</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('internal.producerPitchPackPage.sections.shortSynopsis')}</h2>
                 <p className="text-gray-700">{pack.short_synopsis}</p>
               </section>
             )}
 
             {pack.long_synopsis && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Sinopsis Larga</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('internal.producerPitchPackPage.sections.longSynopsis')}</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{pack.long_synopsis}</p>
               </section>
             )}
 
             {pack.intention_note && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Nota de Intención</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('internal.producerPitchPackPage.sections.intentionNote')}</h2>
                 <p className="text-gray-700">{pack.intention_note}</p>
               </section>
             )}
 
             {(pack.genre || pack.format || pack.tone) && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Género / Formato</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('internal.producerPitchPackPage.sections.genreFormat')}</h2>
                 <p className="text-gray-700">
-                  {pack.genre && <span className="mr-4">Género: {pack.genre}</span>}
-                  {pack.format && <span className="mr-4">Formato: {pack.format}</span>}
-                  {pack.tone && <span>Tono: {pack.tone}</span>}
+                  {pack.genre && <span className="mr-4">{t('internal.producerPitchPackPage.fields.genre')}: {pack.genre}</span>}
+                  {pack.format && <span className="mr-4">{t('internal.producerPitchPackPage.fields.format')}: {pack.format}</span>}
+                  {pack.tone && <span>{t('internal.producerPitchPackPage.fields.tone')}: {pack.tone}</span>}
                 </p>
               </section>
             )}
 
             {pack.target_audience && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Público Objetivo</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('internal.producerPitchPackPage.sections.targetAudience')}</h2>
                 <p className="text-gray-700">{pack.target_audience}</p>
               </section>
             )}
 
             {pack.budget_summary && Object.keys(pack.budget_summary).length > 0 && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Resumen de Presupuesto</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('internal.producerPitchPackPage.sections.budgetSummary')}</h2>
                 <p className="text-gray-700">
-                  Total: €{((pack.budget_summary as any).total_estimated || 0).toLocaleString()}
+                  {t('internal.producerPitchPackPage.fields.total')}: €{((pack.budget_summary as any).total_estimated || 0).toLocaleString()}
                 </p>
               </section>
             )}
 
             {pack.funding_summary && Object.keys(pack.funding_summary).length > 0 && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Ayudas/Funding</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('internal.producerPitchPackPage.sections.funding')}</h2>
                 <p className="text-gray-700">{(pack.funding_summary as any).message}</p>
               </section>
             )}
 
             {pack.commercial_strengths && pack.commercial_strengths.length > 0 && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Fortalezas Comerciales</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('internal.producerPitchPackPage.sections.commercialStrengths')}</h2>
                 <ul className="list-disc pl-5 text-gray-700">
                   {pack.commercial_strengths.map((s, i) => (
                     <li key={i}>{s}</li>
@@ -236,7 +237,7 @@ export default function ProducerPitchPackPage() {
 
             {pack.risks && pack.risks.length > 0 && (
               <section>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Riesgos</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('internal.producerPitchPackPage.sections.risks')}</h2>
                 <ul className="list-disc pl-5 text-gray-700">
                   {pack.risks.map((r, i) => (
                     <li key={i}>{r}</li>
@@ -247,7 +248,7 @@ export default function ProducerPitchPackPage() {
           </div>
 
           <div className="mt-8 p-4 bg-gray-50 rounded text-sm text-gray-600">
-            <em>Documento de trabajo para pitching. Revisar antes de enviar.</em>
+            <em>{t('internal.producerPitchPackPage.disclaimer')}</em>
           </div>
         </>
       )}

@@ -1058,6 +1058,44 @@
         "recalculate": "Unable to recalculate the budget.",
         "activate": "Unable to activate the budget."
       }
+    },
+    "producerPitchPackPage": {
+      "title": "Producer pitch pack",
+      "subtitle": "Working document for pitching",
+      "errorTitle": "Loading error",
+      "backToProject": "Back to project",
+      "empty": "No producer pitch pack has been generated for this project.",
+      "generate": "Generate pitch pack",
+      "generating": "Generating...",
+      "status": "Status",
+      "disclaimer": "Working document for pitching. Review before sending.",
+      "errors": {
+        "generate": "Error generating the producer pitch pack",
+        "export": "Error exporting the pitch pack"
+      },
+      "exports": {
+        "json": "Export JSON",
+        "markdown": "Export Markdown",
+        "zip": "Export ZIP"
+      },
+      "sections": {
+        "logline": "Logline",
+        "shortSynopsis": "Short synopsis",
+        "longSynopsis": "Long synopsis",
+        "intentionNote": "Intention note",
+        "genreFormat": "Genre / format",
+        "targetAudience": "Target audience",
+        "budgetSummary": "Budget summary",
+        "funding": "Funding",
+        "commercialStrengths": "Commercial strengths",
+        "risks": "Risks"
+      },
+      "fields": {
+        "genre": "Genre",
+        "format": "Format",
+        "tone": "Tone",
+        "total": "Total"
+      }
     }
   },
   "components": {

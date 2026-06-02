@@ -421,7 +421,9 @@
         "scriptAnalysisWorkspace": "Selecciona un proyecto y pulsa \"Script Analysis Pro\" desde la vista del proyecto para acceder al workspace dedicado.",
         "selectProjectRealFlow": "Selecciona un proyecto para abrir el flujo real de este módulo.",
         "documentalWorkspace": "La entrada actual es el workspace documental común del entorno CID.",
-        "commercialScreenNextUx": "La pantalla comercial existe, pero su workspace dedicado llegará en el siguiente bloque UX."
+        "commercialScreenNextUx": "La pantalla comercial existe, pero su workspace dedicado llegará en el siguiente bloque UX.",
+        "pipelineBuilderWorkspace": "Disponible como espacio operativo transversal dentro de CID.",
+        "informationalAccessFallback": "Acceso orientativo mientras se restablece la lectura de tu plan."
       }
     },
     "dashboard": {

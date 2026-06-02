@@ -90,7 +90,7 @@ function resolveModuleAction(module: ModuleViewModel, t: (key: string) => string
       return {
         label: t('internal.modulesCatalog.openModule'),
         href: '/cid/pipeline-builder',
-        helperText: 'Disponible como espacio operativo transversal dentro de CID.',
+        helperText: t('internal.modulesCatalog.helpers.pipelineBuilderWorkspace'),
         variant: 'primary',
       }
     case 'legal_documents':
@@ -359,7 +359,7 @@ export default function ModulesCatalogPage() {
                 action={{
                   label: t('internal.modulesCatalog.requestActivation'),
                   href: '/pricing',
-                  helperText: 'Acceso orientativo mientras se restablece la lectura de tu plan.',
+                  helperText: t('internal.modulesCatalog.helpers.informationalAccessFallback'),
                   variant: 'secondary',
                 }}
               />

@@ -1096,6 +1096,41 @@
         "tone": "Tone",
         "total": "Total"
       }
+    },
+    "distributionPackPage": {
+      "title": "Distribution / cinemas / platforms",
+      "subtitle": "Commercial preparation tool",
+      "errorTitle": "Loading error",
+      "backToProject": "Back to project",
+      "empty": "No distribution pack has been generated.",
+      "packType": "Pack type",
+      "generate": "Generate pack",
+      "generating": "Generating...",
+      "status": "Status",
+      "disclaimer": "This document is a commercial preparation tool. It does not guarantee acceptance by distributors or platforms.",
+      "errors": {
+        "generate": "Error generating the distribution pack",
+        "export": "Error exporting the distribution pack"
+      },
+      "exports": {
+        "json": "Export JSON",
+        "markdown": "Export Markdown",
+        "zip": "Export ZIP"
+      },
+      "sections": {
+        "logline": "Logline",
+        "synopsis": "Synopsis",
+        "commercialPositioning": "Commercial positioning",
+        "targetAudience": "Target audience",
+        "comparableTitles": "Comparable titles",
+        "territorialStrategy": "Territorial strategy",
+        "availableMaterials": "Available materials",
+        "salesArguments": "Sales arguments",
+        "risks": "Risks"
+      },
+      "packTypes": {
+        "cinema": "Cinemas"
+      }
     }
   },
   "components": {

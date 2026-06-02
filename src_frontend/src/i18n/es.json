@@ -1096,6 +1096,41 @@
         "tone": "Tono",
         "total": "Total"
       }
+    },
+    "distributionPackPage": {
+      "title": "Distribución / cines / plataformas",
+      "subtitle": "Herramienta de preparación comercial",
+      "errorTitle": "Error al cargar",
+      "backToProject": "Volver al proyecto",
+      "empty": "No hay pack de distribución generado.",
+      "packType": "Tipo de pack",
+      "generate": "Generar pack",
+      "generating": "Generando...",
+      "status": "Estado",
+      "disclaimer": "Este documento es herramienta de preparación comercial. No asegura aceptación por distribuidores o plataformas.",
+      "errors": {
+        "generate": "Error generando el pack de distribución",
+        "export": "Error exportando el pack de distribución"
+      },
+      "exports": {
+        "json": "Exportar JSON",
+        "markdown": "Exportar Markdown",
+        "zip": "Exportar ZIP"
+      },
+      "sections": {
+        "logline": "Logline",
+        "synopsis": "Sinopsis",
+        "commercialPositioning": "Posicionamiento comercial",
+        "targetAudience": "Público objetivo",
+        "comparableTitles": "Títulos comparables",
+        "territorialStrategy": "Estrategia territorial",
+        "availableMaterials": "Materiales disponibles",
+        "salesArguments": "Argumentos de venta",
+        "risks": "Riesgos"
+      },
+      "packTypes": {
+        "cinema": "Cines"
+      }
     }
   },
   "components": {

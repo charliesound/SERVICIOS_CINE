@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { projectsApi } from '@/api'
 import { ArrowLeft, ArrowRight, FileText } from 'lucide-react'
+import { t } from '@/i18n'
 
 export default function NewProjectPage() {
   const navigate = useNavigate()
@@ -15,7 +16,7 @@ export default function NewProjectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      setError('El nombre del proyecto es obligatorio')
+      setError(t('internal.newProject.errors.nameRequired'))
       return
     }
 
@@ -34,8 +35,8 @@ export default function NewProjectPage() {
       const message = typeof detail === 'string'
         ? detail
         : typeof detail === 'object' && detail && 'message' in detail
-          ? String((detail as { message?: unknown }).message || 'Error al crear el proyecto')
-          : 'Error al crear el proyecto'
+          ? String((detail as { message?: unknown }).message || t('internal.newProject.errors.createError'))
+          : t('internal.newProject.errors.createError')
       const suggested = typeof detail === 'object' && detail && 'recommended_plan' in detail
         ? String((detail as { recommended_plan?: unknown }).recommended_plan || '')
         : ''
@@ -56,15 +57,15 @@ export default function NewProjectPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">Nuevo proyecto</h1>
-          <p className="text-gray-400 text-sm mt-1">Crea un nuevo proyecto CID</p>
+          <h1 className="text-2xl font-bold">{t('internal.newProject.title')}</h1>
+          <p className="text-gray-400 text-sm mt-1">{t('internal.newProject.subtitle')}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="card bg-dark-200/80 border border-white/5 p-6 space-y-5">
           <div>
-            <label className="label">Nombre del proyecto *</label>
+            <label className="label">{t('internal.newProject.nameLabel')}</label>
             <input
               type="text"
               value={name}
@@ -76,11 +77,11 @@ export default function NewProjectPage() {
           </div>
 
           <div>
-            <label className="label">Descripción</label>
+            <label className="label">{t('internal.newProject.descriptionLabel')}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Breve descripción del proyecto..."
+              placeholder={t('internal.newProject.descriptionPlaceholder')}
               className="input min-h-[80px] resize-none"
             />
           </div>
@@ -92,19 +93,19 @@ export default function NewProjectPage() {
               <FileText className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <h3 className="font-semibold">Guion (opcional)</h3>
-              <p className="text-gray-400 text-sm">Pega el texto de tu guion para analizarlo automáticamente.</p>
+              <h3 className="font-semibold">{t('internal.newProject.scriptTitle')}</h3>
+              <p className="text-gray-400 text-sm">{t('internal.newProject.scriptHelp')}</p>
             </div>
           </div>
 
           <textarea
             value={scriptText}
             onChange={(e) => setScriptText(e.target.value)}
-            placeholder="INT. CAFÉ - DÍA&#10;&#10;JUAN entra en el café. Se sienta en la barra.&#10;&#10;MARÍA: ¿Qué vas a tomar?&#10;&#10;JUAN: Un café, por favor.&#10;&#10;(El guion puede ser en cualquier formato: INT./EXT., diálogos, descripción...)"
+            placeholder={t('internal.newProject.scriptPlaceholder')}
             className="input w-full min-h-[300px] resize-y font-mono text-sm"
           />
           <p className="text-gray-500 text-xs mt-2">
-            {scriptText.length.toLocaleString()} caracteres · Puedes añadir el guion más tarde
+            {t('internal.newProject.scriptCharacterCount').replace('{count}', scriptText.length.toLocaleString())}
           </p>
         </div>
 
@@ -126,7 +127,7 @@ export default function NewProjectPage() {
             to="/projects"
             className="px-6 py-3 border border-white/10 hover:border-white/20 rounded-xl transition-colors"
           >
-            Cancelar
+            {t('internal.common.cancel')}
           </Link>
           <button
             type="submit"
@@ -142,7 +143,7 @@ export default function NewProjectPage() {
                 Creando...
               </span>
             ) : (
-              <>Crear proyecto <ArrowRight className="w-4 h-4" /></>
+              <>{t('internal.newProject.createProject')} <ArrowRight className="w-4 h-4" /></>
             )}
           </button>
         </div>

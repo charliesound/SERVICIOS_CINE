@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { projectsApi, type Project } from '@/api'
 import { PlusCircle, FileText, ArrowRight } from 'lucide-react'
+import { t } from '@/i18n'
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -18,7 +19,7 @@ export default function ProjectsPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold">Proyectos</h1>
+          <h1 className="text-2xl font-bold">{t('internal.projects.title')}</h1>
           <p className="text-gray-400 text-sm mt-1">
             {projects.length} proyecto{projects.length !== 1 ? 's' : ''}
           </p>
@@ -28,7 +29,7 @@ export default function ProjectsPage() {
           className="btn-primary flex items-center gap-2"
         >
           <PlusCircle className="w-4 h-4" />
-          Nuevo proyecto
+          {t('internal.projects.newProject')}
         </Link>
       </div>
 
@@ -39,7 +40,7 @@ export default function ProjectsPage() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
-            <span className="text-sm">Cargando proyectos...</span>
+            <span className="text-sm">{t('internal.projects.loading')}</span>
           </div>
         </div>
       ) : projects.length === 0 ? (
@@ -47,13 +48,13 @@ export default function ProjectsPage() {
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
             <FileText className="w-8 h-8 text-amber-400" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">Sin proyectos</h2>
+          <h2 className="text-xl font-semibold mb-2">{t('internal.projects.emptyTitle')}</h2>
           <p className="text-gray-400 mb-6 max-w-md mx-auto">
             Crea tu primer proyecto y pega el guion para empezar a analizarlo con CID.
           </p>
           <Link to="/projects/new" className="btn-primary inline-flex items-center gap-2">
             <PlusCircle className="w-4 h-4" />
-            Crear primer proyecto
+            {t('internal.projects.createFirstProject')}
           </Link>
         </div>
       ) : (
@@ -75,10 +76,10 @@ export default function ProjectsPage() {
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-gray-500 capitalize">{project.status}</span>
                     {project.script_text && (
-                      <span className="text-xs text-green-400">✓ Guion</span>
+                      <span className="text-xs text-green-400">✓ {t('internal.projects.scriptLoadedShort')}</span>
                     )}
                     {!project.script_text && (
-                      <span className="text-xs text-gray-500">Sin guion</span>
+                      <span className="text-xs text-gray-500">{t('internal.projects.noScript')}</span>
                     )}
                   </div>
                 </div>

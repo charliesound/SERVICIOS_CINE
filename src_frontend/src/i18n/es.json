@@ -817,6 +817,31 @@
         "members": "Miembros",
         "basic": "Básico"
       }
+    },
+    "projects": {
+      "title": "Proyectos",
+      "newProject": "Nuevo proyecto",
+      "loading": "Cargando proyectos...",
+      "emptyTitle": "Sin proyectos",
+      "createFirstProject": "Crear primer proyecto",
+      "scriptLoadedShort": "Guion",
+      "noScript": "Sin guion"
+    },
+    "newProject": {
+      "title": "Nuevo proyecto",
+      "subtitle": "Crea un nuevo proyecto CID",
+      "nameLabel": "Nombre del proyecto *",
+      "descriptionLabel": "Descripción",
+      "descriptionPlaceholder": "Breve descripción del proyecto...",
+      "scriptTitle": "Guion (opcional)",
+      "scriptHelp": "Pega el texto de tu guion para analizarlo automáticamente.",
+      "scriptPlaceholder": "INT. CAFÉ - DÍA\n\nJUAN entra en el café. Se sienta en la barra.\n\nMARÍA: ¿Qué vas a tomar?\n\nJUAN: Un café, por favor.\n\n(El guion puede ser en cualquier formato: INT./EXT., diálogos, descripción...)",
+      "scriptCharacterCount": "{count} caracteres · Puedes añadir el guion más tarde",
+      "createProject": "Crear proyecto",
+      "errors": {
+        "nameRequired": "El nombre del proyecto es obligatorio",
+        "createError": "Error al crear el proyecto"
+      }
     }
   },
   "components": {

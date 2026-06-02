@@ -817,6 +817,31 @@
         "members": "Members",
         "basic": "Basic"
       }
+    },
+    "projects": {
+      "title": "Projects",
+      "newProject": "New project",
+      "loading": "Loading projects...",
+      "emptyTitle": "No projects",
+      "createFirstProject": "Create first project",
+      "scriptLoadedShort": "Script",
+      "noScript": "No script"
+    },
+    "newProject": {
+      "title": "New project",
+      "subtitle": "Create a new CID project",
+      "nameLabel": "Project name *",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Brief project description...",
+      "scriptTitle": "Script (optional)",
+      "scriptHelp": "Paste your script text to analyze it automatically.",
+      "scriptPlaceholder": "INT. CAFÉ - DAY\n\nJUAN enters the café. He sits at the counter.\n\nMARÍA: What would you like?\n\nJUAN: A coffee, please.\n\n(The script can be in any format: INT./EXT., dialogue, description...)",
+      "scriptCharacterCount": "{count} characters · You can add the script later",
+      "createProject": "Create project",
+      "errors": {
+        "nameRequired": "Project name is required",
+        "createError": "Error creating the project"
+      }
     }
   },
   "components": {

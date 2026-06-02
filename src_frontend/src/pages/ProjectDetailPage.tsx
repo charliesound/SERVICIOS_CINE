@@ -705,10 +705,10 @@ export default function ProjectDetailPage() {
     try {
       const updated = await projectsApi.updateScript(projectId, { script_text: scriptText })
       setProject(updated)
-      setSaveMsg('Guion guardado')
+      setSaveMsg(t('internal.projectDetail.script.saved'))
       setTimeout(() => setSaveMsg(''), 2000)
     } catch {
-      setError('Error al guardar el guion')
+      setError(t('internal.projectDetail.script.saveError'))
     } finally {
       setIsSaving(false)
     }
@@ -720,14 +720,14 @@ export default function ProjectDetailPage() {
 
     const ext = file.name.split('.').pop()?.toLowerCase() || ''
     if (ext === 'doc') {
-      setError('El formato .doc clásico no está soportado. Convierte a .docx, PDF, TXT o MD.')
+      setError(t('internal.projectDetail.script.unsupportedDoc'))
       setSelectedScriptFileName('')
       setUploadResult(null)
       event.target.value = ''
       return
     }
     if (!['pdf', 'docx', 'txt', 'md'].includes(ext)) {
-      setError('Formato no soportado. Usa .pdf, .docx, .txt o .md.')
+      setError(t('internal.projectDetail.script.unsupportedFormat'))
       setSelectedScriptFileName('')
       setUploadResult(null)
       event.target.value = ''
@@ -747,12 +747,12 @@ export default function ProjectDetailPage() {
       const refreshedText = updated.script_text || ''
       if (refreshedText) {
         setScriptText(refreshedText)
-        showSuccess('Guion cargado correctamente')
+        showSuccess(t('internal.projectDetail.script.loaded'))
       } else {
-        showSuccess('Guion subido correctamente. Recarga el proyecto para ver el texto convertido.')
+        showSuccess(t('internal.projectDetail.script.uploadedReload'))
       }
     } catch (err) {
-      const msg = parseApiError('No se pudo cargar el archivo de guion')(err)
+      const msg = parseApiError(t('internal.projectDetail.script.uploadError'))(err)
       setError(msg)
       setUploadResult(null)
     } finally {
@@ -763,26 +763,26 @@ export default function ProjectDetailPage() {
 
   const handleAnalyzeScript = async () => {
     if (!projectId) {
-      setError('No se encontro el proyecto para analizar')
+      setError(t('internal.projectDetail.analysis.projectMissing'))
       return
     }
     if (!scriptText.trim()) {
-      setError('Carga un guion antes de analizar')
+      setError(t('internal.projectDetail.analysis.scriptRequired'))
       setActiveTab('script')
       return
     }
-    if (!confirm('Iniciar analisis del guion? Esto procesara el texto y extraera escenas, personajes y estructura.')) return
+    if (!confirm(t('internal.projectDetail.analysis.confirm'))) return
 
     setIsAnalyzing(true)
     setError('')
     setSuccessMsg('')
     setActiveTab('analysis')
     setAnalysisProgress({
-      title: 'Analizar guion',
+      title: t('internal.projectDetail.analysis.title'),
       status: 'queued',
       percent: 0,
-      label: 'Preparando análisis...',
-      helperText: 'Esperando creación del job de análisis.',
+      label: t('internal.projectDetail.analysis.preparing'),
+      helperText: t('internal.projectDetail.analysis.waitingJob'),
       estimated: true,
     })
     try {
@@ -792,8 +792,8 @@ export default function ProjectDetailPage() {
         setAnalysisProgress((current) => buildProgressState(
           'Analizar guion',
           job,
-          'Analizando guion...',
-          job?.progress_stage ? undefined : 'Progreso estimado hasta que el backend devuelva porcentaje real.',
+          t('internal.projectDetail.analysis.analyzingScript'),
+          job?.progress_stage ? undefined : t('internal.projectDetail.analysis.estimatedProgress'),
           current?.percent || 0,
         ))
       })
@@ -802,22 +802,22 @@ export default function ProjectDetailPage() {
       await loadAnalysisState()
       await loadJobs()
       setAnalysisProgress((current) => ({
-        ...(current || { title: 'Analizar guion', estimated: false }),
+        ...(current || { title: t('internal.projectDetail.analysis.title'), estimated: false }),
         status: 'completed',
         percent: 100,
-        label: 'Análisis completado',
-        helperText: 'El resumen y las escenas ya están disponibles.',
+        label: t('internal.projectDetail.analysis.completed'),
+        helperText: t('internal.projectDetail.analysis.completedHelp'),
       }))
       stopPolling()
-      showSuccess('Análisis completado')
+      showSuccess(t('internal.projectDetail.analysis.completed'))
     } catch (err) {
       console.error('[ProjectDetail] analyze failed', err)
-      setError(parseApiError('Error al analizar el guion. Asegurate de que el guion tenga contenido.')(err))
+      setError(parseApiError(t('internal.projectDetail.analysis.errorDetail'))(err))
       setAnalysisProgress((current) => ({
-        ...(current || { title: 'Analizar guion', percent: 0 }),
+        ...(current || { title: t('internal.projectDetail.analysis.title'), percent: 0 }),
         status: 'failed',
-        label: 'Error en análisis',
-        errorMessage: parseApiError('Error al analizar el guion. Asegurate de que el guion tenga contenido.')(err),
+        label: t('internal.projectDetail.analysis.error'),
+        errorMessage: parseApiError(t('internal.projectDetail.analysis.errorDetail'))(err),
       }))
       setActiveTab('script')
     } finally {
@@ -1279,7 +1279,7 @@ export default function ProjectDetailPage() {
 
             {selectedScriptFileName && !uploadResult && (
               <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-gray-400">
-                Archivo seleccionado: <span className="text-white">{selectedScriptFileName}</span>
+                {t('internal.projectDetail.script.selectedFile')}: <span className="text-white">{selectedScriptFileName}</span>
               </div>
             )}
 
@@ -1287,25 +1287,25 @@ export default function ProjectDetailPage() {
               <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2">
                 <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
                   <CheckCircle2 className="w-4 h-4" />
-                  Guion subido correctamente
+                  {t('internal.projectDetail.script.uploaded')}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                   <div>
-                    <p className="text-xs text-slate-500">Formato fuente</p>
+                    <p className="text-xs text-slate-500">{t('internal.projectDetail.script.sourceFormat')}</p>
                     <p className="text-white font-medium">{uploadResult.format}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Palabras</p>
+                    <p className="text-xs text-slate-500">{t('internal.projectDetail.script.words')}</p>
                     <p className="text-white font-medium">{uploadResult.word_count.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Caracteres</p>
+                    <p className="text-xs text-slate-500">{t('internal.projectDetail.script.characters')}</p>
                     <p className="text-white font-medium">{uploadResult.character_count.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Listo para análisis</p>
+                    <p className="text-xs text-slate-500">{t('internal.projectDetail.script.readyForAnalysis')}</p>
                     <p className={uploadResult.ready_for_analysis ? 'text-emerald-400 font-medium' : 'text-amber-400 font-medium'}>
-                      {uploadResult.ready_for_analysis ? 'Sí' : 'No'}
+                      {uploadResult.ready_for_analysis ? t('internal.projectDetail.common.yes') : t('internal.projectDetail.common.no')}
                     </p>
                   </div>
                 </div>
@@ -1323,16 +1323,16 @@ export default function ProjectDetailPage() {
             <textarea
               value={scriptText}
               onChange={(e) => setScriptText(e.target.value)}
-              placeholder="Pega aqui el texto de tu guion...&#10;&#10;INT. CAFE - DIA&#10;MARIA esta sentada.&#10;MARIA: Buenos dias.&#10;EXT. CALLE - NOCHE&#10;JUAN camina bajo la lluvia."
+              placeholder={t('internal.projectDetail.script.placeholder')}
               className="input w-full min-h-[320px] resize-y font-mono text-sm"
             />
             <div className="flex items-center justify-between mt-2">
               <p className="text-gray-500 text-xs">
-                {scriptText.length.toLocaleString()} caracteres
+                {scriptText.length.toLocaleString()} {t('internal.projectDetail.script.charactersLower')}
               </p>
               {scriptText.trim() && (
                 <span className="text-xs text-gray-500">
-                  ~{Math.max(1, scriptText.trim().split(/\s+/).length)} palabras
+                  ~{Math.max(1, scriptText.trim().split(/\s+/).length)} {t('internal.projectDetail.script.wordsLower')}
                 </span>
               )}
             </div>
@@ -1363,7 +1363,7 @@ export default function ProjectDetailPage() {
                   </span>
                 </div>
                 <p className="text-gray-400 text-xs leading-relaxed">
-                  Detecta tipo de documento, personajes, dialogos y estructura narrativa.
+                  {t('internal.projectDetail.analysis.analyzeHelp')}
                 </p>
               </div>
             </button>
@@ -1415,8 +1415,8 @@ export default function ProjectDetailPage() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
               <div>
-                <p className="text-amber-400 font-medium">Analizando guion...</p>
-                <p className="text-gray-400 text-sm mt-1">Extrayendo escenas, personajes y estructura</p>
+                <p className="text-amber-400 font-medium">{t('internal.projectDetail.analysis.analyzingScript')}</p>
+                <p className="text-gray-400 text-sm mt-1">{t('internal.projectDetail.analysis.extracting')}</p>
               </div>
             </div>
           ) : analysisData ? (
@@ -1426,21 +1426,21 @@ export default function ProjectDetailPage() {
                   <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
                     <Sparkles className="w-4 h-4 text-amber-400" />
                   </div>
-                  <h3 className="font-semibold">Resumen del analisis</h3>
+                  <h3 className="font-semibold">{t('internal.projectDetail.analysis.summaryTitle')}</h3>
                 </div>
                   <div className="grid grid-cols-3 gap-4">
                   <div className="p-4 bg-white/5 rounded-xl">
-                    <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Fuente</p>
+                    <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">{t('internal.projectDetail.analysis.source')}</p>
                     <p className="text-white font-semibold capitalize">
-                      {analysisData.source === 'cinematic_script_analysis' ? 'Análisis cinematográfico' : analysisData.source === 'breakdown' ? 'Desglose básico' : analysisData.source === 'fallback_script_breakdown' ? 'Desglose básico (fallback)' : (analysisData.doc_type || 'document').replace(/_/g, ' ')}
+                      {analysisData.source === 'cinematic_script_analysis' ? t('internal.projectDetail.analysis.cinematicAnalysis') : analysisData.source === 'breakdown' ? t('internal.projectDetail.analysis.basicBreakdown') : analysisData.source === 'fallback_script_breakdown' ? t('internal.projectDetail.analysis.basicBreakdownFallback') : (analysisData.doc_type || 'document').replace(/_/g, ' ')}
                     </p>
                   </div>
                   <div className="p-4 bg-white/5 rounded-xl">
-                    <p className="text-gray-400 text-xs mb-2 uppercase tracking-wider">Escenas</p>
+                    <p className="text-gray-400 text-xs mb-2 uppercase tracking-wider">{t('internal.projectDetail.analysis.scenes')}</p>
                     <p className="text-white font-semibold">{analysisData.scenes_count ?? analysisData.scenes?.length ?? 0}</p>
                   </div>
                   <div className="p-4 bg-white/5 rounded-xl">
-                    <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">Personajes</p>
+                    <p className="text-gray-400 text-xs mb-1 uppercase tracking-wider">{t('internal.projectDetail.analysis.characters')}</p>
                     <p className="text-white font-semibold">
                       {analysisData.characters_count ?? '—'}
                     </p>
@@ -1449,19 +1449,19 @@ export default function ProjectDetailPage() {
                 </div>
 
                 <div className="card bg-dark-200/80 border border-white/5 p-6">
-                  <h4 className="text-sm font-semibold mb-4 text-gray-300">Motor de análisis</h4>
+                  <h4 className="text-sm font-semibold mb-4 text-gray-300">{t('internal.projectDetail.analysis.engineTitle')}</h4>
                   {analysisData.analysis_engine || analysisData.analysis_provider || analysisData.analysis_model || analysisData.fallback_used != null ? (
                     <div className="grid gap-3 md:grid-cols-4 text-sm text-slate-300">
-                      <p><span className="text-slate-500">Motor:</span> {analysisData.analysis_engine || 'Motor no informado'}</p>
-                      <p><span className="text-slate-500">Provider:</span> {analysisData.analysis_provider || 'Motor no informado'}</p>
-                      <p><span className="text-slate-500">Modelo:</span> {analysisData.analysis_model || 'Motor no informado'}</p>
-                      <p><span className="text-slate-500">Fallback:</span> {analysisData.fallback_used == null ? 'Motor no informado' : analysisData.fallback_used ? 'Sí' : 'No'}</p>
+                      <p><span className="text-slate-500">{t('internal.projectDetail.analysis.engine')}</span> {analysisData.analysis_engine || t('internal.projectDetail.analysis.engineUnknown')}</p>
+                      <p><span className="text-slate-500">{t('internal.projectDetail.analysis.provider')}</span> {analysisData.analysis_provider || t('internal.projectDetail.analysis.engineUnknown')}</p>
+                      <p><span className="text-slate-500">{t('internal.projectDetail.analysis.model')}</span> {analysisData.analysis_model || t('internal.projectDetail.analysis.engineUnknown')}</p>
+                      <p><span className="text-slate-500">{t('internal.projectDetail.analysis.fallback')}</span> {analysisData.fallback_used == null ? t('internal.projectDetail.analysis.engineUnknown') : analysisData.fallback_used ? t('internal.projectDetail.common.yes') : t('internal.projectDetail.common.no')}</p>
                       {analysisData.fallback_reason && (
-                        <p className="md:col-span-4"><span className="text-slate-500">Motivo:</span> {analysisData.fallback_reason}</p>
+                        <p className="md:col-span-4"><span className="text-slate-500">{t('internal.projectDetail.analysis.reason')}</span> {analysisData.fallback_reason}</p>
                       )}
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-500">Motor no informado</p>
+                    <p className="text-sm text-slate-500">{t('internal.projectDetail.analysis.engineUnknown')}</p>
                   )}
                 </div>
 
@@ -1469,12 +1469,12 @@ export default function ProjectDetailPage() {
                 <>
                   <div className="card bg-dark-200/80 border border-white/5 p-6">
                     <h4 className="text-sm font-semibold mb-4 text-gray-300">
-                      {analysisData.source === 'cinematic_script_analysis' ? 'Análisis cinematográfico' : analysisData.source === 'fallback_script_breakdown' ? 'Desglose básico (fallback)' : 'Desglose básico'}
+                      {analysisData.source === 'cinematic_script_analysis' ? t('internal.projectDetail.analysis.cinematicAnalysis') : analysisData.source === 'fallback_script_breakdown' ? t('internal.projectDetail.analysis.basicBreakdownFallback') : t('internal.projectDetail.analysis.basicBreakdown')}
                     </h4>
                     <div className="grid gap-3 md:grid-cols-3 text-sm text-slate-300">
-                      <p><span className="text-slate-500">Localizaciones:</span> {analysisData.locations_count ?? '—'}</p>
-                      <p><span className="text-slate-500">Secuencias:</span> {analysisData.sequences_count ?? '—'}</p>
-                      <p><span className="text-slate-500">Estado:</span> {analysisData.status || 'completed'}</p>
+                      <p><span className="text-slate-500">{t('internal.projectDetail.analysis.locations')}</span> {analysisData.locations_count ?? '—'}</p>
+                      <p><span className="text-slate-500">{t('internal.projectDetail.analysis.sequences')}</span> {analysisData.sequences_count ?? '—'}</p>
+                      <p><span className="text-slate-500">{t('internal.projectDetail.analysis.status')}</span> {analysisData.status || 'completed'}</p>
                     </div>
                   </div>
                   <div className="card bg-dark-200/80 border border-white/5 p-6">

@@ -315,7 +315,7 @@ export default function StoryboardBuilderPage() {
       const result = await storyboardApi.uploadProjectScript(projectId, selectedScriptFile)
       setScriptUploadResult(result)
     } catch (err: any) {
-      setScriptUploadError(err?.response?.data?.detail || err?.message || 'Error al subir el guion')
+      setScriptUploadError(err?.response?.data?.detail || err?.message || t('internal.storyboardBuilder.errors.uploadScript'))
     } finally {
       setIsUploadingScript(false)
     }
@@ -365,7 +365,7 @@ export default function StoryboardBuilderPage() {
       setAnalysisResult(data)
       setActiveTab('analyze')
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Error analyzing full script')
+      setError(err?.response?.data?.detail || err?.message || t('internal.storyboardBuilder.errors.analyzeFullScript'))
     } finally {
       setIsAnalyzing(false)
     }
@@ -392,7 +392,7 @@ export default function StoryboardBuilderPage() {
       await Promise.all([fetchShots(), fetchSequences()])
       setActiveTab('shots')
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Error generating sequence')
+      setError(err?.response?.data?.detail || t('internal.storyboardBuilder.errors.generateSequence'))
     } finally {
       setIsGenerating(false)
     }
@@ -400,7 +400,7 @@ export default function StoryboardBuilderPage() {
 
   const handlePlanSequenceFromList = async (sequenceId = selectedSequenceId) => {
     if (!projectId || !sequenceId) {
-      setSequenceSelectorError('Selecciona una secuencia antes de planificar el storyboard.')
+      setSequenceSelectorError(t('internal.storyboardBuilder.errors.selectSequenceBeforePlanning'))
       setSequenceSelectorOpen(true)
       return
     }
@@ -418,7 +418,7 @@ export default function StoryboardBuilderPage() {
       setSelectedMode('SEQUENCE')
       setActiveTab('sequences')
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Error planificando la secuencia')
+      setError(err?.response?.data?.detail || err?.message || t('internal.storyboardBuilder.errors.planSequence'))
     } finally {
       setIsPlanningSequence(false)
     }
@@ -468,7 +468,7 @@ export default function StoryboardBuilderPage() {
       await Promise.all([fetchShots(), fetchSequences()])
       setActiveTab('shots')
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Error generating storyboard')
+      setError(err?.response?.data?.detail || err?.message || t('internal.storyboardBuilder.errors.generateStoryboard'))
     } finally {
       setIsGenerating(false)
     }
@@ -476,7 +476,7 @@ export default function StoryboardBuilderPage() {
 
   const handleConfirmSequenceSelection = (selection: StoryboardSelectionValue) => {
     if (selection.mode === 'SEQUENCE' && !selection.sequenceId) {
-      setSequenceSelectorError('Selecciona una secuencia antes de generar el storyboard.')
+      setSequenceSelectorError(t('internal.storyboardBuilder.errors.selectSequenceBeforeGenerating'))
       return
     }
 
@@ -499,7 +499,7 @@ export default function StoryboardBuilderPage() {
     try {
       if (regenerateSequence && selectedSequenceId) {
         setRegenerationProgress({
-          title: 'Regenerar storyboard',
+          title: t('internal.storyboardBuilder.regenerateSequence'),
           status: 'queued',
           percent: 0,
           label: t('internal.storyboardBuilder.remaining.startingRegeneration'),
@@ -510,25 +510,28 @@ export default function StoryboardBuilderPage() {
           render: renderImagesOnComplete,
         })
         setRegenerationProgress({
-          title: 'Regenerar storyboard',
+          title: t('internal.storyboardBuilder.regenerateSequence'),
           status: 'processing',
           percent: 50,
           label: t('internal.storyboardBuilder.remaining.generatingStoryboardProgress')
             .replace('{shots}', String(result.total_shots))
             .replace('{scenes}', String(result.total_scenes)),
           helperText: (result.render_jobs ?? []).length > 0
-            ? `${(result.render_jobs ?? []).length} render(s) encolados`
-            : 'Estructura generada sin renders',
+            ? t('internal.storyboardBuilder.remaining.renderJobsQueued').replace('{count}', String((result.render_jobs ?? []).length))
+            : t('internal.storyboardBuilder.remaining.structureWithoutRenders'),
           jobId: result.job_id,
         })
         await Promise.all([fetchShots(), fetchSequences()])
         setRegenerationProgress({
-          title: 'Regenerar storyboard',
+          title: t('internal.storyboardBuilder.regenerateSequence'),
           status: 'completed',
           percent: 100,
           label: t('internal.storyboardBuilder.notifications.storyboardRegeneratedSuccessfully'),
           helperText: result.total_shots > 0
-            ? `${result.total_scenes} escenas, ${result.total_shots} planos generados. Assets: ${(result.generated_assets ?? []).length > 0 ? (result.generated_assets ?? []).join(', ') : 'solo estructura'}`
+            ? t('internal.storyboardBuilder.remaining.regeneratedSummary')
+                .replace('{scenes}', String(result.total_scenes))
+                .replace('{shots}', String(result.total_shots))
+                .replace('{assets}', (result.generated_assets ?? []).length > 0 ? (result.generated_assets ?? []).join(', ') : t('internal.storyboardBuilder.remaining.onlyStructure'))
             : t('internal.storyboardBuilder.notifications.storyboardRegenerated'),
           jobId: result.job_id,
         })
@@ -558,7 +561,7 @@ export default function StoryboardBuilderPage() {
       }
     } catch (err: any) {
       console.error(err)
-      const msg = err?.response?.data?.detail || 'Error generating storyboard'
+      const msg = err?.response?.data?.detail || t('internal.storyboardBuilder.errors.generateStoryboard')
       setError(msg)
       setRegenerationProgress((current) =>
         current
@@ -688,7 +691,7 @@ export default function StoryboardBuilderPage() {
                 {t('internal.storyboardBuilder.title')}
               </h1>
               <p className="text-gray-400 text-sm mt-1">
-                {filteredShots.length} shot{filteredShots.length !== 1 ? 's' : ''}
+                {filteredShots.length} {filteredShots.length !== 1 ? t('internal.storyboardBuilder.shots.shotsCountLabel') : t('internal.storyboardBuilder.shotSingle')}
                 {dirtyCount > 0 && <span className="text-amber-400 ml-2">• {dirtyCount} {t('internal.storyboardBuilder.unsaved')}</span>}
               </p>
             </div>
@@ -834,7 +837,7 @@ export default function StoryboardBuilderPage() {
                 {/* Synopsis */}
                 <section className="card bg-dark-200/80 border border-white/5 p-6 space-y-3">
                   <h3 className="text-base font-semibold text-amber-300 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" /> Sinopsis
+                    <Sparkles className="w-4 h-4" /> {t('internal.storyboardBuilder.analysis.synopsis')}
                   </h3>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="space-y-2">
@@ -881,7 +884,7 @@ export default function StoryboardBuilderPage() {
                 {/* Sequence Map */}
                 <section className="card bg-dark-200/80 border border-white/5 p-6 space-y-4">
                   <h3 className="text-base font-semibold text-amber-300 flex items-center gap-2">
-                    <ListChecks className="w-4 h-4" /> Mapa de secuencias ({analysisResult.sequence_map.total_sequences} detectadas)
+                    <ListChecks className="w-4 h-4" /> {t('internal.storyboardBuilder.analysis.sequenceMap')} ({analysisResult.sequence_map.total_sequences} {t('internal.storyboardBuilder.analysis.detected')})
                   </h3>
                   <div className="grid gap-3">
                     {analysisResult.sequence_map.sequences.map((entry) => (
@@ -910,11 +913,11 @@ export default function StoryboardBuilderPage() {
                               setActiveTab('shots')
                             }}
                               className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
-                              Ver plan de storyboard →
+                              {t('internal.storyboardBuilder.analysis.viewStoryboardPlan')} →
                             </button>
                           </div>
                           <div className="flex flex-col items-end gap-1">
-                            <span className="text-[10px] text-slate-500">{entry.suggested_shot_count || 0} planos</span>
+                            <span className="text-[10px] text-slate-500">{entry.suggested_shot_count || 0} {t('internal.storyboardBuilder.shots.shotsCountLabel')}</span>
                           </div>
                         </div>
                       </div>
@@ -963,7 +966,7 @@ export default function StoryboardBuilderPage() {
             {shotPlan && selectedSequenceId && (
               <section className="card bg-dark-200/80 border border-cyan-500/20 p-6 space-y-4">
                 <h3 className="text-base font-semibold text-cyan-300 flex items-center gap-2">
-                  <Eye className="w-4 h-4" /> Plan de storyboard: {shotPlan.sequence_title}
+                  <Eye className="w-4 h-4" /> {t('internal.storyboardBuilder.analysis.storyboardPlan')}: {shotPlan.sequence_title}
                 </h3>
                 {shotPlan.warnings && shotPlan.warnings.length > 0 && (
                   <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
@@ -974,7 +977,7 @@ export default function StoryboardBuilderPage() {
                   </div>
                 )}
                 <p className="text-xs text-slate-400">
-                  <span className="text-cyan-400 font-medium">{shotPlan.shot_plan.length} planos</span> planificados
+                  <span className="text-cyan-400 font-medium">{shotPlan.shot_plan.length} {t('internal.storyboardBuilder.shots.shotsCountLabel')}</span> {t('internal.storyboardBuilder.analysis.planned')}
                 </p>
                 {shotPlan.continuity_plan.length > 0 && (
                   <p className="text-xs text-slate-500">{shotPlan.continuity_plan.join(' | ')}</p>

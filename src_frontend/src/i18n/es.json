@@ -1042,7 +1042,9 @@
         "jobLabel": "Job:",
         "noStoryboardYet": "Sin storyboard aún",
         "goToScriptGenerate": "Ve a la pestaña Guion y pulsa “Generar storyboard” para comenzar.",
-        "generateHelp": "Detecta escenas, sugiere tipos de plano y genera la estructura visual."
+        "generateHelp": "Detecta escenas, sugiere tipos de plano y genera la estructura visual.",
+        "sessionExpired": "Sesión expirada. Vuelve a iniciar sesión.",
+        "storyboardAlt": "Vista previa del storyboard"
       },
       "exports": {
         "exportError": "No se pudo exportar el proyecto en {format}.",
@@ -1058,7 +1060,10 @@
         "sequence": "Secuencia",
         "shot": "shot",
         "asset": "Asset",
-        "shots": "shots"
+        "shots": "shots",
+        "premium": "Premium",
+        "realistic": "Realista",
+        "shotAlt": "Plano"
       },
       "remaining": {
         "jobs": "Jobs",
@@ -1084,6 +1089,16 @@
       "refresh": "Actualizar",
       "addShot": "Añadir plano",
       "saveStoryboard": "Guardar Storyboard",
+      "shotSingle": "plano",
+      "errors": {
+        "uploadScript": "Error al subir el guion. Inténtalo de nuevo.",
+        "analyzeFullScript": "Error al analizar el guion completo.",
+        "planSequence": "Error al planificar la secuencia.",
+        "generateSequence": "Error al generar el storyboard de la secuencia.",
+        "generateStoryboard": "Error al generar el storyboard.",
+        "selectSequenceBeforePlanning": "Selecciona una secuencia antes de planificar.",
+        "selectSequenceBeforeGenerating": "Selecciona una secuencia antes de generar."
+      },
       "tabs": {
         "analyze": "1. Analizar guion",
         "sequences": "2. Secuencias",
@@ -1137,7 +1152,13 @@
         "mainCharacters": "Personajes principales",
         "mainLocations": "Localizaciones principales",
         "recommended": "Recomendada",
-        "warnings": "Advertencias"
+        "warnings": "Advertencias",
+        "synopsis": "Sinopsis",
+        "sequenceMap": "Mapa de secuencias",
+        "storyboardPlan": "Plan de storyboard",
+        "viewStoryboardPlan": "Ver plan de storyboard",
+        "detected": "Detectado",
+        "planned": "Planificado"
       },
       "credits": {
         "estimating": "Estimando créditos...",
@@ -1223,7 +1244,11 @@
         "shotLabel": "Plano",
         "charactersBreakdownBySequence": "Personajes y desglose por secuencias",
         "alignment": "Alignment:",
-        "prompt": "Prompt:"
+        "prompt": "Prompt:",
+        "renderJobsQueued": "Trabajos de render encolados",
+        "structureWithoutRenders": "Estructura sin renders",
+        "regeneratedSummary": "Resumen regenerado",
+        "onlyStructure": "Solo estructura"
       },
       "notifications": {
         "scriptUploaded": "Guion subido correctamente",

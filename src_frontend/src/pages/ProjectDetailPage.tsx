@@ -126,20 +126,20 @@ interface ProjectJob {
   assets: JobAssetEntry[]
 }
 
-const SHOT_TYPE_LABELS: Record<string, string> = {
-  WS: 'Wide Shot',
-  MS: 'Medium Shot',
-  CU: 'Close-Up',
-  ECU: 'Extreme Close-Up',
-  OTS: 'Over the Shoulder',
-  LS: 'Long Shot',
-  PANNING: 'Panning',
-  TRACKING: 'Tracking',
-  POV: 'Point of View',
+const SHOT_TYPE_LABEL_KEYS: Record<string, string> = {
+  WS: 'internal.projectDetail.storyboard.shotTypes.ws',
+  MS: 'internal.projectDetail.storyboard.shotTypes.ms',
+  CU: 'internal.projectDetail.storyboard.shotTypes.cu',
+  ECU: 'internal.projectDetail.storyboard.shotTypes.ecu',
+  OTS: 'internal.projectDetail.storyboard.shotTypes.ots',
+  LS: 'internal.projectDetail.storyboard.shotTypes.ls',
+  PANNING: 'internal.projectDetail.storyboard.shotTypes.panning',
+  TRACKING: 'internal.projectDetail.storyboard.shotTypes.tracking',
+  POV: 'internal.projectDetail.storyboard.shotTypes.pov',
 }
 
-function ShotTypeBadge({ type }: { type: string }) {
-  const label = SHOT_TYPE_LABELS[type] || type
+function ShotTypeBadge({ type, t }: { type: string; t: (key: string) => string }) {
+  const label = SHOT_TYPE_LABEL_KEYS[type] ? t(SHOT_TYPE_LABEL_KEYS[type]) : type
   const colors: Record<string, string> = {
     WS: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     MS: 'bg-green-500/10 text-green-400 border-green-500/20',
@@ -258,7 +258,7 @@ export default function ProjectDetailPage() {
 
   const parseApiError = (fallback: string) => (err: unknown): string => {
     const status = (err as { response?: { status?: number } })?.response?.status
-    if (status === 401 || status === 403) return 'Sesion caducada. Vuelve a iniciar sesion.'
+    if (status === 401 || status === 403) return t('internal.projectDetail.storyboard.sessionExpired')
     const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
     if (typeof detail === 'string') return detail
     if (detail && typeof detail === 'object' && 'message' in detail) {
@@ -1638,7 +1638,7 @@ export default function ProjectDetailPage() {
                             <AuthenticatedStoryboardShotImage
                               projectId={projectId || ''}
                               shotId={shot.shot_id}
-                              alt={shot.asset_file_name || `Storyboard ${shot.shot_number}`}
+                              alt={shot.asset_file_name || t('internal.projectDetail.storyboard.storyboardAlt').replace('{shot}', String(shot.shot_number))}
                               className="absolute inset-0 w-full h-full object-cover"
                               fallbackLabel={t('internal.projectDetail.storyboard.noThumbnail')}
                             />
@@ -1654,7 +1654,7 @@ export default function ProjectDetailPage() {
                           {/* Shot details */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1.5">
-                              <ShotTypeBadge type={shot.shot_type} />
+                              <ShotTypeBadge type={shot.shot_type} t={t} />
                               <span className="text-gray-500 text-xs">#{shot.shot_number}</span>
                             </div>
                             <p className="text-gray-300 text-xs leading-relaxed line-clamp-3">
@@ -2074,7 +2074,7 @@ export default function ProjectDetailPage() {
                                 {thumbnailUrl ? (
                                   <img
                                     src={thumbnailUrl}
-                                    alt={`Shot ${shotOrder}`}
+                                    alt={t('internal.projectDetail.assets.shotAlt').replace('{shot}', String(shotOrder))}
                                     className="absolute inset-0 w-full h-full object-cover"
                                     onError={(e) => {
                                       // Fallback on error
@@ -2092,7 +2092,7 @@ export default function ProjectDetailPage() {
                                   </p>
                                   <div className="flex items-center gap-1 mt-0.5">
                                     <span className={`px-1.5 py-0.5 rounded text-[10px] ${isPremium ? 'bg-purple-500/20 text-purple-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                                      {isPremium ? 'Premium' : 'Realistic'}
+                                      {isPremium ? t('internal.projectDetail.assets.premium') : t('internal.projectDetail.assets.realistic')}
                                     </span>
                                     <span className="text-gray-500 text-[10px] capitalize">
                                       {shotType}
@@ -2127,7 +2127,7 @@ export default function ProjectDetailPage() {
                                   {t('internal.projectDetail.assets.sequence')} {seqId.toUpperCase()}
                                 </h3>
                                 <p className="text-sm text-gray-400">
-                                  {seqAssets.length} {seqAssets.length === 1 ? t('internal.projectDetail.assets.shot') : t('internal.projectDetail.assets.shots')} · {seqModes.includes('flux') ? 'Premium' : 'Realistic'}
+                                  {seqAssets.length} {seqAssets.length === 1 ? t('internal.projectDetail.assets.shot') : t('internal.projectDetail.assets.shots')} · {seqModes.includes('flux') ? t('internal.projectDetail.assets.premium') : t('internal.projectDetail.assets.realistic')}
                                 </p>
                               </div>
                             </div>
@@ -2140,12 +2140,12 @@ export default function ProjectDetailPage() {
           </Link>
                               {seqModes.includes('flux') && (
                                 <span className="px-2 py-1 rounded bg-purple-500/20 text-purple-400 text-xs">
-                                  Premium
+                                  {t('internal.projectDetail.assets.premium')}
                                 </span>
                               )}
                               {seqModes.includes('realistic') && (
                                 <span className="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-xs">
-                                  Realistic
+                                  {t('internal.projectDetail.assets.realistic')}
                                 </span>
                               )}
                             </div>
@@ -2172,7 +2172,7 @@ export default function ProjectDetailPage() {
                                     {thumbnailUrl ? (
                                       <img
                                         src={thumbnailUrl}
-                                        alt={`Shot ${shotOrder}`}
+                                        alt={t('internal.projectDetail.assets.shotAlt').replace('{shot}', String(shotOrder))}
                                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                         onError={(e) => {
                                           e.currentTarget.style.display = 'none'

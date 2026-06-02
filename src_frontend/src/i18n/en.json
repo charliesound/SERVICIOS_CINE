@@ -1042,7 +1042,9 @@
         "jobLabel": "Job:",
         "noStoryboardYet": "No storyboard yet",
         "goToScriptGenerate": "Go to the Script tab and click “Generate storyboard” to begin.",
-        "generateHelp": "Detect scenes, suggest shot types and generate the visual structure."
+        "generateHelp": "Detect scenes, suggest shot types and generate the visual structure.",
+        "sessionExpired": "Session expired. Please log in again.",
+        "storyboardAlt": "Storyboard preview"
       },
       "exports": {
         "exportError": "Could not export the project as {format}.",
@@ -1058,7 +1060,10 @@
         "sequence": "Sequence",
         "shot": "shot",
         "asset": "Asset",
-        "shots": "shots"
+        "shots": "shots",
+        "premium": "Premium",
+        "realistic": "Realistic",
+        "shotAlt": "Shot"
       },
       "remaining": {
         "jobs": "Jobs",
@@ -1084,6 +1089,16 @@
       "refresh": "Refresh",
       "addShot": "Add shot",
       "saveStoryboard": "Save Storyboard",
+      "shotSingle": "shot",
+      "errors": {
+        "uploadScript": "Error uploading script. Please try again.",
+        "analyzeFullScript": "Error analyzing full script.",
+        "planSequence": "Error planning sequence.",
+        "generateSequence": "Error generating storyboard for this sequence.",
+        "generateStoryboard": "Error generating storyboard.",
+        "selectSequenceBeforePlanning": "Select a sequence before planning.",
+        "selectSequenceBeforeGenerating": "Select a sequence before generating."
+      },
       "tabs": {
         "analyze": "1. Analyze script",
         "sequences": "2. Sequences",
@@ -1137,7 +1152,13 @@
         "mainCharacters": "Main characters",
         "mainLocations": "Main locations",
         "recommended": "Recommended",
-        "warnings": "Warnings"
+        "warnings": "Warnings",
+        "synopsis": "Synopsis",
+        "sequenceMap": "Sequence map",
+        "storyboardPlan": "Storyboard plan",
+        "viewStoryboardPlan": "View storyboard plan",
+        "detected": "Detected",
+        "planned": "Planned"
       },
       "credits": {
         "estimating": "Estimating credits...",
@@ -1223,7 +1244,11 @@
         "shotLabel": "Shot",
         "charactersBreakdownBySequence": "Characters and breakdown by sequences",
         "alignment": "Alignment:",
-        "prompt": "Prompt:"
+        "prompt": "Prompt:",
+        "renderJobsQueued": "Render jobs queued",
+        "structureWithoutRenders": "Structure without renders",
+        "regeneratedSummary": "Regenerated summary",
+        "onlyStructure": "Only structure"
       },
       "notifications": {
         "scriptUploaded": "Script uploaded successfully",

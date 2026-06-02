@@ -29,7 +29,7 @@ export default function ProjectFundingPage() {
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-gray-400">{t('internal.projectFundingPage.projectNotFound')}</p>
         <Link to="/projects" className="mt-4 text-blue-400 hover:underline">
-          Volver a proyectos
+          {t('internal.projectFundingPage.backToProjects')}
         </Link>
       </div>
     )
@@ -55,7 +55,7 @@ export default function ProjectFundingPage() {
               Reintentar
             </button>
             <Link to="/projects" className="btn-secondary">
-              Volver a proyectos
+              {t('internal.projectFundingPage.backToProjects')}
             </Link>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function ProjectFundingPage() {
             className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Volver al proyecto
+            {t('internal.projectFundingPage.backToProject')}
           </Link>
         </div>
 

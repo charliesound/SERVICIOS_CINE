@@ -170,7 +170,11 @@
       "checkEmailTitle": "Revisa tu email",
       "sentMessage": "Si el email está registrado, recibirás instrucciones para restablecer tu contraseña.",
       "requestError": "Error al enviar la solicitud. Intenta de nuevo.",
-      "backToLogin": "Volver al inicio de sesión"
+      "backToLogin": "Volver al inicio de sesión",
+      "instructions": "Introduce tu email y te enviaremos un enlace para restablecerla.",
+      "emailPlaceholder": "tu@email.com",
+      "sending": "Enviando...",
+      "submit": "Enviar enlace de restablecimiento"
     },
     "reset": {
       "title": "Restablecer contraseña",

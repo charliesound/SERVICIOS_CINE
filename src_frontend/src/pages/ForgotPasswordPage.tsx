@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
           <p className="text-slate-400 mt-2 text-sm">
             {sent
               ? t('auth.forgot.sentMessage')
-              : 'Introduce tu email y te enviaremos un enlace para restablecerla.'}
+              : t('auth.forgot.instructions')}
           </p>
         </div>
 
@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
+                    placeholder={t('auth.forgot.emailPlaceholder')}
                     className="input pl-10"
                     required
                   />
@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
                 disabled={isLoading}
                 className="btn btn-primary w-full"
               >
-                {isLoading ? 'Enviando...' : 'Enviar enlace de restablecimiento'}
+                {isLoading ? t('auth.forgot.sending') : t('auth.forgot.submit')}
               </button>
 
               <div className="text-center">

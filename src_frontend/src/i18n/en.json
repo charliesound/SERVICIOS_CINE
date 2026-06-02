@@ -170,7 +170,11 @@
       "checkEmailTitle": "Check your email",
       "sentMessage": "If the email is registered, you will receive instructions to reset your password.",
       "requestError": "Error sending the request. Please try again.",
-      "backToLogin": "Back to sign in"
+      "backToLogin": "Back to sign in",
+      "instructions": "Enter your email and we will send you a link to reset your password.",
+      "emailPlaceholder": "you@example.com",
+      "sending": "Sending...",
+      "submit": "Send reset link"
     },
     "reset": {
       "title": "Reset password",

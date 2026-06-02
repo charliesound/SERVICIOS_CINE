@@ -2481,6 +2481,19 @@
       "authenticatedShotImage": {
         "loading": "Cargando...",
         "noThumbnail": "Sin miniatura"
+      },
+      "reportEditorForm": {
+        "titleCamera": "Camera Report",
+        "titleSound": "Sound Report",
+        "titleScript": "Script Note",
+        "titleDirector": "Director Note",
+        "subtitle": "Captura manual y edición del reporte estructurado.",
+        "organizationId": "Organization ID",
+        "projectId": "Project ID",
+        "reportDate": "Report date",
+        "saving": "Guardando...",
+        "createReport": "Crear reporte",
+        "saveChanges": "Guardar cambios"
       }
     },
     "projectFundingPanel": {

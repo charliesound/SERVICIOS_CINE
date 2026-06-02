@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { useLanguage } from '@/i18n'
 import { ReportType, StructuredReport, StructuredReportCreate, StructuredReportUpdate } from '@/types'
 
 type ReportEditorFormProps = {
@@ -187,6 +188,7 @@ function buildPayload(reportType: ReportType, mode: 'create' | 'edit', form: Rep
 }
 
 export default function ReportEditorForm({ reportType, mode, initialValue, isSubmitting = false, onSubmit }: ReportEditorFormProps) {
+  const { t } = useLanguage()
   const [form, setForm] = useState<ReportFormState>(mapReportToState(initialValue))
 
   useEffect(() => {
@@ -194,10 +196,10 @@ export default function ReportEditorForm({ reportType, mode, initialValue, isSub
   }, [initialValue])
 
   const title = useMemo(() => {
-    if (reportType === 'camera') return 'Camera Report'
-    if (reportType === 'sound') return 'Sound Report'
-    if (reportType === 'script') return 'Script Note'
-    return 'Director Note'
+    if (reportType === 'camera') return t('internal.reportEditorForm.titleCamera')
+    if (reportType === 'sound') return t('internal.reportEditorForm.titleSound')
+    if (reportType === 'script') return t('internal.reportEditorForm.titleScript')
+    return t('internal.reportEditorForm.titleDirector')
   }, [reportType])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -213,17 +215,17 @@ export default function ReportEditorForm({ reportType, mode, initialValue, isSub
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <h2 className="heading-md">{title}</h2>
-        <p className="text-sm text-slate-500">Captura manual y edición del reporte estructurado.</p>
+        <p className="text-sm text-slate-500">{t('internal.reportEditorForm.subtitle')}</p>
       </div>
 
       {mode === 'create' && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="label">Organization ID</label>
+            <label className="label">{t('internal.reportEditorForm.organizationId')}</label>
             <input className="input" value={form.organization_id} onChange={(event) => setForm((current) => ({ ...current, organization_id: event.target.value }))} placeholder="org_reports" />
           </div>
           <div>
-            <label className="label">Project ID</label>
+            <label className="label">{t('internal.reportEditorForm.projectId')}</label>
             <input className="input" value={form.project_id} onChange={(event) => setForm((current) => ({ ...current, project_id: event.target.value }))} placeholder="proj_reports" required />
           </div>
         </div>
@@ -238,7 +240,7 @@ export default function ReportEditorForm({ reportType, mode, initialValue, isSub
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
-          <label className="label">Report date</label>
+          <label className="label">{t('internal.reportEditorForm.reportDate')}</label>
           <input className="input" type="date" value={form.report_date} onChange={(event) => setForm((current) => ({ ...current, report_date: event.target.value }))} required />
         </div>
         <input className="input" value={form.document_asset_id} onChange={(event) => setForm((current) => ({ ...current, document_asset_id: event.target.value }))} placeholder="document_asset_id" />
@@ -291,7 +293,7 @@ export default function ReportEditorForm({ reportType, mode, initialValue, isSub
       )}
 
       <button type="submit" className="btn-primary" disabled={isSubmitting}>
-        {isSubmitting ? 'Guardando...' : mode === 'create' ? 'Crear reporte' : 'Guardar cambios'}
+        {isSubmitting ? t('internal.reportEditorForm.saving') : mode === 'create' ? t('internal.reportEditorForm.createReport') : t('internal.reportEditorForm.saveChanges')}
       </button>
     </form>
   )

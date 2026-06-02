@@ -1000,6 +1000,64 @@
       "errors": {
         "exportFailed": "Error exportando el desglose. Por favor intenta nuevamente."
       }
+    },
+    "budgetEstimatorPage": {
+      "title": "Presupuesto estimado",
+      "subtitle": "Genera un presupuesto orientativo desde el guion",
+      "loadErrorTitle": "Error al cargar",
+      "backToProject": "Volver al proyecto",
+      "backToDashboard": "Volver al dashboard",
+      "emptyTitle": "Sin presupuesto",
+      "emptyDescription": "Genera una estimación orientativa basada en tu guion",
+      "generateFromScript": "Generar presupuesto desde guion",
+      "levelLabel": "Nivel",
+      "activate": "Activar",
+      "levels": {
+        "low": "Conservador",
+        "medium": "Medio",
+        "high": "Alto"
+      },
+      "confidence": {
+        "low": "Baja",
+        "medium": "Media",
+        "high": "Alta"
+      },
+      "status": {
+        "active": "Activo",
+        "draft": "Borrador"
+      },
+      "totals": {
+        "minimum": "Presupuesto mínimo",
+        "estimated": "Presupuesto estimado",
+        "maximum": "Presupuesto máximo"
+      },
+      "legal": {
+        "title": "Aviso legal",
+        "long": "Esta es una estimación orientativa generada automáticamente. Las tarifas son reglas internas-heurísticas, NO tarifas oficiales. Validar con producción real antes de usar.",
+        "short": "Estimación orientativa. Tarifas no oficiales - validar con producción."
+      },
+      "actions": {
+        "low": "Bajo",
+        "medium": "Medio",
+        "high": "Alto",
+        "exportJson": "JSON",
+        "exportCsv": "CSV"
+      },
+      "table": {
+        "category": "Categoría",
+        "description": "Descripción",
+        "quantity": "Cantidad",
+        "unit": "Unidad",
+        "cost": "Coste",
+        "total": "Total",
+        "confidence": "Confianza"
+      },
+      "errors": {
+        "load": "No se pudo cargar el presupuesto.",
+        "generate": "No se pudo generar el presupuesto.",
+        "recalculate": "No se pudo recalcular el presupuesto.",
+        "activate": "No se pudo activar el presupuesto."
+      }
     }
   },
   "components": {

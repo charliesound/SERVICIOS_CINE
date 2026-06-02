@@ -1000,6 +1000,64 @@
       "errors": {
         "exportFailed": "Error exporting the breakdown. Please try again."
       }
+    },
+    "budgetEstimatorPage": {
+      "title": "Estimated Budget",
+      "subtitle": "Generate an indicative budget from the script",
+      "loadErrorTitle": "Load error",
+      "backToProject": "Back to project",
+      "backToDashboard": "Back to dashboard",
+      "emptyTitle": "No budget",
+      "emptyDescription": "Generate an indicative estimate based on your script",
+      "generateFromScript": "Generate budget from script",
+      "levelLabel": "Level",
+      "activate": "Activate",
+      "levels": {
+        "low": "Conservative",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "confidence": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "status": {
+        "active": "Active",
+        "draft": "Draft"
+      },
+      "totals": {
+        "minimum": "Minimum budget",
+        "estimated": "Estimated budget",
+        "maximum": "Maximum budget"
+      },
+      "legal": {
+        "title": "Legal notice",
+        "long": "This is an automatically generated indicative estimate. Rates are internal heuristic rules, NOT official rates. Validate with real production before use.",
+        "short": "Indicative estimate. Non-official rates - validate with production."
+      },
+      "actions": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "exportJson": "JSON",
+        "exportCsv": "CSV"
+      },
+      "table": {
+        "category": "Category",
+        "description": "Description",
+        "quantity": "Quantity",
+        "unit": "Unit",
+        "cost": "Cost",
+        "total": "Total",
+        "confidence": "Confidence"
+      },
+      "errors": {
+        "load": "Unable to load the budget.",
+        "generate": "Unable to generate the budget.",
+        "recalculate": "Unable to recalculate the budget.",
+        "activate": "Unable to activate the budget."
+      }
     }
   },
   "components": {

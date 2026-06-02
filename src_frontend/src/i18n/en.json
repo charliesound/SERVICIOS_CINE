@@ -46,6 +46,170 @@
       "register": "Registration",
       "enterCid": "Enter CID",
       "logout": "Logout"
+    },
+    "legal": {
+      "breadcrumbHome": "Home",
+      "backToLanding": "Back to landing",
+      "provisionalNotice": "Provisional text pending specialised legal review for Spain/EU.",
+      "nav": {
+        "privacy": "Privacy",
+        "notice": "Legal notice",
+        "terms": "Terms",
+        "aiContent": "AI and content"
+      },
+      "notice": {
+        "eyebrow": "Legal / Legal notice",
+        "title": "Provisional legal notice for AILinkCinema / CID",
+        "description": "This legal notice is a provisional version to accompany the commercial product demo. It must be completed with company identification, contact details and final clauses before any official publication or stable commercial exploitation.",
+        "sections": {
+          "nature": {
+            "title": "1. Nature of the site",
+            "p1": "This website and its associated views preliminarily present AILinkCinema / CID as a platform for AI-assisted audiovisual development, production and coordination.",
+            "p2": "The content available in this demo is intended for informational, commercial and product-validation purposes."
+          },
+          "responsible": {
+            "title": "2. Controller information",
+            "p1": "The full identification of the responsible entity, address, tax ID, contact channels and other mandatory details are not yet specified in this provisional version.",
+            "p2": "This information must be added and verified before any definitive public deployment."
+          },
+          "content": {
+            "title": "3. Use of content",
+            "p1": "The texts, interfaces, visual concepts and materials shown in this demo are provided to evaluate the product and its commercial proposal. No general licence for reuse, redistribution or exploitation of these materials should be assumed without express authorisation."
+          },
+          "availability": {
+            "title": "4. Service availability",
+            "p1": "As this is a technical or commercial demo, certain functions may be subject to changes, limitations, temporary incidents or deactivation without prior notice.",
+            "p2": "The mere presence of a feature in the demo does not imply permanent contractual availability or a definitive SLA."
+          },
+          "limitation": {
+            "title": "5. Provisional limitation of statements",
+            "p1": "This environment should not be interpreted as a legally closed offer, nor as a full guarantee of availability, exhaustive regulatory compliance, suitability for a specific use or absolute absence of errors."
+          },
+          "finalVersion": {
+            "title": "6. Final version pending",
+            "p1": "Before a formal public launch, this legal notice must be completed with specialised review, controller details, intellectual property policy, applicable jurisdiction and definitive website-use clauses."
+          }
+        }
+      },
+      "privacy": {
+        "eyebrow": "Legal / Privacy",
+        "title": "Provisional privacy policy for the AILinkCinema / CID demo",
+        "description": "This text provisionally summarises how information may be processed in a CID commercial demo. It must be reviewed and completed before any public deployment or commercial activity at scale.",
+        "sections": {
+          "purpose": {
+            "title": "1. Purpose of this page",
+            "p1": "This policy provisionally explains what data may be collected during an AILinkCinema / CID demo and for which operational purposes it may be used.",
+            "p2": "Its goal is to provide clear information during the product demonstration phase. It does not replace a formal legal review or a definitive policy adapted to the real exploitation context."
+          },
+          "data": {
+            "title": "2. Data that may be processed",
+            "p1": "During use of the landing page or a guided demo, contact and professional-context data may be processed, for example: name, email, company, role, project needs and messages sent through forms.",
+            "p2": "Internal product flows may also contain operational data associated with users, projects, documents or materials that the demo team voluntarily uploads to validate functionality."
+          },
+          "uses": {
+            "title": "3. Provisional purposes of processing",
+            "intro": "Provisionally, the data may be used to:",
+            "itemDemo": "- respond to demo or commercial contact requests",
+            "itemAccess": "- enable trial access to CID",
+            "itemProjects": "- organise demo projects, materials and validation flows",
+            "itemTraceability": "- maintain basic operational traceability of internal platform use"
+          },
+          "basis": {
+            "title": "4. Basis and limits of use",
+            "p1": "At this stage, only the information necessary to handle the request, enable the demo or evaluate the product should be used. Broad, indefinite or reusable processing for other purposes should not be automatically assumed without an appropriate basis and a definitive policy."
+          },
+          "retention": {
+            "title": "5. Retention and access",
+            "p1": "Demo data should only be retained for the time necessary for the preliminary commercial relationship, technical validation or follow-up of the corresponding pilot.",
+            "p2": "Access should be limited to the internal team necessary for operations, support or commercial continuity of the demo."
+          },
+          "providers": {
+            "title": "6. Providers and third parties",
+            "p1": "The platform may depend on technical infrastructure, email services, storage or auxiliary tools. This text does not yet state a closed list of processors or a complete contractual framework; that relationship must be documented in the final legal version."
+          },
+          "rights": {
+            "title": "7. Rights and contact",
+            "p1": "If a person wants to request clarification, rectification or deletion of data used in a demo, they should be able to contact the responsible team through the commercial or operational channels enabled by AILinkCinema.",
+            "p2": "The final version must specify the data controller, contact channels, definitive legal basis, deadlines and procedure for exercising rights."
+          }
+        }
+      },
+      "terms": {
+        "eyebrow": "Legal / Terms",
+        "title": "Provisional access and use terms for the CID demo",
+        "description": "These terms provisionally describe how the AILinkCinema / CID demo environment should be used. They are not yet final contractual terms and do not replace a complete legal review.",
+        "sections": {
+          "access": {
+            "title": "1. Demo access",
+            "p1": "Access to CID during this phase is offered for demonstration, commercial evaluation, internal testing or a controlled pilot.",
+            "p2": "Some accounts may have immediate access and others may be subject to review, manual activation or validation by the responsible team."
+          },
+          "allowed": {
+            "title": "2. Permitted use",
+            "intro": "Provisionally, the user should use the demo only to:",
+            "itemExplore": "- explore the platform and its flows",
+            "itemEvaluate": "- evaluate commercial or technical fit",
+            "itemMaterials": "- upload owned materials with sufficient permission for the test",
+            "itemCollaborate": "- collaborate with the team in the context of a demo or pilot"
+          },
+          "forbidden": {
+            "title": "3. Prohibited use",
+            "intro": "During the demo, the platform should not be used for:",
+            "itemIllegal": "- illegal or unauthorised activities",
+            "itemRights": "- uploading materials without sufficient rights or permissions",
+            "itemSecurity": "- attempting to compromise security, access, operational limits or account isolation",
+            "itemFinalService": "- presenting the demo as a guaranteed final service while it is still under evaluation"
+          },
+          "productStatus": {
+            "title": "4. Product status",
+            "p1": "CID may include evolving features, limited modules or capabilities subject to change. The demo shows product direction and operational value, but it should not automatically be interpreted as a closed functional commitment for every environment."
+          },
+          "accounts": {
+            "title": "5. Accounts, access and suspension",
+            "p1": "Access may be limited, paused or withdrawn if there are technical incidents, misuse, maintenance needs or changes in the commercial scope of the pilot or demo."
+          },
+          "materials": {
+            "title": "6. Materials and results",
+            "p1": "Materials uploaded by the user and results generated during a demo must be treated with caution. This text does not yet establish a definitive intellectual-property, licensing, retention or export framework; that framework must be defined in later contractual documentation."
+          },
+          "future": {
+            "title": "7. Future contractual version",
+            "p1": "Before stable commercial use, these terms must be replaced by complete conditions adapted to the business model, the applicable market and the actual treatment of data, content and deliverables."
+          }
+        }
+      },
+      "aiContent": {
+        "eyebrow": "Legal / AI and content",
+        "title": "Provisional use of AI and content in the CID demo",
+        "description": "This page honestly and provisionally summarises some conditions around materials, analyses and results generated or assisted by AI within the demo. It does not replace a definitive policy for intellectual property, compliance or content processing.",
+        "sections": {
+          "assisted": {
+            "title": "1. Assisted nature of the system",
+            "p1": "CID may help structure, analyse, visualise or present audiovisual projects through software- and AI-assisted processes. Results should be understood as operational and creative support, not as an automatic replacement for human professional judgement."
+          },
+          "userMaterials": {
+            "title": "2. User-provided materials",
+            "p1": "During a demo, any script, treatment, document, image or reference should only be uploaded if the person or entity providing it has sufficient rights, permissions or legitimacy to use it in that context."
+          },
+          "outputs": {
+            "title": "3. Generated or transformed results",
+            "p1": "Demo outputs may include analyses, visual proposals, storyboards, project structures, summaries or derived materials. Their creative, legal, technical or commercial validity must be reviewed before any real use, external dissemination or later exploitation."
+          },
+          "limitations": {
+            "title": "4. Limitations and cautions",
+            "p1": "At this stage, it should not be assumed that every AI-generated result is accurate, complete, original, free of rights conflicts or suitable for contractual use without additional review.",
+            "p2": "Nor should it be assumed that a demo alone defines the final regime for ownership, licensing, training, retention or reuse of materials and results."
+          },
+          "humanReview": {
+            "title": "5. Mandatory human review",
+            "p1": "Creative, editorial, production, legal or distribution decisions must remain under human supervision. The CID demo is presented as a support and coordination layer, not as full automation of audiovisual work."
+          },
+          "finalPolicy": {
+            "title": "6. Final policy pending",
+            "p1": "Before stable commercial use, a complete written framework must be defined for material ingestion, rights, responsibility for prompts and results, asset retention, and limits on the use of AI-assisted features."
+          }
+        }
+      }
     }
   },
   "landing": {

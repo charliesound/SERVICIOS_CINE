@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n'
 import LegalPageShell from './LegalPageShell'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -10,49 +11,37 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function LegalAiContentPage() {
+  const { t } = useLanguage()
+
   return (
     <LegalPageShell
-      eyebrow="Legal / IA y contenidos"
-      title="Uso provisional de IA y contenidos en la demo de CID"
-      description="Esta pagina resume de forma honesta y provisional algunas condiciones sobre materiales, analisis y resultados generados o asistidos por IA dentro de la demo. No sustituye una politica definitiva de propiedad intelectual, compliance o tratamiento de contenidos."
+      eyebrow={t('public.legal.aiContent.eyebrow')}
+      title={t('public.legal.aiContent.title')}
+      description={t('public.legal.aiContent.description')}
     >
-      <Section title="1. Naturaleza asistida del sistema">
-        <p>
-          CID puede ayudar a estructurar, analizar, visualizar o presentar proyectos audiovisuales mediante procesos asistidos por software e IA. Los resultados deben entenderse como apoyo operativo y creativo, no como sustitucion automatica del criterio profesional humano.
-        </p>
+      <Section title={t('public.legal.aiContent.sections.assisted.title')}>
+        <p>{t('public.legal.aiContent.sections.assisted.p1')}</p>
       </Section>
 
-      <Section title="2. Materiales aportados por el usuario">
-        <p>
-          Durante una demo, cualquier guion, tratamiento, documento, imagen o referencia deberia cargarse solo si la persona o entidad que lo aporta dispone de derechos, permisos o legitimacion suficiente para utilizarlo en ese contexto.
-        </p>
+      <Section title={t('public.legal.aiContent.sections.userMaterials.title')}>
+        <p>{t('public.legal.aiContent.sections.userMaterials.p1')}</p>
       </Section>
 
-      <Section title="3. Resultados generados o transformados">
-        <p>
-          Los outputs de una demo pueden incluir analisis, propuestas visuales, storyboards, estructuras de proyecto, resumentes o materiales derivados. Su validez creativa, juridica, tecnica o comercial debe revisarse antes de cualquier uso real, difusion externa o explotacion posterior.
-        </p>
+      <Section title={t('public.legal.aiContent.sections.outputs.title')}>
+        <p>{t('public.legal.aiContent.sections.outputs.p1')}</p>
       </Section>
 
-      <Section title="4. Limitaciones y cautelas">
-        <p>
-          En esta fase no debe asumirse que todo resultado generado por IA es exacto, completo, original, libre de conflictos de derechos o apto para uso contractual sin revision adicional.
-        </p>
-        <p>
-          Tampoco debe asumirse que una demo define por si sola el regimen final de propiedad, licencia, entrenamiento, conservacion o reutilizacion de materiales y resultados.
-        </p>
+      <Section title={t('public.legal.aiContent.sections.limitations.title')}>
+        <p>{t('public.legal.aiContent.sections.limitations.p1')}</p>
+        <p>{t('public.legal.aiContent.sections.limitations.p2')}</p>
       </Section>
 
-      <Section title="5. Revision humana obligatoria">
-        <p>
-          La toma de decisiones creativas, editoriales, de produccion, legales o de distribucion debe mantenerse bajo supervision humana. La demo de CID se presenta como una capa de apoyo y coordinacion, no como automatizacion plena del trabajo audiovisual.
-        </p>
+      <Section title={t('public.legal.aiContent.sections.humanReview.title')}>
+        <p>{t('public.legal.aiContent.sections.humanReview.p1')}</p>
       </Section>
 
-      <Section title="6. Politica definitiva pendiente">
-        <p>
-          Antes de un uso comercial estable debera definirse por escrito un marco completo sobre ingestion de materiales, derechos, responsabilidad sobre prompts y resultados, retencion de activos, y limites de uso de funciones asistidas por IA.
-        </p>
+      <Section title={t('public.legal.aiContent.sections.finalPolicy.title')}>
+        <p>{t('public.legal.aiContent.sections.finalPolicy.p1')}</p>
       </Section>
     </LegalPageShell>
   )

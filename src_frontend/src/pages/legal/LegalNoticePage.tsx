@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n'
 import LegalPageShell from './LegalPageShell'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -10,55 +11,39 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function LegalNoticePage() {
+  const { t } = useLanguage()
+
   return (
     <LegalPageShell
-      eyebrow="Legal / Aviso legal"
-      title="Aviso legal provisional de AILinkCinema / CID"
-      description="Este aviso legal es una version provisional para acompanar la demo comercial del producto. Debe completarse con identificacion societaria, datos de contacto y clausulas definitivas antes de una publicacion oficial o explotacion comercial estable."
+      eyebrow={t('public.legal.notice.eyebrow')}
+      title={t('public.legal.notice.title')}
+      description={t('public.legal.notice.description')}
     >
-      <Section title="1. Naturaleza del sitio">
-        <p>
-          Esta web y sus vistas asociadas presentan de forma preliminar AILinkCinema / CID como plataforma para desarrollo, produccion y coordinacion audiovisual asistida por IA.
-        </p>
-        <p>
-          El contenido disponible en esta demo tiene finalidad informativa, comercial y de validacion de producto.
-        </p>
+      <Section title={t('public.legal.notice.sections.nature.title')}>
+        <p>{t('public.legal.notice.sections.nature.p1')}</p>
+        <p>{t('public.legal.notice.sections.nature.p2')}</p>
       </Section>
 
-      <Section title="2. Informacion del responsable">
-        <p>
-          La identificacion completa de la entidad responsable, domicilio, NIF, vias de contacto y demas datos obligatorios no se detallan aun en esta version provisional.
-        </p>
-        <p>
-          Esa informacion debe incorporarse y verificarse antes de cualquier despliegue publico definitivo.
-        </p>
+      <Section title={t('public.legal.notice.sections.responsible.title')}>
+        <p>{t('public.legal.notice.sections.responsible.p1')}</p>
+        <p>{t('public.legal.notice.sections.responsible.p2')}</p>
       </Section>
 
-      <Section title="3. Uso del contenido">
-        <p>
-          Los textos, interfaces, conceptos visuales y materiales mostrados en esta demo se facilitan para evaluar el producto y su propuesta comercial. No debe asumirse licencia general de reutilizacion, redistribucion o explotacion de dichos materiales sin autorizacion expresa.
-        </p>
+      <Section title={t('public.legal.notice.sections.content.title')}>
+        <p>{t('public.legal.notice.sections.content.p1')}</p>
       </Section>
 
-      <Section title="4. Disponibilidad del servicio">
-        <p>
-          Al tratarse de una demo tecnica o comercial, ciertas funciones pueden estar sujetas a cambios, limitaciones, incidencias temporales o desactivacion sin previo aviso.
-        </p>
-        <p>
-          La mera presencia de una funcionalidad en demo no implica disponibilidad contractual permanente ni SLA definitivo.
-        </p>
+      <Section title={t('public.legal.notice.sections.availability.title')}>
+        <p>{t('public.legal.notice.sections.availability.p1')}</p>
+        <p>{t('public.legal.notice.sections.availability.p2')}</p>
       </Section>
 
-      <Section title="5. Limitacion provisional de declaraciones">
-        <p>
-          Este entorno no debe interpretarse como oferta juridicamente cerrada, ni como garantia total de disponibilidad, cumplimiento normativo exhaustivo, idoneidad para un uso concreto o ausencia absoluta de errores.
-        </p>
+      <Section title={t('public.legal.notice.sections.limitation.title')}>
+        <p>{t('public.legal.notice.sections.limitation.p1')}</p>
       </Section>
 
-      <Section title="6. Version definitiva pendiente">
-        <p>
-          Antes de una salida publica formal debera completarse este aviso legal con revision especializada, datos del responsable, politica de propiedad intelectual, jurisdiccion aplicable y clausulas definitivas de uso del sitio.
-        </p>
+      <Section title={t('public.legal.notice.sections.finalVersion.title')}>
+        <p>{t('public.legal.notice.sections.finalVersion.p1')}</p>
       </Section>
     </LegalPageShell>
   )

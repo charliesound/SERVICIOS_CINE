@@ -46,6 +46,170 @@
       "register": "Registro",
       "enterCid": "Entrar a CID",
       "logout": "Salir"
+    },
+    "legal": {
+      "breadcrumbHome": "Inicio",
+      "backToLanding": "Volver a la landing",
+      "provisionalNotice": "Texto provisional pendiente de revisión legal especializada en España/UE.",
+      "nav": {
+        "privacy": "Privacidad",
+        "notice": "Aviso legal",
+        "terms": "Términos",
+        "aiContent": "IA y contenidos"
+      },
+      "notice": {
+        "eyebrow": "Legal / Aviso legal",
+        "title": "Aviso legal provisional de AILinkCinema / CID",
+        "description": "Este aviso legal es una versión provisional para acompañar la demo comercial del producto. Debe completarse con identificación societaria, datos de contacto y cláusulas definitivas antes de una publicación oficial o explotación comercial estable.",
+        "sections": {
+          "nature": {
+            "title": "1. Naturaleza del sitio",
+            "p1": "Esta web y sus vistas asociadas presentan de forma preliminar AILinkCinema / CID como plataforma para desarrollo, producción y coordinación audiovisual asistida por IA.",
+            "p2": "El contenido disponible en esta demo tiene finalidad informativa, comercial y de validación de producto."
+          },
+          "responsible": {
+            "title": "2. Información del responsable",
+            "p1": "La identificación completa de la entidad responsable, domicilio, NIF, vías de contacto y demás datos obligatorios no se detallan aún en esta versión provisional.",
+            "p2": "Esa información debe incorporarse y verificarse antes de cualquier despliegue público definitivo."
+          },
+          "content": {
+            "title": "3. Uso del contenido",
+            "p1": "Los textos, interfaces, conceptos visuales y materiales mostrados en esta demo se facilitan para evaluar el producto y su propuesta comercial. No debe asumirse licencia general de reutilización, redistribución o explotación de dichos materiales sin autorización expresa."
+          },
+          "availability": {
+            "title": "4. Disponibilidad del servicio",
+            "p1": "Al tratarse de una demo técnica o comercial, ciertas funciones pueden estar sujetas a cambios, limitaciones, incidencias temporales o desactivación sin previo aviso.",
+            "p2": "La mera presencia de una funcionalidad en demo no implica disponibilidad contractual permanente ni SLA definitivo."
+          },
+          "limitation": {
+            "title": "5. Limitación provisional de declaraciones",
+            "p1": "Este entorno no debe interpretarse como oferta jurídicamente cerrada, ni como garantía total de disponibilidad, cumplimiento normativo exhaustivo, idoneidad para un uso concreto o ausencia absoluta de errores."
+          },
+          "finalVersion": {
+            "title": "6. Versión definitiva pendiente",
+            "p1": "Antes de una salida pública formal deberá completarse este aviso legal con revisión especializada, datos del responsable, política de propiedad intelectual, jurisdicción aplicable y cláusulas definitivas de uso del sitio."
+          }
+        }
+      },
+      "privacy": {
+        "eyebrow": "Legal / Privacidad",
+        "title": "Política de privacidad provisional para la demo de AILinkCinema / CID",
+        "description": "Este texto resume de forma provisional cómo podría tratarse la información en una demo comercial de CID. Debe revisarse y completarse antes de cualquier despliegue público o actividad comercial a escala.",
+        "sections": {
+          "purpose": {
+            "title": "1. Finalidad de esta página",
+            "p1": "Esta política explica, de forma provisional, qué datos podrían recogerse durante una demo de AILinkCinema / CID y con qué fines operativos se utilizarían.",
+            "p2": "Su objetivo es informar con claridad durante la fase de demostración del producto. No sustituye una revisión jurídica formal ni una política definitiva adaptada al contexto de explotación real."
+          },
+          "data": {
+            "title": "2. Datos que podrían tratarse",
+            "p1": "Durante el uso de la landing o de una demo guiada podrían tratarse datos de contacto y contexto profesional, por ejemplo: nombre, email, empresa, cargo, necesidades del proyecto y mensajes enviados desde formularios.",
+            "p2": "En flujos internos de producto también podrían existir datos operativos asociados a usuarios, proyectos, documentos o materiales que el propio equipo de demo cargue voluntariamente para validar funcionalidades."
+          },
+          "uses": {
+            "title": "3. Finalidades provisionales del tratamiento",
+            "intro": "De manera provisional, los datos podrían utilizarse para:",
+            "itemDemo": "- responder a solicitudes de demo o contacto comercial",
+            "itemAccess": "- habilitar accesos de prueba a CID",
+            "itemProjects": "- organizar proyectos demo, materiales y flujos de validación",
+            "itemTraceability": "- mantener trazabilidad operativa básica del uso interno de la plataforma"
+          },
+          "basis": {
+            "title": "4. Base y límites de uso",
+            "p1": "En esta fase solo debería utilizarse información necesaria para atender la solicitud, habilitar la demo o evaluar el producto. No debe asumirse automáticamente un tratamiento amplio, indefinido o reutilizable para fines distintos sin una base adecuada y una política definitiva."
+          },
+          "retention": {
+            "title": "5. Conservación y acceso",
+            "p1": "Los datos de demo deberían conservarse solo durante el tiempo necesario para la relación comercial preliminar, la validación técnica o el seguimiento del piloto correspondiente.",
+            "p2": "El acceso debería limitarse al equipo interno necesario para operaciones, soporte o continuidad comercial de la demo."
+          },
+          "providers": {
+            "title": "6. Proveedores y terceros",
+            "p1": "La plataforma puede depender de infraestructura técnica, servicios de correo, almacenamiento o herramientas auxiliares. Este texto no afirma todavía una lista cerrada de encargados ni un marco contractual completo; esa relación debe documentarse en la versión legal definitiva."
+          },
+          "rights": {
+            "title": "7. Derechos y contacto",
+            "p1": "Si una persona desea solicitar aclaraciones, rectificación o eliminación de datos usados en una demo, debería poder contactar con el equipo responsable a través de los canales comerciales u operativos habilitados por AILinkCinema.",
+            "p2": "La versión final deberá concretar responsable del tratamiento, vías de contacto, base jurídica definitiva, plazos y procedimiento de ejercicio de derechos."
+          }
+        }
+      },
+      "terms": {
+        "eyebrow": "Legal / Términos",
+        "title": "Términos provisionales de acceso y uso para la demo CID",
+        "description": "Estos términos describen de forma provisional cómo debería usarse el entorno demo de AILinkCinema / CID. No constituyen todavía condiciones contractuales finales ni sustituyen una revisión legal completa.",
+        "sections": {
+          "access": {
+            "title": "1. Acceso demo",
+            "p1": "El acceso a CID durante esta fase se ofrece con fines de demostración, evaluación comercial, prueba interna o piloto controlado.",
+            "p2": "Algunas cuentas pueden tener acceso inmediato y otras pueden quedar sujetas a revisión, activación manual o validación por parte del equipo responsable."
+          },
+          "allowed": {
+            "title": "2. Uso permitido",
+            "intro": "De forma provisional, el usuario debería utilizar la demo solo para:",
+            "itemExplore": "- explorar la plataforma y sus flujos",
+            "itemEvaluate": "- evaluar encaje comercial o técnico",
+            "itemMaterials": "- cargar materiales propios con permiso suficiente para la prueba",
+            "itemCollaborate": "- colaborar con el equipo en el contexto de una demo o piloto"
+          },
+          "forbidden": {
+            "title": "3. Uso no permitido",
+            "intro": "Durante la demo no debería utilizarse la plataforma para:",
+            "itemIllegal": "- actividades ilícitas o sin autorización",
+            "itemRights": "- cargar materiales sobre los que no existan derechos o permisos suficientes",
+            "itemSecurity": "- intentar vulnerar seguridad, acceso, límites operativos o aislamiento de cuentas",
+            "itemFinalService": "- presentar la demo como servicio final garantizado si aún está en evaluación"
+          },
+          "productStatus": {
+            "title": "4. Estado del producto",
+            "p1": "CID puede incluir funciones en evolución, módulos limitados o capacidades sujetas a cambios. La demo muestra dirección de producto y valor operativo, pero no debe interpretarse automáticamente como un compromiso funcional cerrado para todos los entornos."
+          },
+          "accounts": {
+            "title": "5. Cuentas, acceso y suspensión",
+            "p1": "El acceso puede limitarse, pausarse o retirarse si existen incidencias técnicas, uso indebido, necesidad de mantenimiento o cambios en el alcance comercial del piloto o la demo."
+          },
+          "materials": {
+            "title": "6. Materiales y resultados",
+            "p1": "Los materiales cargados por el usuario y los resultados generados durante una demo deben tratarse con cautela. Este texto no fija aún un régimen definitivo de propiedad intelectual, licencias, retención o exportación; ese marco deberá definirse en documentación contractual posterior."
+          },
+          "future": {
+            "title": "7. Versión contractual futura",
+            "p1": "Antes de uso comercial estable será necesario sustituir estos términos por condiciones completas adaptadas al modelo de negocio, al mercado aplicable y al tratamiento real de datos, contenidos y entregables."
+          }
+        }
+      },
+      "aiContent": {
+        "eyebrow": "Legal / IA y contenidos",
+        "title": "Uso provisional de IA y contenidos en la demo de CID",
+        "description": "Esta página resume de forma honesta y provisional algunas condiciones sobre materiales, análisis y resultados generados o asistidos por IA dentro de la demo. No sustituye una política definitiva de propiedad intelectual, compliance o tratamiento de contenidos.",
+        "sections": {
+          "assisted": {
+            "title": "1. Naturaleza asistida del sistema",
+            "p1": "CID puede ayudar a estructurar, analizar, visualizar o presentar proyectos audiovisuales mediante procesos asistidos por software e IA. Los resultados deben entenderse como apoyo operativo y creativo, no como sustitución automática del criterio profesional humano."
+          },
+          "userMaterials": {
+            "title": "2. Materiales aportados por el usuario",
+            "p1": "Durante una demo, cualquier guion, tratamiento, documento, imagen o referencia debería cargarse solo si la persona o entidad que lo aporta dispone de derechos, permisos o legitimación suficiente para utilizarlo en ese contexto."
+          },
+          "outputs": {
+            "title": "3. Resultados generados o transformados",
+            "p1": "Los outputs de una demo pueden incluir análisis, propuestas visuales, storyboards, estructuras de proyecto, resúmenes o materiales derivados. Su validez creativa, jurídica, técnica o comercial debe revisarse antes de cualquier uso real, difusión externa o explotación posterior."
+          },
+          "limitations": {
+            "title": "4. Limitaciones y cautelas",
+            "p1": "En esta fase no debe asumirse que todo resultado generado por IA es exacto, completo, original, libre de conflictos de derechos o apto para uso contractual sin revisión adicional.",
+            "p2": "Tampoco debe asumirse que una demo define por sí sola el régimen final de propiedad, licencia, entrenamiento, conservación o reutilización de materiales y resultados."
+          },
+          "humanReview": {
+            "title": "5. Revisión humana obligatoria",
+            "p1": "La toma de decisiones creativas, editoriales, de producción, legales o de distribución debe mantenerse bajo supervisión humana. La demo de CID se presenta como una capa de apoyo y coordinación, no como automatización plena del trabajo audiovisual."
+          },
+          "finalPolicy": {
+            "title": "6. Política definitiva pendiente",
+            "p1": "Antes de un uso comercial estable deberá definirse por escrito un marco completo sobre ingestión de materiales, derechos, responsabilidad sobre prompts y resultados, retención de activos, y límites de uso de funciones asistidas por IA."
+          }
+        }
+      }
     }
   },
   "landing": {

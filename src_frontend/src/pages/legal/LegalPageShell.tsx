@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { ArrowLeft, ShieldCheck } from 'lucide-react'
 import { useSeo } from '@/hooks/useSeo'
 import { buildBreadcrumbStructuredData } from '@/utils/seo'
+import { useLanguage } from '@/i18n'
 
 interface LegalPageShellProps {
   eyebrow: string
@@ -11,14 +12,15 @@ interface LegalPageShellProps {
 }
 
 const legalLinks = [
-  { label: 'Privacidad', href: '/legal/privacidad' },
-  { label: 'Aviso legal', href: '/legal/aviso-legal' },
-  { label: 'Terminos', href: '/legal/terminos' },
-  { label: 'IA y contenidos', href: '/legal/ia-y-contenidos' },
+  { labelKey: 'public.legal.nav.privacy', href: '/legal/privacidad' },
+  { labelKey: 'public.legal.nav.notice', href: '/legal/aviso-legal' },
+  { labelKey: 'public.legal.nav.terms', href: '/legal/terminos' },
+  { labelKey: 'public.legal.nav.aiContent', href: '/legal/ia-y-contenidos' },
 ]
 
 export default function LegalPageShell({ eyebrow, title, description, children }: LegalPageShellProps) {
   const location = useLocation()
+  const { t } = useLanguage()
 
   useSeo({
     title,
@@ -26,7 +28,7 @@ export default function LegalPageShell({ eyebrow, title, description, children }
     path: location.pathname,
     robots: 'index, follow',
     structuredData: buildBreadcrumbStructuredData([
-      { name: 'Inicio', path: '/' },
+      { name: t('public.legal.breadcrumbHome'), path: '/' },
       { name: title, path: location.pathname },
     ]),
   })
@@ -44,7 +46,7 @@ export default function LegalPageShell({ eyebrow, title, description, children }
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-200 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
             >
               <ArrowLeft className="h-4 w-4" />
-              Volver a la landing
+              {t('public.legal.backToLanding')}
             </Link>
 
             <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
@@ -54,7 +56,7 @@ export default function LegalPageShell({ eyebrow, title, description, children }
                   to={item.href}
                   className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 transition-colors hover:border-white/20 hover:text-white"
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               ))}
             </div>
@@ -70,7 +72,7 @@ export default function LegalPageShell({ eyebrow, title, description, children }
             <div className="landing-panel mt-8 rounded-[1.8rem] border-amber-300/20 bg-amber-300/10 p-5 text-sm leading-7 text-amber-50">
               <div className="flex items-start gap-3">
                 <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-amber-300" />
-                <p>Texto provisional pendiente de revision legal especializada en Espana/UE.</p>
+                <p>{t('public.legal.provisionalNotice')}</p>
               </div>
             </div>
 

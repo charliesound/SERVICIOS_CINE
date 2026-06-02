@@ -566,7 +566,28 @@
             "description": "Formato técnico inspirado en hojas de shot list y notas."
           }
         },
-        "imagesCount": "imágenes"
+        "imagesCount": "imágenes",
+        "frameCounts": {
+          "4": "4 imágenes",
+          "8": "8 imágenes",
+          "12": "12 imágenes",
+          "16": "16 imágenes",
+          "24": "24 imágenes"
+        },
+        "presets": {
+          "realistic_client_review": {
+            "description": "Presentación recomendada para revisión de cliente"
+          },
+          "cinematic_pitch": {
+            "description": "Look editorial para presentación narrativa"
+          },
+          "production_sheet": {
+            "description": "Formato operativo orientado a producción"
+          },
+          "clean_corporate": {
+            "description": "Acabado sobrio y limpio para entregables"
+          }
+        }
       },
       "directorFeedback": {
         "title": "Notas del director",

@@ -38,10 +38,10 @@ const layoutOptions: Array<{ value: StoryboardSheetLayoutName; label: string; fr
 ]
 
 const presetOptions: Array<{ value: StoryboardSheetPreset; label: string; description: string }> = [
-  { value: 'realistic_client_review', label: 'Realistic Client Review', description: 'Presentación recomendada para revisión de cliente' },
-  { value: 'cinematic_pitch', label: 'Cinematic Pitch', description: 'Look editorial para presentación narrativa' },
-  { value: 'production_sheet', label: 'Production Sheet', description: 'Formato operativo orientado a producción' },
-  { value: 'clean_corporate', label: 'Clean Corporate', description: 'Acabado sobrio y limpio para entregables' },
+  { value: 'realistic_client_review', label: 'Realistic Client Review', description: 'components.storyboard.sheetExportPanel.presets.realistic_client_review.description' },
+  { value: 'cinematic_pitch', label: 'Cinematic Pitch', description: 'components.storyboard.sheetExportPanel.presets.cinematic_pitch.description' },
+  { value: 'production_sheet', label: 'Production Sheet', description: 'components.storyboard.sheetExportPanel.presets.production_sheet.description' },
+  { value: 'clean_corporate', label: 'Clean Corporate', description: 'components.storyboard.sheetExportPanel.presets.clean_corporate.description' },
 ]
 
 const outputFormatOptions: Array<{ value: StoryboardSheetOutputFormat; label: string }> = [
@@ -51,11 +51,11 @@ const outputFormatOptions: Array<{ value: StoryboardSheetOutputFormat; label: st
 
 const frameCountOptions = [
   { value: 'all', labelKey: 'components.storyboard.sheetExportPanel.all' },
-  { value: '4', label: '4 imágenes' },
-  { value: '8', label: '8 imágenes' },
-  { value: '12', label: '12 imágenes' },
-  { value: '16', label: '16 imágenes' },
-  { value: '24', label: '24 imágenes' },
+  { value: '4', labelKey: 'components.storyboard.sheetExportPanel.frameCounts.4' },
+  { value: '8', labelKey: 'components.storyboard.sheetExportPanel.frameCounts.8' },
+  { value: '12', labelKey: 'components.storyboard.sheetExportPanel.frameCounts.12' },
+  { value: '16', labelKey: 'components.storyboard.sheetExportPanel.frameCounts.16' },
+  { value: '24', labelKey: 'components.storyboard.sheetExportPanel.frameCounts.24' },
   { value: 'custom', labelKey: 'components.storyboard.sheetExportPanel.custom' },
 ] as const
 
@@ -67,61 +67,61 @@ const sheetTemplateOptions: Array<{
 }> = [
   {
     value: 'current',
-    label: 'Automático / Actual',
-    description: 'Usa el layout y preset actuales sin aplicar plantilla comercial.',
+    label: 'components.storyboard.sheetExportPanel.templates.current.label',
+    description: 'components.storyboard.sheetExportPanel.templates.current.description',
     defaultFrames: null,
   },
   {
     value: 'clean_4_panel_pitch',
-    label: 'Pitch limpio — 4 imágenes',
-    description: 'Pitch compacto para presentar 4 frames clave.',
+    label: 'components.storyboard.sheetExportPanel.templates.clean_4_panel_pitch.label',
+    description: 'components.storyboard.sheetExportPanel.templates.clean_4_panel_pitch.description',
     defaultFrames: 4,
   },
   {
     value: 'clean_6_panel_review',
-    label: 'Review — 6 imágenes',
-    description: 'Formato de revisión editorial con 6 frames.',
+    label: 'components.storyboard.sheetExportPanel.templates.clean_6_panel_review.label',
+    description: 'components.storyboard.sheetExportPanel.templates.clean_6_panel_review.description',
     defaultFrames: 6,
   },
   {
     value: 'grid_8_panel_vertical',
-    label: '8 imágenes vertical',
-    description: 'Plantilla vertical de 8 panels para revisión densa.',
+    label: 'components.storyboard.sheetExportPanel.templates.grid_8_panel_vertical.label',
+    description: 'components.storyboard.sheetExportPanel.templates.grid_8_panel_vertical.description',
     defaultFrames: 8,
   },
   {
     value: 'grid_8_panel_landscape',
-    label: '8 imágenes landscape',
-    description: 'Versión horizontal de 8 panels.',
+    label: 'components.storyboard.sheetExportPanel.templates.grid_8_panel_landscape.label',
+    description: 'components.storyboard.sheetExportPanel.templates.grid_8_panel_landscape.description',
     defaultFrames: 8,
   },
   {
     value: 'production_12_panel_vertical',
-    label: 'Producción — 12 vertical',
-    description: 'Hoja de producción vertical para secuencias extensas.',
+    label: 'components.storyboard.sheetExportPanel.templates.production_12_panel_vertical.label',
+    description: 'components.storyboard.sheetExportPanel.templates.production_12_panel_vertical.description',
     defaultFrames: 12,
   },
   {
     value: 'production_12_panel_landscape',
-    label: 'Producción — 12 landscape',
-    description: 'Hoja de producción horizontal de alta densidad.',
+    label: 'components.storyboard.sheetExportPanel.templates.production_12_panel_landscape.label',
+    description: 'components.storyboard.sheetExportPanel.templates.production_12_panel_landscape.description',
     defaultFrames: 12,
   },
   {
     value: 'client_review_with_notes',
-    label: 'Cliente con notas',
-    description: 'Template con más espacio para revisión y notas.',
+    label: 'components.storyboard.sheetExportPanel.templates.client_review_with_notes.label',
+    description: 'components.storyboard.sheetExportPanel.templates.client_review_with_notes.description',
     defaultFrames: 4,
   },
   {
     value: 'technical_storyboard_sheet',
-    label: 'Técnico',
-    description: 'Formato técnico inspirado en hojas de shot list y notas.',
+    label: 'components.storyboard.sheetExportPanel.templates.technical_storyboard_sheet.label',
+    description: 'components.storyboard.sheetExportPanel.templates.technical_storyboard_sheet.description',
     defaultFrames: null,
   },
 ]
 
-function getStoryboardSheetErrorMessage(error: unknown): string {
+function getStoryboardSheetErrorMessage(error: unknown, translate: (key: string) => string): string {
   const apiError = error as StoryboardSheetApiError
   const status = apiError.response?.status
   const payload = apiError.response?.data
@@ -142,7 +142,7 @@ function getStoryboardSheetErrorMessage(error: unknown): string {
     : payload?.detail
 
   if (status === 401) {
-    return 'Sesión caducada. Vuelve a iniciar sesión.'
+    return translate('components.storyboard.sheetExportPanel.errors.sessionExpired')
   }
 
   if (status === 400) {
@@ -150,7 +150,7 @@ function getStoryboardSheetErrorMessage(error: unknown): string {
     if (detail && typeof detail === 'object' && !Array.isArray(detail) && typeof detail.message === 'string') {
       return detail.message
     }
-    return 'La solicitud del storyboard sheet no es válida.'
+    return translate('components.storyboard.sheetExportPanel.errors.invalidRequest')
   }
 
   if (status === 422) {
@@ -159,16 +159,16 @@ function getStoryboardSheetErrorMessage(error: unknown): string {
       if (message) return message
     }
     if (typeof detail === 'string' && detail.trim()) return detail
-    return 'El backend rechazó la solicitud por un error de validación.'
+    return translate('components.storyboard.sheetExportPanel.errors.validationError')
   }
 
   if (status === 500) {
     if (typeof detail === 'string' && detail.trim() && detail !== 'Internal Server Error') return detail
-    return 'No se pudo generar el storyboard sheet por un error interno del backend.'
+    return translate('components.storyboard.sheetExportPanel.errors.internalError')
   }
 
   if (!apiError.response) {
-    return 'El backend no está disponible en este momento. Revisa la conexión e inténtalo otra vez.'
+    return translate('components.storyboard.sheetExportPanel.errors.unavailable')
   }
 
   if (typeof detail === 'string' && detail.trim()) {
@@ -183,7 +183,7 @@ function getStoryboardSheetErrorMessage(error: unknown): string {
     return apiError.message
   }
 
-  return 'No se pudo generar el storyboard sheet.'
+  return translate('components.storyboard.sheetExportPanel.errors.genericError')
 }
 
 function useBlobUrl(url: string | null): string | null {
@@ -498,7 +498,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
       const response = await storyboardApi.exportStoryboardSheet(projectId, payload)
       setResult(response)
     } catch (err) {
-      setError(getStoryboardSheetErrorMessage(err))
+      setError(getStoryboardSheetErrorMessage(err, t))
     } finally {
       setIsSubmitting(false)
     }
@@ -543,11 +543,11 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             className="w-full rounded-xl border border-white/10 bg-dark-300/70 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-amber-500/50"
           >
             {sheetTemplateOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.value === 'current' ? t('components.storyboard.sheetExportPanel.autoCurrent') : option.label}</option>
+              <option key={option.value} value={option.value}>{t(option.label)}</option>
             ))}
           </select>
           <p className="text-xs text-slate-500">
-            {sheetTemplate === 'current' ? t('components.storyboard.sheetExportPanel.autoCurrentDescription') : selectedTemplateOption.description}
+            {t(selectedTemplateOption.description)}
           </p>
         </label>
 
@@ -582,7 +582,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
           </select>
           <p className="text-xs text-slate-500">
             {sheetTemplate === 'current'
-              ? presetOptions.find((option) => option.value === preset)?.description
+              ? t(presetOptions.find((option) => option.value === preset)?.description || '')
               : t('components.storyboard.sheetExportPanel.templateResolvesPreset')}
           </p>
         </label>
@@ -595,7 +595,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
             className="w-full rounded-xl border border-white/10 bg-dark-300/70 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-amber-500/50"
           >
             {frameCountOptions.map((option) => (
-              <option key={option.value} value={option.value}>{'labelKey' in option ? t(option.labelKey) : option.label}</option>
+              <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
             ))}
           </select>
           <p className="text-xs text-slate-500">
@@ -694,7 +694,7 @@ export function StoryboardSheetExportPanel({ projectId }: StoryboardSheetExportP
           </span>
         )}
         <div className="text-xs text-slate-500">
-          {sheetTemplate === 'current' ? t('components.storyboard.sheetExportPanel.currentMode') : selectedTemplateOption.label} · {outputFormat.toUpperCase()} · {requestedFrameCount == null ? t('components.storyboard.sheetExportPanel.defaultFrames') : `${requestedFrameCount} imágenes`}
+          {sheetTemplate === 'current' ? t('components.storyboard.sheetExportPanel.currentMode') : t(selectedTemplateOption.label)} · {outputFormat.toUpperCase()} · {requestedFrameCount == null ? t('components.storyboard.sheetExportPanel.defaultFrames') : `${requestedFrameCount} ${t('components.storyboard.sheetExportPanel.imagesCount')}`}
         </div>
       </div>
 

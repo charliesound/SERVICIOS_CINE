@@ -566,7 +566,28 @@
             "description": "Technical format inspired by shot list sheets and notes."
           }
         },
-        "imagesCount": "images"
+        "imagesCount": "images",
+        "frameCounts": {
+          "4": "4 images",
+          "8": "8 images",
+          "12": "12 images",
+          "16": "16 images",
+          "24": "24 images"
+        },
+        "presets": {
+          "realistic_client_review": {
+            "description": "Recommended presentation for client review"
+          },
+          "cinematic_pitch": {
+            "description": "Editorial look for narrative presentation"
+          },
+          "production_sheet": {
+            "description": "Operational format oriented to production"
+          },
+          "clean_corporate": {
+            "description": "Sober, clean finish for deliverables"
+          }
+        }
       },
       "directorFeedback": {
         "title": "Director's Notes",

@@ -1725,6 +1725,54 @@
         "deleteSource": "Error deleting source",
         "updateSource": "Error updating source"
       }
+    },
+    "fundingOpportunitiesDashboard": {
+      "noDeadline": "No deadline",
+      "projectFallback": "Project",
+      "subtitle": "Explore the RAG-enriched matcher with score, rationale, gaps and private documentary evidence per call.",
+      "matcherStatus": "Matcher status",
+      "searchPlaceholder": "Search call or agency",
+      "loading": "Loading enriched opportunities...",
+      "loadError": "Could not load the opportunities dashboard.",
+      "emptyTitle": "No enriched opportunities available",
+      "matchScore": "Match score",
+      "recommendedActions": "Recommended actions",
+      "missingRequirements": "Missing requirements",
+      "rationale": "Rationale",
+      "blockingReasons": "Blocking reasons",
+      "requirementEvaluation": "Requirement evaluation",
+      "requirementEvaluationHelp": "Met, partial or missing according to retrieved evidence.",
+      "evidenceFragments": "Evidence fragments",
+      "officialCall": "Official call",
+      "notAvailable": "Not available",
+      "trackingStub": "Tracking stub",
+      "mandatory": "Mandatory",
+      "metrics": {
+        "fundingGap": "Funding gap"
+      },
+      "filters": {
+        "allLevels": "All levels",
+        "allRegions": "All regions"
+      },
+      "sort": {
+        "matchScore": "Sort by score",
+        "deadline": "Sort by deadline",
+        "fitLevel": "Sort by fit level"
+      },
+      "pagination": {
+        "page": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "fallbacks": {
+        "noMainMissingRequirements": "No main missing requirements visible",
+        "noBlockingReasons": "No hard blockers detected",
+        "noRecommendedActions": "No recommended actions",
+        "noAdditionalRagRationale": "No additional RAG rationale.",
+        "noDetailedEvaluation": "No detailed evaluation available for this opportunity.",
+        "noEvidenceFragments": "No evidence fragments for this opportunity."
+      }
     }
   },
   "modules": {

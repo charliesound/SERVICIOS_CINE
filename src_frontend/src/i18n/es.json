@@ -1725,6 +1725,54 @@
         "deleteSource": "Error al eliminar",
         "updateSource": "Error al actualizar"
       }
+    },
+    "fundingOpportunitiesDashboard": {
+      "noDeadline": "Sin deadline",
+      "projectFallback": "Proyecto",
+      "subtitle": "Explora el matcher enriquecido por RAG con score, rationale, faltantes y evidencia documental privada por convocatoria.",
+      "matcherStatus": "Estado matcher",
+      "searchPlaceholder": "Buscar convocatoria o agencia",
+      "loading": "Cargando oportunidades enriquecidas...",
+      "loadError": "No se pudo cargar el dashboard de oportunidades.",
+      "emptyTitle": "Sin oportunidades enriquecidas disponibles",
+      "matchScore": "Match score",
+      "recommendedActions": "Acciones recomendadas",
+      "missingRequirements": "Requisitos faltantes",
+      "rationale": "Rationale",
+      "blockingReasons": "Razones de bloqueo",
+      "requirementEvaluation": "Evaluación de requisitos",
+      "requirementEvaluationHelp": "Cumplido, parcial o faltante según evidencia recuperada.",
+      "evidenceFragments": "Fragmentos de evidencia",
+      "officialCall": "Convocatoria oficial",
+      "notAvailable": "No disponible",
+      "trackingStub": "Tracking stub",
+      "mandatory": "Obligatorio",
+      "metrics": {
+        "fundingGap": "Brecha de financiación"
+      },
+      "filters": {
+        "allLevels": "Todos los niveles",
+        "allRegions": "Todas las regiones"
+      },
+      "sort": {
+        "matchScore": "Ordenar por score",
+        "deadline": "Ordenar por deadline",
+        "fitLevel": "Ordenar por fit level"
+      },
+      "pagination": {
+        "page": "Página",
+        "of": "de",
+        "previous": "Anterior",
+        "next": "Siguiente"
+      },
+      "fallbacks": {
+        "noMainMissingRequirements": "Sin faltantes principales visibles",
+        "noBlockingReasons": "Sin bloqueos duros detectados",
+        "noRecommendedActions": "Sin acciones recomendadas",
+        "noAdditionalRagRationale": "Sin rationale RAG adicional.",
+        "noDetailedEvaluation": "No hay evaluación detallada disponible para esta oportunidad.",
+        "noEvidenceFragments": "Sin fragmentos de evidencia para esta oportunidad."
+      }
     }
   },
   "modules": {

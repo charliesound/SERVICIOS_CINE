@@ -25,6 +25,7 @@ import type {
   FundingRequirementEvaluation,
 } from '@/api/projectFunding'
 import {
+import { t } from '@/i18n'
   useFundingChecklist,
   useFundingMatchEvidence,
   useFundingMatcherStatus,
@@ -69,9 +70,9 @@ function formatCurrency(value: number | null | undefined) {
 }
 
 function formatDate(value: string | null) {
-  if (!value) return 'Sin deadline'
+  if (!value) return t('components.fundingOpportunitiesDashboard.noDeadline')
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Sin deadline'
+  if (Number.isNaN(date.getTime())) return t('components.fundingOpportunitiesDashboard.noDeadline')
   return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
@@ -175,16 +176,16 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
               Funding opportunities
             </div>
             <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">
-              {profileQuery.data?.title || 'Proyecto'}
+              {profileQuery.data?.title || t('components.fundingOpportunitiesDashboard.projectFallback')}
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Explora el matcher enriquecido por RAG con score, rationale, faltantes y evidencia documental privada por convocatoria.
+              {t('components.fundingOpportunitiesDashboard.subtitle')}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Funding gap</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{t('components.fundingOpportunitiesDashboard.metrics.fundingGap')}</div>
               <div className="mt-1 text-lg font-semibold text-white">{formatCurrency(profileQuery.data?.funding_gap)}</div>
             </div>
             <button
@@ -210,7 +211,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
         {matcherStatusQuery.data?.job && (
           <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-300">
             <Briefcase className="h-4 w-4 text-slate-400" />
-            <span>Estado matcher: <strong className="text-white">{matcherStatusQuery.data.job.status}</strong></span>
+            <span>{t('components.fundingOpportunitiesDashboard.matcherStatus')}: <strong className="text-white">{matcherStatusQuery.data.job.status}</strong></span>
             {matcherStatusQuery.data.job.completed_at && <span>Actualizado: {formatDate(matcherStatusQuery.data.job.completed_at)}</span>}
             {matcherStatusQuery.data.job.error_message && <span className="text-rose-300">{matcherStatusQuery.data.job.error_message}</span>}
           </div>
@@ -224,7 +225,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
             <input
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
-              placeholder="Buscar convocatoria o agencia"
+              placeholder={t('components.fundingOpportunitiesDashboard.searchPlaceholder')}
               className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white outline-none transition focus:border-amber-400/40"
             />
           </label>
@@ -234,7 +235,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
             onChange={(event) => setParams((current) => ({ ...current, page: 1, fit_level: event.target.value as FundingFitLevel | '' }))}
             className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-amber-400/40"
           >
-            <option value="">Todos los niveles</option>
+            <option value="">{t('components.fundingOpportunitiesDashboard.filters.allLevels')}</option>
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
@@ -246,7 +247,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
             onChange={(event) => setParams((current) => ({ ...current, page: 1, region_scope: event.target.value as FundingMatchListParams['region_scope'] }))}
             className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-amber-400/40"
           >
-            <option value="">Todas las regiones</option>
+            <option value="">{t('components.fundingOpportunitiesDashboard.filters.allRegions')}</option>
             <option value="spain">Spain</option>
             <option value="europe">Europe</option>
             <option value="iberoamerica_latam">Iberoamerica / LATAM</option>
@@ -257,9 +258,9 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
             onChange={(event) => setParams((current) => ({ ...current, sort_by: event.target.value as FundingMatchListParams['sort_by'] }))}
             className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-amber-400/40"
           >
-            <option value="match_score">Ordenar por score</option>
-            <option value="deadline">Ordenar por deadline</option>
-            <option value="fit_level">Ordenar por fit level</option>
+            <option value="match_score">{t('components.fundingOpportunitiesDashboard.sort.matchScore')}</option>
+            <option value="deadline">{t('components.fundingOpportunitiesDashboard.sort.deadline')}</option>
+            <option value="fit_level">{t('components.fundingOpportunitiesDashboard.sort.fitLevel')}</option>
           </select>
 
           <button
@@ -289,17 +290,17 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
       {isInitialLoading ? (
         <div className="flex items-center justify-center rounded-[28px] border border-white/10 bg-dark-200/80 px-6 py-16 text-slate-300">
           <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-          Cargando oportunidades enriquecidas...
+          {t('components.fundingOpportunitiesDashboard.loading')}
         </div>
       ) : hasError ? (
         <div className="rounded-[28px] border border-rose-500/20 bg-rose-500/10 px-6 py-10 text-center text-rose-200">
           <AlertCircle className="mx-auto mb-3 h-8 w-8" />
-          No se pudo cargar el dashboard de oportunidades.
+          {t('components.fundingOpportunitiesDashboard.loadError')}
         </div>
       ) : matches.length === 0 ? (
         <div className="rounded-[28px] border border-white/10 bg-dark-200/80 px-6 py-12 text-center">
           <FileSearch className="mx-auto mb-4 h-10 w-10 text-slate-500" />
-          <h2 className="text-lg font-semibold text-white">Sin oportunidades enriquecidas disponibles</h2>
+          <h2 className="text-lg font-semibold text-white">{t('components.fundingOpportunitiesDashboard.emptyTitle')}</h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-400">
             El proyecto todavia no tiene resultados RAG visibles con los filtros actuales. Puedes limpiar filtros o lanzar un refresco explicito del matcher.
           </p>
@@ -350,7 +351,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
 
                 <div className="flex min-w-[180px] flex-col gap-3 lg:items-end">
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Match score</p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('components.fundingOpportunitiesDashboard.matchScore')}</p>
                     <p className="mt-1 text-3xl font-semibold text-white">{Math.round(match.match_score)}</p>
                   </div>
                   <div className="flex w-full gap-2 lg:w-auto">
@@ -375,7 +376,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
               {(match.recommended_actions_json.length > 0 || match.missing_documents_json.length > 0) && (
                 <div className="mt-4 grid gap-4 border-t border-white/5 pt-4 lg:grid-cols-2">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Recommended actions</p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('components.fundingOpportunitiesDashboard.recommendedActions')}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {match.recommended_actions_json.slice(0, 3).map((item) => (
                         <span key={item} className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-100">{item}</span>
@@ -383,7 +384,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Missing requirements</p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('components.fundingOpportunitiesDashboard.missingRequirements')}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {match.rag_missing_requirements.slice(0, 3).map((item) => (
                         <span key={item} className="rounded-full border border-rose-500/20 bg-rose-500/10 px-2.5 py-1 text-xs text-rose-100">{item}</span>
@@ -400,7 +401,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
 
           <div className="flex flex-col gap-3 rounded-[24px] border border-white/10 bg-dark-200/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-400">
-              Pagina <span className="font-medium text-white">{currentPage}</span> de <span className="font-medium text-white">{Math.max(pageCount, 1)}</span>
+              {t('components.fundingOpportunitiesDashboard.pagination.page')} <span className="font-medium text-white">{currentPage}</span> {t('components.fundingOpportunitiesDashboard.pagination.of')} <span className="font-medium text-white">{Math.max(pageCount, 1)}</span>
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -409,7 +410,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
                 disabled={currentPage <= 1}
                 className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <ChevronLeft className="h-4 w-4" /> Anterior
+                <ChevronLeft className="h-4 w-4" /> {t('components.fundingOpportunitiesDashboard.pagination.previous')}
               </button>
               <button
                 type="button"
@@ -417,7 +418,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
                 disabled={!pageCount || currentPage >= pageCount}
                 className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Siguiente <ChevronRight className="h-4 w-4" />
+                {t('components.fundingOpportunitiesDashboard.pagination.next')} <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -452,33 +453,33 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
 
             <div className="mt-6 space-y-6">
               <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Rationale</p>
-                <p className="mt-2 text-sm leading-6 text-slate-200">{selectedMatch.rag_rationale || 'Sin rationale RAG adicional.'}</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('components.fundingOpportunitiesDashboard.rationale')}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-200">{selectedMatch.rag_rationale || t('components.fundingOpportunitiesDashboard.fallbacks.noAdditionalRagRationale')}</p>
               </section>
 
               <section className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-rose-200/70">Blocking reasons</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-rose-200/70">{t('components.fundingOpportunitiesDashboard.blockingReasons')}</p>
                   <ul className="mt-3 space-y-2 text-sm text-rose-100">
-                    {(selectedMatch.blocking_reasons_json.length ? selectedMatch.blocking_reasons_json : ['Sin bloqueos duros detectados']).map((item) => (
+                    {(selectedMatch.blocking_reasons_json.length ? selectedMatch.blocking_reasons_json : [t('components.fundingOpportunitiesDashboard.fallbacks.noBlockingReasons')]).map((item) => (
                       <li key={item} className="flex gap-2"><ShieldAlert className="mt-0.5 h-4 w-4 flex-none" /> <span>{item}</span></li>
                     ))}
                   </ul>
                 </div>
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-amber-100/70">Missing requirements</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-amber-100/70">{t('components.fundingOpportunitiesDashboard.missingRequirements')}</p>
                   <ul className="mt-3 space-y-2 text-sm text-amber-50">
                     {((selectedMatch.rag_missing_requirements.length ? selectedMatch.rag_missing_requirements : selectedMatch.missing_documents_json).length
                       ? (selectedMatch.rag_missing_requirements.length ? selectedMatch.rag_missing_requirements : selectedMatch.missing_documents_json)
-                      : ['Sin faltantes principales visibles']).map((item) => (
+                      : [t('components.fundingOpportunitiesDashboard.fallbacks.noMainMissingRequirements')]).map((item) => (
                       <li key={item} className="flex gap-2"><AlertCircle className="mt-0.5 h-4 w-4 flex-none" /> <span>{item}</span></li>
                     ))}
                   </ul>
                 </div>
                 <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-emerald-100/70">Recommended actions</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-emerald-100/70">{t('components.fundingOpportunitiesDashboard.recommendedActions')}</p>
                   <ul className="mt-3 space-y-2 text-sm text-emerald-50">
-                    {(selectedMatch.recommended_actions_json.length ? selectedMatch.recommended_actions_json : ['Sin acciones recomendadas']).map((item) => (
+                    {(selectedMatch.recommended_actions_json.length ? selectedMatch.recommended_actions_json : [t('components.fundingOpportunitiesDashboard.fallbacks.noRecommendedActions')]).map((item) => (
                       <li key={item} className="flex gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 flex-none" /> <span>{item}</span></li>
                     ))}
                   </ul>
@@ -488,8 +489,8 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
               <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Requirement evaluation</p>
-                    <p className="mt-1 text-sm text-slate-400">Cumplido, parcial o faltante segun evidencia recuperada.</p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('components.fundingOpportunitiesDashboard.requirementEvaluation')}</p>
+                    <p className="mt-1 text-sm text-slate-400">{t('components.fundingOpportunitiesDashboard.requirementEvaluationHelp')}</p>
                   </div>
                   {evidenceQuery.isLoading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
                 </div>
@@ -503,7 +504,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-sm font-medium text-white">{item.requirement}</h3>
                             <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] uppercase tracking-[0.16em] text-slate-200">{item.status.replace('_', ' ')}</span>
-                            {item.is_mandatory && <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] uppercase tracking-[0.16em] text-slate-200">Mandatory</span>}
+                            {item.is_mandatory && <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] uppercase tracking-[0.16em] text-slate-200">{t('components.fundingOpportunitiesDashboard.mandatory')}</span>}
                           </div>
                           <p className="mt-2 text-sm leading-6 text-slate-100/90">{item.reasoning}</p>
                           {item.evidence_excerpt && <p className="mt-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-slate-200">{item.evidence_excerpt}</p>}
@@ -512,14 +513,14 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
                     </div>
                   )) : (
                     <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-6 text-center text-sm text-slate-400">
-                      No hay evaluacion detallada disponible para esta oportunidad.
+                      {t('components.fundingOpportunitiesDashboard.fallbacks.noDetailedEvaluation')}
                     </div>
                   )}
                 </div>
               </section>
 
               <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Evidence fragments</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('components.fundingOpportunitiesDashboard.evidenceFragments')}</p>
                 <div className="mt-4 space-y-3">
                   {evidenceChunks.length ? evidenceChunks.map((chunk) => (
                     <div key={chunk.chunk_id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -532,21 +533,21 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
                     </div>
                   )) : (
                     <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-6 text-center text-sm text-slate-400">
-                      Sin fragmentos de evidencia para esta oportunidad.
+                      {t('components.fundingOpportunitiesDashboard.fallbacks.noEvidenceFragments')}
                     </div>
                   )}
                 </div>
               </section>
 
               <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                <span className="text-sm text-slate-400">Convocatoria oficial:</span>
+                <span className="text-sm text-slate-400">{t('components.fundingOpportunitiesDashboard.officialCall')}:</span>
                 {selectedMatch.official_url ? (
                   <a href={selectedMatch.official_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition hover:bg-white/10">
                     Abrir fuente oficial
                     <ExternalLink className="h-4 w-4" />
                   </a>
                 ) : (
-                  <span className="text-sm text-slate-500">No disponible</span>
+                  <span className="text-sm text-slate-500">{t('components.fundingOpportunitiesDashboard.notAvailable')}</span>
                 )}
               </section>
             </div>
@@ -559,7 +560,7 @@ export default function FundingOpportunitiesDashboard({ projectId }: Props) {
           <div className="w-full max-w-lg rounded-[28px] border border-white/10 bg-[#0f172a] p-6 shadow-2xl shadow-black/40">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-amber-300">Tracking stub</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-amber-300">{t('components.fundingOpportunitiesDashboard.trackingStub')}</p>
                 <h3 className="mt-2 text-xl font-semibold text-white">{trackingTarget.title}</h3>
               </div>
               <button

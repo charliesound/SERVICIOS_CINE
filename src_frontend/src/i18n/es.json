@@ -2188,6 +2188,65 @@
           "note1": "Agrupa montaje/editorial, delivery, distribucion, festivales, ventas y CRM en una sola rama funcional para esta primera shell.",
           "note2": "Tambien puede generar impactos sobre otras ramas cuando cambian entregables o compromisos comerciales."
         }
+      },
+      "aiEngine": {
+        "title": "Motor IA del proyecto",
+        "subtitle": "Estado y configuración de la capacidad de procesamiento de Inteligencia Artificial para el proyecto.",
+        "statusCard": {
+          "title": "Estado del motor IA",
+          "active": "Activo",
+          "activeSub": "La IA del proyecto está lista para operar."
+        },
+        "modeCard": {
+          "title": "Modo IA",
+          "value": "CID Optimizado",
+          "subtext": "CID gestiona la mejor combinación de motores para el proyecto."
+        },
+        "creditCard": {
+          "title": "Créditos y costes",
+          "included": "Créditos incluidos: {count}",
+          "used": "Créditos usados: {count}",
+          "remaining": "Créditos restantes: {count}",
+          "estimated": "Consumo estimado próxima acción: {range} créditos",
+          "intensity": "Intensidad",
+          "intensityValue": "Media",
+          "disclaimer": "El uso IA del proyecto consume créditos CID. La clave del cliente puede implicar coste externo fuera de CID."
+        },
+        "privacyCard": {
+          "title": "Modo de privacidad",
+          "value": "Reforzada",
+          "subtext": "El proyecto prioriza un tratamiento más controlado del material."
+        },
+        "reliabilityCard": {
+          "title": "Fiabilidad y disponibilidad",
+          "value": "Disponible",
+          "queue": "Cola de procesamiento: {value}",
+          "incidents": "Incidencias: {value}",
+          "normal": "Normal",
+          "noIncidents": "Sin incidencias"
+        },
+        "warningCard": {
+          "title": "Tarea intensiva",
+          "description": "Tarea intensiva: puede consumir más créditos y entrar en cola."
+        },
+        "advancedConfig": {
+          "title": "Configuración avanzada",
+          "description": "Configuración avanzada disponible solo para roles autorizados. La configuración técnica se habilitará en una fase posterior."
+        },
+        "actionsPanel": {
+          "title": "Panel de acciones orientadas a resultado",
+          "description": "Lanza procesos de motor directamente desde el Command Center.",
+          "actions": {
+            "script": "Analizar guion",
+            "storyboard": "Generar storyboard",
+            "dossier": "Preparar dossier",
+            "funding": "Evaluar financiacion",
+            "art": "Generar concept art",
+            "delivery": "Preparar delivery",
+            "review": "Revisar materiales",
+            "crm": "Preparar venta / distribucion"
+          }
+        }
       }
     }
   },

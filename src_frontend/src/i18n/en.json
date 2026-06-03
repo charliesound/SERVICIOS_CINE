@@ -2188,6 +2188,65 @@
           "note1": "It groups editorial assembly, delivery, distribution, festivals, sales and CRM into one functional branch for this first shell.",
           "note2": "It can also generate impacts on other branches when deliverables or commercial commitments change."
         }
+      },
+      "aiEngine": {
+        "title": "Project AI Engine",
+        "subtitle": "Status and configuration of the Artificial Intelligence processing capacity for the project.",
+        "statusCard": {
+          "title": "AI Engine Status",
+          "active": "Active",
+          "activeSub": "Project AI is ready to operate."
+        },
+        "modeCard": {
+          "title": "AI Mode",
+          "value": "CID Optimized",
+          "subtext": "CID manages the best engine mix for the project."
+        },
+        "creditCard": {
+          "title": "Credits & Costs",
+          "included": "Included credits: {count}",
+          "used": "Used credits: {count}",
+          "remaining": "Remaining credits: {count}",
+          "estimated": "Estimated cost for next action: {range} credits",
+          "intensity": "Intensity",
+          "intensityValue": "Medium",
+          "disclaimer": "Project AI usage consumes CID credits. Customer key configuration may imply external cost outside CID."
+        },
+        "privacyCard": {
+          "title": "Privacy Mode",
+          "value": "Enhanced",
+          "subtext": "The project prioritises a more controlled handling of material."
+        },
+        "reliabilityCard": {
+          "title": "Reliability & Availability",
+          "value": "Available",
+          "queue": "Processing queue: {value}",
+          "incidents": "Incidents: {value}",
+          "normal": "Normal",
+          "noIncidents": "No incidents"
+        },
+        "warningCard": {
+          "title": "Intensive task",
+          "description": "Intensive task: may consume more credits and enter the queue."
+        },
+        "advancedConfig": {
+          "title": "Advanced settings",
+          "description": "Advanced settings are available only to authorized roles. Technical configuration will be enabled in a later phase."
+        },
+        "actionsPanel": {
+          "title": "Result-Oriented Actions",
+          "description": "Trigger processing engines directly from the Command Center.",
+          "actions": {
+            "script": "Analyze script",
+            "storyboard": "Generate storyboard",
+            "dossier": "Prepare pitch pack",
+            "funding": "Evaluate funding",
+            "art": "Generate concept art",
+            "delivery": "Prepare delivery",
+            "review": "Review materials",
+            "crm": "Prepare distribution / sales"
+          }
+        }
       }
     }
   },

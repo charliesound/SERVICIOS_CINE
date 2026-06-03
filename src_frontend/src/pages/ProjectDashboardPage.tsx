@@ -1,11 +1,17 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
+  AlertTriangle,
+  Check,
   Clapperboard,
+  Coins,
+  Cpu,
   DollarSign,
   Film,
   FolderGit2,
   Layers,
+  Lock,
+  Play,
   Shield,
   Sparkles,
   Users,
@@ -497,6 +503,205 @@ export default function ProjectDashboardPage() {
               </div>
             </div>
             <p className="mt-5 text-sm text-slate-300">{t('internal.commandCenter.futureVisibilityPlaceholder')}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Project AI Status Section */}
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/8 bg-dark-200/70 px-6 py-6 shadow-[0_28px_80px_rgba(2,6,23,0.32)] md:px-8 md:py-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.12),transparent_30%)]" />
+        <div className="relative space-y-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">
+                  {t('internal.commandCenter.aiEngine.title')}
+                </h2>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                  </span>
+                  {t('internal.commandCenter.aiEngine.statusCard.active')}
+                </span>
+              </div>
+              <p className="mt-2 text-slate-300">
+                {t('internal.commandCenter.aiEngine.subtitle')}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {/* AI Engine Status & Mode Card */}
+            <div className="rounded-[1.6rem] border border-white/8 bg-white/[0.04] p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-amber-300">
+                  <Cpu className="h-5 w-5" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    {t('internal.commandCenter.aiEngine.statusCard.title')}
+                  </p>
+                </div>
+                <div className="mt-4">
+                  <p className="text-lg font-semibold text-white">
+                    {t('internal.commandCenter.aiEngine.modeCard.value')}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {t('internal.commandCenter.aiEngine.modeCard.subtext')}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 pt-4 border-t border-white/5">
+                <p className="text-sm text-slate-300">
+                  {t('internal.commandCenter.aiEngine.statusCard.activeSub')}
+                </p>
+              </div>
+            </div>
+
+            {/* Privacy Mode & Reliability Card */}
+            <div className="rounded-[1.6rem] border border-white/8 bg-white/[0.04] p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-amber-300">
+                  <Shield className="h-5 w-5" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    {t('internal.commandCenter.aiEngine.privacyCard.title')}
+                  </p>
+                </div>
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-white">
+                      <Lock className="h-3.5 w-3.5 text-amber-400" />
+                      {t('internal.commandCenter.aiEngine.privacyCard.value')}
+                    </span>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {t('internal.commandCenter.aiEngine.privacyCard.subtext')}
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-white/5 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      {t('internal.commandCenter.aiEngine.reliabilityCard.title')}
+                    </p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-300">
+                      <span className="flex items-center gap-1">
+                        <Check className="h-3 w-3 text-emerald-400" />
+                        {t('internal.commandCenter.aiEngine.reliabilityCard.value')}
+                      </span>
+                      <span>
+                        {t('internal.commandCenter.aiEngine.reliabilityCard.queue').replace('{value}', t('internal.commandCenter.aiEngine.reliabilityCard.normal'))}
+                      </span>
+                      <span>
+                        {t('internal.commandCenter.aiEngine.reliabilityCard.incidents').replace('{value}', t('internal.commandCenter.aiEngine.reliabilityCard.noIncidents'))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Credit & Cost Visibility Card */}
+            <div className="rounded-[1.6rem] border border-white/8 bg-white/[0.04] p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-amber-300">
+                  <Coins className="h-5 w-5" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    {t('internal.commandCenter.aiEngine.creditCard.title')}
+                  </p>
+                </div>
+                <div className="mt-4 space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">{t('internal.commandCenter.aiEngine.creditCard.included').replace('{count}', '2000')}</span>
+                    <span className="text-slate-400">{t('internal.commandCenter.aiEngine.creditCard.used').replace('{count}', '420')}</span>
+                  </div>
+                  {/* Progress Bar */}
+                  <div className="h-2 overflow-hidden rounded-xl bg-dark-300">
+                    <div className="h-full bg-gradient-to-r from-amber-500 to-amber-400" style={{ width: '79%' }} />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-white">
+                      {t('internal.commandCenter.aiEngine.creditCard.remaining').replace('{count}', '1580')}
+                    </span>
+                    <span className="rounded-full bg-amber-400/10 px-2.5 py-1 text-[11px] font-semibold text-amber-200">
+                      {t('internal.commandCenter.aiEngine.creditCard.intensity')}: {t('internal.commandCenter.aiEngine.creditCard.intensityValue')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-white/5 space-y-2">
+                <p className="text-xs text-amber-200/90 font-medium">
+                  {t('internal.commandCenter.aiEngine.creditCard.estimated').replace('{range}', '35–90')}
+                </p>
+                <p className="text-[11px] leading-relaxed text-slate-500 italic">
+                  {t('internal.commandCenter.aiEngine.creditCard.disclaimer')}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Intense Task Warning Card */}
+          <div className="flex gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-amber-200 text-sm">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" />
+            <div>
+              <h4 className="font-semibold">{t('internal.commandCenter.aiEngine.warningCard.title')}</h4>
+              <p className="mt-1 text-xs text-amber-200/80 leading-relaxed">
+                {t('internal.commandCenter.aiEngine.warningCard.description')}
+              </p>
+            </div>
+          </div>
+
+          {/* Result-Oriented Action Panel */}
+          <div className="rounded-[1.6rem] border border-white/8 bg-white/[0.02] p-6 space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-white">
+                {t('internal.commandCenter.aiEngine.actionsPanel.title')}
+              </h3>
+              <p className="text-sm text-slate-400">
+                {t('internal.commandCenter.aiEngine.actionsPanel.description')}
+              </p>
+            </div>
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+              <Link to={`/projects/${projectId}`} className="flex items-center gap-2 rounded-xl border border-white/8 bg-dark-300/40 p-3 hover:bg-dark-300/80 text-sm font-medium text-slate-200 hover:text-white transition-colors">
+                <Play className="h-3.5 w-3.5 text-amber-400" />
+                {t('internal.commandCenter.aiEngine.actionsPanel.actions.script')}
+              </Link>
+              <Link to={`/projects/${projectId}/storyboard-builder`} className="flex items-center gap-2 rounded-xl border border-white/8 bg-dark-300/40 p-3 hover:bg-dark-300/80 text-sm font-medium text-slate-200 hover:text-white transition-colors">
+                <Play className="h-3.5 w-3.5 text-amber-400" />
+                {t('internal.commandCenter.aiEngine.actionsPanel.actions.storyboard')}
+              </Link>
+              <Link to={`/projects/${projectId}/producer-pitch`} className="flex items-center gap-2 rounded-xl border border-white/8 bg-dark-300/40 p-3 hover:bg-dark-300/80 text-sm font-medium text-slate-200 hover:text-white transition-colors">
+                <Play className="h-3.5 w-3.5 text-amber-400" />
+                {t('internal.commandCenter.aiEngine.actionsPanel.actions.dossier')}
+              </Link>
+              <Link to={`/projects/${projectId}/funding`} className="flex items-center gap-2 rounded-xl border border-white/8 bg-dark-300/40 p-3 hover:bg-dark-300/80 text-sm font-medium text-slate-200 hover:text-white transition-colors">
+                <Play className="h-3.5 w-3.5 text-amber-400" />
+                {t('internal.commandCenter.aiEngine.actionsPanel.actions.funding')}
+              </Link>
+              <Link to={`/projects/${projectId}`} className="flex items-center gap-2 rounded-xl border border-white/8 bg-dark-300/40 p-3 hover:bg-dark-300/80 text-sm font-medium text-slate-200 hover:text-white transition-colors">
+                <Play className="h-3.5 w-3.5 text-amber-400" />
+                {t('internal.commandCenter.aiEngine.actionsPanel.actions.art')}
+              </Link>
+              <Link to={`/projects/${projectId}/delivery`} className="flex items-center gap-2 rounded-xl border border-white/8 bg-dark-300/40 p-3 hover:bg-dark-300/80 text-sm font-medium text-slate-200 hover:text-white transition-colors">
+                <Play className="h-3.5 w-3.5 text-amber-400" />
+                {t('internal.commandCenter.aiEngine.actionsPanel.actions.delivery')}
+              </Link>
+              <Link to={`/projects/${projectId}/reviews`} className="flex items-center gap-2 rounded-xl border border-white/8 bg-dark-300/40 p-3 hover:bg-dark-300/80 text-sm font-medium text-slate-200 hover:text-white transition-colors">
+                <Play className="h-3.5 w-3.5 text-amber-400" />
+                {t('internal.commandCenter.aiEngine.actionsPanel.actions.review')}
+              </Link>
+              <Link to={`/projects/${projectId}/distribution`} className="flex items-center gap-2 rounded-xl border border-white/8 bg-dark-300/40 p-3 hover:bg-dark-300/80 text-sm font-medium text-slate-200 hover:text-white transition-colors">
+                <Play className="h-3.5 w-3.5 text-amber-400" />
+                {t('internal.commandCenter.aiEngine.actionsPanel.actions.crm')}
+              </Link>
+            </div>
+          </div>
+
+          {/* Advanced Configuration Placeholder */}
+          <div className="rounded-[1.6rem] border border-white/8 bg-white/[0.04] p-6 space-y-2">
+            <h4 className="text-base font-semibold text-white flex items-center gap-2">
+              <Lock className="h-4 w-4 text-slate-400" />
+              {t('internal.commandCenter.aiEngine.advancedConfig.title')}
+            </h4>
+            <p className="text-sm text-slate-400">
+              {t('internal.commandCenter.aiEngine.advancedConfig.description')}
+            </p>
           </div>
         </div>
       </section>

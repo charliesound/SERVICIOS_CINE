@@ -1,4 +1,4 @@
-﻿# CID Project Command Center — Arquitectura funcional por ramas
+# CID Project Command Center — Arquitectura funcional por ramas
 
 **Documento:** `docs/product/cid_project_command_center_branches_v1.md`
 **Versión:** 1.0
@@ -330,7 +330,7 @@ RAMA 1 (Producción)
   ├── Presupuesto → alimenta a Rama 2 (plan de rodaje) y Rama 3 (costes de post)
   ├── Financiación → determina alcance de Rama 2 y Rama 3
   └── Dossier → consume de Rama 2 (storyboard, análisis) y Rama 3 (materiales)
-  
+
 RAMA 2 (Creativo y Rodaje)
   │
   ├── Guion bloqueado → habilita desglose y storyboard

@@ -7,7 +7,7 @@ Este documento amplía la base de investigación de CID Finance Intelligence hac
 Hallazgos principales:
 - Creative Europe MEDIA es una fuente institucional europea clara para desarrollo, distribución, promoción, audiencia, innovación y cooperación audiovisual.
 - Ibermedia ofrece un marco legal y convocatorias públicas claras para codesarrollo, coproducción, distribución/circulación, formación y apoyos complementarios dentro del espacio iberoamericano.
-- Eurimages es una referencia institucional clave del Consejo de Europa para coproducción europea, pero en esta sesión no ha sido posible verificar sus condiciones detalladas directamente en la web oficial por bloqueo técnico de acceso. Sus requisitos concretos quedan marcados como `PENDIENTE DE VERIFICACIÓN` cuando no han podido contrastarse con fuente primaria accesible.
+- Eurimages es una referencia institucional clave del Council of Europe para coproducción europea. En esta versión, sus condiciones principales para coproducción quedan verificadas contra la fuente primaria `WEBSITE_CoprodRegulations_2026_EN.pdf` (`Eurimages Co-production Support Regulations 2026`). Solo permanecen como `PENDIENTE DE VERIFICACIÓN` los puntos no confirmados directamente en ese reglamento o dependientes de convocatoria/plataforma/compatibilidad externa.
 - La coproducción europea y la coproducción España-Latinoamérica deben tratarse en CID no como una sola “fuente”, sino como una arquitectura de elegibilidad que puede habilitar varias fuentes a la vez: ayudas públicas, incentivos fiscales, fondos internacionales, broadcasters y preventas.
 - La compatibilidad con financiación española es conceptualmente alta, pero nunca debe darse por cerrada sin revisar límites de intensidad de ayuda, nacionalidad de obra, certificado cultural, requisitos territoriales y acuerdos entre coproductores.
 
@@ -41,8 +41,8 @@ Fecha de consulta general: 2026-06-02
 5. Eurimages Co-production Support Regulations 2026
    - Organismo: Council of Europe / Eurimages
    - Título: `WEBSITE_CoprodRegulations_2026_EN.pdf` / `Eurimages Co-production Support Regulations 2026`
-   - URL: `PENDIENTE DE VERIFICACIÓN` en este documento
-   - Estado: fuente primaria verificada para el bloque Eurimages
+   - URL: fuente PDF primaria local usada en esta revisión
+   - Estado: fuente primaria verificada para el bloque Eurimages 2026
 
 6. Eurimages portal oficial
    - Organismo: Council of Europe / Eurimages
@@ -72,7 +72,7 @@ Fecha de consulta general: 2026-06-02
 ### 3. Eurimages
 
 #### 3.1 Descripción
-Eurimages es un fondo cultural del Council of Europe. El reglamento `Eurimages Co-production Support Regulations 2026` es aplicable desde el 1 de enero de 2026. Eurimages promueve el cine independiente proporcionando apoyo financiero a coproducciones de largometrajes de ficción, animación y documental.
+Eurimages es un fondo cultural del Council of Europe. El reglamento `Eurimages Co-production Support Regulations 2026` es aplicable desde el 1 de enero de 2026. Eurimages apoya la coproducción de largometrajes de ficción, animación y documental destinados a estreno cinematográfico. El reglamento 2026 mantiene 3 convocatorias por año y un presupuesto anual aproximado de 30 millones de euros.
 
 #### 3.2 Qué tipo de proyectos puede apoyar
 - Coproducciones de largometrajes de ficción.
@@ -80,7 +80,7 @@ Eurimages es un fondo cultural del Council of Europe. El reglamento `Eurimages C
 - Coproducciones de largometrajes documentales.
 - Duración mínima verificada: 70 minutos.
 - Destino verificado: estreno cinematográfico.
-- Eurimages tiene cuatro esquemas de apoyo, pero estas notas se refieren únicamente al esquema de apoyo a coproducción.
+- Estas notas se refieren únicamente al esquema de apoyo a coproducción.
 
 #### 3.3 Si exige coproducción
 - Sí.
@@ -92,9 +92,11 @@ Eurimages es un fondo cultural del Council of Europe. El reglamento `Eurimages C
 - Estructura multilateral verificada:
   - coproductor mayoritario máximo 70%
   - cada coproductor minoritario mínimo 10%
-- En coproducción bilateral no incluida en la convención revisada puede existir hasta 90% de participación mayoritaria, pero solo si:
-  - el presupuesto de coproducción supera 5 millones de euros
-  - la estructura es conforme a un tratado bilateral
+- Excepción bilateral verificada hasta 90%:
+  - solo para coproducción bilateral no incluida en la convención revisada
+  - presupuesto superior a 5 millones de euros
+  - estructura conforme a tratado bilateral
+- Aplicación concreta por tratado bilateral: `PENDIENTE DE VERIFICACIÓN`.
 
 #### 3.4 Si exige nacionalidad/certificación cultural
 - Los proyectos deben ajustarse a la legislación de los países implicados y a los tratados bilaterales o multilaterales en vigor entre los países coproductores.
@@ -113,11 +115,18 @@ Eurimages es un fondo cultural del Council of Europe. El reglamento `Eurimages C
   - 30% de participación financiera
   - 30% de propiedad de derechos
 - Debe existir cooperación artística y/o técnica entre al menos dos coproductores establecidos en distintos estados miembros del Fondo, de los cuales al menos uno pertenezca a un estado miembro del Council of Europe.
-- Los proyectos deben incluir un master digital apto para estreno en salas.
+- Los proyectos deben incluir o presupuestar un digital master apto para estreno cinematográfico.
+- En el momento de la solicitud debe estar confirmada al menos el 50% de la financiación en cada país coproductor.
 
 #### 3.6 Compatibilidades y restricciones
 - Conceptualmente compatible con financiación nacional, incentivos fiscales y otros apoyos, sujeto a límites de acumulación y normativa aplicable.
-- El reglamento verificado exige que al menos 50% de la financiación en cada país coproductor esté confirmada en el momento de la solicitud mediante contratos, deal memos, cartas de intención con importes, confirmaciones de ayuda pública o extractos bancarios, con limitaciones específicas para deferrals e in-kind contributions.
+- El reglamento verificado exige que al menos 50% de la financiación en cada país coproductor esté confirmada en el momento de la solicitud mediante:
+  - contratos
+  - deal memos
+  - cartas de intención con importes
+  - confirmaciones de ayuda pública
+  - extractos bancarios
+- Los `deferrals` e `in-kind contributions` solo se aceptan hasta un máximo del 15% del presupuesto total de coproducción.
 - Apoyo máximo verificado: 500.000 €.
 - Naturaleza del apoyo verificada:
   - <= 150.000 €: subvención no reembolsable
@@ -126,6 +135,7 @@ Eurimages es un fondo cultural del Council of Europe. El reglamento `Eurimages C
 - Decisión operativa: 3 convocatorias por año.
 - Deadlines concretos de cada call: `PENDIENTE DE VERIFICACIÓN`.
 - Checklist exacto de la plataforma online: `PENDIENTE DE VERIFICACIÓN`.
+- Aplicación concreta por tratado bilateral: `PENDIENTE DE VERIFICACIÓN`.
 - Compatibilidad exacta con ICAA: `PENDIENTE DE VERIFICACIÓN`.
 - Compatibilidad exacta con tax rebate España / Canarias / Navarra: `PENDIENTE DE VERIFICACIÓN`.
 - Compatibilidad exacta con RTVE / broadcasters / plataformas: `PENDIENTE DE VERIFICACIÓN`.
@@ -149,7 +159,9 @@ Eurimages es un fondo cultural del Council of Europe. El reglamento `Eurimages C
   - deadlines concretos
   - checklist exacto de plataforma
   - aplicación concreta por tratado bilateral
-  - compatibilidad exacta con fuentes españolas
+  - compatibilidad exacta con ICAA
+  - compatibilidad exacta con tax rebate España / Canarias / Navarra
+  - compatibilidad exacta con RTVE / broadcasters / plataformas
 
 ### 4. Creative Europe MEDIA
 

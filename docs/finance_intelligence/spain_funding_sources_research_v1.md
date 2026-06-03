@@ -36,11 +36,11 @@ Este documento es una investigacion preliminar para el futuro modulo CID Finance
 
 | Fuente | Tipo | Ámbito | Fase del proyecto | Intensidad / rango conocido | Requisitos clave | Fuente oficial | Estado de verificación |
 |---|---|---|---|---|---|---|---|
-| ICAA ayudas generales | Subvencion | Estatal | Produccion | PENDIENTE DE VERIFICACIÓN | Convocatoria vigente, productora elegible, requisitos ICAA | Ministerio de Cultura / ICAA | Pendiente |
+| ICAA ayudas generales | Subvencion | Estatal | Produccion | PENDIENTE DE VERIFICACIÓN | Convocatoria vigente, productora elegible, requisitos ICAA | Ministerio de Cultura / ICAA | Parcialmente confirmado |
 | ICAA ayudas selectivas | Subvencion | Estatal | Produccion | PENDIENTE DE VERIFICACIÓN | Convocatoria vigente, criterios culturales e industriales | Ministerio de Cultura / ICAA | Pendiente |
-| ICAA ayudas al desarrollo | Subvencion | Estatal | Desarrollo | PENDIENTE DE VERIFICACIÓN | Convocatoria vigente | Ministerio de Cultura / ICAA | Pendiente |
-| ICAA cortometrajes | Subvencion | Estatal | Desarrollo / produccion | PENDIENTE DE VERIFICACIÓN | Convocatoria vigente | Ministerio de Cultura / ICAA | Pendiente |
-| ICAA distribucion / promocion | Subvencion | Estatal | Distribucion / promocion | PENDIENTE DE VERIFICACIÓN | Convocatoria vigente | Ministerio de Cultura / ICAA | Pendiente |
+| ICAA ayudas al desarrollo | Subvencion | Estatal | Desarrollo | PENDIENTE DE VERIFICACIÓN | Convocatoria vigente | Ministerio de Cultura / ICAA | Parcialmente confirmado |
+| ICAA cortometrajes | Subvencion | Estatal | Desarrollo / produccion | PENDIENTE DE VERIFICACIÓN | Convocatoria vigente | Ministerio de Cultura / ICAA | Parcialmente confirmado |
+| ICAA distribucion / promocion | Subvencion | Estatal | Distribucion / promocion | PENDIENTE DE VERIFICACIÓN | Convocatoria vigente | Ministerio de Cultura / ICAA | Parcialmente confirmado |
 | IS art. 36 produccion espanola | Incentivo fiscal | Estatal | Produccion / financiacion | 30% primer millon + 25% exceso; cap 20 M EUR por produccion / 10 M EUR por episodio | 50% base en territorio espanol; certificados; entrega a filmoteca | BOE + Spain Film Commission | Confirmado |
 | IS art. 36 produccion extranjera / service | Incentivo fiscal | Estatal | Rodaje / service production | 30% primer millon + 25% exceso; minimo gasto 1 M EUR, animacion 200.000 EUR; cap 20 M EUR / 10 M EUR episodio | productor inscrito ICAA, gastos en Espana, certificado cultural | BOE | Confirmado |
 | Canarias | Incentivo fiscal reforzado | Autonomico / REF | Produccion / service | PENDIENTE DE VERIFICACIÓN. Fuente institucional sectorial menciona hasta 54% y compatibilidad con 4% IS | productora registrada en ICAA y domicilio fiscal en Canarias para ciertos supuestos; gasto minimo local; 50% base en Espana para produccion espanola | Canary Islands Film | Parcialmente confirmado |
@@ -54,85 +54,92 @@ Este documento es una investigacion preliminar para el futuro modulo CID Finance
 
 ## 3. ICAA
 
-Nota general: en esta consulta no ha sido posible recuperar correctamente paginas operativas del portal ICAA/Ministerio de Cultura mediante acceso web directo. Se mantiene la estructura funcional esperada del ICAA, pero cifras, calendarios y requisitos detallados de cada convocatoria quedan marcados como PENDIENTE DE VERIFICACIÓN hasta contrastarlos con convocatoria vigente y fuente ministerial accesible.
+Nota general: el catálogo oficial del Ministerio de Cultura / ICAA para ayudas de cine está accesible en `https://www.cultura.gob.es/cultura/areas/cine/ayudas.html`. Para esta actualización se ha priorizado el catálogo oficial y sus fichas/trámites oficiales del Ministerio. Cuando existe ficha oficial 2026 accesible, el estado CID se marca `VERIFICADO`. Cuando solo se ha localizado una ficha de año anterior o no aparece la ficha 2026 accesible, el estado se mantiene como `PENDIENTE DE VERIFICACIÓN`.
 
-### 3.1 Ayudas generales a la producción
-- Tipo: subvencion estatal
-- Fase: produccion
-- Beneficiarios: PENDIENTE DE VERIFICACIÓN
-- Importe o intensidad si esta confirmado: PENDIENTE DE VERIFICACIÓN
-- Requisitos: PENDIENTE DE VERIFICACIÓN
-- Documentacion exigida: PENDIENTE DE VERIFICACIÓN
-- Calendario / convocatoria: PENDIENTE DE VERIFICACIÓN
-- Compatibilidades: PENDIENTE DE VERIFICACIÓN
-- Incompatibilidades: PENDIENTE DE VERIFICACIÓN
-- Fuente oficial:
-  - Ministerio de Cultura / ICAA
-- Notas para CID:
-  - modelar como linea de produccion competitiva
-  - capturar año de convocatoria, baremacion y limites de acumulacion
+### 3.1 Tabla maestra ICAA 2026
 
-### 3.2 Ayudas selectivas a la producción
-- Tipo: subvencion estatal
-- Fase: produccion
-- Beneficiarios: PENDIENTE DE VERIFICACIÓN
-- Importe o intensidad si esta confirmado: PENDIENTE DE VERIFICACIÓN
-- Requisitos: PENDIENTE DE VERIFICACIÓN
-- Documentacion exigida: PENDIENTE DE VERIFICACIÓN
-- Calendario / convocatoria: PENDIENTE DE VERIFICACIÓN
-- Compatibilidades: PENDIENTE DE VERIFICACIÓN
-- Incompatibilidades: PENDIENTE DE VERIFICACIÓN
-- Fuente oficial:
-  - Ministerio de Cultura / ICAA
-- Notas para CID:
-  - relevante para cine independiente y perfil cultural especifico
-  - separar de ayudas generales por scoring, perfil de proyecto y limites
+| línea | código administrativo si existe | formato/proyecto aplicable | tipo de ayuda | año/convocatoria | plazo de solicitud | canal de presentación | URL oficial | estado de verificación CID | notas para modelado CID |
+|---|---|---|---|---|---|---|---|---|---|
+| Ayudas generales para la producción de largometrajes sobre proyecto | PENDIENTE DE VERIFICACIÓN | largometrajes sobre proyecto | subvención | 2026 | Primer procedimiento: desde el 18 de mayo de 2026 hasta el 5 de junio de 2026 a las 14:00. Segundo procedimiento: desde el 8 de junio de 2026 hasta el 15 de septiembre de 2026 a las 14:00 | Sede electrónica / presentación obligatoriamente electrónica | https://www.cultura.gob.es/cultura/areas/cine/ayudas/produccion/generales.html | VERIFICADO | Modelar como línea de producción principal separada de selectivas. La página oficial 2026 es accesible, pero el código administrativo y la ficha de catálogo concreta siguen PENDIENTE DE VERIFICACIÓN. |
+| Ayudas selectivas para la producción de largometrajes sobre proyecto | 051790 (ficha 2025 localizada) | largometrajes sobre proyecto | subvención | PENDIENTE DE VERIFICACIÓN | PENDIENTE DE VERIFICACIÓN | PENDIENTE DE VERIFICACIÓN | https://www.cultura.gob.es/cultura/areas/cine/ayudas/produccion/selectivas.html | PENDIENTE DE VERIFICACIÓN | Existe referencia a ficha 2025; no se ha verificado convocatoria/ficha 2026 accesible en esta sesión. Mantener como línea distinta de generales. |
+| Ayudas a la producción de cortometrajes sobre proyecto | PENDIENTE DE VERIFICACIÓN | cortometrajes sobre proyecto | subvención | 2026 | Desde el 06 de abril de 2026 hasta el 24 de abril de 2026 a las 14:00 | PENDIENTE DE VERIFICACIÓN | https://www.cultura.gob.es/cultura/areas/cine/ayudas/produccion/cortometrajes-sobre-proyecto.html | VERIFICADO | Línea específica para cortometraje en fase proyecto. La página oficial 2026 es accesible, pero código administrativo y ficha de catálogo concreta siguen PENDIENTE DE VERIFICACIÓN. |
+| Ayudas a la producción de cortometrajes realizados | 051780 | cortometrajes realizados | subvención | Convocatoria 2026 | Desde el 16 de marzo de 2026 hasta el 07 de abril de 2026 a las 14:00 | Acceso al servicio online / presentación electrónica | https://www.cultura.gob.es/servicios-a-la-ciudadania/catalogo/general/05/051780/ficha/051780-2026.html | VERIFICADO | Línea de amortización/realizado. Distinguir de cortometraje sobre proyecto. La ficha oficial 2026 está accesible. |
+| Ayudas para la distribución de películas de largometraje y conjuntos de cortometrajes, españoles, comunitarios e iberoamericanos | 051850 | largometrajes y conjuntos de cortometrajes españoles, comunitarios e iberoamericanos | subvención | Convocatoria 2026 | Desde el 06 de marzo de 2026 hasta el 26 de marzo de 2026 a las 14:00 | Acceso al servicio online / presentación electrónica | https://www.cultura.gob.es/servicios-a-la-ciudadania/catalogo/general/05/051850/ficha/051850-2026.html | VERIFICADO | Línea de distribución. Importante para CID diferenciar cine español vs comunitario/iberoamericano en reglas futuras. |
+| Ayudas al desarrollo de guiones para películas de largometraje | 051860 | guiones para películas de largometraje | subvención | Convocatoria 2026 | PRÓXIMA APERTURA desde el 03 de julio de 2026 hasta el 23 de julio de 2026 a las 14:00 | Acceso al servicio online / presentación electrónica | https://www.cultura.gob.es/servicios-a-la-ciudadania/catalogo/general/05/051860/ficha/015860-2026.html | VERIFICADO | Modelar como línea de desarrollo temprano vinculada a autoría/escritura, no a producción cerrada. |
+| Ayudas para la organización de festivales y certámenes cinematográficos en España | PENDIENTE DE VERIFICACIÓN | festivales y certámenes cinematográficos en España | subvención | PENDIENTE DE VERIFICACIÓN | PENDIENTE DE VERIFICACIÓN | PENDIENTE DE VERIFICACIÓN | https://www.cultura.gob.es/cultura/areas/cine/ayudas/organizacion-festivales.html | PENDIENTE DE VERIFICACIÓN | La página oficial existe y muestra actividad 2026, pero no se ha verificado ficha 2026 del catálogo en esta sesión. |
+| Ayudas a la participación en festivales | PENDIENTE DE VERIFICACIÓN | participación en festivales | subvención | PENDIENTE DE VERIFICACIÓN | PENDIENTE DE VERIFICACIÓN | PENDIENTE DE VERIFICACIÓN | https://www.cultura.gob.es/cultura/areas/cine/ayudas/participacion-festivales.html | PENDIENTE DE VERIFICACIÓN | Mantener como línea separada de organización de festivales. |
 
-### 3.3 Ayudas al desarrollo
-- Tipo: subvencion estatal
-- Fase: desarrollo
-- Beneficiarios: PENDIENTE DE VERIFICACIÓN
-- Importe o intensidad si esta confirmado: PENDIENTE DE VERIFICACIÓN
-- Requisitos: PENDIENTE DE VERIFICACIÓN
-- Documentacion exigida: PENDIENTE DE VERIFICACIÓN
-- Calendario / convocatoria: PENDIENTE DE VERIFICACIÓN
-- Compatibilidades: PENDIENTE DE VERIFICACIÓN
-- Incompatibilidades: PENDIENTE DE VERIFICACIÓN
-- Fuente oficial:
-  - Ministerio de Cultura / ICAA
-- Notas para CID:
-  - clave para proyectos en fase temprana
-  - CID debe mapear si el proyecto esta en desarrollo puro o ya en produccion
+### 3.2 Plazos y presentación electrónica
+- Datos verificados en fichas oficiales 2026 accesibles:
+  - ayudas generales para la producción de largometrajes sobre proyecto:
+    - resolución: 13-05-2026
+    - primer procedimiento: desde el 18 de mayo de 2026 hasta el 5 de junio de 2026 a las 14:00
+    - segundo procedimiento: desde el 8 de junio de 2026 hasta el 15 de septiembre de 2026 a las 14:00
+    - canal: sede electrónica / presentación obligatoriamente electrónica
+  - distribución `051850`:
+    - BDNS: 02-03-2026
+    - BOE: 05-03-2026
+    - plazo: desde el 06 de marzo de 2026 hasta el 26 de marzo de 2026 a las 14:00
+    - canal: acceso al servicio online / presentación electrónica
+  - cortometrajes sobre proyecto:
+    - plazo: desde el 06 de abril de 2026 hasta el 24 de abril de 2026 a las 14:00
+    - canal exacto: `PENDIENTE DE VERIFICACIÓN`
+  - cortometrajes realizados `051780`:
+    - BDNS: 12-03-2026
+    - BOE: 13-03-2026
+    - plazo: desde el 16 de marzo de 2026 hasta el 07 de abril de 2026 a las 14:00
+    - canal: acceso al servicio online / presentación electrónica
+  - guiones `051860`:
+    - BDNS: 26-05-2026
+    - BOE: 28-05-2026
+    - plazo: desde el 03 de julio de 2026 hasta el 23 de julio de 2026 a las 14:00
+    - canal: acceso al servicio online / presentación electrónica
+- Para generales, selectivas, cortometraje sobre proyecto, organización de festivales y participación en festivales:
+  - selectivas: plazo exacto 2026 `PENDIENTE DE VERIFICACIÓN`
+  - selectivas: canal exacto 2026 `PENDIENTE DE VERIFICACIÓN`
+  - organización de festivales: plazo exacto 2026 `PENDIENTE DE VERIFICACIÓN`
+  - organización de festivales: canal exacto 2026 `PENDIENTE DE VERIFICACIÓN`
+  - participación en festivales: plazo exacto 2026 `PENDIENTE DE VERIFICACIÓN`
+  - participación en festivales: canal exacto 2026 `PENDIENTE DE VERIFICACIÓN`
 
-### 3.4 Ayudas a cortometrajes
-- Tipo: subvencion estatal
-- Fase: desarrollo / produccion / post segun linea
-- Beneficiarios: PENDIENTE DE VERIFICACIÓN
-- Importe o intensidad si esta confirmado: PENDIENTE DE VERIFICACIÓN
-- Requisitos: PENDIENTE DE VERIFICACIÓN
-- Documentacion exigida: PENDIENTE DE VERIFICACIÓN
-- Calendario / convocatoria: PENDIENTE DE VERIFICACIÓN
-- Compatibilidades: PENDIENTE DE VERIFICACIÓN
-- Incompatibilidades: PENDIENTE DE VERIFICACIÓN
-- Fuente oficial:
-  - Ministerio de Cultura / ICAA
-- Notas para CID:
-  - requiere tipologia y presupuesto distinto a largometraje/serie
+### 3.3 Dotación
+- Dotación por línea en la convocatoria 2026 localizada:
+  - ayudas generales para la producción de largometrajes sobre proyecto:
+    - cuantía adicional máxima de hasta 32.000.000 euros
+  - distribución `051850`:
+    - importe total de convocatoria: 4.000.000 euros
+    - límite individual: 150.000 euros
+    - intensidad máxima indicada en el extracto: no puede superar el 50% de determinados costes de distribución
+  - resto de líneas incluidas en esta actualización:
+    - `PENDIENTE DE VERIFICACIÓN` si la cuantía no aparece explícitamente en la fuente oficial localizada revisada en esta sesión.
 
-### 3.5 Ayudas a distribución / promoción si aplica
-- Tipo: subvencion estatal
-- Fase: distribucion / promocion
-- Beneficiarios: PENDIENTE DE VERIFICACIÓN
-- Importe o intensidad si esta confirmado: PENDIENTE DE VERIFICACIÓN
-- Requisitos: PENDIENTE DE VERIFICACIÓN
-- Documentacion exigida: PENDIENTE DE VERIFICACIÓN
-- Calendario / convocatoria: PENDIENTE DE VERIFICACIÓN
-- Compatibilidades: PENDIENTE DE VERIFICACIÓN
-- Incompatibilidades: PENDIENTE DE VERIFICACIÓN
-- Fuente oficial:
-  - Ministerio de Cultura / ICAA
-- Notas para CID:
-  - util para fase de salida comercial y festivales
+### 3.4 Coproducción internacional
+- La línea de distribución verificada menciona expresamente películas españolas, comunitarias e iberoamericanas.
+- En ayudas generales para largometrajes sobre proyecto, la página oficial 2026 indica que los proyectos que se vayan a realizar en régimen de coproducción con empresas extranjeras deberán atender a la aprobación de la coproducción internacional dentro de los plazos aplicables; el detalle procedimental completo queda `PENDIENTE DE VERIFICACIÓN`.
+- Para el resto de líneas ICAA incluidas en esta actualización:
+  - aplicación exacta a coproducción internacional: `PENDIENTE DE VERIFICACIÓN`
+  - requisitos específicos de coproductoras o reconocimiento internacional: `PENDIENTE DE VERIFICACIÓN`
+
+### 3.5 Observaciones para CID Funding Intelligence
+- ICAA debe modelarse como catálogo de líneas independientes, no como una sola fuente.
+- Cada línea debe tener entidad propia en CID con campos diferenciados de:
+  - fase
+  - formato
+  - código administrativo
+  - año de convocatoria
+  - plazo
+  - canal
+  - URL oficial
+  - estado de verificación
+- No asumir compatibilidad con:
+  - tax rebate España
+  - Eurimages
+  - Creative Europe MEDIA
+  - Ibermedia
+  - RTVE
+  - plataformas o broadcasters
+  salvo fuente explícita.
+- No presentar ningún cálculo fiscal/legal como definitivo.
 
 ## 4. Incentivos fiscales estatales
 

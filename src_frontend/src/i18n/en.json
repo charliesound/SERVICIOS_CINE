@@ -1292,7 +1292,7 @@
       "activateError": "Could not activate the plan"
     },
     "projectDashboard": {
-      "errorLoading": "Error loading dashboard",
+      "errorLoading": "Error loading project dashboard",
       "intro": "CID Core supports the project from script to basic previs, organizing cinematic analysis, storyboard, budget, funding, dossier and production documentation.",
       "nextActions": "Next actions",
       "noPermission": "No permission",
@@ -2046,6 +2046,78 @@
       "watchPathsError": "Unable to load watch paths",
       "created": "Created",
       "lastValidated": "Last validated"
+    },
+    "commandCenter": {
+      "eyebrow": "CID Project Command Center",
+      "subtitle": "Initial project shell to coordinate branches, operating context and the next command center spaces.",
+      "openProject": "Open project",
+      "backToProject": "Back to project",
+      "projectStatus": "Project status",
+      "overallProgress": "Overall progress",
+      "statusFallback": "Active",
+      "contextTitle": "Project context",
+      "activeRole": "Active role",
+      "roleFallback": "Producer",
+      "visibility": "Visibility",
+      "visibilityValue": "Global for now",
+      "branchNavTitle": "Branch navigation",
+      "branchNavSubtitle": "This initial shell organizes production into three connected branches, not isolated silos.",
+      "branchNavHint": "Select a branch to focus the view",
+      "activeBranch": "Active branch",
+      "openBranch": "Open branch",
+      "branchSummaryTitle": "Operational summary",
+      "branchNotes": "Branch notes",
+      "branchImpactTitle": "BranchImpact / Impact requests",
+      "branchImpactDescription": "Visual placeholder for cross-branch impacts.",
+      "branchImpactPlaceholder": "Impact requests between Production, Creative and Post will appear here once the real flow exists.",
+      "creditPoolTitle": "CreditPool / Project AI credits",
+      "creditPoolDescription": "Safe placeholder for per-project AI usage, separate from plans and licenses.",
+      "creditPoolAvailable": "Available",
+      "creditPoolUsage": "Monthly usage",
+      "creditPoolPlaceholder": "Coming soon",
+      "notAvailableYet": "No real data yet",
+      "futureVisibilityTitle": "Role visibility",
+      "futureVisibilityDescription": "Visual placeholder for future branch-based visibility.",
+      "futureVisibilityPlaceholder": "Producer and Executive Producer keep a global view. Fine-grained branch visibility will arrive in a later phase.",
+      "comingSoon": "Coming soon",
+      "warningsTitle": "Risks and warnings",
+      "moduleFallback": "Summary not available yet.",
+      "modules": {
+        "budget": "Budget",
+        "funding": "Funding",
+        "producerPack": "Producer pack",
+        "script": "Script",
+        "breakdown": "Breakdown",
+        "storyboard": "Storyboard",
+        "editorial": "Editorial assembly",
+        "distribution": "Distribution",
+        "crm": "CRM",
+        "documents": "Documents",
+        "media": "Media",
+        "reports": "Reports"
+      },
+      "branches": {
+        "title": "Branches",
+        "description": "Initial project branch view.",
+        "rama1": {
+          "title": "Production & Financing",
+          "description": "Budget, funding, operational shoot preparation, hiring and logistics.",
+          "note1": "Includes operational shoot preparation, crew hiring and logistics.",
+          "note2": "It can receive impacts from Creative or Post when scope, schedule or cost changes."
+        },
+        "rama2": {
+          "title": "Creative & Shooting",
+          "description": "Script, breakdown, storyboard and creative shooting execution.",
+          "note1": "This branch can generate impacts on Production when scene or shooting needs change.",
+          "note2": "The shell reuses existing modules as real entry points."
+        },
+        "rama3": {
+          "title": "Postproduction, Delivery & Commercialization",
+          "description": "Editorial, distribution, delivery and commercial follow-up.",
+          "note1": "It groups post, delivery and commercialization into one functional branch for this first shell.",
+          "note2": "It can also generate impacts on other branches when deliverables or commercial commitments change."
+        }
+      }
     }
   },
   "components": {

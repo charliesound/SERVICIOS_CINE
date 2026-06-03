@@ -116,26 +116,28 @@ CID NO debe organizarse como un dashboard donde todos los usuarios ven todas las
 
 ## 5. Matriz de permisos funcionales
 
-| Rol | Prod. y Financiación | Creativo y Rodaje | Postproducción | Entrega | Comercialización |
-|---|---|---|---|---|---|
-| **Productor** | Completo | Completo | Completo | Completo | Completo |
-| **Productor Ejecutivo** | Completo | Solo lectura | Solo lectura | Solo lectura | Completo |
-| **Jefe de Producción** | Completo | Parcial (planificación) | Sin acceso | Parcial (costes) | Sin acceso |
-| **Director** | Solo lectura (presupuesto) | Completo | Completo | Parcial (versión final) | Sin acceso |
-| **Guionista** | Sin acceso | Completo (guion) | Sin acceso | Sin acceso | Sin acceso |
-| **Script Supervisor** | Sin acceso | Completo (continuidad) | Sin acceso | Sin acceso | Sin acceso |
-| **Ayudante de Dirección** | Sin acceso | Completo (rodaje) | Sin acceso | Sin acceso | Sin acceso |
-| **Montador / Editor** | Sin acceso | Parcial (referencias) | Completo | Parcial (entregables) | Sin acceso |
-| **Editor de Sonido** | Sin acceso | Sin acceso | Parcial (sonido) | Sin acceso | Sin acceso |
-| **Post Supervisor** | Sin acceso | Sin acceso | Completo | Completo | Sin acceso |
-| **Distribuidor** | Sin acceso | Sin acceso | Sin acceso | Completo | Completo |
-| **Agente de Ventas** | Sin acceso | Sin acceso | Sin acceso | Parcial (materiales) | Completo |
+| Rol | Prod. y Financiación | Creativo y Rodaje | Rama 3 | Comercialización |
+|---|---|---|---|---|---|---|
+| **Productor** | Completo | Completo | Completo | Completo |
+| **Productor Ejecutivo** | Completo | Solo lectura | Solo lectura | Completo |
+| **Jefe de Producción** | Completo | Parcial (planificación) | Parcial (costes) | Sin acceso |
+| **Director** | Solo lectura (presupuesto) | Completo | Parcial* | Sin acceso |
+| **Guionista** | Sin acceso | Completo (guion) | Sin acceso | Sin acceso |
+| **Script Supervisor** | Sin acceso | Completo (continuidad) | Sin acceso | Sin acceso |
+| **Ayudante de Dirección** | Sin acceso | Completo (rodaje) | Sin acceso | Sin acceso |
+| **Montador / Editor** | Sin acceso | Parcial (referencias) | Completo | Sin acceso |
+| **Editor de Sonido** | Sin acceso | Sin acceso | Parcial (sonido) | Sin acceso |
+| **Post Supervisor** | Sin acceso | Sin acceso | Completo | Completo |
+| **Distribuidor** | Sin acceso | Sin acceso | Sin acceso | Completo |
+| **Agente de Ventas** | Sin acceso | Sin acceso | Sin acceso | Completo (ventas) |
 
 **Legenda:**
 - **Completo**: Acceso total a la rama (lectura, escritura, creación, eliminación).
 - **Parcial**: Acceso solo a submódulos específicos dentro de la rama.
 - **Solo lectura**: Puede consultar pero no modificar.
 - **Sin acceso**: La rama no está visible en su Command Center.
+
+**Nota sobre Rama 3:** La columna "Rama 3" unifica las subáreas **Postproducción** y **Entrega**. La columna "Comercialización" se mantiene separada por su perfil de acceso específico (ventas, distribución, CRM). Si se menciona "Ventas" en el texto, se trata como parte de Comercialización.
 
 ---
 
@@ -688,8 +690,8 @@ Al entrar en CID, el Distribuidor ve:
 - Los permisos deben auditarse: quién accedió a qué módulo y cuándo.
 
 ### Integración con planes de suscripción
-- Los módulos de Rama 1 pueden requerir plan Producer o superior.
-- Los módulos de Rama 2 pueden estar disponibles desde plan Creator.
+- Los módulos de Rama 1 pueden requerir plan Pro o superior.
+- Los módulos de Rama 2 pueden estar disponibles desde plan Starter.
 - Los módulos de Rama 3 pueden requerir plan Studio o Enterprise para funcionalidades avanzadas (CRM, distribución).
 
 ---
@@ -734,3 +736,4 @@ La revisión debe producir una versión 1.1 con correcciones y validaciones del 
 | 2026-06-02 | 1.0 | Creación inicial del documento con arquitectura de 3 ramas, matriz de permisos, reglas de visibilidad, ejemplos por rol y mapa de módulos actuales. |
 | 2026-06-02 | 1.1 | Añadidas secciones: Flujo de proyecto por fases (12), Command Center tarjetas (13), NO IMPLEMENTAR TODAVÍA (18), Próxima fase (19). Añadidos módulos faltantes en las tres ramas. Ampliadas reglas UX (6). Renumeración de secciones. |
 | 2026-06-03 | 1.2 | Revisión contra 11 criterios. Corregida próxima fase a DATA.MODEL.1. Añadidos accesos rápidos a tarjetas. Añadidos cashflow/tesorería, cierre financiero, cost reports, transporte/alojamiento. |
+| 2026-06-03 | 1.3 | Unificada partición Rama 3: Postproducción+Entrega→Rama 3 con subáreas. Corregidos nombres de planes en §17 (Producer→Pro, Creator→Starter). |

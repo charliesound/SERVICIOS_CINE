@@ -127,7 +127,7 @@ El Productor Propietario puede conceder accesos temporales a una rama para un us
 - No puede invitar al rol de Productor Propietario.
 - No puede revocar al Productor Propietario.
 - No puede cambiar el rol del Productor Propietario.
-- No puede invitar usuarios a Rama 2 (Creativo y Rodaje) ni a Rama 3 (Postproducción) — solo lectura.
+- No puede invitar usuarios a Rama 2 (Creativo y Rodaje) ni a Rama 3 (Postproducción y Entrega) — solo lectura.
 - Su acceso a Rama 2 y Rama 3 es de solo lectura, salvo autorización expresa del Productor Propietario.
 
 ---
@@ -174,12 +174,19 @@ El Productor Propietario puede conceder accesos temporales a una rama para un us
 
 ### Estados de acceso de un proyecto
 
-| Estado | Descripción |
-|---|---|
-| `ACTIVO` | El proyecto acepta invitaciones y los miembros tienen acceso normal. |
-| `CONGELADO` | El proyecto no acepta nuevas invitaciones. Los miembros existentes mantienen acceso de solo lectura. |
-| `ARCHIVADO` | El proyecto es solo visible para el Productor Propietario y Admins de organización. Sin invitaciones ni modificaciones. |
-| `CERRADO` | Proyecto finalizado. Todos los accesos revocados excepto Productor Propietario. Visible solo para él. |
+| Estado (ID ES) | ID EN | Descripción |
+|---|---|---|
+| Activo | `ACTIVE` | El proyecto acepta invitaciones y los miembros tienen acceso normal. |
+| Congelado | `FROZEN` | El proyecto no acepta nuevas invitaciones. Los miembros existentes mantienen acceso de solo lectura. |
+| Archivado | `ARCHIVED` | El proyecto es solo visible para el Productor Propietario y Admins de organización. Sin invitaciones ni modificaciones. |
+| Cerrado | `CLOSED` | Proyecto finalizado. Todos los accesos revocados excepto Productor Propietario. Visible solo para él. |
+
+Transiciones esperadas:
+
+`PREPROD → ACTIVE → FROZEN → ACTIVE`
+`ACTIVE → WRAPPING → ARCHIVED → CLOSED`
+
+Los estados `PREPROD` (preparación inicial) y `WRAPPING` (cierre de producción) son estados operativos previos a `ACTIVE` y `ARCHIVED` respectivamente; no afectan al modelo de acceso más que para restringir invitaciones durante `WRAPPING`.
 
 ---
 
@@ -333,6 +340,7 @@ El Productor Propietario puede conceder accesos temporales a una rama para un us
 | **Starter** | 1 Productor Propietario | Hasta 9 usuarios (multi-rama ilimitado) | Acceso básico, sin accesos temporales, sin auditoría |
 | **Pro** | 1 Productor Propietario + 1 Productor Ejecutivo | Hasta 15 usuarios (multi-rama ilimitado) | Accesos temporales, invitaciones por Productor Ejecutivo |
 | **Studio** | 1 Productor Propietario + 1 Productor Ejecutivo | Hasta 30 usuarios (multi-rama ilimitado) | Accesos temporales, auditoría, roles secundarios |
+| **Premium** | 1 Productor Propietario + 1 Productor Ejecutivo | Hasta 50 usuarios (multi-rama ilimitado) | Prioridad, auditoría completa, roles secundarios, accesos temporales |
 | **Enterprise** | Configurable | Configurable | Todo lo anterior + RBAC personalizado, SSO, auditoría avanzada |
 
 ### Reglas de licencia
@@ -352,7 +360,10 @@ El Productor Propietario puede conceder accesos temporales a una rama para un us
 | **Starter** | 3 usuarios | 3 usuarios | 3 usuarios | Incluido en Rama 3 |
 | **Pro** | 5 usuarios | 5 usuarios | 5 usuarios | Incluido en Rama 3 |
 | **Studio** | 10 usuarios | 10 usuarios | 10 usuarios | Incluido en Rama 3 |
+| **Premium** | 15 usuarios | 15 usuarios | 15 usuarios | Incluido en Rama 3 |
 | **Enterprise** | Configurable | Configurable | Configurable | Configurable |
+
+**Nota sobre Rama 3:** La columna "Rama 3" unifica las subáreas **Postproducción** y **Entrega**. La columna "Comercialización" se incluye dentro del cómputo de capacidad de Rama 3 (guía UX) pero se expone como columna separada por su perfil de acceso específico.
 
 ---
 
@@ -468,7 +479,7 @@ Cada plan incluye un número fijo de usuarios que pueden acceder a cualquier ram
 |---|---|
 | **Cálculo** | `total_licencia = usuarios_activos_del_proyecto`, con tope fijo según plan. No hay cómputo por rama. |
 | **Ejemplo práctico** | Proyecto Starter (hasta 9 usuarios incluidos). 9 usuarios distribuidos en R1, R2, R3 sin importar cuántas ramas toque cada uno = 9 cómputos. |
-| **Techo por plan** | Límite global de usuarios por proyecto: 9 (Starter), 15 (Pro), 30 (Studio), Enterprise configurable. |
+| **Techo por plan** | Límite global de usuarios por proyecto: 9 (Starter), 15 (Pro), 30 (Studio), 50 (Premium), Enterprise configurable. |
 | **Multi-rama** | Ilimitado. Un usuario en N ramas sigue contando 1. |
 
 ### Comparación
@@ -545,10 +556,10 @@ Fundamentos:
 | Regla actual (§10) | Cambio propuesto |
 |---|---|
 | Cómputo por rama. Un usuario en N ramas cuenta N veces. | Cómputo por proyecto. Un usuario en N ramas cuenta 1 vez. |
-| Techos simétricos (3/5/10 por rama). | Techos globales: 9 (Starter), 15 (Pro), 30 (Studio). Enterprise configurable. |
+| Techos simétricos (3/5/10 por rama). | Techos globales: 9 (Starter), 15 (Pro), 30 (Studio), 50 (Premium). Enterprise configurable. |
 | Productor Propietario y Ejecutivo no computan. | Sin cambio. Se mantiene. |
 | Período de gracia de 30 días en downgrade. | Sin cambio. Se mantiene. |
-| — (nuevo) | Límites recomendados de usuarios por rama como guía UX (no como restricción de facturación): 3 (Starter), 5 (Pro), 10 (Studio). El sistema puede sugerir al Productor que no supere estos límites, pero no bloqueará la invitación. |
+| — (nuevo) | Límites recomendados de usuarios por rama como guía UX (no como restricción de facturación): 3 (Starter), 5 (Pro), 10 (Studio), 15 (Premium). El sistema puede sugerir al Productor que no supere estos límites, pero no bloqueará la invitación. |
 
 #### Riesgos de la recomendación
 
@@ -740,7 +751,7 @@ Productor evalúa y decide:
 | Riesgo | Descripción | Severidad | Probabilidad | Mitigación |
 |---|---|---|---|---|
 | **R1 — Modelo insuficiente para desarrollo** | El modelo de acceso no proporciona suficiente detalle para implementar un sistema de permisos real | Alta | Media | La próxima fase (REVIEW) debe identificar carencias |
-| **R2 — Límites de licencia ambiguos** | La definición de "usuario por rama" puede ser ambigua si un usuario pertenece a múltiples ramas | Media | Alta | Documentar que un usuario en N ramas cuenta N veces |
+| **R2 — Límites de licencia ambiguos** | La definición de "límite de licencia" puede ser ambigua si los usuarios están distribuidos en múltiples ramas | Media | Alta | Documentar que un usuario en N ramas cuenta 1 vez (Modelo C: cómputo por proyecto, multi-rama ilimitado) |
 | **R3 — Flujo de invitación incompleto** | No se definen flujos para invitaciones masivas, integración con directorio corporativo, o SCIM | Baja | Alta | Añadir en fase Enterprise |
 | **R4 — Periodo de gracia de 30 días** | El periodo de gracia para excedentes puede ser explotado para mantener acceso sin pagar | Media | Media | Limitar a una vez por proyecto; reiniciar si se hace upgrade |
 | **R5 — Conflictos con el modelo de datos existente** | Las entidades User, Role, Branch del modelo de datos pueden no alinearse con este modelo de acceso | Alta | Media | Validar alineación en la revisión cruzada de documentos |
@@ -754,3 +765,4 @@ Productor evalúa y decide:
 | Fecha | Versión | Cambios |
 |---|---|---|
 | 2026-06-02 | 1.0 | Creación inicial del modelo funcional de acceso con 12 secciones, matriz de permisos, flujos de invitación/revocación/cambio de rol/transferencia/solicitud, y 4 planes de licencia. |
+| 2026-06-03 | 1.1 | Añadido plan Premium (§10). Migrado Anexo C R2 a Model C (cómputo por proyecto). Unificados estados de proyecto con D2 (§6). Rama 3 actualizada a "Postproducción y Entrega". |

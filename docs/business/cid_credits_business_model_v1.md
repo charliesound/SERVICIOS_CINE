@@ -475,6 +475,7 @@ Los créditos fraccionarios se redondean al alza (0.1 crédito consumido = 1 cr�
 | **Starter** | 100 créditos/mes | No | Cola estándar | Storyboard, Image Gen, Transcripción, Análisis IA, OCR. Sin Video Gen, sin Voice Cloning, sin Agentes. |
 | **Pro** | 300 créditos/mes | No | Cola estándar | Todo excepto Entrenamiento personalizado. Voice Cloning hasta 3 voces. |
 | **Studio** | 1 000 créditos/mes | Hasta 500 créditos no usados al mes siguiente | Cola prioritaria | Todo excepto Entrenamiento personalizado. Voice Cloning hasta 10 voces. |
+| **Premium** | 3 000 créditos/mes | Hasta 1 000 créditos no usados al mes siguiente | Cola prioritaria | Todo excepto Entrenamiento personalizado. Voice Cloning ilimitado. Auditoría completa. |
 | **Enterprise** | Personalizado (mín. 3 000) | Sí, sin límite | Cola dedicada | Todo incluido. Entrenamiento personalizado. Prioridad en generación de video. |
 
 ### Reglas de créditos incluidos
@@ -728,3 +729,4 @@ Los créditos fraccionarios se redondean al alza (0.1 crédito consumido = 1 cr�
 | Fecha | Versión | Cambios |
 |---|---|---|
 | 2026-06-02 | 1.0 | Creación inicial del modelo de negocio de créditos IA con 29 secciones. |
+| 2026-06-03 | 1.1 | Añadido plan Premium: §20 (3.000 créditos/mes, acumulación 1.000, cola prioritaria, Voice Cloning ilimitado). 5 planes alineados con Access Model y Pricing. |

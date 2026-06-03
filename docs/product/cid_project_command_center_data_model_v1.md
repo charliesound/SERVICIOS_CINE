@@ -1147,16 +1147,17 @@ El estado `BLOQUEADO` es un hito que habilita la generación de storyboard y des
 
 ### Estados de Project
 
-`PREPROD` → `ACTIVE` → `ON_HOLD` → `ACTIVE`
-`ACTIVE` → `WRAPPING` → `COMPLETED` (terminal)
+`PREPROD` → `ACTIVE` → `FROZEN` → `ACTIVE`
+`ACTIVE` → `WRAPPING` → `ARCHIVED` → `CLOSED`
 
-| Estado | Descripción |
-|---|---|
-| `PREPROD` | Preparación inicial. Script en desarrollo, presupuesto en elaboración. |
-| `ACTIVE` | Producción activa. Rodaje o postproducción en curso. |
-| `ON_HOLD` | Pausado temporalmente. Acceso de solo lectura. |
-| `WRAPPING` | Cierre de producción. Últimos entregables. |
-| `COMPLETED` | Proyecto finalizado. Sin modificaciones. |
+| Estado (ID EN) | Etiqueta ES | Descripción |
+|---|---|---|
+| `PREPROD` | Preproducción | Preparación inicial. Script en desarrollo, presupuesto en elaboración. |
+| `ACTIVE` | Activo | Producción activa. Rodaje o postproducción en curso. Acepta invitaciones. |
+| `FROZEN` | Congelado | Pausado temporalmente. Acceso de solo lectura. No acepta invitaciones. |
+| `WRAPPING` | Cierre | Cierre de producción. Últimos entregables. Invitaciones restringidas. |
+| `ARCHIVED` | Archivado | Proyecto finalizado. Solo visible para Productor Propietario y Admins. Sin modificaciones. |
+| `CLOSED` | Cerrado | Proyecto terminado. Todos los accesos revocados excepto Productor Propietario. |
 
 ### Estados de Task
 
@@ -1346,3 +1347,4 @@ La tabla muestra qué entidades puede ver cada rol, en qué nivel de detalle. Ba
 | 2026-06-02 | 1.0 | Creación inicial con 16 entidades + 2 sub-entidades. |
 | 2026-06-03 | 2.0 | Revisión completa: 26 entidades + 5 sub-entidades. Añadidas ScriptAnalysis, CharacterBible, VisualBible, Sequence, Shot, ShootingDay, DistributionPackage, FestivalStrategy, SalesStrategy, CreditConsumption, CreditPool, FundingOpportunity. Añadidas secciones de visibilidad por rol, dependencias, métricas y principios. Marcadas dependencias pendientes de verificación para FundingOpportunity. |
 | 2026-06-03 | 2.1 | Revisión DATA.MODEL.REVIEW.1: añadida nota aclaratoria sobre promoción de Sequence a entidad independiente (ver §19), corregida próxima fase para evitar referencia circular. Sin cambios estructurales. |
+| 2026-06-03 | 2.2 | Estados de proyecto unificados con Access Model (§30): ON_HOLD→FROZEN, COMPLETED→ARCHIVED+CLOSED. Tabla con ID EN + etiqueta ES. |

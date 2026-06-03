@@ -22,12 +22,18 @@ type DashboardModuleView = {
   summary: string
 }
 
+type BranchMetricConfig = {
+  labelKey: string
+  moduleKey?: string
+}
+
 type BranchConfig = {
   key: BranchKey
   titleKey: string
   descriptionKey: string
   icon: typeof Film
   notes: string[]
+  metrics: BranchMetricConfig[]
   modules: Array<{
     key: string
     route: string
@@ -60,6 +66,48 @@ function getModuleLabel(key: string) {
   return translated === translationKey ? formatModuleLabel(key) : translated
 }
 
+function getMetricStatusLabel(status?: string) {
+  if (!status) return t('internal.commandCenter.metricStates.comingSoon')
+
+  const translationKey = `internal.commandCenter.metricStates.${status}`
+  const translated = t(translationKey)
+
+  return translated === translationKey
+    ? t('internal.commandCenter.metricStates.inProgress')
+    : translated
+}
+
+function getBranchState(modules: DashboardModuleView[]) {
+  const statuses = modules.map((module) => module.status)
+
+  if (statuses.length === 0) return 'starting'
+  if (statuses.some((status) => status === 'missing' || status === 'warning' || status === 'locked')) return 'attention'
+  if (statuses.every((status) => status === 'ready' || status === 'approved')) return 'healthy'
+  return 'inProgress'
+}
+
+function getBranchStateClasses(state: string) {
+  switch (state) {
+    case 'healthy':
+      return 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200'
+    case 'attention':
+      return 'border-amber-400/20 bg-amber-400/10 text-amber-200'
+    default:
+      return 'border-sky-400/20 bg-sky-400/10 text-sky-200'
+  }
+}
+
+function getBranchRiskKey(state: string) {
+  switch (state) {
+    case 'healthy':
+      return 'internal.commandCenter.riskStates.low'
+    case 'attention':
+      return 'internal.commandCenter.riskStates.high'
+    default:
+      return 'internal.commandCenter.riskStates.medium'
+  }
+}
+
 export default function ProjectDashboardPage() {
   const { projectId = '' } = useParams()
   const dashboardQuery = useProjectDashboard(projectId)
@@ -88,6 +136,12 @@ export default function ProjectDashboardPage() {
         t('internal.commandCenter.branches.rama1.note1'),
         t('internal.commandCenter.branches.rama1.note2'),
       ],
+      metrics: [
+        { labelKey: 'internal.commandCenter.metrics.funding', moduleKey: 'funding' },
+        { labelKey: 'internal.commandCenter.metrics.budget', moduleKey: 'budget' },
+        { labelKey: 'internal.commandCenter.metrics.documents' },
+        { labelKey: 'internal.commandCenter.metrics.preparationShoot' },
+      ],
       modules: [
         { key: 'budget', route: `/projects/${projectId}/budget` },
         { key: 'funding', route: `/projects/${projectId}/funding` },
@@ -103,6 +157,12 @@ export default function ProjectDashboardPage() {
         t('internal.commandCenter.branches.rama2.note1'),
         t('internal.commandCenter.branches.rama2.note2'),
       ],
+      metrics: [
+        { labelKey: 'internal.commandCenter.metrics.script', moduleKey: 'script' },
+        { labelKey: 'internal.commandCenter.metrics.breakdown', moduleKey: 'breakdown' },
+        { labelKey: 'internal.commandCenter.metrics.storyboard', moduleKey: 'storyboard' },
+        { labelKey: 'internal.commandCenter.metrics.continuity' },
+      ],
       modules: [
         { key: 'script', route: `/projects/${projectId}` },
         { key: 'breakdown', route: `/projects/${projectId}/breakdown` },
@@ -117,6 +177,12 @@ export default function ProjectDashboardPage() {
       notes: [
         t('internal.commandCenter.branches.rama3.note1'),
         t('internal.commandCenter.branches.rama3.note2'),
+      ],
+      metrics: [
+        { labelKey: 'internal.commandCenter.metrics.editorial', moduleKey: 'editorial' },
+        { labelKey: 'internal.commandCenter.metrics.delivery' },
+        { labelKey: 'internal.commandCenter.metrics.distribution', moduleKey: 'distribution' },
+        { labelKey: 'internal.commandCenter.metrics.sales', moduleKey: 'crm' },
       ],
       modules: [
         { key: 'editorial', route: `/projects/${projectId}/editorial` },
@@ -148,6 +214,12 @@ export default function ProjectDashboardPage() {
   const data = dashboardQuery.data
   const activeBranchConfig = branches.find((branch) => branch.key === activeBranch) ?? branches[0]
   const activeRole = data.role_dashboard?.active_role || t('internal.commandCenter.roleFallback')
+  const activeModules = activeBranchConfig.modules.map((module) => modules[module.key]).filter(Boolean)
+  const activeBranchState = getBranchState(activeModules)
+  const nextActionModule = activeBranchConfig.modules.find((module) => {
+    const status = modules[module.key]?.status
+    return !status || !['ready', 'approved'].includes(status)
+  }) ?? activeBranchConfig.modules[0]
 
   return (
     <div className="space-y-8">
@@ -255,12 +327,27 @@ export default function ProjectDashboardPage() {
                   <div className="rounded-2xl bg-dark-300/80 p-3 text-amber-300">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${isActive ? 'bg-amber-400/15 text-amber-200' : 'bg-white/8 text-slate-300'}`}>
-                    {isActive ? t('internal.commandCenter.activeBranch') : t('internal.commandCenter.openBranch')}
+                  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getBranchStateClasses(getBranchState(branch.modules.map((module) => modules[module.key]).filter(Boolean)))}`}>
+                    {t(`internal.commandCenter.branchStates.${getBranchState(branch.modules.map((module) => modules[module.key]).filter(Boolean))}`)}
                   </span>
                 </div>
                 <h3 className="mt-4 text-lg font-semibold text-white">{t(branch.titleKey)}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-400">{t(branch.descriptionKey)}</p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {branch.metrics.map((metric) => {
+                    const status = metric.moduleKey ? modules[metric.moduleKey]?.status : undefined
+                    return (
+                      <div key={metric.labelKey} className="rounded-xl border border-white/8 bg-dark-300/40 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{t(metric.labelKey)}</p>
+                        <p className="mt-2 text-sm font-semibold text-white">{getMetricStatusLabel(status)}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="mt-4 space-y-2 text-sm">
+                  <p className="text-slate-400">{t('internal.commandCenter.riskLabel')}</p>
+                  <p className="font-medium text-white">{t(getBranchRiskKey(getBranchState(branch.modules.map((module) => modules[module.key]).filter(Boolean))))}</p>
+                </div>
               </button>
             )
           })}
@@ -276,6 +363,23 @@ export default function ProjectDashboardPage() {
             <div>
               <h2 className="heading-md">{t(activeBranchConfig.titleKey)}</h2>
               <p className="text-slate-400">{t('internal.commandCenter.branchSummaryTitle')}</p>
+            </div>
+            <span className={`ml-auto rounded-full border px-3 py-1 text-xs font-semibold ${getBranchStateClasses(activeBranchState)}`}>
+              {t(`internal.commandCenter.branchStates.${activeBranchState}`)}
+            </span>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-[0.7fr_0.3fr]">
+            <div className="rounded-2xl border border-white/8 bg-dark-300/40 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{t('internal.commandCenter.nextActionTitle')}</p>
+              <Link to={nextActionModule.route} className="mt-3 block text-base font-semibold text-white underline-offset-4 hover:underline">
+                {getModuleLabel(nextActionModule.key)}
+              </Link>
+              <p className="mt-2 text-sm text-slate-400">{t('internal.commandCenter.nextActionDescription')}</p>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-dark-300/40 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{t('internal.commandCenter.riskLabel')}</p>
+              <p className="mt-3 text-base font-semibold text-white">{t(getBranchRiskKey(activeBranchState))}</p>
             </div>
           </div>
 

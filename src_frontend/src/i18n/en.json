@@ -2082,6 +2082,46 @@
       "comingSoon": "Coming soon",
       "warningsTitle": "Risks and warnings",
       "moduleFallback": "Summary not available yet.",
+      "riskLabel": "Risk summary",
+      "nextActionTitle": "Recommended next action",
+      "nextActionDescription": "Use an existing real entry point to move this branch forward without fake flows.",
+      "branchStates": {
+        "healthy": "Stable",
+        "inProgress": "In progress",
+        "attention": "Needs attention",
+        "starting": "Starting"
+      },
+      "riskStates": {
+        "low": "Risk under control",
+        "medium": "There are fronts still being consolidated",
+        "high": "There are dependencies or blockers to review"
+      },
+      "metricStates": {
+        "ready": "Ready",
+        "approved": "Approved",
+        "partial": "Partial",
+        "pending": "Pending",
+        "missing": "Missing",
+        "warning": "Attention",
+        "locked": "Restricted",
+        "needs_review": "Review",
+        "inProgress": "In progress",
+        "comingSoon": "Coming soon"
+      },
+      "metrics": {
+        "funding": "Funding",
+        "budget": "Budget",
+        "documents": "Documentation",
+        "preparationShoot": "Shoot prep",
+        "script": "Script",
+        "breakdown": "Breakdown",
+        "storyboard": "Storyboard",
+        "continuity": "Continuity",
+        "editorial": "Editorial",
+        "delivery": "Delivery",
+        "distribution": "Distribution",
+        "sales": "Sales"
+      },
       "modules": {
         "budget": "Budget",
         "funding": "Funding",
@@ -2107,14 +2147,14 @@
         },
         "rama2": {
           "title": "Creative & Shooting",
-          "description": "Script, breakdown, storyboard and creative shooting execution.",
-          "note1": "This branch can generate impacts on Production when scene or shooting needs change.",
+          "description": "Script, directing, storyboard, breakdown, visual bible, raccord, continuity and creative shooting execution.",
+          "note1": "This branch covers script, directing, visual bible, raccord and continuity, and can generate impacts on Production when scene or shooting needs change.",
           "note2": "The shell reuses existing modules as real entry points."
         },
         "rama3": {
           "title": "Postproduction, Delivery & Commercialization",
-          "description": "Editorial, distribution, delivery and commercial follow-up.",
-          "note1": "It groups post, delivery and commercialization into one functional branch for this first shell.",
+          "description": "Editorial assembly, delivery, distribution, festivals, sales and CRM.",
+          "note1": "It groups editorial assembly, delivery, distribution, festivals, sales and CRM into one functional branch for this first shell.",
           "note2": "It can also generate impacts on other branches when deliverables or commercial commitments change."
         }
       }

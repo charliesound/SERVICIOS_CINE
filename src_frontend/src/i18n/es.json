@@ -2082,6 +2082,46 @@
       "comingSoon": "Proximamente",
       "warningsTitle": "Riesgos y avisos",
       "moduleFallback": "Resumen no disponible todavia.",
+      "riskLabel": "Riesgo resumido",
+      "nextActionTitle": "Siguiente accion recomendada",
+      "nextActionDescription": "Usa un acceso real existente para avanzar esta rama sin crear flujos falsos.",
+      "branchStates": {
+        "healthy": "Estable",
+        "inProgress": "En progreso",
+        "attention": "Requiere atencion",
+        "starting": "Arranque"
+      },
+      "riskStates": {
+        "low": "Riesgo controlado",
+        "medium": "Hay frentes por consolidar",
+        "high": "Hay dependencias o bloqueos que revisar"
+      },
+      "metricStates": {
+        "ready": "Listo",
+        "approved": "Aprobado",
+        "partial": "Parcial",
+        "pending": "Pendiente",
+        "missing": "Falta",
+        "warning": "Atencion",
+        "locked": "Restringido",
+        "needs_review": "Revision",
+        "inProgress": "En progreso",
+        "comingSoon": "Proximamente"
+      },
+      "metrics": {
+        "funding": "Financiacion",
+        "budget": "Presupuesto",
+        "documents": "Documentacion",
+        "preparationShoot": "Preparacion rodaje",
+        "script": "Guion",
+        "breakdown": "Desglose",
+        "storyboard": "Storyboard",
+        "continuity": "Continuidad",
+        "editorial": "Editorial",
+        "delivery": "Delivery",
+        "distribution": "Distribucion",
+        "sales": "Ventas"
+      },
       "modules": {
         "budget": "Presupuesto",
         "funding": "Financiacion",
@@ -2107,14 +2147,14 @@
         },
         "rama2": {
           "title": "Creativo & Rodaje",
-          "description": "Guion, desglose, storyboard y ejecucion creativa del rodaje.",
-          "note1": "Esta rama puede generar impactos sobre Produccion cuando cambian necesidades de escena o rodaje.",
+          "description": "Guion, direccion, storyboard, breakdown, visual bible, raccord, continuidad y ejecucion creativa del rodaje.",
+          "note1": "Esta rama cubre guion, direccion, visual bible, raccord y continuidad, y puede generar impactos sobre Produccion cuando cambian necesidades de escena o rodaje.",
           "note2": "La shell usa los modulos ya existentes como puntos de entrada reales."
         },
         "rama3": {
           "title": "Postproduccion, Entrega & Comercializacion",
-          "description": "Editorial, distribucion, entrega y seguimiento comercial.",
-          "note1": "Agrupa post, delivery y comercializacion en una sola rama funcional para esta primera shell.",
+          "description": "Montaje editorial, delivery, distribucion, festivales, ventas y CRM.",
+          "note1": "Agrupa montaje/editorial, delivery, distribucion, festivales, ventas y CRM en una sola rama funcional para esta primera shell.",
           "note2": "Tambien puede generar impactos sobre otras ramas cuando cambian entregables o compromisos comerciales."
         }
       }

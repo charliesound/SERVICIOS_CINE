@@ -321,7 +321,7 @@ D2 §29 CreditPool tiene `organizationId` como campo y relación 0:1 con Organiz
 
 ### GO con retoques (desde v1.1)
 
-Las 4 contradicciones críticas (C1–C4) fueron resueltas en **CID.PRODUCT.ARCHITECTURE.CROSS.DOCUMENT.RESOLUTION.1**. 
+Las 4 contradicciones críticas (C1–C4) fueron resueltas en **CID.PRODUCT.ARCHITECTURE.CROSS.DOCUMENT.RESOLUTION.1**.
 
 Se autoriza el inicio de implementación del Command Center frontend. Quedan como trabajo posterior los siguientes retoques no bloqueantes: M3, M4, N1, N3, L1–L4.
 

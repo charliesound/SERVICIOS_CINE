@@ -2070,12 +2070,43 @@
       "branchImpactTitle": "BranchImpact / Impact requests",
       "branchImpactDescription": "Visual placeholder for cross-branch impacts.",
       "branchImpactPlaceholder": "Impact requests between Production, Creative and Post will appear here once the real flow exists.",
+      "branchImpactNoWorkflow": "There is no real workflow yet: this view only illustrates how cross-branch requests could look.",
+      "branchImpactStates": {
+        "pending": "Pending review",
+        "evaluating": "Under evaluation",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "branchImpactStateDescriptions": {
+        "pending": "Conceptual request created and waiting for team review.",
+        "evaluating": "Impact being assessed across branches before a decision is made.",
+        "approved": "Change conceptually accepted, pending a future workflow.",
+        "rejected": "Conceptually discarded because of cost, timing or scope."
+      },
+      "branchImpactExamples": {
+        "creativeBudget": {
+          "title": "Branch 2 -> Branch 1",
+          "description": "A creative change can affect budget, hiring or production logistics."
+        },
+        "productionCreative": {
+          "title": "Branch 1 -> Branch 2",
+          "description": "A production constraint can force adjustments to creative or shooting decisions."
+        },
+        "postCostSales": {
+          "title": "Branch 3 -> Branch 1",
+          "description": "A post or delivery change can impact costs, schedule or sales commitments."
+        }
+      },
       "creditPoolTitle": "CreditPool / Project AI credits",
       "creditPoolDescription": "Safe placeholder for per-project AI usage, separate from plans and licenses.",
       "creditPoolAvailable": "Available",
       "creditPoolUsage": "Monthly usage",
+      "creditPoolRemaining": "Remaining",
+      "creditPoolAlerts": "Future alerts",
       "creditPoolPlaceholder": "Coming soon",
       "notAvailableYet": "No real data yet",
+      "creditPoolSeparateNote": "Project AI credits are intended as a layer separate from licenses and users.",
+      "creditPoolNoRealData": "There is still no real data or active usage logic on this screen.",
       "futureVisibilityTitle": "Role visibility",
       "futureVisibilityDescription": "Visual placeholder for future branch-based visibility.",
       "futureVisibilityPlaceholder": "Producer and Executive Producer keep a global view. Fine-grained branch visibility will arrive in a later phase.",

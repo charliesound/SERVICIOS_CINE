@@ -2070,12 +2070,43 @@
       "branchImpactTitle": "BranchImpact / Solicitudes de impacto",
       "branchImpactDescription": "Placeholder visual para impactos entre ramas.",
       "branchImpactPlaceholder": "Aqui apareceran las solicitudes entre Produccion, Creativo y Post cuando exista el flujo real.",
+      "branchImpactNoWorkflow": "No hay workflow real todavia: esta vista solo ilustra como podrian verse las solicitudes entre ramas.",
+      "branchImpactStates": {
+        "pending": "Pendiente de revision",
+        "evaluating": "En evaluacion",
+        "approved": "Aprobado",
+        "rejected": "Rechazado"
+      },
+      "branchImpactStateDescriptions": {
+        "pending": "Solicitud conceptual creada, a la espera de que el equipo la revise.",
+        "evaluating": "Impacto bajo analisis entre ramas antes de tomar una decision.",
+        "approved": "Cambio aceptado conceptualmente, pendiente de workflow futuro.",
+        "rejected": "Cambio descartado conceptualmente por coste, tiempo o alcance."
+      },
+      "branchImpactExamples": {
+        "creativeBudget": {
+          "title": "Rama 2 -> Rama 1",
+          "description": "Un cambio creativo puede afectar presupuesto, contratacion o logistica de produccion."
+        },
+        "productionCreative": {
+          "title": "Rama 1 -> Rama 2",
+          "description": "Una restriccion de produccion puede obligar a ajustar decisiones creativas o de rodaje."
+        },
+        "postCostSales": {
+          "title": "Rama 3 -> Rama 1",
+          "description": "Un cambio de post o delivery puede impactar costes, calendario o compromisos de ventas."
+        }
+      },
       "creditPoolTitle": "CreditPool / Creditos IA del proyecto",
       "creditPoolDescription": "Placeholder seguro para el consumo IA por proyecto, separado de planes y licencias.",
       "creditPoolAvailable": "Disponibles",
       "creditPoolUsage": "Uso mensual",
+      "creditPoolRemaining": "Restantes",
+      "creditPoolAlerts": "Alertas futuras",
       "creditPoolPlaceholder": "Proximamente",
       "notAvailableYet": "Sin datos reales",
+      "creditPoolSeparateNote": "Los creditos IA del proyecto se plantean como una capa separada de licencias y usuarios.",
+      "creditPoolNoRealData": "Todavia no hay datos reales ni logica activa de consumo en esta pantalla.",
       "futureVisibilityTitle": "Visibilidad por rol",
       "futureVisibilityDescription": "Placeholder visual para la visibilidad futura por rama.",
       "futureVisibilityPlaceholder": "Productor y Productor Ejecutivo mantienen vision global. El filtrado fino por rama llegara en una fase posterior.",

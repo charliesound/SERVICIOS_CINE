@@ -425,13 +425,32 @@ export default function ProjectDashboardPage() {
                 <h2 className="heading-md">{t('internal.commandCenter.branchImpactTitle')}</h2>
                 <p className="text-slate-400">{t('internal.commandCenter.branchImpactDescription')}</p>
               </div>
+              <span className="ml-auto rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-200">
+                {t('internal.commandCenter.comingSoon')}
+              </span>
             </div>
             <div className="mt-5 rounded-2xl border border-dashed border-white/10 bg-dark-300/40 p-5 text-sm text-slate-400">
-              {t('internal.commandCenter.branchImpactPlaceholder')}
+              <p>{t('internal.commandCenter.branchImpactPlaceholder')}</p>
+              <p className="mt-3 text-slate-300">{t('internal.commandCenter.branchImpactNoWorkflow')}</p>
             </div>
-            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">
-              {t('internal.commandCenter.comingSoon')}
-            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {['pending', 'evaluating', 'approved', 'rejected'].map((state) => (
+                <div key={state} className="rounded-2xl border border-white/8 bg-dark-300/40 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                    {t(`internal.commandCenter.branchImpactStates.${state}`)}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-300">{t(`internal.commandCenter.branchImpactStateDescriptions.${state}`)}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 space-y-3">
+              {['creativeBudget', 'productionCreative', 'postCostSales'].map((example) => (
+                <div key={example} className="rounded-2xl border border-white/8 bg-dark-300/40 p-4">
+                  <p className="text-sm font-semibold text-white">{t(`internal.commandCenter.branchImpactExamples.${example}.title`)}</p>
+                  <p className="mt-2 text-sm text-slate-400">{t(`internal.commandCenter.branchImpactExamples.${example}.description`)}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="rounded-[1.8rem] border border-white/8 bg-white/[0.03] p-6">
@@ -441,6 +460,9 @@ export default function ProjectDashboardPage() {
                 <h2 className="heading-md">{t('internal.commandCenter.creditPoolTitle')}</h2>
                 <p className="text-slate-400">{t('internal.commandCenter.creditPoolDescription')}</p>
               </div>
+              <span className="ml-auto rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-200">
+                {t('internal.commandCenter.comingSoon')}
+              </span>
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-white/8 bg-dark-300/40 p-4">
@@ -451,10 +473,19 @@ export default function ProjectDashboardPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{t('internal.commandCenter.creditPoolUsage')}</p>
                 <p className="mt-2 text-2xl font-semibold text-white">{t('internal.commandCenter.notAvailableYet')}</p>
               </div>
+              <div className="rounded-2xl border border-white/8 bg-dark-300/40 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{t('internal.commandCenter.creditPoolRemaining')}</p>
+                <p className="mt-2 text-2xl font-semibold text-white">{t('internal.commandCenter.creditPoolPlaceholder')}</p>
+              </div>
+              <div className="rounded-2xl border border-white/8 bg-dark-300/40 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{t('internal.commandCenter.creditPoolAlerts')}</p>
+                <p className="mt-2 text-2xl font-semibold text-white">{t('internal.commandCenter.notAvailableYet')}</p>
+              </div>
             </div>
-            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">
-              {t('internal.commandCenter.comingSoon')}
-            </p>
+            <div className="mt-5 rounded-2xl border border-dashed border-white/10 bg-dark-300/40 p-5 text-sm text-slate-400">
+              <p>{t('internal.commandCenter.creditPoolSeparateNote')}</p>
+              <p className="mt-3 text-slate-300">{t('internal.commandCenter.creditPoolNoRealData')}</p>
+            </div>
           </div>
 
           <div className="rounded-[1.8rem] border border-white/8 bg-white/[0.03] p-6">

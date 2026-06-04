@@ -336,6 +336,6 @@ async def can_approve_async(
     return False
 
 
-def can_approve(approver_role: str, target_module: str) -> bool:
-    """Sync wrapper for can_approve_async."""
-    return True
+async def can_approve(approver_role: str, target_module: str) -> bool:
+    """Check if a role can approve changes to a module."""
+    return await can_approve_async(approver_role, target_module)

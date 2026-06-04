@@ -6,11 +6,18 @@ from typing import Optional
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from database import get_db
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_organization,
+    validate_project_access,
+    require_write_permission,
+)
+from models.core import Project
 from models.change_governance import ProjectChangeRequest, CHANGE_REQUEST_STATUSES
+from schemas.auth_schema import TenantContext
 from services.change_governance_service import (
     create_change_request,
     list_change_requests,
@@ -23,7 +30,11 @@ from services.change_governance_service import (
 )
 
 
-router = APIRouter(prefix="/api/projects/{project_id}/change-requests", tags=["change-requests"])
+router = APIRouter(
+    prefix="/api/projects/{project_id}/change-requests",
+    tags=["change-requests"],
+    dependencies=[Depends(get_tenant_context)],
+)
 
 
 class CreateChangeRequestPayload(BaseModel):
@@ -54,12 +65,10 @@ async def list_change_requests_endpoint(
     status: Optional[str] = None,
     target_module: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
 ):
     """List change requests for a project."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     requests = await list_change_requests(db, project_id, status, target_module)
     return {
         "change_requests": [
@@ -87,26 +96,13 @@ async def create_change_request_endpoint(
     project_id: str,
     payload: CreateChangeRequestPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
+    _: TenantContext = Depends(require_write_permission),
 ):
     """Create a new change request."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    from models.core import User
-    from sqlalchemy import select
-    result = await db.execute(select(User).where(User.id == current_user.user_id))
-    user = result.scalar_one_or_none()
-    user_role = user.role if user else "viewer"
-    
-    if not can_approve(user_role, payload.target_module):
+    if not await can_approve(tenant.role, payload.target_module):
         raise HTTPException(status_code=403, detail="Cannot create change request")
-    
-    from models.core import Project
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
     
     request = await create_change_request(
         db, project_id, project.organization_id,
@@ -120,7 +116,7 @@ async def create_change_request_endpoint(
         after_json=payload.after_json,
         impact_json=payload.impact_json,
         recommended_action=payload.recommended_action,
-        created_by=current_user.user_id,
+        created_by=tenant.user_id,
         source_id=payload.source_id,
     )
     
@@ -135,14 +131,10 @@ async def get_change_request(
     project_id: str,
     change_request_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
 ):
     """Get a change request."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    from sqlalchemy import select
-    from models.change_governance import ProjectChangeRequest
     result = await db.execute(
         select(ProjectChangeRequest).where(ProjectChangeRequest.id == change_request_id)
     )
@@ -176,20 +168,11 @@ async def approve_change_request_endpoint(
     change_request_id: str,
     payload: ApprovePayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
+    _: TenantContext = Depends(require_write_permission),
 ):
     """Approve a change request."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    from models.core import User
-    from sqlalchemy import select
-    result = await db.execute(select(User).where(User.id == current_user.user_id))
-    user = result.scalar_one_or_none()
-    user_role = user.role if user else "viewer"
-    
-    from sqlalchemy import select
-    from models.change_governance import ProjectChangeRequest
     result = await db.execute(
         select(ProjectChangeRequest).where(ProjectChangeRequest.id == change_request_id)
     )
@@ -198,11 +181,11 @@ async def approve_change_request_endpoint(
     if not request or request.project_id != project_id:
         raise HTTPException(status_code=404, detail="Change request not found")
     
-    if not can_approve(user_role, request.target_module):
+    if not await can_approve(tenant.role, request.target_module):
         raise HTTPException(status_code=403, detail="Cannot approve this module")
     
     request = await approve_change_request(
-        db, change_request_id, current_user.user_id, user_role, payload.comment
+        db, change_request_id, tenant.user_id, tenant.role, payload.comment
     )
     
     return {
@@ -217,20 +200,11 @@ async def reject_change_request_endpoint(
     change_request_id: str,
     payload: RejectPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
+    _: TenantContext = Depends(require_write_permission),
 ):
     """Reject a change request."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    from models.core import User
-    from sqlalchemy import select
-    result = await db.execute(select(User).where(User.id == current_user.user_id))
-    user = result.scalar_one_or_none()
-    user_role = user.role if user else "viewer"
-    
-    from sqlalchemy import select
-    from models.change_governance import ProjectChangeRequest
     result = await db.execute(
         select(ProjectChangeRequest).where(ProjectChangeRequest.id == change_request_id)
     )
@@ -239,11 +213,11 @@ async def reject_change_request_endpoint(
     if not request or request.project_id != project_id:
         raise HTTPException(status_code=404, detail="Change request not found")
     
-    if not can_approve(user_role, request.target_module):
+    if not await can_approve(tenant.role, request.target_module):
         raise HTTPException(status_code=403, detail="Cannot reject this module")
     
     request = await reject_change_request(
-        db, change_request_id, current_user.user_id, user_role, payload.comment
+        db, change_request_id, tenant.user_id, tenant.role, payload.comment
     )
     
     return {
@@ -257,11 +231,17 @@ async def apply_change(
     project_id: str,
     change_request_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
+    _: TenantContext = Depends(require_write_permission),
 ):
     """Apply an approved change."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    result = await db.execute(
+        select(ProjectChangeRequest).where(ProjectChangeRequest.id == change_request_id)
+    )
+    cr = result.scalar_one_or_none()
+    if not cr or cr.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Change request not found")
     
     request = await apply_approved_change(db, change_request_id)
     

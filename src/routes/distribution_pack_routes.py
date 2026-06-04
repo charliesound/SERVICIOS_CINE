@@ -10,8 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
 from models.core import Project
-from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from services.distribution_pack_service import (
     generate_distribution_pack,
@@ -51,6 +55,7 @@ async def list_distribution_packs_endpoint(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     packs = await list_distribution_packs(db, project_id)
     return JSONResponse(content={
@@ -74,14 +79,9 @@ async def generate_distribution_pack_endpoint(
     project_id: str,
     payload: GenerateDistributionPayload,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await db.get(Project, project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible")
-
     if payload.pack_type not in PACK_TYPE:
         raise HTTPException(status_code=400, detail="Invalid pack type")
 
@@ -109,6 +109,7 @@ async def get_distribution_pack_endpoint(
     pack_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_distribution_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -142,7 +143,8 @@ async def update_distribution_pack_endpoint(
     pack_id: str,
     payload: DistributionPackUpdate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_distribution_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -164,7 +166,8 @@ async def approve_distribution_pack_endpoint(
     project_id: str,
     pack_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_distribution_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -186,7 +189,8 @@ async def archive_distribution_pack_endpoint(
     project_id: str,
     pack_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_distribution_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -209,6 +213,7 @@ async def export_distribution_pack_json_endpoint(
     pack_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_distribution_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -223,6 +228,7 @@ async def export_distribution_pack_markdown_endpoint(
     pack_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_distribution_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -238,6 +244,7 @@ async def export_distribution_pack_zip_endpoint(
     pack_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_distribution_pack(db, pack_id)
     if not pack or pack.project_id != project_id:

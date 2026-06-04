@@ -12,9 +12,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
+from models.core import Project
 from models.storage import MediaAsset
 from models.storyboard import StoryboardShot
-from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.shot_schema import StoryboardShotListResponse, StoryboardShotResponse
 from schemas.storyboard_schema import (
@@ -72,7 +77,10 @@ from services.storyboard_trace_service import storyboard_trace_service
 router = APIRouter(
     prefix="/api/projects",
     tags=["storyboard"],
-    dependencies=[Depends(require_module_access("storyboard_ai"))],
+    dependencies=[
+        Depends(get_tenant_context),
+        Depends(require_module_access("storyboard_ai")),
+    ],
 )
 
 
@@ -125,6 +133,7 @@ async def get_storyboard_options(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardOptionsResponse:
     payload = await storyboard_service.get_storyboard_options(
         db,
@@ -139,6 +148,7 @@ async def list_storyboard_sequences(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ) -> list[StoryboardSequenceResponse]:
     sequences = await storyboard_service.list_storyboard_sequences(
         db,
@@ -234,7 +244,8 @@ async def generate_storyboard(
     project_id: str,
     payload: StoryboardGenerateRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardJobResponse:
     mode = (payload.generation_mode or payload.mode or "").upper()
     has_sequence = bool(payload.sequence_id or payload.sequence_ids)
@@ -309,9 +320,9 @@ async def estimate_storyboard_credits(
     project_id: str,
     payload: StoryboardCreditEstimateRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ) -> StoryboardCreditEstimateResponse:
-    project = await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
     analysis_data = await storyboard_service._get_analysis_payload(db, project)
     scenes = analysis_data.get("scenes") or []
     sequence_blocks = storyboard_service._sequence_blocks_from_analysis(analysis_data)
@@ -372,10 +383,9 @@ async def plan_sequence_storyboard(
     sequence_id: str,
     payload: StoryboardSequencePlanRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ) -> SequenceStoryboardPlan:
-    await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
-    project = await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
     analysis_data = await storyboard_service._get_analysis_payload(db, project)
     scenes_raw = analysis_data.get("scenes", [])
     script_text = project.script_text or ""
@@ -406,7 +416,8 @@ async def generate_sequence_storyboard(
     sequence_id: str,
     payload: StoryboardGenerateRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardJobResponse:
     if not sequence_id:
         raise HTTPException(
@@ -462,7 +473,8 @@ async def plan_storyboard_comfyui_pipeline(
     project_id: str,
     payload: dict,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> dict:
     try:
         await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
@@ -480,7 +492,8 @@ async def storyboard_comfyui_render_dry_run(
     project_id: str,
     payload: dict,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> dict:
     try:
         await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
@@ -504,7 +517,8 @@ async def render_storyboard_contract(
     project_id: str,
     payload: dict,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> dict:
     try:
         await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
@@ -528,6 +542,7 @@ async def get_storyboard(
     scene_number: int | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardListResponse:
     shots, version = await storyboard_service.list_storyboard_shots(
         db,
@@ -552,6 +567,7 @@ async def get_storyboard_trace_summary(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardTraceSummary:
     return await storyboard_trace_service.get_project_trace_summary(
         db,
@@ -566,6 +582,7 @@ async def get_storyboard_shot_trace(
     shot_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardTraceRecord:
     return await storyboard_trace_service.get_shot_trace(
         db,
@@ -581,6 +598,7 @@ async def get_storyboard_asset_trace(
     asset_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardTraceRecord:
     return await storyboard_trace_service.get_asset_trace(
         db,
@@ -613,6 +631,7 @@ async def get_storyboard_shot_image(
     shot_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ):
     shot, asset = await _get_storyboard_shot_and_asset(
         db,
@@ -643,6 +662,7 @@ async def get_storyboard_shot_thumbnail(
     shot_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ):
     shot, asset = await _get_storyboard_shot_and_asset(
         db,
@@ -675,6 +695,7 @@ async def get_storyboard_sequence_detail(
     sequence_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardSequenceDetailResponse:
     sequence, shots = await storyboard_service.get_sequence_storyboard(
         db,
@@ -697,7 +718,8 @@ async def regenerate_storyboard_sequence(
     sequence_id: str,
     payload: StoryboardGenerateRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardGenerationAuditResponse:
     result = await storyboard_service.generate_storyboard(
         db,
@@ -768,7 +790,8 @@ async def submit_shot_director_feedback(
     shot_id: str,
     payload: ShotFeedbackRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardRevisionResult:
     return await storyboard_service.revise_storyboard_shot_with_feedback(
         db,
@@ -788,7 +811,8 @@ async def regenerate_storyboard_shot(
     shot_id: str,
     payload: StoryboardShotRegenerateRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardRegenerateShotsResponse:
     result = await storyboard_service.regenerate_storyboard_shot_from_validation(
         db,
@@ -810,7 +834,8 @@ async def regenerate_failed_storyboard_sequence_shots(
     sequence_id: str,
     payload: StoryboardFailedRegenerateRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardRegenerateShotsResponse:
     result = await storyboard_service.regenerate_failed_storyboard_shots(
         db,
@@ -832,7 +857,8 @@ async def submit_sequence_director_feedback(
     sequence_id: str,
     payload: SequenceFeedbackRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> StoryboardRevisionPlan:
     if payload.apply_to not in ("selected_shots", "all_sequence_shots"):
         raise HTTPException(status_code=400, detail="apply_to must be 'selected_shots' or 'all_sequence_shots'")
@@ -901,6 +927,7 @@ async def get_shot_revision_history(
     shot_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ) -> list[dict[str, Any]]:
     from sqlalchemy import select
     from models.storyboard import StoryboardShot
@@ -934,6 +961,7 @@ async def export_sequence_storyboard_zip(
     sequence_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _project: Project = Depends(validate_project_access),
 ) -> Response:
     import json
     from datetime import datetime, timezone
@@ -1141,7 +1169,8 @@ async def export_sequence_storyboard_zip(
 async def repair_storyboard_shot_assets(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    _project: Project = Depends(validate_project_access),
 ) -> dict:
     await storyboard_service._get_project_for_tenant(db, project_id=project_id, tenant=tenant)
     result = await storyboard_asset_repair_service.repair_storyboard_shot_asset_links(

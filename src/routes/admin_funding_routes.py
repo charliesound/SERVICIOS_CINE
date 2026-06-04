@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.tenant_context import get_tenant_context
+from dependencies.project_access import require_write_permission
+from typing import Any
 from schemas.auth_schema import TenantContext
 from schemas.funding_catalog_schema import (
     FundingCallCreate,
@@ -39,6 +41,7 @@ async def create_funding_source(
     payload: FundingSourceCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     _require_admin(tenant)
     source = await funding_ingestion_service.create_source(db, payload.model_dump())
@@ -72,6 +75,7 @@ async def create_funding_call(
     payload: FundingCallCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     _require_admin(tenant)
     try:
@@ -87,6 +91,7 @@ async def update_funding_call(
     payload: FundingCallUpdate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     _require_admin(tenant)
     call = await funding_ingestion_service.update_call(
@@ -115,6 +120,7 @@ async def sync_seed_funding_catalog(
     payload: FundingSeedRequest | None = None,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     _require_admin(tenant)
     result = await funding_ingestion_service.seed_catalog(
@@ -127,6 +133,7 @@ async def sync_seed_funding_catalog(
 async def sync_mock_refresh_funding_catalog(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     _require_admin(tenant)
     result = await funding_ingestion_service.seed_catalog(db, force=True)

@@ -7,6 +7,7 @@ from services.backend_capability_service import capability_service
 from services.instance_registry import registry
 from services.llm.llm_service import llm_service
 from database import get_db
+from dependencies.tenant_context import get_tenant_context, require_write_permission
 from services.comfyui_model_inventory_service import (
     ComfyUIInventoryError,
     build_models_api_payload,
@@ -22,12 +23,12 @@ from services.comfyui_api_client_service import get_prompt_status, poll_prompt_u
 from services.comfyui_storyboard_render_service import comfyui_storyboard_render_service
 from services.comfyui_workflow_template_service import build_compiled_workflow_preview
 
-router = APIRouter(prefix="/api/ops", tags=["ops"])
+router = APIRouter(prefix="/api/ops", tags=["ops"], dependencies=[Depends(get_tenant_context)])
 
 # ---------------------------------------------------------------------------
 # Pipeline Builder aliases: avoid 404 when frontend calls /api/pipelines/*
 # ---------------------------------------------------------------------------
-pipeline_router = APIRouter(prefix="/api/pipelines", tags=["pipelines"])
+pipeline_router = APIRouter(prefix="/api/pipelines", tags=["pipelines"], dependencies=[Depends(get_tenant_context)])
 
 @pipeline_router.get("/presets")
 async def list_pipeline_presets(
@@ -50,7 +51,7 @@ async def list_pipeline_jobs(
     return []
 
 
-@pipeline_router.post("/plan")
+@pipeline_router.post("/plan", dependencies=[Depends(require_write_permission)])
 async def plan_pipeline(payload: dict):
     """Alias → /api/workflows/plan."""
     from services.workflow_planner import planner
@@ -156,14 +157,14 @@ async def get_instance(backend: str):
     }
 
 
-@router.post("/instances/{backend}/health-check")
+@router.post("/instances/{backend}/health-check", dependencies=[Depends(require_write_permission)])
 async def health_check_backend(backend: str):
     """Trigger health check for a specific backend."""
     healthy = await registry.check_health(backend)
     return {"backend": backend, "healthy": healthy}
 
 
-@router.post("/health-check-all")
+@router.post("/health-check-all", dependencies=[Depends(require_write_permission)])
 async def health_check_all():
     """Trigger health check for all backends."""
     results = await registry.check_all_health()
@@ -341,7 +342,7 @@ async def get_comfyui_recommendation(
         ) from exc
 
 
-@router.post("/comfyui/pipeline-builder")
+@router.post("/comfyui/pipeline-builder", dependencies=[Depends(require_write_permission)])
 async def build_comfyui_pipeline(payload: dict):
     try:
         return build_optimal_comfyui_pipeline(payload)
@@ -360,7 +361,7 @@ async def build_comfyui_pipeline(payload: dict):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-@router.post("/comfyui/storyboard/render-dry-run")
+@router.post("/comfyui/storyboard/render-dry-run", dependencies=[Depends(require_write_permission)])
 async def storyboard_render_dry_run(payload: dict):
     try:
         request_payload = dict(payload)
@@ -385,7 +386,7 @@ async def storyboard_render_dry_run(payload: dict):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-@router.post("/comfyui/storyboard/render")
+@router.post("/comfyui/storyboard/render", dependencies=[Depends(require_write_permission)])
 async def storyboard_render(payload: dict):
     try:
         return comfyui_storyboard_render_service.render_storyboard_with_plan(
@@ -424,7 +425,7 @@ async def get_comfyui_prompt_status_endpoint(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-@router.post("/comfyui/concept-art/compile-workflow-dry-run")
+@router.post("/comfyui/concept-art/compile-workflow-dry-run", dependencies=[Depends(require_write_permission)])
 async def compile_concept_art_workflow_dry_run(payload: dict):
     try:
         request_payload = dict(payload)
@@ -460,7 +461,7 @@ async def compile_concept_art_workflow_dry_run(payload: dict):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-@router.post("/comfyui/storyboard/compile-workflow-dry-run")
+@router.post("/comfyui/storyboard/compile-workflow-dry-run", dependencies=[Depends(require_write_permission)])
 async def compile_storyboard_workflow_dry_run(payload: dict):
     try:
         request_payload = dict(payload)

@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
+from dependencies.project_access import validate_project_access, require_write_permission
+from models.core import Project
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from services.sales_target_service import (
@@ -92,6 +94,7 @@ async def create_sales_target_endpoint(
     payload: SalesTargetCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     if payload.target_type not in SALES_TARGET_TYPES:
         raise HTTPException(status_code=400, detail="Invalid target type")
@@ -139,6 +142,7 @@ async def update_sales_target_endpoint(
     payload: SalesTargetCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     target = await get_sales_target(db, target_id)
     if not target:
@@ -157,6 +161,7 @@ async def list_project_sales_opportunities_endpoint(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     opps = await list_project_sales_opportunities(db, project_id)
     return JSONResponse(content={
@@ -182,11 +187,13 @@ async def suggest_sales_opportunities_endpoint(
     target_type: Optional[str] = Query(default=None),
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ):
     targets = await suggest_sales_targets_for_project(
         db,
         project_id,
-        tenant.organization_id,
+        project.organization_id,
         target_type=target_type,
     )
     return JSONResponse(content={
@@ -211,11 +218,13 @@ async def create_sales_opportunity_endpoint(
     payload: SalesOpportunityCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ):
     opp = await create_sales_opportunity(
         db,
         project_id,
-        tenant.organization_id,
+        project.organization_id,
         sales_target_id=payload.sales_target_id,
         distribution_pack_id=payload.distribution_pack_id,
         target_type=payload.target_type,
@@ -233,6 +242,8 @@ async def update_sales_opportunity_endpoint(
     payload: SalesOpportunityUpdate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ):
     try:
         opp = await update_sales_opportunity(

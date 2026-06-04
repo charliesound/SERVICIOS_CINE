@@ -9,7 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
+from models.core import Project
 from schemas.auth_schema import TenantContext
 from schemas.delivery_schema import DeliverableResponse
 from schemas.presentation_schema import (
@@ -75,6 +80,7 @@ async def get_project_filmstrip(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> PresentationFilmstripResponse:
     try:
         return await presentation_service.build_filmstrip(
@@ -91,6 +97,7 @@ async def preview_project_filmstrip_html(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> HTMLResponse:
     try:
         payload = await presentation_service.build_filmstrip(
@@ -109,6 +116,7 @@ async def download_project_filmstrip_pdf(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> Response:
     try:
         payload = await presentation_service.build_filmstrip(
@@ -143,7 +151,8 @@ async def download_project_filmstrip_pdf(
 async def persist_project_filmstrip_pdf(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ) -> DeliverableResponse:
     try:
         payload = await presentation_service.build_filmstrip(
@@ -195,6 +204,7 @@ async def preview_project_asset(
     asset_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     try:
         payload = await presentation_service.get_asset_preview_payload(
@@ -231,6 +241,7 @@ async def thumbnail_project_asset(
     w: int = Query(default=320, ge=80, le=800),
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     try:
         payload = await presentation_service.get_asset_preview_payload(
@@ -288,7 +299,8 @@ async def thumbnail_project_asset(
 async def export_project_filmstrip_pdf(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ) -> PresentationPdfExportResponse:
     try:
         payload = await presentation_service.build_filmstrip(

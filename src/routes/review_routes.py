@@ -4,9 +4,13 @@ from typing import Optional, cast
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from database import get_db
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
 from models.core import Project
 from models.review import ApprovalDecision, Review, ReviewComment
 from schemas.review_schema import (
@@ -22,17 +26,10 @@ from schemas.review_schema import (
     ReviewUpdate,
 )
 from services.review_service import review_service
-from routes.auth_routes import (
-    get_current_user_optional,
-    check_project_ownership,
-    get_tenant_context,
-)
-from schemas.auth_schema import UserResponse, TenantContext
-from services.logging_service import logger
+from schemas.auth_schema import TenantContext
 
 
 router = APIRouter(prefix="/api/reviews", tags=["reviews"])
-security = HTTPBearer(auto_error=False)
 
 
 def _approval_decision_response(log: ApprovalDecision) -> ApprovalDecisionResponse:
@@ -79,6 +76,7 @@ async def list_reviews(
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> ReviewListResponse:
     reviews = await review_service.list_reviews(
         db, project_id, tenant.organization_id, target_type, status
@@ -122,17 +120,9 @@ async def create_review(
     project_id: str,
     review: ReviewCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ) -> ReviewResponse:
-    project_result = await db.execute(
-        select(Project).where(
-            Project.id == project_id, Project.organization_id == tenant.organization_id
-        )
-    )
-    project = project_result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
     db_review = await review_service.create_review(
         db,
         project_id=project_id,
@@ -149,7 +139,7 @@ async def update_review_status(
     review_id: str,
     update: ReviewUpdate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> ReviewResponse:
     review = await review_service.get_review(db, review_id, tenant.organization_id)
 
@@ -167,7 +157,7 @@ async def add_decision(
     review_id: str,
     decision: ApprovalDecisionCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> ApprovalDecisionResponse:
     review = await review_service.get_review(db, review_id, tenant.organization_id)
 
@@ -201,7 +191,7 @@ async def add_comment(
     review_id: str,
     comment: CommentCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> CommentResponse:
     review = await review_service.get_review(db, review_id, tenant.organization_id)
 

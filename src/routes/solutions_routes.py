@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
 from services.solutions_service import (
     register_solution, get_solution, list_solutions,
     deactivate_solution, record_execution, seed_defaults,
 )
+from dependencies.tenant_context import get_tenant_context, require_write_permission
+from schemas.auth_schema import TenantContext
 
 router = APIRouter(prefix="/api/solutions", tags=["solutions"])
 
@@ -38,12 +40,23 @@ class SolutionOut(BaseModel):
 
 
 @router.get("", response_model=list[SolutionOut])
-async def list_all(backend: str = None, tag: str = None):
+async def list_all(
+    backend: str = None,
+    tag: str = None,
+    tenant: TenantContext = Depends(get_tenant_context),
+):
+    del tenant
     return list_solutions(backend=backend, tag=tag)
 
 
 @router.post("", response_model=SolutionOut)
-async def create(data: SolutionCreate):
+async def create(
+    data: SolutionCreate,
+    tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
+):
+    del tenant
+    del _write
     sol = register_solution(
         name=data.name,
         workflow_id=data.workflow_id,
@@ -58,7 +71,11 @@ async def create(data: SolutionCreate):
 
 
 @router.get("/{solution_id}", response_model=SolutionOut)
-async def get(solution_id: str):
+async def get(
+    solution_id: str,
+    tenant: TenantContext = Depends(get_tenant_context),
+):
+    del tenant
     sol = get_solution(solution_id)
     if not sol:
         raise HTTPException(status_code=404, detail="Solución no encontrada")
@@ -66,14 +83,26 @@ async def get(solution_id: str):
 
 
 @router.delete("/{solution_id}")
-async def delete(solution_id: str):
+async def delete(
+    solution_id: str,
+    tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
+):
+    del tenant
+    del _write
     if not deactivate_solution(solution_id):
         raise HTTPException(status_code=404, detail="Solución no encontrada")
     return {"status": "deactivated"}
 
 
 @router.post("/{solution_id}/execute")
-async def execute(solution_id: str):
+async def execute(
+    solution_id: str,
+    tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
+):
+    del tenant
+    del _write
     sol = get_solution(solution_id)
     if not sol:
         raise HTTPException(status_code=404, detail="Solución no encontrada")
@@ -88,6 +117,11 @@ async def execute(solution_id: str):
 
 
 @router.post("/seed")
-async def seed():
+async def seed(
+    tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
+):
+    del tenant
+    del _write
     seed_defaults()
     return {"status": "ok", "seeded": len(list_solutions())}

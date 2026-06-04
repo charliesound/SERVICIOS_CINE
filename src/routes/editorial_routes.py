@@ -7,7 +7,6 @@ import zipfile
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -15,7 +14,11 @@ from models.core import Project
 from models.delivery import Deliverable
 from models.postproduction import Take
 from models.storage import MediaAsset, StorageSource
-from dependencies.tenant_context import get_tenant_context, require_write_permission
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
 from schemas.auth_schema import TenantContext
 from schemas.editorial_schema import (
     AssemblyCutCreateResponse,
@@ -48,16 +51,6 @@ from services.take_scoring_service import take_scoring_service
 
 
 router = APIRouter(prefix="/api/projects", tags=["editorial"])
-
-
-async def _get_project_for_tenant(db: AsyncSession, project_id: str, tenant: TenantContext) -> Project:
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if project is None:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-    return project
 
 
 def _take_response(take: Take) -> EditorialTakeResponse:
@@ -386,8 +379,8 @@ async def list_editorial_takes(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> EditorialTakeListResponse:
-    await _get_project_for_tenant(db, project_id, tenant)
     result = await db.execute(
         select(Take)
         .where(Take.project_id == project_id)
@@ -402,8 +395,8 @@ async def reconcile_editorial_material(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> EditorialReconcileResponse:
-    project = await _get_project_for_tenant(db, project_id, tenant)
     payload = await editorial_reconciliation_service.reconcile_project(db, project=project)
     return EditorialReconcileResponse(**payload)
 
@@ -413,8 +406,8 @@ async def score_editorial_takes(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> EditorialScoreResponse:
-    await _get_project_for_tenant(db, project_id, tenant)
     payload = await take_scoring_service.score_project_takes(db, project_id=project_id)
     return EditorialScoreResponse(**payload)
 
@@ -424,8 +417,8 @@ async def get_editorial_audio_metadata(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> EditorialAudioMetadataListResponse:
-    await _get_project_for_tenant(db, project_id, tenant)
     results = await audio_metadata_service.scan_project_audio_metadata(db, project_id=project_id)
     return EditorialAudioMetadataListResponse(
         project_id=project_id,
@@ -438,8 +431,8 @@ async def scan_editorial_audio_metadata(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> EditorialAudioMetadataScanResponse:
-    await _get_project_for_tenant(db, project_id, tenant)
     results = await audio_metadata_service.scan_project_audio_metadata(db, project_id=project_id)
     counts = {
         "parsed_count": sum(1 for result in results if result.status == "parsed"),
@@ -460,8 +453,8 @@ async def list_recommended_takes(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> EditorialRecommendedTakeListResponse:
-    await _get_project_for_tenant(db, project_id, tenant)
     result = await db.execute(
         select(Take)
         .where(Take.project_id == project_id, Take.is_recommended.is_(True))
@@ -485,8 +478,8 @@ async def create_editorial_assembly(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> AssemblyCutCreateResponse:
-    project = await _get_project_for_tenant(db, project_id, tenant)
     payload = await assembly_service.generate_assembly(
         db,
         project_id=project_id,
@@ -504,8 +497,8 @@ async def get_editorial_assembly(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> AssemblyCutResponse:
-    await _get_project_for_tenant(db, project_id, tenant)
     payload = await assembly_service.get_latest_assembly(db, project_id=project_id)
     return _assembly_response(payload)
 
@@ -516,8 +509,8 @@ async def export_editorial_fcpxml(
     download: bool = Query(default=True),
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_for_tenant(db, project_id, tenant)
     payload = await assembly_service.get_latest_assembly(db, project_id=project_id)
     export_bundle = await _build_editorial_export_bundle(db, project=project, payload=payload)
     assembly = export_bundle["assembly"]
@@ -574,8 +567,8 @@ async def validate_editorial_fcpxml(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> EditorialFCPXMLValidationResponse:
-    project = await _get_project_for_tenant(db, project_id, tenant)
     payload = await assembly_service.get_latest_assembly(db, project_id=project_id)
     export_bundle = await _build_editorial_export_bundle(db, project=project, payload=payload)
     return EditorialFCPXMLValidationResponse(**export_bundle["validation"])
@@ -586,8 +579,8 @@ async def get_editorial_media_relink_report(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> EditorialMediaRelinkReportResponse:
-    project = await _get_project_for_tenant(db, project_id, tenant)
     payload = await assembly_service.get_latest_assembly(db, project_id=project_id)
     export_bundle = await _build_editorial_export_bundle(db, project=project, payload=payload)
     return EditorialMediaRelinkReportResponse(**export_bundle["media_relink_report"])
@@ -598,8 +591,8 @@ async def export_editorial_package(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_for_tenant(db, project_id, tenant)
     payload = await assembly_service.get_latest_assembly(db, project_id=project_id)
     export_bundle = await _build_editorial_export_bundle(db, project=project, payload=payload)
     takes_result = await db.execute(
@@ -654,8 +647,8 @@ async def export_davinci_platform_package(
     request: DavinciPlatformExportRequest,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_for_tenant(db, project_id, tenant)
     payload = await assembly_service.get_latest_assembly(db, project_id=project_id)
 
     assembly = payload.get("assembly_cut")

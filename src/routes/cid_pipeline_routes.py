@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -26,6 +27,7 @@ from services.cid_pipeline_builder_service import cid_pipeline_builder_service
 from services.cid_pipeline_preset_service import cid_pipeline_preset_service
 from services.cid_pipeline_simulated_job_service import cid_pipeline_simulated_job_service
 from services.cid_pipeline_validation_service import cid_pipeline_validation_service
+from services.tenant_access_service import get_project_for_tenant
 
 
 router = APIRouter(prefix="/api/pipelines", tags=["cid-pipelines"])
@@ -40,13 +42,21 @@ def require_cid_pipeline_builder_enabled() -> None:
         raise HTTPException(status_code=404, detail="CID Pipeline Builder is disabled")
 
 
-async def _get_project_or_403(
+async def _validate_pipeline_project_access(
     project_id: str,
     db: AsyncSession,
     tenant: TenantContext,
 ) -> Project:
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
+    """Centralized project validation for pipeline endpoints.
+
+    Uses the canonical get_project_for_tenant for org-scoped lookup.
+    Falls back to direct lookup for global_admin who may access
+    cross-org projects.
+    """
+    project = await get_project_for_tenant(db, project_id, str(tenant.organization_id))
+    if project is None and tenant.is_global_admin:
+        result = await db.execute(select(Project).where(Project.id == project_id))
+        project = result.scalar_one_or_none()
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
@@ -59,13 +69,19 @@ async def _resolve_project_id(
     tenant: TenantContext,
     explicit_project_id: str | None,
     embedded_project_id: str | None,
-) -> str | None:
+) -> tuple[str | None, Optional[Project]]:
+    """Resolve and validate project_id from body/query sources.
+
+    Returns (validated_project_id, project) where project is None
+    when no project_id was provided.
+    """
     if explicit_project_id and embedded_project_id and explicit_project_id != embedded_project_id:
         raise HTTPException(status_code=400, detail="project_id mismatch between request and pipeline")
-    project_id = explicit_project_id or embedded_project_id
-    if project_id:
-        await _get_project_or_403(project_id, db, tenant)
-    return project_id
+    raw_project_id = explicit_project_id or embedded_project_id
+    if raw_project_id:
+        project = await _validate_pipeline_project_access(raw_project_id, db, tenant)
+        return str(project.id), project
+    return None, None
 
 
 @router.get(
@@ -95,7 +111,8 @@ async def generate_pipeline(
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> CIDPipelineGenerateResponse:
     if payload.project_id:
-        await _get_project_or_403(payload.project_id, db, tenant)
+        project = await _validate_pipeline_project_access(payload.project_id, db, tenant)
+        payload.project_id = str(project.id)
     pipeline = cid_pipeline_builder_service.build_pipeline(payload)
     validation = cid_pipeline_validation_service.validate_pipeline(pipeline)
     return CIDPipelineGenerateResponse(mode="simulated", pipeline=pipeline, validation=validation)
@@ -114,9 +131,11 @@ async def validate_pipeline(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> CIDPipelineValidationResponse:
-    project_id = await _resolve_project_id(db, tenant, payload.project_id, payload.pipeline.project_id)
-    if project_id != payload.pipeline.project_id:
-        payload.pipeline.project_id = project_id
+    validated_project_id, _project = await _resolve_project_id(
+        db, tenant, payload.project_id, payload.pipeline.project_id,
+    )
+    if validated_project_id != payload.pipeline.project_id:
+        payload.pipeline.project_id = validated_project_id
     return cid_pipeline_validation_service.validate_pipeline(payload.pipeline)
 
 
@@ -133,9 +152,11 @@ async def execute_pipeline(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> CIDPipelineExecuteResponse:
-    project_id = await _resolve_project_id(db, tenant, payload.project_id, payload.pipeline.project_id)
-    if project_id != payload.pipeline.project_id:
-        payload.pipeline.project_id = project_id
+    validated_project_id, project = await _resolve_project_id(
+        db, tenant, payload.project_id, payload.pipeline.project_id,
+    )
+    if validated_project_id != payload.pipeline.project_id:
+        payload.pipeline.project_id = validated_project_id
 
     validation = cid_pipeline_validation_service.validate_pipeline(payload.pipeline)
     if not validation.valid or validation.blocked:
@@ -147,15 +168,12 @@ async def execute_pipeline(
             },
         )
 
-    resolved_org_id = str(tenant.organization_id)
-    if project_id:
-        project = await _get_project_or_403(project_id, db, tenant)
-        resolved_org_id = str(project.organization_id)
+    resolved_org_id = str(project.organization_id) if project else str(tenant.organization_id)
 
     job = cid_pipeline_simulated_job_service.create_job(
         organization_id=resolved_org_id,
         user_id=tenant.user_id,
-        project_id=project_id,
+        project_id=validated_project_id,
         pipeline=payload.pipeline,
         validation=validation,
     )
@@ -172,14 +190,16 @@ async def list_pipeline_jobs(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
 ) -> CIDPipelineJobListResponse:
+    validated_project_id: str | None = None
     resolved_org_id = str(tenant.organization_id)
     if project_id:
-        project = await _get_project_or_403(project_id, db, tenant)
+        project = await _validate_pipeline_project_access(project_id, db, tenant)
+        validated_project_id = str(project.id)
         resolved_org_id = str(project.organization_id)
     jobs = cid_pipeline_simulated_job_service.list_jobs(
         organization_id=resolved_org_id,
         user_id=tenant.user_id,
-        project_id=project_id,
+        project_id=validated_project_id,
         is_global_admin=tenant.is_global_admin,
     )
     return CIDPipelineJobListResponse(count=len(jobs), jobs=jobs)

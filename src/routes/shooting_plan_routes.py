@@ -2,28 +2,34 @@
 Shooting plan routes.
 """
 
-import json
-from typing import Optional
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
-from services.shotlist_service import (
-    create_shooting_plan,
-    get_shooting_plans,
-    get_shooting_plan_items,
-    approve_shooting_plan,
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
 )
+from models.change_governance import ShootingPlan
+from models.core import Project
+from schemas.auth_schema import TenantContext
 from services.shooting_plan_coverage_service import (
-    get_shot_coverage,
     get_pickup_recommendations,
+    get_shot_coverage,
+)
+from services.shotlist_service import (
+    ShootingPlanItem,
+    approve_shooting_plan,
+    create_shooting_plan,
+    get_shooting_plan_items,
+    get_shooting_plans,
 )
 
 
-router = APIRouter(prefix="/api/projects/{project_id}/shooting-plans", tags=["shooting-plans"])
+router = APIRouter(prefix="/api/projects/{project_id}/shooting-plans", tags=["shooting-plans"], dependencies=[Depends(get_tenant_context)])
 
 
 class CreatePlanPayload(BaseModel):
@@ -39,12 +45,9 @@ class AddShotPayload(BaseModel):
 async def list_shooting_plans(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
 ):
     """List shooting plans."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     plans = await get_shooting_plans(db, project_id)
     
     return {
@@ -66,21 +69,12 @@ async def create_shooting_plan_endpoint(
     project_id: str,
     payload: CreatePlanPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_write_permission),
 ):
     """Create a new shooting plan."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    from models.core import Project
-    from sqlalchemy import select
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    
     plan = await create_shooting_plan(
-        db, project_id, project.organization_id, payload.title, current_user.user_id
+        db, project_id, project.organization_id, payload.title, _tenant.user_id
     )
     
     return {
@@ -94,16 +88,9 @@ async def get_shooting_plan(
     project_id: str,
     plan_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
 ):
     """Get shooting plan details."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    from services.shotlist_service import ShootingPlanItem
-    from sqlalchemy import select
-    from models.change_governance import ShootingPlan
-    
     result = await db.execute(
         select(ShootingPlan).where(ShootingPlan.id == plan_id)
     )
@@ -142,13 +129,17 @@ async def approve_shooting_plan_endpoint(
     project_id: str,
     plan_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_write_permission),
 ):
     """Approve a shooting plan."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    plan = await approve_shooting_plan(db, plan_id, current_user.user_id)
+    result = await db.execute(
+        select(ShootingPlan).where(ShootingPlan.id == plan_id)
+    )
+    plan = result.scalar_one_or_none()
+    if not plan or plan.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Shooting plan not found")
+    plan = await approve_shooting_plan(db, plan_id, _tenant.user_id)
     
     return {
         "id": plan.id,
@@ -161,12 +152,9 @@ async def get_plan_coverage(
     project_id: str,
     plan_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
 ):
     """Get coverage report for a shooting plan."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     coverage = await get_shot_coverage(db, project_id, plan_id)
     pickups = await get_pickup_recommendations(db, project_id)
     
@@ -180,12 +168,9 @@ async def get_plan_coverage(
 async def get_all_coverage(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
 ):
     """Get overall coverage across all planned shots."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     coverage = await get_shot_coverage(db, project_id, None)
     pickups = await get_pickup_recommendations(db, project_id)
     

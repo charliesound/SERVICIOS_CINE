@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from models.storage import MediaAsset
 from models.storyboard import StoryboardShot
+from dependencies.project_access import validate_project_access, require_write_permission
+from models.core import Project
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.shot_schema import (
@@ -104,6 +106,7 @@ async def list_project_shots(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> StoryboardShotListResponse:
     shots = await shot_service.list_project_shots(db, project_id=project_id, tenant=tenant)
     return StoryboardShotListResponse(
@@ -117,6 +120,8 @@ async def create_project_shot(
     payload: StoryboardShotCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> StoryboardShotResponse:
     shot = await shot_service.create_shot(
         db,
@@ -133,6 +138,8 @@ async def bulk_reorder_project_shots(
     payload: StoryboardShotBulkReorderRequest,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> StoryboardShotListResponse:
     shots = await shot_service.bulk_reorder(
         db,
@@ -152,6 +159,8 @@ async def update_project_shot(
     payload: StoryboardShotUpdate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> StoryboardShotResponse:
     shot = await shot_service.update_shot(
         db,
@@ -169,6 +178,8 @@ async def delete_project_shot(
     shot_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> Response:
     await shot_service.delete_shot(
         db,

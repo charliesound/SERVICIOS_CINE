@@ -13,7 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
-from dependencies.tenant_context import get_tenant_context, TenantContext
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    TenantContext,
+    validate_project_access,
+)
 from models.core import Project, ProjectJob, User as DBUser
 from models.storage import MediaAsset, MediaAssetType, MediaAssetStatus
 from services.document_service import document_service
@@ -357,7 +362,7 @@ async def list_projects(
 async def create_project(
     payload: CreateProjectPayload,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ):
     user_org_id = str(tenant.organization_id)
 
@@ -386,11 +391,8 @@ async def get_project(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    user_org_id = str(tenant.organization_id)
-
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
-
     return _project_dict(project)
 
 
@@ -400,10 +402,9 @@ async def get_project_dashboard(
     role: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
-
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     from sqlalchemy import func, select
     from models.core import User
@@ -695,13 +696,10 @@ async def update_project_script(
     project_id: str,
     payload: UpdateScriptPayload,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
     _module_access: TenantContext = Depends(require_module_access("script_analysis")),
 ):
-    user_org_id = str(tenant.organization_id)
-
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
-
     project.script_text = payload.script_text
     await db.commit()
     await db.refresh(project)
@@ -714,10 +712,10 @@ async def upload_project_script(
     project_id: str,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
     _module_access: TenantContext = Depends(require_module_access("script_analysis")),
 ):
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
     file_bytes = await file.read()
     if not file_bytes:
         raise HTTPException(status_code=400, detail="Uploaded script file is empty")
@@ -879,12 +877,11 @@ async def _parse_storyboard(script_text: str) -> StoryboardResponse:
 async def analyze_project_script(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
     _module_access: TenantContext = Depends(require_module_access("script_analysis")),
 ):
     user_org_id = str(tenant.organization_id)
-
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     if not project.script_text:
         raise HTTPException(
@@ -1061,11 +1058,10 @@ async def analyze_project_script(
 async def generate_storyboard(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
-
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     if not project.script_text:
         raise HTTPException(
@@ -1320,9 +1316,8 @@ async def list_project_jobs(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
-
     result = await db.execute(
         select(ProjectJob)
         .where(
@@ -1344,6 +1339,7 @@ async def get_project_job(
     job_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
 
@@ -1393,6 +1389,7 @@ async def get_job_progress(
     job_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
 
@@ -1423,7 +1420,8 @@ async def retry_project_job(
     project_id: str,
     job_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
 
@@ -1681,9 +1679,8 @@ async def list_project_assets(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
-
     result = await db.execute(
         select(MediaAsset)
         .where(
@@ -1721,7 +1718,9 @@ async def get_project_metrics(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
+    user_org_id = str(tenant.organization_id)
     project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     jobs_count = (
@@ -1773,11 +1772,8 @@ async def export_project_json(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    user_org_id = str(tenant.organization_id)
-
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
-
     await _enforce_export_permission(tenant.plan, export_format="json")
     payload = await _build_project_export_payload(
         db,
@@ -1799,11 +1795,8 @@ async def export_project_zip(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    user_org_id = str(tenant.organization_id)
-
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
-
     await _enforce_export_permission(tenant.plan, export_format="zip")
     payload = await _build_project_export_payload(
         db,
@@ -1854,6 +1847,7 @@ async def list_project_image_assets(
     size: int = 20,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     """
     Paginated list of image assets for the Asset Picker Modal.
@@ -1866,8 +1860,6 @@ async def list_project_image_assets(
         size = 20
     if size > 100:
         size = 100
-
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     base_query = select(MediaAsset).where(
         MediaAsset.project_id == project_id,

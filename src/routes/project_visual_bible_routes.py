@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.project_access import validate_project_access, require_write_permission
+from models.core import Project
 from dependencies.tenant_context import get_tenant_context, TenantContext
 from schemas.project_visual_bible_schema import (
     ProjectVisualBibleResponse,
@@ -49,8 +53,10 @@ async def api_get_visual_bible(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    vb = await get_or_create_visual_bible(db, project_id, tenant)
+    validated_project_id = str(project.id)
+    vb = await get_or_create_visual_bible(db, validated_project_id, tenant)
     return _to_response(vb)
 
 
@@ -60,8 +66,11 @@ async def api_update_visual_bible(
     payload: ProjectVisualBibleUpdate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ):
-    vb = await update_visual_bible(db, project_id, payload, tenant)
+    validated_project_id = str(project.id)
+    vb = await update_visual_bible(db, validated_project_id, payload, tenant)
     return _to_response(vb)
 
 
@@ -71,8 +80,10 @@ async def api_preview_prompt(
     payload: VisualBiblePreviewRequest,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    return await preview_enriched_prompt(db, project_id, payload, tenant)
+    validated_project_id = str(project.id)
+    return await preview_enriched_prompt(db, validated_project_id, payload, tenant)
 
 
 @router.post("/reset", response_model=ProjectVisualBibleResponse)
@@ -80,6 +91,9 @@ async def api_reset_visual_bible(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ):
-    vb = await reset_visual_bible(db, project_id, tenant)
+    validated_project_id = str(project.id)
+    vb = await reset_visual_bible(db, validated_project_id, tenant)
     return _to_response(vb)

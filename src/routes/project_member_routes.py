@@ -10,10 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
-from models.core import User as DBUser
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_organization,
+    validate_project_access,
+    require_write_permission,
+)
+from models.core import Project, User as DBUser
 from models.project_member import ProjectMember, PROFESSIONAL_ROLES
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
+from schemas.auth_schema import TenantContext
 from services.project_access_service import (
     get_project_member,
     get_project_members,
@@ -28,15 +33,11 @@ from services.project_access_service import (
     is_project_owner,
 )
 
-
-async def _get_user_org_id(user_id: str, db: AsyncSession) -> Optional[str]:
-    from models.core import User
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    return user.organization_id if user else None
-
-
-router = APIRouter(prefix="/api/projects/{project_id}/members", tags=["project-members"])
+router = APIRouter(
+    prefix="/api/projects/{project_id}/members",
+    tags=["project-members"],
+    dependencies=[Depends(get_tenant_context)],
+)
 
 
 class AddMemberPayload(BaseModel):
@@ -88,13 +89,11 @@ def _member_to_response(member: ProjectMember) -> MemberResponse:
 async def list_project_members(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
 ):
     """List all members of a project."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    if not await check_permission(db, project_id, current_user.user_id, "project.members.view"):
+    if not await check_permission(db, project_id, tenant.user_id, "project.members.view"):
         raise HTTPException(status_code=403, detail="Permission denied")
 
     members = await get_project_members(db, project_id)
@@ -120,24 +119,22 @@ async def list_project_members(
 async def get_my_member_info(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
 ):
     """Get current user's membership info for a project."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    member = await get_project_member(db, project_id, current_user.user_id)
+    member = await get_project_member(db, project_id, tenant.user_id)
     if not member:
         raise HTTPException(status_code=404, detail="Not a member of this project")
 
-    permissions = await get_effective_permissions(db, project_id, current_user.user_id)
+    permissions = await get_effective_permissions(db, project_id, tenant.user_id)
 
     return {
         "member": _member_to_response(member).model_dump(),
         "permissions": permissions,
-        "can_manage_members": await can_manage_project_members(db, project_id, current_user.user_id),
-        "can_delegate": await can_delegate_permissions(db, project_id, current_user.user_id),
-        "is_owner": await is_project_owner(db, project_id, current_user.user_id),
+        "can_manage_members": await can_manage_project_members(db, project_id, tenant.user_id),
+        "can_delegate": await can_delegate_permissions(db, project_id, tenant.user_id),
+        "is_owner": await is_project_owner(db, project_id, tenant.user_id),
     }
 
 
@@ -152,28 +149,23 @@ async def add_project_member_endpoint(
     project_id: str,
     payload: AddMemberPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
+    _: TenantContext = Depends(require_write_permission),
 ):
     """Add a member to a project."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    if not await can_manage_project_members(db, project_id, current_user.user_id):
+    if not await can_manage_project_members(db, project_id, tenant.user_id):
         raise HTTPException(status_code=403, detail="Cannot manage members")
-
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
 
     member = await add_project_member(
         db=db,
         project_id=project_id,
-        organization_id=user_org_id,
+        organization_id=project.organization_id,
         user_id=payload.user_id,
         professional_role=payload.professional_role,
         can_manage_permissions=payload.can_manage_permissions,
         can_manage_members=payload.can_manage_members,
-        invited_by_user_id=current_user.user_id,
+        invited_by_user_id=tenant.user_id,
     )
 
     return {"member": _member_to_response(member).model_dump()}
@@ -184,13 +176,12 @@ async def remove_project_member_endpoint(
     project_id: str,
     user_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
+    _: TenantContext = Depends(require_write_permission),
 ):
     """Remove a member from a project."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    if not await can_manage_project_members(db, project_id, current_user.user_id):
+    if not await can_manage_project_members(db, project_id, tenant.user_id):
         raise HTTPException(status_code=403, detail="Cannot manage members")
 
     if await is_project_owner(db, project_id, user_id):
@@ -209,13 +200,12 @@ async def update_project_member(
     user_id: str,
     payload: UpdateMemberPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
+    _: TenantContext = Depends(require_write_permission),
 ):
     """Update a project member's role or permissions."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    if not await can_manage_project_members(db, project_id, current_user.user_id):
+    if not await can_manage_project_members(db, project_id, tenant.user_id):
         raise HTTPException(status_code=403, detail="Cannot manage members")
 
     member = await get_project_member(db, project_id, user_id)
@@ -226,12 +216,12 @@ async def update_project_member(
         member.professional_role = payload.professional_role
 
     if payload.can_manage_permissions is not None:
-        if not await can_delegate_permissions(db, project_id, current_user.user_id):
+        if not await can_delegate_permissions(db, project_id, tenant.user_id):
             raise HTTPException(status_code=403, detail="Cannot delegate permissions")
         member.can_manage_permissions = payload.can_manage_permissions
 
     if payload.can_manage_members is not None:
-        if not await can_manage_project_members(db, project_id, current_user.user_id):
+        if not await can_manage_project_members(db, project_id, tenant.user_id):
             raise HTTPException(status_code=403, detail="Cannot manage members")
         member.can_manage_members = payload.can_manage_members
 
@@ -246,18 +236,17 @@ async def delegate_member_permissions(
     project_id: str,
     payload: DelegatePermissionsPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
+    _: TenantContext = Depends(require_write_permission),
 ):
     """Delegate permission management to a member."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
     result = await delegate_permissions(
         db=db,
         project_id=project_id,
         target_user_id=payload.target_user_id,
         can_manage_permissions=payload.can_manage_permissions,
-        delegate_user_id=current_user.user_id,
+        delegate_user_id=tenant.user_id,
     )
 
     if not result.get("success"):
@@ -271,13 +260,11 @@ async def get_member_permissions(
     project_id: str,
     user_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_organization),
+    project: Project = Depends(validate_project_access),
 ):
     """Get effective permissions for a member."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    if not await check_permission(db, project_id, current_user.user_id, "project.members.view"):
+    if not await check_permission(db, project_id, tenant.user_id, "project.members.view"):
         raise HTTPException(status_code=403, detail="Permission denied")
 
     member = await get_project_member(db, project_id, user_id)

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
+from typing import Any
 
-from dependencies.tenant_context import get_tenant_context, require_write_permission
+from dependencies.tenant_context import get_tenant_context
+from dependencies.project_access import validate_project_access, require_write_permission
+from models.core import Project
 from schemas.auth_schema import TenantContext
 from schemas.editorial_assembly_schema import (
     AssemblyTimeline,
@@ -31,11 +34,13 @@ router = APIRouter(prefix="/api/projects", tags=["editorial-assembly"])
 @router.post(
     "/{project_id}/editorial/scan-media",
     response_model=ScanMediaResponse,
-    dependencies=[Depends(require_write_permission)],
 )
 async def scan_editorial_media(
     project_id: str,
     request: ScanMediaRequest,
+    _tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> ScanMediaResponse:
     root_paths = request.all_roots()
     assets, warnings = editorial_assembly_core_service.scan_media_roots(
@@ -55,11 +60,13 @@ async def scan_editorial_media(
 @router.post(
     "/{project_id}/editorial/import-reports",
     response_model=ImportReportsResponse,
-    dependencies=[Depends(require_write_permission)],
 )
 async def import_editorial_reports(
     project_id: str,
     request: ImportReportsRequest,
+    _tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> ImportReportsResponse:
     return editorial_assembly_core_service.import_reports(
         project_id=project_id,
@@ -73,11 +80,13 @@ async def import_editorial_reports(
 @router.post(
     "/{project_id}/editorial/match-takes",
     response_model=MatchTakesResponse,
-    dependencies=[Depends(require_write_permission)],
 )
 async def match_editorial_takes(
     project_id: str,
     request: MatchTakesRequest,
+    _tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> MatchTakesResponse:
     slate_matches, take_decisions, sync_candidates, warnings = editorial_assembly_core_service.match_takes(
         project_id=project_id,
@@ -99,11 +108,13 @@ async def match_editorial_takes(
 @router.post(
     "/{project_id}/editorial/build-assembly",
     response_model=AssemblyTimeline,
-    dependencies=[Depends(require_write_permission)],
 )
 async def build_editorial_assembly(
     project_id: str,
     request: BuildAssemblyRequest,
+    _tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> AssemblyTimeline:
     return editorial_assembly_core_service.build_neutral_assembly(
         project_id=project_id,
@@ -118,11 +129,13 @@ async def build_editorial_assembly(
 @router.post(
     "/{project_id}/editorial/export/resolve",
     response_model=NLEExportResult,
-    dependencies=[Depends(require_write_permission)],
 )
 async def export_editorial_resolve(
     project_id: str,
     request: NLEExportRequest,
+    _tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> NLEExportResult:
     return _export_for_nle(project_id=project_id, expected_nle="resolve", request=request)
 
@@ -130,11 +143,13 @@ async def export_editorial_resolve(
 @router.post(
     "/{project_id}/editorial/export/premiere",
     response_model=NLEExportResult,
-    dependencies=[Depends(require_write_permission)],
 )
 async def export_editorial_premiere(
     project_id: str,
     request: NLEExportRequest,
+    _tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> NLEExportResult:
     return _export_for_nle(project_id=project_id, expected_nle="premiere", request=request)
 
@@ -142,11 +157,13 @@ async def export_editorial_premiere(
 @router.post(
     "/{project_id}/editorial/export/avid",
     response_model=NLEExportResult,
-    dependencies=[Depends(require_write_permission)],
 )
 async def export_editorial_avid(
     project_id: str,
     request: NLEExportRequest,
+    _tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> NLEExportResult:
     return _export_for_nle(project_id=project_id, expected_nle="avid", request=request)
 
@@ -156,6 +173,7 @@ async def get_editorial_assembly_report(
     project_id: str,
     report_id: str,
     _tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> ReportLookupResponse:
     return ReportLookupResponse(
         project_id=project_id,

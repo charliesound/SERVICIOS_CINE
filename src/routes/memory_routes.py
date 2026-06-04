@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.tenant_context import get_tenant_context
+from dependencies.project_access import validate_project_access, require_write_permission
+from models.core import Project
 from schemas.auth_schema import TenantContext
 from services.cid_memory_ingestion_service import index_project
 from services.logging_service import logger
@@ -108,26 +110,30 @@ async def memory_index(
     request: IndexRequest,
     tenant: TenantContext = Depends(get_tenant_context),
     db: AsyncSession = Depends(get_db),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ):
+    organization_id = str(project.organization_id)
+    validated_project_id = str(project.id)
     logger.info(
         "Memory index requested project=%s org=%s user=%s clean=%s",
-        project_id, tenant.organization_id, tenant.user_id, request.clean,
+        validated_project_id, organization_id, tenant.user_id, request.clean,
     )
 
     deleted_points = 0
     if request.clean:
         # Delete existing points for this project before reindexing
         deleted_points = await qdrant_memory_service.delete_project_points(
-            organization_id=tenant.organization_id,
-            project_id=project_id,
+            organization_id=organization_id,
+            project_id=validated_project_id,
         )
         if deleted_points < 0:
             raise HTTPException(status_code=500, detail="Failed to delete existing points")
 
     result = await index_project(
         db,
-        organization_id=tenant.organization_id,
-        project_id=project_id,
+        organization_id=organization_id,
+        project_id=validated_project_id,
     )
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
@@ -142,25 +148,28 @@ async def memory_status(
     project_id: str,
     tenant: TenantContext = Depends(get_tenant_context),
     db: AsyncSession = Depends(get_db),
+    project: Project = Depends(validate_project_access),
 ):
+    organization_id = str(project.organization_id)
+    validated_project_id = str(project.id)
     # Get detailed collection info
     collection_info = await qdrant_memory_service.get_collection_info()
     settings = get_settings()
 
     # Get project-specific points count and breakdown by source type
     total_points = await qdrant_memory_service.count_project_points(
-        organization_id=tenant.organization_id,
-        project_id=project_id,
+        organization_id=organization_id,
+        project_id=validated_project_id,
     )
 
     points_by_source = await qdrant_memory_service.count_points_by_source_type(
-        organization_id=tenant.organization_id,
-        project_id=project_id,
+        organization_id=organization_id,
+        project_id=validated_project_id,
     )
 
     return StatusResponse(
-        project_id=project_id,
-        organization_id=tenant.organization_id,
+        project_id=validated_project_id,
+        organization_id=organization_id,
         total_points_for_project=total_points,
         points_by_source_type=points_by_source,
         embedding_model=collection_info.get("embedding_model", settings.embedding_model),
@@ -177,7 +186,10 @@ async def memory_search(
     req: SearchRequest,
     tenant: TenantContext = Depends(get_tenant_context),
     db: AsyncSession = Depends(get_db),
+    project: Project = Depends(validate_project_access),
 ):
+    organization_id = str(project.organization_id)
+    validated_project_id = str(project.id)
     try:
         query_vector = await rag_embedding_service.embed_query(req.query)
     except Exception as exc:
@@ -185,8 +197,8 @@ async def memory_search(
         raise HTTPException(status_code=502, detail=f"Embedding failed: {exc}")
 
     results = await qdrant_memory_service.search(
-        organization_id=tenant.organization_id,
-        project_id=project_id,
+        organization_id=organization_id,
+        project_id=validated_project_id,
         query_vector=query_vector,
         limit=req.limit,
         source_type=req.source_type,
@@ -195,8 +207,8 @@ async def memory_search(
     out = [SearchResult(**r) for r in results]
     return SearchResponse(
         query=req.query,
-        project_id=project_id,
-        organization_id=tenant.organization_id,
+        project_id=validated_project_id,
+        organization_id=organization_id,
         results=out,
         total_results=len(out),
     )
@@ -208,12 +220,15 @@ async def memory_answer(
     req: AnswerRequest,
     tenant: TenantContext = Depends(get_tenant_context),
     db: AsyncSession = Depends(get_db),
+    project: Project = Depends(validate_project_access),
 ):
     del db
+    organization_id = str(project.organization_id)
+    validated_project_id = str(project.id)
     try:
         result = await cid_rag_answer_service.answer_question(
-            organization_id=tenant.organization_id,
-            project_id=project_id,
+            organization_id=organization_id,
+            project_id=validated_project_id,
             question=req.question,
             limit=req.limit,
             source_types=req.source_types,
@@ -227,7 +242,7 @@ async def memory_answer(
     except (OllamaLLMConnectionError, OllamaLLMEmptyResponseError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
-        logger.error("Memory answer failed project=%s org=%s: %s", project_id, tenant.organization_id, exc)
+        logger.error("Memory answer failed project=%s org=%s: %s", validated_project_id, organization_id, exc)
         raise HTTPException(status_code=500, detail="Failed to generate RAG answer") from exc
 
     return AnswerResponse(**result)

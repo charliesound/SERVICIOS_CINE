@@ -5,21 +5,28 @@ Shotlist routes.
 from typing import Optional
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
+from models.change_governance import PlannedShot
+from models.core import Project
+from schemas.auth_schema import TenantContext
 from services.shotlist_service import (
+    approve_planned_shot,
     generate_planned_shots_from_project,
     get_planned_shots,
-    approve_planned_shot,
-    reject_planned_shot,
     get_shot_coverage_summary,
+    reject_planned_shot,
 )
 
 
-router = APIRouter(prefix="/api/projects/{project_id}/planned-shots", tags=["shotlist"])
+router = APIRouter(prefix="/api/projects/{project_id}/planned-shots", tags=["shotlist"], dependencies=[Depends(get_tenant_context)])
 
 
 class ApproveShotPayload(BaseModel):
@@ -35,12 +42,9 @@ async def list_planned_shots(
     project_id: str,
     sequence_number: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
 ):
     """List planned shots."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     shots = await get_planned_shots(db, project_id, sequence_number)
     
     return {
@@ -69,19 +73,10 @@ async def list_planned_shots(
 async def generate_planned_shots(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_write_permission),
 ):
     """Generate planned shots from script."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    from models.core import Project, User
-    from sqlalchemy import select
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    
     shots = await generate_planned_shots_from_project(
         db, project_id, project.organization_id
     )
@@ -98,13 +93,17 @@ async def approve_shot(
     shot_id: str,
     payload: ApproveShotPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_write_permission),
 ):
     """Approve a planned shot."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    shot = await approve_planned_shot(db, shot_id, current_user.user_id)
+    result = await db.execute(
+        select(PlannedShot).where(PlannedShot.id == shot_id)
+    )
+    planned_shot = result.scalar_one_or_none()
+    if not planned_shot or planned_shot.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Planned shot not found")
+    shot = await approve_planned_shot(db, shot_id, _tenant.user_id)
     
     return {"id": shot.id, "status": shot.status}
 
@@ -115,14 +114,18 @@ async def reject_shot(
     shot_id: str,
     payload: RejectShotPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_write_permission),
 ):
     """Reject a planned shot."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
+    result = await db.execute(
+        select(PlannedShot).where(PlannedShot.id == shot_id)
+    )
+    planned_shot = result.scalar_one_or_none()
+    if not planned_shot or planned_shot.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Planned shot not found")
     shot = await reject_planned_shot(
-        db, shot_id, current_user.user_id, payload.notes
+        db, shot_id, _tenant.user_id, payload.notes
     )
     
     return {"id": shot.id, "status": shot.status}
@@ -132,12 +135,9 @@ async def reject_shot(
 async def get_shot_coverage(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
 ):
     """Get shot coverage summary."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     coverage = await get_shot_coverage_summary(db, project_id)
     
     return coverage

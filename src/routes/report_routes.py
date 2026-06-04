@@ -6,10 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models.core import User as DBUser
+from dependencies.tenant_context import get_tenant_context, require_write_permission
 from models.report import CameraReport, DirectorNote, ScriptNote, SoundReport
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
+from schemas.auth_schema import TenantContext
 from schemas.report_schema import (
     CameraReportCreate,
     CameraReportListResponse,
@@ -32,12 +31,6 @@ from services.report_service import report_service
 
 
 router = APIRouter(prefix="/api/ingest", tags=["structured-reports"])
-
-
-async def _get_user_org_id(user_id: str, db: AsyncSession) -> Optional[str]:
-    result = await db.execute(select(DBUser).where(DBUser.id == user_id))
-    user = result.scalar_one_or_none()
-    return user.organization_id if user else None
 
 
 def _camera_report_response(report: CameraReport) -> CameraReportResponse:
@@ -133,17 +126,6 @@ def _director_note_response(report: DirectorNote) -> DirectorNoteResponse:
     )
 
 
-async def _get_user_org_or_401(
-    current_user: Optional[UserResponse], db: AsyncSession
-) -> str:
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_org_id = await _get_user_org_id(current_user.user_id, db)
-    if not user_org_id:
-        raise HTTPException(status_code=403, detail="User has no organization")
-    return user_org_id
-
-
 async def _get_report_or_404(
     db: AsyncSession, report_type: str, report_id: str, organization_id: str
 ) -> Any:
@@ -159,15 +141,14 @@ async def _get_report_or_404(
 async def create_camera_report(
     payload: CameraReportCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> CameraReportResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
     report = await report_service.create_report(
         db,
         "camera",
         payload.model_dump(exclude_none=True),
-        user_org_id=user_org_id,
-        created_by=current_user.user_id if current_user else None,
+        user_org_id=str(tenant.organization_id),
+        created_by=tenant.user_id,
     )
     return _camera_report_response(report)
 
@@ -178,13 +159,12 @@ async def list_camera_reports(
     document_asset_id: Optional[str] = None,
     media_asset_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> CameraReportListResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
     reports = await report_service.list_reports(
         db,
         "camera",
-        user_org_id,
+        str(tenant.organization_id),
         project_id=project_id,
         document_asset_id=document_asset_id,
         media_asset_id=media_asset_id,
@@ -198,10 +178,9 @@ async def list_camera_reports(
 async def get_camera_report(
     report_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> CameraReportResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
-    report = await _get_report_or_404(db, "camera", report_id, user_org_id)
+    report = await _get_report_or_404(db, "camera", report_id, str(tenant.organization_id))
     return _camera_report_response(report)
 
 
@@ -210,16 +189,15 @@ async def update_camera_report(
     report_id: str,
     payload: CameraReportUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> CameraReportResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
-    report = await _get_report_or_404(db, "camera", report_id, user_org_id)
+    report = await _get_report_or_404(db, "camera", report_id, str(tenant.organization_id))
     updated = await report_service.update_report(
         db,
         "camera",
         report,
         payload.model_dump(exclude_none=True),
-        updated_by=current_user.user_id if current_user else None,
+        updated_by=tenant.user_id,
     )
     return _camera_report_response(updated)
 
@@ -228,15 +206,14 @@ async def update_camera_report(
 async def create_sound_report(
     payload: SoundReportCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> SoundReportResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
     report = await report_service.create_report(
         db,
         "sound",
         payload.model_dump(exclude_none=True),
-        user_org_id=user_org_id,
-        created_by=current_user.user_id if current_user else None,
+        user_org_id=str(tenant.organization_id),
+        created_by=tenant.user_id,
     )
     return _sound_report_response(report)
 
@@ -247,13 +224,12 @@ async def list_sound_reports(
     document_asset_id: Optional[str] = None,
     media_asset_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> SoundReportListResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
     reports = await report_service.list_reports(
         db,
         "sound",
-        user_org_id,
+        str(tenant.organization_id),
         project_id=project_id,
         document_asset_id=document_asset_id,
         media_asset_id=media_asset_id,
@@ -267,10 +243,9 @@ async def list_sound_reports(
 async def get_sound_report(
     report_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> SoundReportResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
-    report = await _get_report_or_404(db, "sound", report_id, user_org_id)
+    report = await _get_report_or_404(db, "sound", report_id, str(tenant.organization_id))
     return _sound_report_response(report)
 
 
@@ -279,16 +254,15 @@ async def update_sound_report(
     report_id: str,
     payload: SoundReportUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> SoundReportResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
-    report = await _get_report_or_404(db, "sound", report_id, user_org_id)
+    report = await _get_report_or_404(db, "sound", report_id, str(tenant.organization_id))
     updated = await report_service.update_report(
         db,
         "sound",
         report,
         payload.model_dump(exclude_none=True),
-        updated_by=current_user.user_id if current_user else None,
+        updated_by=tenant.user_id,
     )
     return _sound_report_response(updated)
 
@@ -297,15 +271,14 @@ async def update_sound_report(
 async def create_script_note(
     payload: ScriptNoteCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> ScriptNoteResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
     report = await report_service.create_report(
         db,
         "script",
         payload.model_dump(exclude_none=True),
-        user_org_id=user_org_id,
-        created_by=current_user.user_id if current_user else None,
+        user_org_id=str(tenant.organization_id),
+        created_by=tenant.user_id,
     )
     return _script_note_response(report)
 
@@ -316,13 +289,12 @@ async def list_script_notes(
     document_asset_id: Optional[str] = None,
     media_asset_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> ScriptNoteListResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
     reports = await report_service.list_reports(
         db,
         "script",
-        user_org_id,
+        str(tenant.organization_id),
         project_id=project_id,
         document_asset_id=document_asset_id,
         media_asset_id=media_asset_id,
@@ -336,10 +308,9 @@ async def list_script_notes(
 async def get_script_note(
     report_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> ScriptNoteResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
-    report = await _get_report_or_404(db, "script", report_id, user_org_id)
+    report = await _get_report_or_404(db, "script", report_id, str(tenant.organization_id))
     return _script_note_response(report)
 
 
@@ -348,16 +319,15 @@ async def update_script_note(
     report_id: str,
     payload: ScriptNoteUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> ScriptNoteResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
-    report = await _get_report_or_404(db, "script", report_id, user_org_id)
+    report = await _get_report_or_404(db, "script", report_id, str(tenant.organization_id))
     updated = await report_service.update_report(
         db,
         "script",
         report,
         payload.model_dump(exclude_none=True),
-        updated_by=current_user.user_id if current_user else None,
+        updated_by=tenant.user_id,
     )
     return _script_note_response(updated)
 
@@ -366,15 +336,14 @@ async def update_script_note(
 async def create_director_note(
     payload: DirectorNoteCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> DirectorNoteResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
     report = await report_service.create_report(
         db,
         "director",
         payload.model_dump(exclude_none=True),
-        user_org_id=user_org_id,
-        created_by=current_user.user_id if current_user else None,
+        user_org_id=str(tenant.organization_id),
+        created_by=tenant.user_id,
     )
     return _director_note_response(report)
 
@@ -385,13 +354,12 @@ async def list_director_notes(
     document_asset_id: Optional[str] = None,
     media_asset_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> DirectorNoteListResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
     reports = await report_service.list_reports(
         db,
         "director",
-        user_org_id,
+        str(tenant.organization_id),
         project_id=project_id,
         document_asset_id=document_asset_id,
         media_asset_id=media_asset_id,
@@ -405,10 +373,9 @@ async def list_director_notes(
 async def get_director_note(
     report_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> DirectorNoteResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
-    report = await _get_report_or_404(db, "director", report_id, user_org_id)
+    report = await _get_report_or_404(db, "director", report_id, str(tenant.organization_id))
     return _director_note_response(report)
 
 
@@ -417,15 +384,14 @@ async def update_director_note(
     report_id: str,
     payload: DirectorNoteUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> DirectorNoteResponse:
-    user_org_id = await _get_user_org_or_401(current_user, db)
-    report = await _get_report_or_404(db, "director", report_id, user_org_id)
+    report = await _get_report_or_404(db, "director", report_id, str(tenant.organization_id))
     updated = await report_service.update_report(
         db,
         "director",
         report,
         payload.model_dump(exclude_none=True),
-        updated_by=current_user.user_id if current_user else None,
+        updated_by=tenant.user_id,
     )
     return _director_note_response(updated)

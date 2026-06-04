@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models.production import PrivateFundingSource, PrivateOpportunity, FundingCall, FundingSource as PublicFundingSource
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import get_tenant_context, require_write_permission
 from schemas.auth_schema import TenantContext
 from services.funding_alert_service import funding_alert_service
 
@@ -72,6 +72,7 @@ async def create_private_source(
     payload: PrivateSourceCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
 ):
     source = PrivateFundingSource(
         organization_id=tenant.organization_id,
@@ -99,6 +100,7 @@ async def update_private_source(
     payload: PrivateSourceCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(PrivateFundingSource).where(
@@ -126,6 +128,7 @@ async def delete_private_source(
     source_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(PrivateFundingSource).where(
@@ -181,6 +184,7 @@ async def create_private_opportunity(
     payload: PrivateOpportunityCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
 ):
     source_result = await db.execute(
         select(PrivateFundingSource).where(

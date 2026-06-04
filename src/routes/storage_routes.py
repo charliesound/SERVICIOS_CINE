@@ -7,7 +7,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from dependencies.tenant_context import get_tenant_context, TenantContext
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    TenantContext,
+)
 from models.core import Project
 from models.storage import (
     StorageAuthorization,
@@ -48,6 +52,30 @@ async def _check_storage_source_access(
     if str(source.organization_id) != str(tenant.organization_id):
         raise HTTPException(status_code=404, detail="Storage source not found")
     return source
+
+
+async def _check_watch_path_access(
+    watch_path_id: str,
+    *,
+    source_id: str,
+    tenant: TenantContext,
+    db: AsyncSession,
+) -> StorageWatchPath:
+    result = await db.execute(
+        select(StorageWatchPath).where(
+            StorageWatchPath.id == watch_path_id,
+            StorageWatchPath.storage_source_id == source_id,
+        )
+    )
+    watch_path = result.scalar_one_or_none()
+    if not watch_path:
+        raise HTTPException(status_code=404, detail="Watch path not found")
+
+    source = await _check_storage_source_access(source_id, tenant, db)
+    if str(source.organization_id) != str(tenant.organization_id):
+        raise HTTPException(status_code=404, detail="Watch path not found")
+
+    return watch_path
 
 
 def _source_response(source: StorageSource) -> StorageSourceResponse:
@@ -114,7 +142,7 @@ def _scan_response(scan) -> IngestScanResponse:
 async def create_storage_source(
     payload: StorageSourceCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> StorageSourceResponse:
     user_org_id = str(tenant.organization_id)
 
@@ -181,7 +209,7 @@ async def update_storage_source(
     source_id: str,
     update: StorageSourceUpdate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> StorageSourceResponse:
     source = await _check_storage_source_access(source_id, tenant, db)
     updated = await storage_service.update_storage_source(
@@ -194,7 +222,7 @@ async def update_storage_source(
 async def validate_storage_source(
     source_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> StorageSourceValidateResponse:
     source = await _check_storage_source_access(source_id, tenant, db)
     result = await storage_service.validate_storage_source(
@@ -208,7 +236,7 @@ async def authorize_storage_source(
     source_id: str,
     payload: StorageAuthorizationCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> AuthResponseSchema:
     source = await _check_storage_source_access(source_id, tenant, db)
     authorization = await storage_service.authorize_storage_source(
@@ -242,7 +270,7 @@ async def create_watch_path(
     source_id: str,
     payload: StorageWatchPathCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> StorageWatchPathResponse:
     source = await _check_storage_source_access(source_id, tenant, db)
     watch = await storage_service.create_watch_path(db, source, payload.watch_path)
@@ -291,9 +319,16 @@ async def launch_storage_scan(
     source_id: str,
     payload: IngestScanLaunchRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ) -> IngestScanResponse:
     source = await _check_storage_source_access(source_id, tenant, db)
+    if payload.watch_path_id:
+        await _check_watch_path_access(
+            payload.watch_path_id,
+            source_id=source_id,
+            tenant=tenant,
+            db=db,
+        )
     scan = await ingest_service.launch_scan(
         db,
         source=source,

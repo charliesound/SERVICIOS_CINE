@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
+from dependencies.project_access import validate_project_access, require_write_permission
 from dependencies.tenant_context import get_tenant_context, TenantContext
 from models.core import Project
 from services.script_version_service import ScriptVersionService, ScriptChangeAnalysisService
@@ -33,32 +34,14 @@ class CompareVersionsPayload(BaseModel):
     to_version_id: str
 
 
-async def _get_project_for_tenant_or_404(
-    db: AsyncSession,
-    project_id: str,
-    tenant: TenantContext,
-) -> Project:
-    result = await db.execute(
-        select(Project).where(
-            Project.id == project_id,
-            Project.organization_id == str(tenant.organization_id),
-        )
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return project
-
-
 @router.get("/{project_id}/script/versions")
 async def list_script_versions(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
-    
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
     
     service = ScriptVersionService(db)
     versions = await service.list_versions(project_id)
@@ -87,10 +70,10 @@ async def create_script_version(
     payload: CreateScriptVersionPayload,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
-    
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
     
     service = ScriptVersionService(db)
     
@@ -130,6 +113,7 @@ async def get_script_version(
     version_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
     
@@ -167,10 +151,10 @@ async def activate_script_version(
     version_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
-    
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
     
     service = ScriptVersionService(db)
     version = await service.activate_version(project_id, version_id, project)
@@ -191,6 +175,8 @@ async def compare_script_versions(
     payload: CompareVersionsPayload,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
     
@@ -240,10 +226,9 @@ async def list_change_reports(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
-
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     from models.script_versioning import ScriptChangeReport
     result = await db.execute(
@@ -270,10 +255,9 @@ async def get_module_statuses(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     user_org_id = str(tenant.organization_id)
-
-    project = await _get_project_for_tenant_or_404(db, project_id, tenant)
 
     service = ScriptVersionService(db)
     statuses = await service.get_module_statuses(project_id)

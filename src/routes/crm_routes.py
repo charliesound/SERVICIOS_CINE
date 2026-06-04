@@ -6,12 +6,26 @@ from typing import Optional, Any
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
-from models.crm import CONTACT_TYPES, OPPORTUNITY_TYPES, OPPORTUNITY_STATUS, COMMUNICATION_TYPES
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
+from models.core import Project
+from models.crm import (
+    COMMUNICATION_TYPES,
+    CONTACT_TYPES,
+    OPPORTUNITY_STATUS,
+    OPPORTUNITY_TYPES,
+    CRMContact,
+    CRMOpportunity,
+    CRMTask,
+)
 from schemas.auth_schema import TenantContext
 from services.crm_service import (
     create_contact,
@@ -36,8 +50,60 @@ from services.crm_service import (
 router = APIRouter(
     prefix="/api",
     tags=["commercial-crm"],
-    dependencies=[Depends(require_module_access("delivery_distribution"))],
+    dependencies=[
+        Depends(get_tenant_context),
+        Depends(require_module_access("delivery_distribution")),
+    ],
 )
+
+
+async def _get_contact_for_tenant_or_404(
+    db: AsyncSession,
+    *,
+    contact_id: str,
+    tenant: TenantContext,
+) -> CRMContact:
+    contact = await get_contact(db, contact_id)
+    if not contact or str(contact.organization_id) != str(tenant.organization_id):
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return contact
+
+
+async def _get_opportunity_for_project_or_404(
+    db: AsyncSession,
+    *,
+    project_id: str,
+    opportunity_id: str,
+    tenant: TenantContext,
+) -> CRMOpportunity:
+    opp = await get_opportunity(db, opportunity_id)
+    if (
+        not opp
+        or opp.project_id != project_id
+        or str(opp.organization_id) != str(tenant.organization_id)
+    ):
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    return opp
+
+
+async def _get_task_for_project_or_404(
+    db: AsyncSession,
+    *,
+    project_id: str,
+    task_id: str,
+    tenant: TenantContext,
+) -> CRMTask:
+    result = await db.execute(
+        select(CRMTask).where(
+            CRMTask.id == task_id,
+            CRMTask.project_id == project_id,
+            CRMTask.organization_id == tenant.organization_id,
+        )
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
 
 
 class CRMContactCreate(BaseModel):
@@ -130,7 +196,7 @@ async def list_crm_contacts(
 async def create_crm_contact(
     payload: CRMContactCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ):
     if payload.contact_type not in CONTACT_TYPES:
         raise HTTPException(status_code=400, detail="Invalid contact type")
@@ -150,9 +216,9 @@ async def get_crm_contact(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
 ):
-    contact = await get_contact(db, contact_id)
-    if not contact:
-        raise HTTPException(status_code=404, detail="Contact not found")
+    contact = await _get_contact_for_tenant_or_404(
+        db, contact_id=contact_id, tenant=tenant
+    )
 
     return JSONResponse(content={"contact": {
         "id": contact.id,
@@ -174,8 +240,9 @@ async def update_crm_contact(
     contact_id: str,
     payload: CRMContactCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ):
+    await _get_contact_for_tenant_or_404(db, contact_id=contact_id, tenant=tenant)
     try:
         contact = await update_contact(db, contact_id, payload.model_dump(exclude_none=True))
     except ValueError as e:
@@ -188,8 +255,9 @@ async def update_crm_contact(
 async def archive_crm_contact(
     contact_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
 ):
+    await _get_contact_for_tenant_or_404(db, contact_id=contact_id, tenant=tenant)
     try:
         contact = await archive_contact(db, contact_id)
     except ValueError as e:
@@ -203,6 +271,7 @@ async def get_crm_summary_endpoint(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     summary = await get_crm_summary(db, project_id)
     return JSONResponse(content=summary)
@@ -215,6 +284,7 @@ async def list_crm_opportunities(
     priority: Optional[str] = Query(default=None),
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     opps = await list_project_opportunities(db, project_id, status, priority)
     return JSONResponse(content={
@@ -241,7 +311,8 @@ async def create_crm_opportunity(
     project_id: str,
     payload: CRMOpportunityCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     if payload.opportunity_type not in OPPORTUNITY_TYPES:
         raise HTTPException(status_code=400, detail="Invalid opportunity type")
@@ -262,10 +333,14 @@ async def get_crm_opportunity(
     opportunity_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    opp = await get_opportunity(db, opportunity_id)
-    if not opp or opp.project_id != project_id:
-        raise HTTPException(status_code=404, detail="Opportunity not found")
+    opp = await _get_opportunity_for_project_or_404(
+        db,
+        project_id=project_id,
+        opportunity_id=opportunity_id,
+        tenant=tenant,
+    )
 
     return JSONResponse(content={"opportunity": {
         "id": opp.id,
@@ -285,8 +360,15 @@ async def update_crm_opportunity(
     opportunity_id: str,
     payload: CRMOpportunityUpdate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
+    await _get_opportunity_for_project_or_404(
+        db,
+        project_id=project_id,
+        opportunity_id=opportunity_id,
+        tenant=tenant,
+    )
     try:
         opp = await update_opportunity(db, opportunity_id, payload.model_dump(exclude_none=True))
     except ValueError as e:
@@ -301,10 +383,18 @@ async def update_crm_opportunity_status(
     opportunity_id: str,
     status: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     if status not in OPPORTUNITY_STATUS:
         raise HTTPException(status_code=400, detail="Invalid status")
+
+    await _get_opportunity_for_project_or_404(
+        db,
+        project_id=project_id,
+        opportunity_id=opportunity_id,
+        tenant=tenant,
+    )
 
     try:
         opp = await update_opportunity(db, opportunity_id, {"status": status})
@@ -321,6 +411,7 @@ async def list_crm_communications(
     contact_id: Optional[str] = Query(default=None),
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     comms = await list_communications(db, project_id, opportunity_id, contact_id)
     return JSONResponse(content={
@@ -346,10 +437,20 @@ async def add_crm_communication(
     contact_id: str,
     payload: CRMCommunicationCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     if payload.communication_type not in COMMUNICATION_TYPES:
         raise HTTPException(status_code=400, detail="Invalid communication type")
+
+    await _get_contact_for_tenant_or_404(db, contact_id=contact_id, tenant=tenant)
+    if payload.opportunity_id:
+        await _get_opportunity_for_project_or_404(
+            db,
+            project_id=project_id,
+            opportunity_id=payload.opportunity_id,
+            tenant=tenant,
+        )
 
     comm = await add_communication(
         db,
@@ -368,6 +469,7 @@ async def list_crm_tasks(
     status: Optional[str] = Query(default=None),
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     tasks = await list_tasks(db, project_id, status)
     return JSONResponse(content={
@@ -391,8 +493,20 @@ async def create_crm_task(
     project_id: str,
     payload: CRMTaskCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
+    if payload.contact_id:
+        await _get_contact_for_tenant_or_404(
+            db, contact_id=payload.contact_id, tenant=tenant
+        )
+    if payload.opportunity_id:
+        await _get_opportunity_for_project_or_404(
+            db,
+            project_id=project_id,
+            opportunity_id=payload.opportunity_id,
+            tenant=tenant,
+        )
     task = await create_task(
         db,
         project_id,
@@ -408,8 +522,15 @@ async def complete_crm_task(
     project_id: str,
     task_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
+    await _get_task_for_project_or_404(
+        db,
+        project_id=project_id,
+        task_id=task_id,
+        tenant=tenant,
+    )
     try:
         task = await complete_task(db, task_id)
     except ValueError as e:
@@ -423,8 +544,15 @@ async def cancel_crm_task(
     project_id: str,
     task_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
+    await _get_task_for_project_or_404(
+        db,
+        project_id=project_id,
+        task_id=task_id,
+        tenant=tenant,
+    )
     try:
         task = await cancel_task(db, task_id)
     except ValueError as e:

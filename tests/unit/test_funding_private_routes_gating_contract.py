@@ -126,7 +126,7 @@ def test_no_project_access_gating_if_tenant_scoped():
 def test_ownership_queries_use_tenant_organization_id():
     """Queries for private funding sources and opportunities must filter by organization_id."""
     source = _read_source()
-    
+
     # Check that where clauses check organization_id
     assert "PrivateFundingSource.organization_id == tenant.organization_id" in source
     assert "PrivateOpportunity.organization_id == tenant.organization_id" in source
@@ -135,12 +135,12 @@ def test_ownership_queries_use_tenant_organization_id():
 def test_mutators_filter_by_id_and_organization_id():
     """Updates/Deletes must ensure the entity belongs to the tenant's organization."""
     source = _read_source()
-    
+
     # update_private_source
     update_block = _get_function_block(source, '@private_source_router.put("/sources/private/{source_id}")')
     assert "PrivateFundingSource.id == source_id" in update_block
     assert "PrivateFundingSource.organization_id == tenant.organization_id" in update_block
-    
+
     # delete_private_source
     delete_block = _get_function_block(source, '@private_source_router.delete("/sources/private/{source_id}")')
     assert "PrivateFundingSource.id == source_id" in delete_block

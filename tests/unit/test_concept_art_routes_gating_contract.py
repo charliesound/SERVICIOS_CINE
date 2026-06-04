@@ -132,19 +132,19 @@ def test_no_inline_project_query():
 def test_service_calls_use_validated_project_id():
     """All service calls must receive validated_project_id instead of raw path project_id."""
     source = _read_source()
-    
+
     # project_concept_art_compile_dry_run
     dry_run_block = _get_function_block(source, '@router.post("/{project_id}/concept-art/compile-workflow-dry-run")')
     assert "validated_project_id = str(project.id)" in dry_run_block
     assert "project_id=validated_project_id" in dry_run_block
     assert "project_id=project_id" not in dry_run_block
-    
+
     # project_key_visual_compile_dry_run
     key_visual_block = _get_function_block(source, '@router.post("/{project_id}/key-visual/compile-workflow-dry-run")')
     assert "validated_project_id = str(project.id)" in key_visual_block
     assert "project_id=validated_project_id" in key_visual_block
     assert "project_id=project_id" not in key_visual_block
-    
+
     # project_concept_art_list_jobs
     jobs_block = _get_function_block(source, '@router.get("/{project_id}/concept-art/jobs")')
     assert "validated_project_id = str(project.id)" in jobs_block

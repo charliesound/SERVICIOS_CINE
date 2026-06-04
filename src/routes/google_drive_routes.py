@@ -6,6 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models.integration import IntegrationConnectionStatus, IntegrationProvider
+from dependencies.project_access import validate_project_access, require_write_permission
+from typing import Any
+from models.core import Project
 from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from schemas.integration_schema import (
@@ -41,15 +44,7 @@ def _link_to_response(link) -> GoogleDriveFolderLinkResponse:
     )
 
 
-async def _get_project_or_403(project_id: str, db: AsyncSession, tenant: TenantContext):
-    project = await google_drive_service.get_project_for_tenant(
-        db,
-        project_id=project_id,
-        organization_id=tenant.organization_id,
-    )
-    if project is None:
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-    return project
+
 
 
 @router.get(
@@ -59,6 +54,7 @@ async def _get_project_or_403(project_id: str, db: AsyncSession, tenant: TenantC
 async def connect_google_drive(
     request: Request,
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     state = google_drive_service.state_service.issue(
         organization_id=tenant.organization_id,
@@ -83,6 +79,8 @@ async def google_drive_callback(
     code: str = Query(...),
     state: str = Query(...),
     db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ):
     payload = google_drive_service.state_service.verify(state)
     redirect_uri = google_drive_service.resolve_redirect_uri(
@@ -133,6 +131,7 @@ async def google_drive_status(
 async def disconnect_google_drive(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: Any = Depends(require_write_permission),
 ) -> GoogleDriveConnectionStatusResponse:
     result = await google_drive_service.disconnect(db, organization_id=tenant.organization_id)
     return GoogleDriveConnectionStatusResponse(
@@ -151,8 +150,8 @@ async def list_google_drive_folders(
     parent_id: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> GoogleDriveFolderListResponse:
-    await _get_project_or_403(project_id, db, tenant)
     folders = await google_drive_service.list_folders(
         db,
         organization_id=tenant.organization_id,
@@ -175,8 +174,9 @@ async def link_google_drive_folder(
     payload: GoogleDriveLinkFolderRequest,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> GoogleDriveFolderLinkResponse:
-    project = await _get_project_or_403(project_id, db, tenant)
     link = await google_drive_service.create_folder_link(
         db,
         project_id=str(project.id),
@@ -195,8 +195,8 @@ async def list_google_drive_folder_links(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> GoogleDriveFolderLinkListResponse:
-    project = await _get_project_or_403(project_id, db, tenant)
     links = await google_drive_service.list_folder_links(
         db,
         project_id=str(project.id),
@@ -215,8 +215,9 @@ async def delete_google_drive_folder_link(
     link_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ):
-    project = await _get_project_or_403(project_id, db, tenant)
     deleted = await google_drive_service.delete_folder_link(
         db,
         project_id=str(project.id),
@@ -236,8 +237,9 @@ async def sync_google_drive_project(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> GoogleDriveSyncResponse:
-    await _get_project_or_403(project_id, db, tenant)
     result = await google_drive_service.sync_project(
         db,
         project_id=project_id,
@@ -255,8 +257,8 @@ async def google_drive_sync_status(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> GoogleDriveSyncStatusResponse:
-    await _get_project_or_403(project_id, db, tenant)
     status = await google_drive_service.get_sync_status(
         db,
         project_id=project_id,

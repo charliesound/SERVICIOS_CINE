@@ -12,7 +12,11 @@ from database import AsyncSessionLocal, get_db
 from dependencies.module_access import require_module_access
 from models.core import Project, ProjectJob
 from models.production import ProductionBreakdown
-from dependencies.tenant_context import get_tenant_context, require_write_permission
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
 from schemas.auth_schema import TenantContext
 from services.funding_dossier_service import funding_dossier_service
 from services.funding_matcher_service import funding_matcher_service
@@ -32,6 +36,7 @@ funding_router = APIRouter(prefix="/api/funding", tags=["funding-public"])
 async def sync_funding_sources(
     force: bool = False,
     db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(require_write_permission),
 ):
     result = await funding_ingestion_service.sync_sources(db, force=force)
     return JSONResponse(content=result)
@@ -206,20 +211,6 @@ async def _run_funding_rag_job(job_id: str, project_id: str, organization_id: st
             await job_db.commit()
 
 
-async def _get_project_or_403(
-    project_id: str,
-    db: AsyncSession,
-    tenant: TenantContext,
-) -> Project:
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-    return project
-
-
 async def _get_latest_rag_job(
     db: AsyncSession,
     *,
@@ -320,16 +311,8 @@ async def get_funding_dossier(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     organization_id = str(project.organization_id)
 
     dossier = await funding_dossier_service.build_dossier(db, project_id, organization_id)
@@ -343,16 +326,8 @@ async def export_funding_dossier_pdf(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     organization_id = str(project.organization_id)
 
     dossier = await funding_dossier_service.build_dossier(db, project_id, organization_id)
@@ -379,16 +354,8 @@ async def persist_funding_dossier_pdf(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _write_check: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     organization_id = str(project.organization_id)
 
     dossier = await funding_dossier_service.build_dossier(db, project_id, organization_id)
@@ -445,16 +412,8 @@ async def recompute_funding_matches(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _write_check: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     organization_id = str(project.organization_id)
 
     result_payload = await funding_matcher_service.compute_matches(db, project_id, organization_id)
@@ -480,16 +439,8 @@ async def get_funding_matches(
     q: str | None = None,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     organization_id = str(project.organization_id)
     matches = await funding_matcher_service.get_matches(db, project_id, organization_id)
     listing = _filter_sort_paginate_matches(
@@ -527,8 +478,8 @@ async def recompute_funding_matches_rag(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _write_check: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_or_403(project_id, db, tenant)
     organization_id = str(project.organization_id)
 
     job = ProjectJob(
@@ -579,8 +530,8 @@ async def get_funding_matches_rag(
     q: str | None = None,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_or_403(project_id, db, tenant)
     organization_id = str(project.organization_id)
     matches = await funding_matcher_service.get_matches(
         db,
@@ -633,8 +584,8 @@ async def get_funding_match_evidence(
     match_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_or_403(project_id, db, tenant)
     organization_id = str(project.organization_id)
     evidence = await funding_matcher_service.get_match_evidence(
         db,
@@ -652,8 +603,8 @@ async def get_funding_matcher_status(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_or_403(project_id, db, tenant)
     organization_id = str(project.organization_id)
     latest_job = await _get_latest_rag_job(
         db,
@@ -688,16 +639,8 @@ async def get_funding_checklist(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     organization_id = str(project.organization_id)
     checklist = await funding_matcher_service.get_checklist(db, project_id, organization_id)
 
@@ -709,16 +652,8 @@ async def get_funding_profile(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     profile = await funding_matcher_service.build_project_profile(db, project_id, tenant)
     if profile is None:
         raise HTTPException(status_code=404, detail="Funding profile not available")
@@ -733,16 +668,8 @@ async def estimate_budget(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _write_check: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     breakdown_result = await db.execute(
         select(ProductionBreakdown).where(ProductionBreakdown.project_id == project_id)
     )

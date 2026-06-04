@@ -78,7 +78,7 @@ def test_mutating_endpoints_have_require_write_permission():
         block = source[idx:]
         next_decorator = re.search(r"\n@", block)
         block = block[:next_decorator.start()] if next_decorator else block
-        
+
         # Exception for GET vs POST on link-folder since there are two with same path
         if "link-folder" in action and "link_id" not in action:
             # We want to check the POST one.
@@ -89,9 +89,9 @@ def test_mutating_endpoints_have_require_write_permission():
     # Add connect and callback which are GET but actions
     decorators.extend(re.findall(r"@router\.get\(\s*\"/api/integrations/google-drive/connect\"[^)]*\)", source))
     decorators.extend(re.findall(r"@router\.get\(\s*\"/api/integrations/google-drive/callback\"[^)]*\)", source))
-    
+
     assert len(decorators) == 6, f"Expected 6 mutating/action endpoints, found {len(decorators)}"
-    
+
     for decorator in decorators:
         block = _get_function_block(source, decorator)
         assert "require_write_permission" in block, (

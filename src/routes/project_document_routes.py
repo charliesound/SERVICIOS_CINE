@@ -7,7 +7,12 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from routes.auth_routes import get_tenant_context
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
+from models.core import Project
 from schemas.auth_schema import TenantContext
 from schemas.project_document_schema import (
     ProjectDocumentListResponse,
@@ -77,15 +82,6 @@ def _to_chunk_response(chunk) -> DocumentChunkResponse:
     )
 
 
-async def _get_project_or_403(project_id: str, db: AsyncSession, tenant: TenantContext):
-    project = await project_document_service.get_project_for_tenant(
-        db, project_id, tenant.organization_id
-    )
-    if project is None:
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-    return project
-
-
 @router.post("/{project_id}/documents", response_model=ProjectDocumentResponse, status_code=201)
 async def upload_project_document(
     project_id: str,
@@ -93,9 +89,9 @@ async def upload_project_document(
     visibility_scope: str = Form("project"),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ) -> ProjectDocumentResponse:
-    project = await _get_project_or_403(project_id, db, tenant)
     document = await project_document_service.create_document(
         db,
         project=project,
@@ -112,8 +108,8 @@ async def list_project_documents(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> ProjectDocumentListResponse:
-    project = await _get_project_or_403(project_id, db, tenant)
     documents = await project_document_service.list_documents(
         db,
         project_id=str(project.id),
@@ -132,8 +128,8 @@ async def get_project_document(
     document_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> ProjectDocumentResponse:
-    project = await _get_project_or_403(project_id, db, tenant)
     document = await project_document_service.get_document(
         db,
         project_id=str(project.id),
@@ -151,8 +147,8 @@ async def download_project_document(
     document_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_or_403(project_id, db, tenant)
     document = await project_document_service.get_document(
         db,
         project_id=str(project.id),
@@ -170,9 +166,9 @@ async def delete_project_document(
     project_id: str,
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await _get_project_or_403(project_id, db, tenant)
     document = await project_document_service.get_document(
         db,
         project_id=str(project.id),
@@ -197,9 +193,9 @@ async def reindex_project_documents(
     project_id: str,
     payload: ProjectDocumentReindexRequest | None = None,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ) -> ProjectDocumentReindexResponse:
-    project = await _get_project_or_403(project_id, db, tenant)
     if payload and payload.document_id:
         document = await project_document_service.get_document(
             db,
@@ -227,8 +223,8 @@ async def list_project_document_chunks(
     document_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> DocumentChunkListResponse:
-    project = await _get_project_or_403(project_id, db, tenant)
     document = await project_document_service.get_document(
         db,
         project_id=str(project.id),
@@ -256,9 +252,9 @@ async def ask_project_documents(
     project_id: str,
     payload: ProjectDocumentAskRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ) -> ProjectDocumentAskResponse:
-    project = await _get_project_or_403(project_id, db, tenant)
     result = await project_document_rag_service.ask(
         db,
         project_id=str(project.id),

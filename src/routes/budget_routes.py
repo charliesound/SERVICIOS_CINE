@@ -14,10 +14,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_organization,
+    require_write_permission,
+    validate_project_access,
+)
 from models.budget_estimator import BudgetEstimate, BudgetLineItem, BUDGET_LEVELS
 from models.core import Project
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
+from schemas.auth_schema import TenantContext
 from services.budget_estimator_service import (
     generate_budget_from_project,
     generate_budget_from_text,
@@ -38,7 +43,10 @@ from services.project_access_service import check_permission
 router = APIRouter(
     prefix="/api/projects/{project_id}/budgets",
     tags=["budgets"],
-    dependencies=[Depends(require_module_access("budget_lite"))],
+    dependencies=[
+        Depends(get_tenant_context),
+        Depends(require_module_access("budget_lite")),
+    ],
 )
 
 
@@ -97,15 +105,12 @@ def _line_to_dict(line: BudgetLineItem) -> dict:
 
 async def _check_budget_access(
     project_id: str,
-    current_user: Optional[UserResponse],
+    tenant: TenantContext,
     db: AsyncSession,
 ) -> None:
     """Check user has access to project budget."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     has_perm = await check_permission(
-        db, project_id, current_user.user_id, "budget.view"
+        db, project_id, tenant.user_id, "budget.view"
     )
     if has_perm:
         return
@@ -114,7 +119,7 @@ async def _check_budget_access(
     from models.core import User
     from sqlalchemy import select
     result = await db.execute(
-        select(User).where(User.id == current_user.user_id)
+        select(User).where(User.id == tenant.user_id)
     )
     user = result.scalar_one_or_none()
     if user and has_admin_access(get_role_default(user.role)):
@@ -126,10 +131,11 @@ async def _check_budget_access(
 async def list_project_budgets(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_organization),
 ):
     """List all budgets for a project."""
-    await _check_budget_access(project_id, current_user, db)
+    await _check_budget_access(project_id, _tenant, db)
     
     budgets = await list_budgets(db, project_id)
     return {"budgets": [_budget_to_dict(b) for b in budgets]}
@@ -140,14 +146,12 @@ async def generate_budget(
     project_id: str,
     payload: GenerateBudgetPayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_write_permission),
 ):
     """Generate a budget estimate from project data or script text."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     has_perm = await check_permission(
-        db, project_id, current_user.user_id, "budget.generate"
+        db, project_id, _tenant.user_id, "budget.generate"
     )
     if not has_perm:
         raise HTTPException(status_code=403, detail="Cannot generate budget")
@@ -155,19 +159,9 @@ async def generate_budget(
     if payload.level not in BUDGET_LEVELS:
         raise HTTPException(status_code=400, detail=f"Invalid level: {payload.level}")
     
-    from models.core import Project, User
-    from sqlalchemy import select
-    
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    
     organization_id = project.organization_id
     
-    result = await db.execute(select(User).where(User.id == current_user.user_id))
-    user = result.scalar_one_or_none()
-    user_role = user.role if user else "viewer"
+    user_role = _tenant.role
     permissions = get_permissions_for_role(get_role_default(user_role))
     
     if "budget.generate" not in permissions:
@@ -181,6 +175,7 @@ async def generate_budget(
             script_text = project.script_text
         else:
             from models.script_versioning import ScriptVersion
+            from sqlalchemy import select
             result = await db.execute(
                 select(ScriptVersion).where(
                     ScriptVersion.project_id == project_id,
@@ -194,7 +189,7 @@ async def generate_budget(
     
     estimate = await generate_budget_from_text(
         db, project_id, organization_id, script_text or "",
-        payload.level, current_user.user_id,
+        payload.level, _tenant.user_id,
         source_script_version_id, None
     )
     
@@ -206,10 +201,11 @@ async def get_active_budget_endpoint(
     project_id: str,
     role: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_organization),
 ):
     """Get the active budget for a project."""
-    await _check_budget_access(project_id, current_user, db)
+    await _check_budget_access(project_id, _tenant, db)
     
     budget = await get_active_budget(db, project_id)
     if not budget:
@@ -224,10 +220,11 @@ async def get_budget(
     budget_id: str,
     role: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_organization),
 ):
     """Get a specific budget."""
-    await _check_budget_access(project_id, current_user, db)
+    await _check_budget_access(project_id, _tenant, db)
     
     budget = await get_budget_by_id(db, budget_id)
     if not budget:
@@ -249,14 +246,12 @@ async def activate_budget(
     project_id: str,
     budget_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_write_permission),
 ):
     """Activate a budget."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     has_perm = await check_permission(
-        db, project_id, current_user.user_id, "budget.generate"
+        db, project_id, _tenant.user_id, "budget.generate"
     )
     if not has_perm:
         raise HTTPException(status_code=403, detail="Cannot activate budget")
@@ -278,14 +273,12 @@ async def recalculate_budget_endpoint(
     budget_id: str,
     payload: RecalculatePayload,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_write_permission),
 ):
     """Recalculate budget with new level."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     has_perm = await check_permission(
-        db, project_id, current_user.user_id, "budget.generate"
+        db, project_id, _tenant.user_id, "budget.generate"
     )
     if not has_perm:
         raise HTTPException(status_code=403, detail="Cannot recalculate budget")
@@ -307,14 +300,12 @@ async def archive_budget_endpoint(
     project_id: str,
     budget_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_write_permission),
 ):
     """Archive a budget."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
     has_perm = await check_permission(
-        db, project_id, current_user.user_id, "budget.generate"
+        db, project_id, _tenant.user_id, "budget.generate"
     )
     if not has_perm:
         raise HTTPException(status_code=403, detail="Cannot archive budget")
@@ -334,10 +325,11 @@ async def export_budget_json(
     budget_id: str,
     role: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_organization),
 ):
     """Export budget as JSON."""
-    await _check_budget_access(project_id, current_user, db)
+    await _check_budget_access(project_id, _tenant, db)
     
     budget = await get_budget_by_id(db, budget_id)
     if not budget or budget.project_id != project_id:
@@ -363,10 +355,11 @@ async def export_budget_csv(
     project_id: str,
     budget_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    project: Project = Depends(validate_project_access),
+    _tenant: TenantContext = Depends(require_organization),
 ):
     """Export budget lines as CSV."""
-    await _check_budget_access(project_id, current_user, db)
+    await _check_budget_access(project_id, _tenant, db)
     
     budget = await get_budget_by_id(db, budget_id)
     if not budget or budget.project_id != project_id:

@@ -15,7 +15,11 @@ from models.document import (
     DocumentStructuredData,
 )
 from models.storage import IngestEvent
-from dependencies.tenant_context import get_tenant_context, TenantContext
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    TenantContext,
+)
 from schemas.document_schema import (
     DerivePreviewResponse,
     DeriveReportRequest,
@@ -36,6 +40,23 @@ from services.document_service import document_service
 
 
 router = APIRouter(prefix="/api/ingest/documents", tags=["documents"])
+
+
+async def _get_project_for_tenant_or_404(
+    project_id: str,
+    tenant: TenantContext,
+    db: AsyncSession,
+) -> Project:
+    result = await db.execute(
+        select(Project).where(
+            Project.id == project_id,
+            Project.organization_id == str(tenant.organization_id),
+        )
+    )
+    project = result.scalar_one_or_none()
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
 
 
 def _parse_json_payload(raw_value: Optional[str]) -> Optional[dict]:
@@ -180,8 +201,9 @@ async def _get_document_or_404(
 async def create_document_asset(
     payload: DocumentAssetCreate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
     ) -> DocumentAssetResponse:
+    await _get_project_for_tenant_or_404(payload.project_id, tenant, db)
     document = await document_service.create_document(
         db,
         user_org_id=str(tenant.organization_id),
@@ -199,6 +221,8 @@ async def list_document_assets(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     ) -> DocumentAssetListResponse:
+    if project_id:
+        await _get_project_for_tenant_or_404(project_id, tenant, db)
     documents = await document_service.list_documents(
         db,
         organization_id=str(tenant.organization_id),
@@ -226,7 +250,7 @@ async def update_document_asset(
     document_id: str,
     payload: DocumentAssetUpdate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
     ) -> DocumentAssetResponse:
     document = await _get_document_or_404(document_id, tenant, db)
     updated = await document_service.update_document(
@@ -245,7 +269,7 @@ async def update_document_asset(
 async def extract_document_asset(
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
     ) -> DocumentAssetResponse:
     document = await _get_document_or_404(document_id, tenant, db)
     extracted = await document_service.extract_document(
@@ -258,7 +282,7 @@ async def extract_document_asset(
 async def classify_document_asset(
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
     ) -> DocumentAssetResponse:
     document = await _get_document_or_404(document_id, tenant, db)
     classified = await document_service.classify_document(
@@ -271,7 +295,7 @@ async def classify_document_asset(
 async def structure_document_asset(
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
     ) -> DocumentAssetResponse:
     document = await _get_document_or_404(document_id, tenant, db)
     structured = await document_service.structure_document(
@@ -285,7 +309,7 @@ async def approve_document_asset(
     document_id: str,
     payload: DocumentApproveRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
     ) -> DocumentAssetResponse:
     document = await _get_document_or_404(document_id, tenant, db)
     approved = await document_service.approve_document(
@@ -313,7 +337,7 @@ async def list_document_asset_events(
 async def derive_document_preview(
     document_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
     ) -> DerivePreviewResponse:
     document = await _get_document_or_404(document_id, tenant, db)
     preview = await document_service.derive_preview(
@@ -327,7 +351,7 @@ async def derive_document_report(
     document_id: str,
     payload: DeriveReportRequest,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
     ) -> DeriveReportResponse:
     document = await _get_document_or_404(document_id, tenant, db)
     report_payload = {

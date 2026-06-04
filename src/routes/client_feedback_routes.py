@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from dependencies.tenant_context import get_tenant_context
+from dependencies.tenant_context import get_tenant_context, require_write_permission
 from schemas.auth_schema import TenantContext
 from schemas.client_feedback_schema import (
     AggregatedFeedbackResponse,
@@ -25,6 +25,7 @@ async def create_feedback(
     data: CIDClientFeedbackCreate,
     tenant: TenantContext = Depends(get_tenant_context),
     db: AsyncSession = Depends(get_db),
+    _write: None = Depends(require_write_permission),
 ):
     feedback = await cid_client_feedback_service.create_feedback(
         db=db,
@@ -41,6 +42,7 @@ async def update_feedback(
     data: CIDClientFeedbackUpdate,
     tenant: TenantContext = Depends(get_tenant_context),
     db: AsyncSession = Depends(get_db),
+    _write: None = Depends(require_write_permission),
 ):
     feedback = await cid_client_feedback_service.update_feedback(
         db=db,
@@ -58,6 +60,7 @@ async def delete_feedback(
     feedback_id: str,
     tenant: TenantContext = Depends(get_tenant_context),
     db: AsyncSession = Depends(get_db),
+    _write: None = Depends(require_write_permission),
 ):
     deleted = await cid_client_feedback_service.soft_delete_feedback(
         db=db,

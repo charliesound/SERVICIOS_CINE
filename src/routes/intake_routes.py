@@ -9,7 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
-from dependencies.tenant_context import get_tenant_context, require_write_permission
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
 from models.core import Project
 from schemas.auth_schema import TenantContext
 from services.script_analysis_export_service import script_analysis_export_service
@@ -64,16 +68,8 @@ async def intake_script(
     tenant: TenantContext = Depends(get_tenant_context),
     _write: Any = Depends(require_write_permission),
     _module_access: TenantContext = Depends(require_module_access("script_analysis")),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     project.script_text = payload.script_text[:16000000]
     await db.commit()
 
@@ -90,16 +86,8 @@ async def run_analysis(
     tenant: TenantContext = Depends(get_tenant_context),
     _write: Any = Depends(require_write_permission),
     _module_access: TenantContext = Depends(require_module_access("script_analysis")),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     if not project.script_text:
         raise HTTPException(status_code=400, detail="No script text found. Upload script first.")
 
@@ -118,16 +106,8 @@ async def get_analysis_summary(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _module_access: TenantContext = Depends(require_module_access("script_analysis")),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     summary = await analysis_service.get_summary(db, project_id)
     return JSONResponse(content=summary)
 
@@ -138,16 +118,8 @@ async def get_breakdown_scenes(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _module_access: TenantContext = Depends(require_module_access("breakdown")),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     scenes = await analysis_service.get_scenes(db, project_id)
     return JSONResponse(content={
         "project_id": project_id,
@@ -161,16 +133,8 @@ async def get_breakdown_departments(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _module_access: TenantContext = Depends(require_module_access("breakdown")),
+    project: Project = Depends(validate_project_access),
 ):
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not tenant.is_global_admin and str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible for tenant")
-
     departments = await analysis_service.get_departments(db, project_id)
     return JSONResponse(content={
         "project_id": project_id,
@@ -185,6 +149,7 @@ async def export_script_analysis(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _module_access: TenantContext = Depends(require_module_access("script_analysis")),
+    project: Project = Depends(validate_project_access),
 ):
     if format not in ("json", "md"):
         raise HTTPException(
@@ -223,6 +188,7 @@ async def export_breakdown(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _module_access: TenantContext = Depends(require_module_access("breakdown")),
+    project: Project = Depends(validate_project_access),
 ):
     if format not in ("json", "csv", "md"):
         raise HTTPException(
@@ -268,4 +234,3 @@ async def export_breakdown(
             "Content-Disposition": f'attachment; filename="CID_breakdown_{project_id}.md"',
         },
     )
-

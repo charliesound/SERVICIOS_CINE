@@ -118,27 +118,27 @@ def test_no_project_access_gating_if_tenant_scoped():
 def test_service_calls_use_tenant_organization_id():
     """All service calls must pass tenant.organization_id."""
     source = _read_source()
-    
+
     # create_feedback
     create_block = _get_function_block(source, '@router.post("/",')
     assert "organization_id=tenant.organization_id" in create_block
-    
+
     # update_feedback
     update_block = _get_function_block(source, '@router.put("/{feedback_id}",')
     assert "organization_id=tenant.organization_id" in update_block
-    
+
     # delete_feedback
     delete_block = _get_function_block(source, '@router.delete("/{feedback_id}",')
     assert "organization_id=tenant.organization_id" in delete_block
-    
+
     # get_aggregated_feedback
     agg_block = _get_function_block(source, '@router.get("/aggregated",')
     assert "organization_id=tenant.organization_id" in agg_block
-    
+
     # get_feedback
     get_block = _get_function_block(source, '@router.get("/{feedback_id}",')
     assert "organization_id=tenant.organization_id" in get_block
-    
+
     # list_feedback
     list_block = _get_function_block(source, '@router.get("/",')
     assert "organization_id=tenant.organization_id" in list_block
@@ -147,17 +147,17 @@ def test_service_calls_use_tenant_organization_id():
 def test_endpoints_pass_feedback_id_and_organization_id():
     """Endpoints referencing a specific feedback must pass feedback_id and organization_id."""
     source = _read_source()
-    
+
     # update_feedback
     update_block = _get_function_block(source, '@router.put("/{feedback_id}",')
     assert "feedback_id=feedback_id" in update_block
     assert "organization_id=tenant.organization_id" in update_block
-    
+
     # delete_feedback
     delete_block = _get_function_block(source, '@router.delete("/{feedback_id}",')
     assert "feedback_id=feedback_id" in delete_block
     assert "organization_id=tenant.organization_id" in delete_block
-    
+
     # get_feedback
     get_block = _get_function_block(source, '@router.get("/{feedback_id}",')
     assert "feedback_id=feedback_id" in get_block

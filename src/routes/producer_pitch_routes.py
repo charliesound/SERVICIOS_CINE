@@ -10,8 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
+from dependencies.tenant_context import (
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
 from models.core import Project
-from routes.auth_routes import get_tenant_context
 from schemas.auth_schema import TenantContext
 from services.producer_pitch_service import (
     generate_pitch_pack,
@@ -50,6 +54,7 @@ async def list_producer_pitch_packs(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     packs = await list_pitch_packs(db, project_id)
     return JSONResponse(content={
@@ -74,6 +79,7 @@ async def get_active_producer_pitch_pack(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_active_pitch_pack(db, project_id)
     if not pack:
@@ -103,14 +109,9 @@ async def get_active_producer_pitch_pack(
 async def generate_producer_pitch_pack(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
-    project = await db.get(Project, project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if str(project.organization_id) != str(tenant.organization_id):
-        raise HTTPException(status_code=403, detail="Project not accessible")
-
     try:
         pack = await generate_pitch_pack(
             db,
@@ -134,6 +135,7 @@ async def get_producer_pitch_pack(
     pack_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_pitch_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -169,7 +171,8 @@ async def update_producer_pitch_pack(
     pack_id: str,
     payload: PitchPackUpdate,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_pitch_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -192,7 +195,8 @@ async def approve_producer_pitch_pack(
     project_id: str,
     pack_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_pitch_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -215,7 +219,8 @@ async def archive_producer_pitch_pack(
     project_id: str,
     pack_id: str,
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_pitch_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -239,6 +244,7 @@ async def export_producer_pitch_json(
     pack_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_pitch_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -253,6 +259,7 @@ async def export_producer_pitch_markdown(
     pack_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_pitch_pack(db, pack_id)
     if not pack or pack.project_id != project_id:
@@ -268,6 +275,7 @@ async def export_producer_pitch_zip(
     pack_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     pack = await get_pitch_pack(db, pack_id)
     if not pack or pack.project_id != project_id:

@@ -1,0 +1,93 @@
+"""
+Contract test: character_bible_routes.py gating invariants.
+
+Verifies that character bible endpoints require tenant context,
+project access validation on project routes, and write permission on
+mutating endpoints.
+
+Static source-code analysis - no DB, no backend.
+"""
+
+import re
+from pathlib import Path
+
+ROUTES_DIR = Path(__file__).resolve().parent.parent.parent / "src" / "routes"
+TARGET_FILE = ROUTES_DIR / "character_bible_routes.py"
+
+MANUAL_REVIEW_ENDPOINTS = [
+    # No secondary IDs fetched from DB here that are not project-owned.
+]
+
+def _read_source() -> str:
+    assert TARGET_FILE.exists(), f"File not found: {TARGET_FILE}"
+    return TARGET_FILE.read_text("utf-8")
+
+def _get_function_block(source: str, decorator: str) -> str:
+    idx = source.index(decorator)
+    block = source[idx:]
+    next_decorator = re.search(r"\n@", block)
+    return block[:next_decorator.start()] if next_decorator else block
+
+def test_imports_tenant_context():
+    source = _read_source()
+    assert "from dependencies.tenant_context import" in source
+    assert "get_tenant_context" in source
+
+def test_imports_validate_project_access():
+    source = _read_source()
+    assert "validate_project_access" in source
+
+def test_imports_require_write_permission():
+    source = _read_source()
+    assert "require_write_permission" in source
+
+def test_all_project_endpoints_have_validate_project_access():
+    source = _read_source()
+    decorators = [
+        '"\"",',
+        '"/{character_id}"',
+        '"/{character_id}/look-variants"',
+        '"/{character_id}/references"',
+        '"/{character_id}/resolve"',
+        '"/{character_id}/trace"',
+    ]
+    # Let's match decorators properly with regex
+    decorators = re.findall(r"@router\.[a-z]+\([^)]*\)", source)
+    for decorator in decorators:
+        block = _get_function_block(source, decorator)
+        assert "validate_project_access" in block, (
+            f"Project-scoped endpoint missing validate_project_access: {decorator}"
+        )
+
+def test_mutating_endpoints_have_require_write_permission():
+    source = _read_source()
+    decorators = re.findall(r"@router\.(?:post|put|patch|delete)\([^)]*\)", source)
+    for decorator in decorators:
+        block = _get_function_block(source, decorator)
+        assert "require_write_permission" in block, (
+            f"Mutating endpoint missing require_write_permission: {decorator}"
+        )
+
+def test_get_endpoints_do_not_have_require_write_permission():
+    source = _read_source()
+    get_decorators = re.findall(r"@router\.get\([^)]*\)", source)
+    for dec in get_decorators:
+        block = _get_function_block(source, dec)
+        assert "require_write_permission" not in block, (
+            f"GET endpoint should not have require_write_permission: {dec}"
+        )
+
+def test_inline_project_query_removed():
+    source = _read_source()
+    assert "_get_project_or_404" not in source, "Found obsolete inline project query"
+
+def test_router_level_count():
+    source = _read_source()
+    get_count = len(re.findall(r"@router\.get\([^)]*\)", source))
+    post_count = len(re.findall(r"@router\.post\([^)]*\)", source))
+    put_count = len(re.findall(r"@router\.put\([^)]*\)", source))
+    total = get_count + post_count + put_count
+    assert total == 7, f"Expected 7 endpoints, found {total}"
+    assert get_count == 3, f"Expected 3 GET, found {get_count}"
+    assert post_count == 3, f"Expected 3 POST, found {post_count}"
+    assert put_count == 1, f"Expected 1 PUT, found {put_count}"

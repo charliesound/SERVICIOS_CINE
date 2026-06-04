@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
+from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.project_access import validate_project_access, require_write_permission
 from dependencies.tenant_context import get_tenant_context, TenantContext
 from models.core import Project
 from models.storage import MediaAsset, MediaAssetStatus
@@ -29,30 +31,13 @@ router = APIRouter(
 )
 
 
-async def _get_project_or_404(
-    project_id: str,
-    tenant: TenantContext,
-    db: AsyncSession,
-) -> Project:
-    result = await db.execute(
-        select(Project).where(
-            Project.id == project_id,
-            Project.organization_id == str(tenant.organization_id),
-        )
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return project
-
-
 @router.get("", response_model=CharacterBibleListResponse)
 async def list_character_bible(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> CharacterBibleListResponse:
-    await _get_project_or_404(project_id, tenant, db)
     entries = character_bible_service.list_entries(project_id)
     return CharacterBibleListResponse(entries=entries, total=len(entries))
 
@@ -63,8 +48,8 @@ async def get_character_bible_entry(
     character_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> CharacterBibleEntry:
-    await _get_project_or_404(project_id, tenant, db)
     entry = character_bible_service.get_entry(project_id, character_id)
     if not entry:
         raise HTTPException(status_code=404, detail="Character bible entry not found")
@@ -78,8 +63,9 @@ async def create_or_update_character_bible_entry(
     payload: CharacterBibleEntryCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> CharacterBibleEntry:
-    await _get_project_or_404(project_id, tenant, db)
     if payload.character_id != character_id:
         raise HTTPException(status_code=400, detail="character_id in path and body must match")
     entry = await character_bible_service.create_or_update_entry(project_id, payload)
@@ -93,8 +79,9 @@ async def add_look_variant(
     payload: LookVariantCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> CharacterLookVariant:
-    await _get_project_or_404(project_id, tenant, db)
     variant = await character_bible_service.add_look_variant(project_id, character_id, payload)
     if variant is None:
         raise HTTPException(status_code=404, detail="Character bible entry not found")
@@ -108,9 +95,9 @@ async def add_reference(
     payload: ReferenceAssetCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> ApprovedReferenceAsset:
-    await _get_project_or_404(project_id, tenant, db)
-
     if not payload.asset_id.strip():
         raise HTTPException(status_code=400, detail="asset_id must not be empty")
     if any(p in payload.asset_id for p in ("/", "\\", "..")):
@@ -121,7 +108,7 @@ async def add_reference(
         select(MediaAsset).where(
             MediaAsset.id == payload.asset_id,
             MediaAsset.project_id == project_id,
-            MediaAsset.organization_id == str(tenant.organization_id),
+            MediaAsset.organization_id == str(project.organization_id),
             MediaAsset.status == MediaAssetStatus.INDEXED,
         )
     )
@@ -132,7 +119,7 @@ async def add_reference(
             select(MediaAsset.id).where(
                 MediaAsset.id == payload.asset_id,
                 MediaAsset.project_id == project_id,
-                MediaAsset.organization_id == str(tenant.organization_id),
+                MediaAsset.organization_id == str(project.organization_id),
             )
         )
         if inactive_check.scalar_one_or_none():
@@ -164,8 +151,9 @@ async def resolve_character(
     resolve_request: CharacterBibleResolveRequest,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
+    _write: Any = Depends(require_write_permission),
 ) -> CharacterBibleResolveResult:
-    await _get_project_or_404(project_id, tenant, db)
     if resolve_request.project_id != project_id:
         raise HTTPException(status_code=400, detail="project_id in path and body must match")
     if resolve_request.character_id != character_id:
@@ -182,8 +170,8 @@ async def get_character_trace(
     character_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> TraceResponse:
-    await _get_project_or_404(project_id, tenant, db)
     trace = character_bible_service.get_trace(project_id, character_id)
     if trace is None:
         raise HTTPException(status_code=404, detail="Character bible entry not found")

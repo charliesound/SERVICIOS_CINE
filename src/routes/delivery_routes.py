@@ -21,6 +21,7 @@ from services.delivery_service import delivery_service
 from dependencies.tenant_context import (
     get_tenant_context,
     require_write_permission,
+    validate_project_access,
 )
 from schemas.auth_schema import UserResponse, TenantContext
 from services.logging_service import logger
@@ -30,16 +31,6 @@ from routes.project_routes import _enforce_export_permission
 
 
 router = APIRouter(prefix="/api/delivery", tags=["delivery"])
-
-
-async def _get_project_for_tenant_or_admin(
-    db: AsyncSession, project_id: str, tenant: TenantContext
-) -> Project | None:
-    query = select(Project).where(Project.id == project_id)
-    if not tenant.is_global_admin:
-        query = query.where(Project.organization_id == tenant.organization_id)
-    result = await db.execute(query)
-    return result.scalar_one_or_none()
 
 
 async def _get_deliverable_for_tenant_or_admin(
@@ -74,24 +65,22 @@ def _deliverable_response(deliverable: Deliverable) -> DeliverableResponse:
     )
 
 
-@router.get(
-    "/projects/{project_id}/deliverables", response_model=DeliverableListResponse
-)
+@router.get("/projects/{project_id}/deliverables", response_model=DeliverableListResponse)
 async def list_deliverables(
     project_id: str,
     status: Optional[str] = None,
     format_type: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ) -> DeliverableListResponse:
-    project = await _get_project_for_tenant_or_admin(db, project_id, tenant)
-    if project is None:
-        raise HTTPException(status_code=404, detail="Project not found")
+    validated_project_id = str(project.id)
+    organization_id = str(project.organization_id)
 
     deliverables = await delivery_service.list_deliverables(
         db,
-        project_id,
-        str(project.organization_id),
+        validated_project_id,
+        organization_id,
         status,
         format_type,
     )
@@ -141,15 +130,15 @@ async def create_deliverable(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _: None = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ) -> DeliverableResponse:
-    project = await _get_project_for_tenant_or_admin(db, project_id, tenant)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    validated_project_id = str(project.id)
+    organization_id = str(project.organization_id)
 
     db_deliverable = await delivery_service.create_deliverable(
         db,
-        project_id=project_id,
-        organization_id=str(project.organization_id),
+        project_id=validated_project_id,
+        organization_id=organization_id,
         source_review_id=deliverable.source_review_id,
         name=deliverable.name,
         format_type=deliverable.format_type,
@@ -187,7 +176,7 @@ async def download_deliverable(
     deliverable_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
-): 
+) -> FileResponse:
     deliverable = await _get_deliverable_for_tenant_or_admin(db, deliverable_id, tenant)
     if deliverable is None:
         raise HTTPException(status_code=404, detail="Deliverable not found")
@@ -215,17 +204,17 @@ async def trigger_project_export(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
     _: None = Depends(require_write_permission),
-): 
-    project = await _get_project_for_tenant_or_admin(db, project_id, tenant)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    project: Project = Depends(validate_project_access),
+) -> dict[str, str]:
+    validated_project_id = str(project.id)
+    organization_id = str(project.organization_id)
 
     # Enforce plan permissions for ZIP export
     await _enforce_export_permission(tenant.plan, export_format="zip")
 
     job = await export_service.trigger_project_export(
-        project_id=project_id,
-        organization_id=str(project.organization_id),
+        project_id=validated_project_id,
+        organization_id=organization_id,
         user_id=tenant.user_id,
     )
 

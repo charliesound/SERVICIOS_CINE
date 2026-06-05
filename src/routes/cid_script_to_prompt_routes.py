@@ -5,9 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from dependencies.module_access import require_module_access
+from dependencies.tenant_context import TenantContext, get_tenant_context
 from models.core import Project
-from routes.auth_routes import get_tenant_context
-from schemas.auth_schema import TenantContext
 
 from schemas.cid_script_to_prompt_schema import (
     CinematicIntent,
@@ -47,6 +46,28 @@ from services.semantic_prompt_validation_service import semantic_prompt_validati
 router = APIRouter(prefix="/api/cid/script-to-prompt", tags=["cid-script-to-prompt"])
 
 
+def _is_admin_tenant(tenant: TenantContext) -> bool:
+    return bool(
+        getattr(tenant, "is_global_admin", False)
+        or getattr(tenant, "role", None) == "admin"
+    )
+
+
+async def _validate_script_to_prompt_project_access(
+    db: AsyncSession,
+    project_id: str,
+    tenant: TenantContext,
+) -> Project:
+    query = select(Project).where(Project.id == project_id)
+    if not _is_admin_tenant(tenant):
+        query = query.where(Project.organization_id == tenant.organization_id)
+    result = await db.execute(query)
+    project = result.scalar_one_or_none()
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found or access denied")
+    return project
+
+
 @router.post("/run", response_model=ScriptToPromptRunResponse)
 async def run_script_to_prompt(payload: ScriptToPromptRunRequest) -> ScriptToPromptRunResponse:
     return await run_script_to_prompt_pipeline(
@@ -71,11 +92,16 @@ async def analyze_full_script_endpoint(
 ) -> FullScriptAnalysisResult:
     script_text = payload.script_text or ""
     if not script_text and payload.project_id:
-        result = await db.execute(
-            select(Project).where(Project.id == payload.project_id)
+        project = await _validate_script_to_prompt_project_access(
+            db,
+            str(payload.project_id),
+            tenant,
         )
-        project = result.scalar_one_or_none()
-        if project and project.script_text:
+        validated_project_id = str(project.id)
+        organization_id = str(project.organization_id)
+        del validated_project_id
+        del organization_id
+        if project.script_text:
             script_text = project.script_text
     return analyze_full_script(script_text)
 

@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
 from database import get_db
 from dependencies.module_access import require_module_access
-from dependencies.tenant_context import TenantContext, require_organization, require_write_permission
+from dependencies.tenant_context import (
+    TenantContext,
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
+from models.core import Project
 from models.matcher import MatcherJob, MatcherJobStatus
 from schemas.matcher_schema import (
     MatcherJobResponse,
@@ -26,39 +33,20 @@ router = APIRouter(
 @router.post("/trigger", response_model=MatcherJobResponse, status_code=status.HTTP_202_ACCEPTED)
 async def trigger_matcher_job(
     project_id: str = Path(..., description="Project ID"),
-    organization_id: str = Query(..., description="Organization ID for tenant safety"),
     request: MatcherTriggerRequest = MatcherTriggerRequest(),
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(require_organization),
+    tenant: TenantContext = Depends(get_tenant_context),
     _write_check: TenantContext = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
 ):
     """Manually trigger a matcher job for a project."""
     from services.queue_service import queue_service
     from models.matcher import MatcherJob
     import hashlib
     import json
-    
-    if not tenant.is_global_admin and organization_id != tenant.organization_id:
-        raise HTTPException(status_code=403, detail="Organization ID mismatch")
-    
-    # Verify project belongs to organization (tenant safety)
-    from models.core import Project
-    from sqlalchemy import select
-    
-    project_result = await db.execute(
-        select(Project).where(
-            Project.id == project_id,
-            Project.organization_id == organization_id
-        )
-    )
-    project = project_result.scalar_one_or_none()
-    
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found or access denied"
-        )
-    
+    validated_project_id = str(project.id)
+    organization_id = str(project.organization_id)
+
     # Compute input hash based on request parameters or current state
     # For manual trigger, we'll use current document and funding call states
     from models.document import ProjectDocument, ProjectDocumentUploadStatus, ProjectDocumentVisibilityScope
@@ -68,7 +56,7 @@ async def trigger_matcher_job(
     docs_result = await db.execute(
         select(ProjectDocument.id, ProjectDocument.checksum)
         .where(
-            ProjectDocument.project_id == project_id,
+            ProjectDocument.project_id == validated_project_id,
             ProjectDocument.organization_id == organization_id,
             ProjectDocument.visibility_scope == ProjectDocumentVisibilityScope.PROJECT,
             ProjectDocument.upload_status == ProjectDocumentUploadStatus.COMPLETED
@@ -105,7 +93,7 @@ async def trigger_matcher_job(
     existing_job_result = await db.execute(
         select(MatcherJob)
         .where(
-            MatcherJob.project_id == project_id,
+            MatcherJob.project_id == validated_project_id,
             MatcherJob.organization_id == organization_id,
             MatcherJob.input_hash == input_hash,
             MatcherJob.status.in_([MatcherJobStatus.COMPLETED, MatcherJobStatus.SKIPPED])
@@ -121,7 +109,7 @@ async def trigger_matcher_job(
     pending_job_result = await db.execute(
         select(MatcherJob)
         .where(
-            MatcherJob.project_id == project_id,
+            MatcherJob.project_id == validated_project_id,
             MatcherJob.organization_id == organization_id,
             MatcherJob.input_hash == input_hash,
             MatcherJob.status.in_([MatcherJobStatus.PENDING, MatcherJobStatus.QUEUED, MatcherJobStatus.PROCESSING])
@@ -134,7 +122,7 @@ async def trigger_matcher_job(
         return MatcherJobResponse.from_orm(pending_job)
 
     new_job = MatcherJob(
-        project_id=project_id,
+        project_id=validated_project_id,
         organization_id=organization_id,
         trigger_type="manual",
         trigger_ref_id=None,
@@ -152,7 +140,7 @@ async def trigger_matcher_job(
         priority=0,
         user_plan="free",
         user_id=None,
-        project_id=project_id,
+        project_id=validated_project_id,
         organization_id=organization_id,
     )
 
@@ -165,39 +153,20 @@ async def trigger_matcher_job(
 @router.get("/status", response_model=MatcherStatusResponse)
 async def get_matcher_status(
     project_id: str = Path(..., description="Project ID"),
-    organization_id: str = Query(..., description="Organization ID for tenant safety"),
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(require_organization),
+    tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     """Get the latest matcher job status for a project."""
-    from sqlalchemy import select
     from models.matcher import MatcherJob
-    
-    if not tenant.is_global_admin and organization_id != tenant.organization_id:
-        raise HTTPException(status_code=403, detail="Organization ID mismatch")
-    
-    # Verify project belongs to organization (tenant safety)
-    from models.core import Project
-    
-    project_result = await db.execute(
-        select(Project).where(
-            Project.id == project_id,
-            Project.organization_id == organization_id
-        )
-    )
-    project = project_result.scalar_one_or_none()
-    
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found or access denied"
-        )
-    
+    validated_project_id = str(project.id)
+    organization_id = str(project.organization_id)
+
     # Get latest matcher job for this project
     result = await db.execute(
         select(MatcherJob)
         .where(
-            MatcherJob.project_id == project_id,
+            MatcherJob.project_id == validated_project_id,
             MatcherJob.organization_id == organization_id
         )
         .order_by(MatcherJob.created_at.desc())
@@ -208,7 +177,7 @@ async def get_matcher_status(
     if not latest_job:
         # Return default status if no jobs exist
         return MatcherStatusResponse(
-            project_id=project_id,
+            project_id=validated_project_id,
             organization_id=organization_id,
             latest_job_id=None,
             latest_job_status=None,
@@ -221,14 +190,14 @@ async def get_matcher_status(
     count_result = await db.execute(
         select(MatcherJob.id)
         .where(
-            MatcherJob.project_id == project_id,
+            MatcherJob.project_id == validated_project_id,
             MatcherJob.organization_id == organization_id
         )
     )
     total_count = len(list(count_result.scalars().all()))
     
     return MatcherStatusResponse(
-        project_id=project_id,
+        project_id=validated_project_id,
         organization_id=organization_id,
         latest_job_id=str(latest_job.id),
         latest_job_status=latest_job.status,
@@ -241,41 +210,22 @@ async def get_matcher_status(
 @router.get("/jobs", response_model=MatcherJobListResponse)
 async def get_matcher_jobs(
     project_id: str = Path(..., description="Project ID"),
-    organization_id: str = Query(..., description="Organization ID for tenant safety"),
     limit: int = Query(50, ge=1, le=100, description="Maximum number of jobs to return"),
     offset: int = Query(0, ge=0, description="Number of jobs to skip"),
     db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(require_organization),
+    tenant: TenantContext = Depends(get_tenant_context),
+    project: Project = Depends(validate_project_access),
 ):
     """Get matcher job history for a project."""
-    from sqlalchemy import select
     from models.matcher import MatcherJob
-    
-    if not tenant.is_global_admin and organization_id != tenant.organization_id:
-        raise HTTPException(status_code=403, detail="Organization ID mismatch")
-    
-    # Verify project belongs to organization (tenant safety)
-    from models.core import Project
-    
-    project_result = await db.execute(
-        select(Project).where(
-            Project.id == project_id,
-            Project.organization_id == organization_id
-        )
-    )
-    project = project_result.scalar_one_or_none()
-    
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found or access denied"
-        )
-    
+    validated_project_id = str(project.id)
+    organization_id = str(project.organization_id)
+
     # Get matcher jobs for this project with pagination
     result = await db.execute(
         select(MatcherJob)
         .where(
-            MatcherJob.project_id == project_id,
+            MatcherJob.project_id == validated_project_id,
             MatcherJob.organization_id == organization_id
         )
         .order_by(MatcherJob.created_at.desc())
@@ -288,14 +238,14 @@ async def get_matcher_jobs(
     count_result = await db.execute(
         select(MatcherJob.id)
         .where(
-            MatcherJob.project_id == project_id,
+            MatcherJob.project_id == validated_project_id,
             MatcherJob.organization_id == organization_id
         )
     )
     total_count = len(list(count_result.scalars().all()))
     
     return MatcherJobListResponse(
-        project_id=project_id,
+        project_id=validated_project_id,
         organization_id=organization_id,
         jobs=[MatcherJobResponse.from_orm(job) for job in jobs],
         total_count=total_count,

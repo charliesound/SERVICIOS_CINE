@@ -9,15 +9,45 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database import get_db
-from dependencies.tenant_context import get_tenant_context, TenantContext
+from dependencies.tenant_context import (
+    TenantContext,
+    get_tenant_context,
+    require_write_permission,
+)
 from models.producer import DemoRequestRecord, SavedOpportunity, FundingOpportunity
 from models.core import Project
 from services.producer_catalog import DEMO_OPPORTUNITIES
-from routes.auth_routes import check_project_ownership
 from services.logging_service import logger
 
 
 router = APIRouter(prefix="/api/producer", tags=["producer"])
+
+
+def _is_admin_tenant(tenant: TenantContext) -> bool:
+    return bool(
+        getattr(tenant, "is_global_admin", False)
+        or getattr(tenant, "role", None) == "admin"
+    )
+
+
+def _require_admin_tenant(tenant: TenantContext) -> None:
+    if not _is_admin_tenant(tenant):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+async def _validate_producer_project_access(
+    db: AsyncSession,
+    project_id: str,
+    tenant: TenantContext,
+) -> Project:
+    query = select(Project).where(Project.id == project_id)
+    if not _is_admin_tenant(tenant):
+        query = query.where(Project.organization_id == tenant.organization_id)
+    result = await db.execute(query)
+    project = result.scalar_one_or_none()
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found or access denied")
+    return project
 
 
 class DemoRequestCreate(BaseModel):
@@ -62,7 +92,12 @@ class DashboardResponse(BaseModel):
 
 
 @router.get("/dashboard", response_model=DashboardResponse)
-async def get_dashboard(db: AsyncSession = Depends(get_db)) -> DashboardResponse:
+async def get_dashboard(
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> DashboardResponse:
+    _require_admin_tenant(tenant)
+
     saved_result = await db.execute(select(SavedOpportunity))
     saved_count = len(saved_result.scalars().all())
 
@@ -84,7 +119,10 @@ async def list_funding_opportunities():
 @router.get("/demo-requests", response_model=List[DemoRequestResponse])
 async def list_demo_requests(
     db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> List[DemoRequestResponse]:
+    _require_admin_tenant(tenant)
+
     result = await db.execute(
         select(DemoRequestRecord).order_by(DemoRequestRecord.created_at.desc())
     )
@@ -138,11 +176,17 @@ async def create_demo_request(
 
 @router.get("/saved-opportunities", response_model=List[SavedOpportunityResponse])
 async def list_saved_opportunities(
-    project_id: Optional[str] = None, db: AsyncSession = Depends(get_db)
+    project_id: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
 ) -> List[SavedOpportunityResponse]:
     query = select(SavedOpportunity)
     if project_id:
-        query = query.where(SavedOpportunity.project_id == project_id)
+        project = await _validate_producer_project_access(db, project_id, tenant)
+        validated_project_id = str(project.id)
+        query = query.where(SavedOpportunity.project_id == validated_project_id)
+    else:
+        _require_admin_tenant(tenant)
 
     result = await db.execute(query.order_by(SavedOpportunity.created_at.desc()))
     records = result.scalars().all()
@@ -164,21 +208,10 @@ async def create_saved_opportunity(
     request: SavedOpportunityCreate,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
 ) -> SavedOpportunityResponse:
-    project_result = await db.execute(
-        select(Project).where(Project.id == request.project_id)
-    )
-    project = project_result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    user_id = tenant.user_id
-    has_ownership = await check_project_ownership(request.project_id, user_id, db)
-    if not has_ownership:
-        logger.warning(
-            f"Forbidden: user={user_id} tried to access project={request.project_id}"
-        )
-        raise HTTPException(status_code=403, detail="Access denied to this project")
+    project = await _validate_producer_project_access(db, request.project_id, tenant)
+    validated_project_id = str(project.id)
 
     opportunity_id = request.funding_opportunity_id
     valid_ids = [opp["id"] for opp in DEMO_OPPORTUNITIES]
@@ -187,7 +220,7 @@ async def create_saved_opportunity(
 
     existing = await db.execute(
         select(SavedOpportunity).where(
-            SavedOpportunity.project_id == request.project_id,
+            SavedOpportunity.project_id == validated_project_id,
             SavedOpportunity.funding_opportunity_id == request.funding_opportunity_id,
         )
     )
@@ -198,7 +231,7 @@ async def create_saved_opportunity(
 
     saved = SavedOpportunity(
         id=uuid.uuid4().hex,
-        project_id=request.project_id,
+        project_id=validated_project_id,
         funding_opportunity_id=request.funding_opportunity_id,
         notes=request.notes,
     )
@@ -208,7 +241,7 @@ async def create_saved_opportunity(
 
     return SavedOpportunityResponse(
         id=str(saved.id),
-        project_id=saved.project_id,
+        project_id=validated_project_id,
         funding_opportunity_id=saved.funding_opportunity_id,
         notes=saved.notes,
         created_at=saved.created_at,
@@ -220,6 +253,7 @@ async def delete_saved_opportunity(
     saved_id: str,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
 ):
     result = await db.execute(
         select(SavedOpportunity).where(SavedOpportunity.id == saved_id)
@@ -229,15 +263,7 @@ async def delete_saved_opportunity(
     if not saved:
         raise HTTPException(status_code=404, detail="Saved opportunity not found")
 
-    project_result = await db.execute(
-        select(Project).where(
-            Project.id == saved.project_id,
-            Project.organization_id == str(tenant.organization_id),
-        )
-    )
-    project = project_result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Saved opportunity not found")
+    await _validate_producer_project_access(db, saved.project_id, tenant)
 
     await db.delete(saved)
     await db.commit()

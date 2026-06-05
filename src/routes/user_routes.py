@@ -5,8 +5,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.tenant_context import (
+    TenantContext,
+    get_tenant_context,
+    require_write_permission,
+)
 from models.core import User as DBUser
-from routes.auth_routes import get_current_user_optional, hash_password
+from routes.auth_routes import hash_password
 from schemas.auth_schema import UserResponse
 from schemas.user_schema import UserCreate
 from services.account_service import (
@@ -18,6 +23,17 @@ from services.account_service import (
 )
 
 router = APIRouter(prefix="/api/users", tags=["users"])
+
+
+def _is_admin_tenant(tenant: TenantContext) -> bool:
+    return bool(
+        getattr(tenant, "is_global_admin", False)
+        or getattr(tenant, "role", None) == "admin"
+    )
+
+
+def _can_access_user(tenant: TenantContext, user_id: str) -> bool:
+    return str(tenant.user_id) == str(user_id) or _is_admin_tenant(tenant)
 
 
 @router.post("/", response_model=UserResponse)
@@ -46,7 +62,11 @@ async def create_user(
 async def get_user(
     user_id: str,
     db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
+    if not _can_access_user(tenant, user_id):
+        raise HTTPException(status_code=403, detail="Not allowed to access this user")
+
     user = await get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -57,7 +77,11 @@ async def get_user(
 @router.get("/", response_model=List[UserResponse])
 async def list_users(
     db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
+    if not _is_admin_tenant(tenant):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
     result = await db.execute(
         select(DBUser).order_by(DBUser.created_at.desc(), DBUser.id.desc())
     )
@@ -70,11 +94,10 @@ async def update_user_plan(
     user_id: str,
     new_plan: str,
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse | None = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    if current_user.user_id != user_id and current_user.role != "admin":
+    if not _can_access_user(tenant, user_id):
         raise HTTPException(
             status_code=403, detail="Not allowed to change this user plan"
         )

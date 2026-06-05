@@ -4,8 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
+from dependencies.tenant_context import TenantContext, get_tenant_context
 from schemas.module_catalog_schema import (
     ModuleAccessInfo,
     ModuleCatalogResponse,
@@ -47,22 +46,26 @@ async def get_module_catalog():
 @router.get("/me", response_model=UserModulesResponse)
 async def get_my_modules(
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse | None = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
     plan_name = "free"
     organization_id: str | None = None
 
-    if current_user is not None:
-        db_user = await get_user_by_id(db, current_user.user_id)
-        if db_user is not None:
-            plan_name = await resolve_effective_plan(db, db_user)
-            organization_id = (
-                str(db_user.organization_id)
-                if getattr(db_user, "organization_id", None)
-                else None
-            )
-        else:
-            plan_name = normalize_plan_name(current_user.plan)
+    db_user = await get_user_by_id(db, tenant.user_id)
+    if db_user is not None:
+        plan_name = await resolve_effective_plan(db, db_user)
+        organization_id = (
+            str(db_user.organization_id)
+            if getattr(db_user, "organization_id", None)
+            else None
+        )
+    else:
+        plan_name = normalize_plan_name(getattr(tenant, "plan", None))
+        organization_id = (
+            str(tenant.organization_id)
+            if getattr(tenant, "organization_id", None)
+            else None
+        )
 
     plan_name = normalize_plan_name(plan_name)
     modules = module_catalog_service.get_visible_modules()

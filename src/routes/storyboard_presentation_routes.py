@@ -12,9 +12,12 @@ from fastapi.responses import FileResponse
 
 from database import get_db
 from dependencies.module_access import require_module_access
+from dependencies.tenant_context import (
+    TenantContext,
+    get_tenant_context,
+    require_write_permission,
+)
 from models.core import Project
-from routes.auth_routes import get_tenant_context
-from schemas.auth_schema import TenantContext
 from schemas.storyboard_presentation_schema import (
     StoryboardLayoutConfig,
     StoryboardLayoutName,
@@ -179,6 +182,7 @@ async def generate_storyboard_sheet(
     payload: StoryboardSheetRequest,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
 ) -> StoryboardSheetResponse:
     if payload.project_id != project_id:
         raise HTTPException(status_code=400, detail="project_id in body must match route project_id")

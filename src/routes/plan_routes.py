@@ -5,9 +5,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies.tenant_context import (
+    TenantContext,
+    get_tenant_context,
+    require_write_permission,
+)
 from models.core import Organization, Project, ProjectJob, User as DBUser
-from routes.auth_routes import get_current_user_optional
-from schemas.auth_schema import UserResponse
 from schemas.plan_schema import (
     PlanChangeRequest,
     PlanChangeResponse,
@@ -25,15 +28,22 @@ from services.plan_limits_service import plan_limits_service
 router = APIRouter(prefix="/api/plans", tags=["plans"])
 
 
+def _is_admin_tenant(tenant: TenantContext) -> bool:
+    return bool(
+        getattr(tenant, "is_global_admin", False)
+        or getattr(tenant, "role", None) == "admin"
+    )
+
+
 async def _get_effective_user(
     db: AsyncSession,
     *,
-    current_user: Optional[UserResponse],
+    tenant: TenantContext,
     user_id: Optional[str],
 ) -> DBUser:
-    effective_user_id = current_user.user_id if current_user else user_id
-    if not effective_user_id:
-        raise HTTPException(status_code=400, detail="user_id is required")
+    effective_user_id = user_id or tenant.user_id
+    if user_id and str(user_id) != str(tenant.user_id) and not _is_admin_tenant(tenant):
+        raise HTTPException(status_code=403, detail="Not allowed to inspect this user plan")
 
     user = await get_user_by_id(db, effective_user_id)
     if not user:
@@ -165,10 +175,10 @@ async def get_my_plan(
     user_id: Optional[str] = None,
     plan_name: str = "free",
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
     del plan_name
-    user = await _get_effective_user(db, current_user=current_user, user_id=user_id)
+    user = await _get_effective_user(db, tenant=tenant, user_id=user_id)
     effective_plan = await _resolve_effective_plan_for_user(db, user)
     plan = plan_limits_service.get_plan(effective_plan)
     if not plan:
@@ -216,12 +226,10 @@ async def get_my_plan(
 async def change_my_plan(
     payload: PlanChangeRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[UserResponse] = Depends(get_current_user_optional),
+    tenant: TenantContext = Depends(get_tenant_context),
+    _write: None = Depends(require_write_permission),
 ):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    user = await get_user_by_id(db, current_user.user_id)
+    user = await get_user_by_id(db, tenant.user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 

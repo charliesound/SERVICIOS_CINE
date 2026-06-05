@@ -7,8 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies.module_access import require_module_access
-from routes.auth_routes import get_tenant_context
-from schemas.auth_schema import TenantContext
+from dependencies.tenant_context import TenantContext, get_tenant_context, require_write_permission
 from services.comfyui_model_inventory_service import ComfyUIInventoryError
 from services.comfyui_storyboard_render_service import comfyui_storyboard_render_service
 from services.storyboard_service import storyboard_service
@@ -18,7 +17,9 @@ router = APIRouter(prefix="/api", tags=["comfyui-storyboard"])
 
 
 @router.get("/ops/comfyui/storyboard/status")
-async def get_comfyui_storyboard_status() -> dict[str, Any]:
+async def get_comfyui_storyboard_status(
+    tenant: TenantContext = Depends(get_tenant_context),
+) -> dict[str, Any]:
     return await comfyui_storyboard_render_service.healthcheck()
 
 
@@ -28,6 +29,7 @@ async def render_storyboard_scenes(
     payload: dict[str, Any],
     tenant: TenantContext = Depends(get_tenant_context),
     _module_access: TenantContext = Depends(require_module_access("storyboard_ai")),
+    _write: None = Depends(require_write_permission),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     try:

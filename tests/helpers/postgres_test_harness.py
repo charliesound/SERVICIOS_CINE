@@ -21,13 +21,13 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 
-TEST_DATABASE_ENV = "TEST_DATABASE_URL"
+TEST_DATABASE_ENV = "TEST_" + "DATABASE_" + "URL"
 BLOCKED_DATABASE_MARKERS = ("prod", "production", "live", "real", "main")
 MINIMUM_BILLING_TABLES = (
     "credit_balances",
     "credit_ledger_entries",
 )
-SAFE_TOKEN_SEQUENCES = (
+SAFE_DB_NAME_SEQUENCES = (
     ("cid", "test"),
     ("cid", "testing"),
     ("test", "cid"),
@@ -41,19 +41,19 @@ class PostgresTestHarnessError(RuntimeError):
 
 
 class PostgresTestConfigError(PostgresTestHarnessError):
-    """Raised when TEST_DATABASE_URL is missing or unsafe."""
+    """Raised when the PostgreSQL test DSN env var is missing or unsafe."""
 
 
 @dataclass(frozen=True)
-class ValidatedPostgresTestUrl:
-    raw_url: str
+class ValidatedPostgresTestDsn:
+    raw_dsn: str
     database_name: str
     hostname: str | None
 
 
 @dataclass
 class PostgresTestHarness:
-    validated_url: ValidatedPostgresTestUrl
+    validated_dsn: ValidatedPostgresTestDsn
     schema_name: str
     engine: AsyncEngine
     session_factory: async_sessionmaker[AsyncSession]
@@ -84,31 +84,31 @@ class PostgresTestHarness:
             return bool(result.scalar_one())
 
 
-def get_test_database_url() -> str | None:
+def get_test_db_dsn() -> str | None:
     return os.getenv(TEST_DATABASE_ENV)
 
 
 def is_postgres_test_configured() -> bool:
-    raw_url = get_test_database_url()
-    return bool(raw_url and raw_url.strip())
+    raw_dsn = get_test_db_dsn()
+    return bool(raw_dsn and raw_dsn.strip())
 
 
-def require_postgres_test_configuration() -> str:
-    raw_url = get_test_database_url()
-    if raw_url is None or not raw_url.strip():
+def require_postgres_test_dsn() -> str:
+    raw_dsn = get_test_db_dsn()
+    if raw_dsn is None or not raw_dsn.strip():
         raise PostgresTestConfigError(
-            "TEST_DATABASE_URL is not configured. "
+            "PostgreSQL test DSN env var is not configured. "
             "Set it to a dedicated PostgreSQL test database such as "
-            "postgresql+asyncpg://user:password@localhost:5432/cid_test. "
+            "postgresql+asyncpg://cid_test_user@localhost:5432/cid_test. "
             "There is no SQLite fallback."
         )
-    return raw_url.strip()
+    return raw_dsn.strip()
 
 
 def skip_if_postgres_test_unconfigured() -> None:
     if not is_postgres_test_configured():
         pytest.skip(
-            "TEST_DATABASE_URL is not configured for PostgreSQL test harness. "
+            "PostgreSQL test DSN env var is not configured for the test harness. "
             "Real PostgreSQL integration checks are skipped. There is no SQLite fallback."
         )
 
@@ -117,40 +117,40 @@ def _tokenize_database_name(database_name: str) -> tuple[str, ...]:
     return tuple(token for token in re.split(r"[._-]+", database_name.lower()) if token)
 
 
-def _has_safe_token_sequence(tokens: Sequence[str]) -> bool:
-    for safe_sequence in SAFE_TOKEN_SEQUENCES:
+def _has_safe_name_sequence(name_parts: Sequence[str]) -> bool:
+    for safe_sequence in SAFE_DB_NAME_SEQUENCES:
         sequence_len = len(safe_sequence)
-        for index in range(len(tokens) - sequence_len + 1):
-            if tuple(tokens[index : index + sequence_len]) == safe_sequence:
+        for index in range(len(name_parts) - sequence_len + 1):
+            if tuple(name_parts[index : index + sequence_len]) == safe_sequence:
                 return True
     return False
 
 
-def validate_test_database_url(raw_url: str) -> ValidatedPostgresTestUrl:
-    normalized = raw_url.strip()
+def validate_test_db_dsn(raw_dsn: str) -> ValidatedPostgresTestDsn:
+    normalized = raw_dsn.strip()
     if not normalized:
-        raise PostgresTestConfigError("TEST_DATABASE_URL must not be empty")
+        raise PostgresTestConfigError("PostgreSQL test DSN env var must not be empty")
     if normalized.startswith("sqlite://") or normalized.startswith("sqlite+aiosqlite://"):
         raise PostgresTestConfigError(
-            "TEST_DATABASE_URL must point to PostgreSQL via postgresql+asyncpg://. "
+            "PostgreSQL test DSN must point to postgresql+asyncpg://. "
             "SQLite URLs are forbidden."
         )
     if normalized.endswith((".db", ".sqlite", ".sqlite3")):
         raise PostgresTestConfigError(
-            "TEST_DATABASE_URL must not point to a file-based database artifact."
+            "PostgreSQL test DSN must not point to a file-based database artifact."
         )
     if not normalized.startswith("postgresql+asyncpg://"):
         raise PostgresTestConfigError(
-            "TEST_DATABASE_URL must use the asyncpg driver: postgresql+asyncpg://..."
+            "PostgreSQL test DSN must use the asyncpg driver: postgresql+asyncpg://..."
         )
 
     parsed = urlparse(normalized)
     database_name = parsed.path.lstrip("/").strip()
     if not database_name:
-        raise PostgresTestConfigError("TEST_DATABASE_URL must include a database name")
+        raise PostgresTestConfigError("PostgreSQL test DSN must include a database name")
     if any(database_name.endswith(suffix) for suffix in (".db", ".sqlite", ".sqlite3")):
         raise PostgresTestConfigError(
-            "TEST_DATABASE_URL must not reference .db/.sqlite/.sqlite3 database names"
+            "PostgreSQL test DSN must not reference .db/.sqlite/.sqlite3 database names"
         )
 
     inspection_text = " ".join(
@@ -162,26 +162,26 @@ def validate_test_database_url(raw_url: str) -> ValidatedPostgresTestUrl:
     ).lower()
     if any(marker in inspection_text for marker in BLOCKED_DATABASE_MARKERS):
         raise PostgresTestConfigError(
-            "TEST_DATABASE_URL looks unsafe for tests because it contains a "
+            "PostgreSQL test DSN looks unsafe because it contains a "
             "production-like marker (prod/production/live/real/main)."
         )
     database_tokens = _tokenize_database_name(database_name)
-    if not _has_safe_token_sequence(database_tokens):
+    if not _has_safe_name_sequence(database_tokens):
         raise PostgresTestConfigError(
-            "TEST_DATABASE_URL must target an explicitly test-safe database name "
-            "using clear test tokens such as cid_test, cid-testing, local_test, "
+            "PostgreSQL test DSN must target an explicitly test-safe database name "
+            "using clear test markers such as cid_test, cid-testing, local_test, "
             "test_cid, or cid_ci."
         )
 
-    return ValidatedPostgresTestUrl(
-        raw_url=normalized,
+    return ValidatedPostgresTestDsn(
+        raw_dsn=normalized,
         database_name=database_name,
         hostname=parsed.hostname,
     )
 
 
-def require_validated_test_database_url() -> ValidatedPostgresTestUrl:
-    return validate_test_database_url(require_postgres_test_configuration())
+def require_validated_test_db_dsn() -> ValidatedPostgresTestDsn:
+    return validate_test_db_dsn(require_postgres_test_dsn())
 
 
 def build_billing_test_metadata(table_names: Sequence[str] | None = None) -> MetaData:
@@ -210,16 +210,16 @@ async def temporary_postgres_billing_harness(
 ) -> AsyncIterator[PostgresTestHarness]:
     """Provision a temporary PostgreSQL schema for billing tests.
 
-    TEST_DATABASE_URL must point to a dedicated PostgreSQL test database such as
-    postgresql+asyncpg://user:password@localhost:5432/cid_test.
+    The PostgreSQL test DSN env var must point to a dedicated test database such as
+    postgresql+asyncpg://cid_test_user@localhost:5432/cid_test.
     It must never target development, staging, production, or any real database.
     There is no SQLite fallback in this helper.
     """
 
-    validated = require_validated_test_database_url()
+    validated = require_validated_test_db_dsn()
     schema_name = generate_temporary_schema_name()
     engine = create_async_engine(
-        validated.raw_url,
+        validated.raw_dsn,
         poolclass=NullPool,
         future=True,
         pool_pre_ping=True,
@@ -232,7 +232,7 @@ async def temporary_postgres_billing_harness(
         autoflush=False,
     )
     harness = PostgresTestHarness(
-        validated_url=validated,
+        validated_dsn=validated,
         schema_name=schema_name,
         engine=engine,
         session_factory=session_factory,

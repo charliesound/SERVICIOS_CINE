@@ -101,8 +101,17 @@ for f in $STAGED_FILES; do
         # File is in policy dir — skip (allowed to reference secret variable names)
         continue
     fi
-    # Check diff for sensitive patterns
-    MATCHES=$(git diff --cached 2>/dev/null -- "$f" | grep -iE "$SENSITIVE_PATTERNS" | grep -v "^[+-]{3}" | grep -v "^[+-]import" | grep -v "^[+-]from" | grep -v 'SENSITIVE_PATTERNS=' | head -10 || true)
+    # Check only real added lines in staged diff; ignore removed/context/header lines
+    MATCHES=$(
+        git diff --cached 2>/dev/null -- "$f" \
+        | grep '^+' \
+        | grep -v '^\+\+\+' \
+        | grep -iE "$SENSITIVE_PATTERNS" \
+        | grep -v "^[+]import" \
+        | grep -v "^[+]from" \
+        | grep -v 'SENSITIVE_PATTERNS=' \
+        | head -10 || true
+    )
     if [ -n "$MATCHES" ]; then
         echo -e "${RED}FAIL: sensitive pattern found in $f:${NC}"
         echo "$MATCHES"

@@ -1,14 +1,20 @@
 """
 API routes for Ollama-based script analysis and storyboard prompt generation.
 """
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Any, Dict, Optional
 
 from database import get_db
 from dependencies.module_access import require_module_access
-from routes.auth_routes import get_tenant_context
-from schemas.auth_schema import TenantContext
+from dependencies.tenant_context import (
+    TenantContext,
+    get_tenant_context,
+    require_write_permission,
+    validate_project_access,
+)
+from models.core import Project
 from services.local_script_analysis_service import local_script_analysis_service
 from services.storyboard_prompt_refinement_service import storyboard_prompt_refinement_service
 from services.ollama_client_service import OllamaClientService, ollama_client
@@ -17,8 +23,11 @@ router = APIRouter(prefix="/api", tags=["ollama-storyboard"])
 
 
 @router.get("/ops/ollama/status")
-async def get_ollama_status():
+async def get_ollama_status(
+    tenant: TenantContext = Depends(get_tenant_context),
+):
     """Check Ollama availability and models."""
+    del tenant
     settings = {}
     try:
         from config import get_llm_settings
@@ -60,26 +69,25 @@ async def analyze_script_local_ollama(
     project_id: str,
     tenant: TenantContext = Depends(get_tenant_context),
     _module_access: TenantContext = Depends(require_module_access("script_analysis")),
+    _write: None = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
     db: AsyncSession = Depends(get_db),
 ):
     """Analyze script using local Qwen3:30b via Ollama."""
-    from models.core import Project
-    
-    # Get project
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    del tenant
+    del _module_access
+    del _write
+    validated_project_id = str(project.id)
+    organization_id = str(project.organization_id)
     if not project.script_text:
         raise HTTPException(status_code=400, detail="Project has no script text")
     
     try:
         analysis = await local_script_analysis_service.analyze_script_with_qwen(
-            project_id=project_id,
+            project_id=validated_project_id,
             script_text=project.script_text,
         )
+        analysis["project_id"] = validated_project_id
         return analysis
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -95,22 +103,19 @@ async def generate_storyboard_prompts_from_analysis(
     payload: Dict[str, Any],
     tenant: TenantContext = Depends(get_tenant_context),
     _module_access: TenantContext = Depends(require_module_access("storyboard_ai")),
+    _write: None = Depends(require_write_permission),
+    project: Project = Depends(validate_project_access),
     db: AsyncSession = Depends(get_db),
 ):
     """Generate storyboard prompts from existing analysis."""
-    from models.core import Project
-    
-    # Get project
-    result = await db.execute(
-        select(Project).where(Project.id == project_id)
-    )
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    
+    del tenant
+    del _module_access
+    del _write
+    validated_project_id = str(project.id)
+    organization_id = str(project.organization_id)
     mode = payload.get("generation_mode", "FULL_SCRIPT")
     refine_with_visual = payload.get("refine_with_visual_model", True)
-    
+
     # Get latest analysis from JSON storage or DB
     from services.storyboard_service import storyboard_service
     analysis_data = await storyboard_service._get_analysis_payload(
@@ -144,7 +149,7 @@ async def generate_storyboard_prompts_from_analysis(
     
     # Prepare analysis payload for refinement
     analysis_payload = {
-        "project_id": project_id,
+        "project_id": validated_project_id,
         "scenes": filtered_scenes,
         "sequences": analysis_data.get("sequences", []),
     }
@@ -152,7 +157,7 @@ async def generate_storyboard_prompts_from_analysis(
     if not refine_with_visual:
         # Return base prompts only
         return {
-            "project_id": project_id,
+            "project_id": validated_project_id,
             "analysis_model": analysis_data.get("model", "qwen2.5:14b"),
             "visual_model": None,
             "generation_mode": mode,

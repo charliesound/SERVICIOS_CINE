@@ -21,6 +21,10 @@ if str(SRC_DIR) not in sys.path:
 from services.ai_job_async_orchestration_service import (
     AIJobAsyncAccountingError,
     AIJobAsyncConsumeRequest,
+    AIJobAsyncCreditCheckRequest,
+    AIJobAsyncCreateRequest,
+    AIJobAsyncIdempotencyConflictError,
+    AIJobAsyncEstimateRequest,
     AIJobAsyncNotFoundError,
     AIJobAsyncOrchestrationService,
     AIJobAsyncReleaseRequest,
@@ -38,6 +42,20 @@ class FakeAccountingResult:
     amount: int = 8
 
 
+@dataclass
+class FakeEstimateResult:
+    operation_type: str
+    estimated_credits: int
+
+
+@dataclass
+class FakeAvailabilityResult:
+    organization_id: str
+    operation_type: str
+    estimated_credits: int
+    sufficient: bool
+
+
 class FakeJob:
     def __init__(
         self,
@@ -45,15 +63,28 @@ class FakeJob:
         organization_id: str = "org-1",
         job_id: str = "job-1",
         status: str = "credit_checked",
+        operation_type: str = "image_generation",
         estimated_credits: int = 8,
         reserved_credits: int = 8,
         reservation_entry_id: str | None = "reservation-entry-1",
+        idempotency_key: str | None = None,
+        project_id: str | None = "project-1",
+        user_id: str | None = "user-1",
+        provider_type: str | None = "provider-type",
+        provider_name: str | None = "provider-name",
+        workflow_id: str | None = "workflow-1",
+        workflow_version: str | None = "v1",
+        workflow_hash: str | None = "hash-1",
+        model_name: str | None = "model-a",
+        input_asset_ids: list[str] | None = None,
+        output_asset_ids: list[str] | None = None,
+        job_metadata: dict | None = None,
     ) -> None:
         self.id = job_id
         self.organization_id = organization_id
-        self.project_id = "project-1"
-        self.user_id = "user-1"
-        self.operation_type = "image_generation"
+        self.project_id = project_id
+        self.user_id = user_id
+        self.operation_type = operation_type
         self.status = status
         self.estimated_credits = estimated_credits
         self.reserved_credits = reserved_credits
@@ -62,16 +93,27 @@ class FakeJob:
         self.reservation_entry_id = reservation_entry_id
         self.consume_entry_id = None
         self.release_entry_id = None
-        self.provider_type = "provider-type"
-        self.provider_name = "provider-name"
-        self.workflow_id = "workflow-1"
-        self.workflow_version = "v1"
-        self.workflow_hash = "hash-1"
-        self.model_name = "model-a"
-        self.input_asset_ids = ["asset-1"]
+        self.idempotency_key = idempotency_key
+        self.provider_type = provider_type
+        self.provider_name = provider_name
+        self.workflow_id = workflow_id
+        self.workflow_version = workflow_version
+        self.workflow_hash = workflow_hash
+        self.model_name = model_name
+        self.input_asset_ids = input_asset_ids if input_asset_ids is not None else ["asset-1"]
+        self.output_asset_ids = output_asset_ids if output_asset_ids is not None else []
+        self.attempt_number = 1
         self.reserved_at = None
+        self.estimated_at = None
+        self.credit_checked_at = None
         self.consumed_at = None
         self.released_at = None
+        self.job_metadata = job_metadata if job_metadata is not None else {
+            "client_ref": "abc",
+            "operation_type": operation_type,
+            "estimated_credits": 0,
+            "job_status": status,
+        }
 
 
 class FakeRepository:
@@ -79,6 +121,22 @@ class FakeRepository:
         self.job = job
         self.calls: list[tuple[str, tuple]] = []
         self.saved_jobs: list[FakeJob] = []
+        self.created_jobs: list[FakeJob] = []
+        self._idempotency_index: dict[tuple[str, str], FakeJob] = {}
+        if job is not None and job.idempotency_key:
+            self._idempotency_index[(job.organization_id, job.idempotency_key)] = job
+
+    async def find_by_idempotency_key(self, organization_id: str, idempotency_key: str) -> FakeJob | None:
+        self.calls.append(("find_by_idempotency_key", (organization_id, idempotency_key)))
+        return self._idempotency_index.get((organization_id, idempotency_key))
+
+    async def create(self, job: FakeJob) -> FakeJob:
+        self.calls.append(("create", (job,)))
+        self.created_jobs.append(job)
+        self.job = job
+        if job.idempotency_key:
+            self._idempotency_index[(job.organization_id, job.idempotency_key)] = job
+        return job
 
     async def get_for_update(self, organization_id: str, job_id: str) -> FakeJob | None:
         self.calls.append(("get_for_update", (organization_id, job_id)))
@@ -104,8 +162,8 @@ class FakeAccountingGateway:
         self.reserve_result = FakeAccountingResult("reservation-entry-1")
         self.consume_result = FakeAccountingResult("consume-entry-1")
         self.release_result = FakeAccountingResult("release-entry-1")
-        self.estimate_result = object()
-        self.availability_result = object()
+        self.estimate_result = FakeEstimateResult("image_generation", 11)
+        self.availability_result = FakeAvailabilityResult("org-1", "image_generation", 11, True)
 
     async def estimate_credit_cost(self, session, **kwargs):
         self.calls.append(("estimate_credit_cost", {"session": session, **kwargs}))
@@ -145,6 +203,298 @@ def _service(
         now_fn=lambda: datetime(2026, 6, 9, 12, 0, 0),
     )
     return service, repository, accounting_gateway
+
+
+@pytest.mark.asyncio
+async def test_create_creates_ai_job(session: DummySession) -> None:
+    service, repository, _gateway = _service(None)
+
+    result = await service.create_ai_job(
+        session,
+        AIJobAsyncCreateRequest(
+            organization_id="org-1",
+            operation_type=" image_generation ",
+            user_id="user-1",
+            project_id="project-1",
+            metadata={"client_ref": "abc"},
+            provider_type="provider-type",
+            provider_name="provider-name",
+            workflow_id="workflow-1",
+            workflow_version="v1",
+            workflow_hash="hash-1",
+            model_name="model-a",
+            input_asset_ids=["asset-1", ""],
+            output_asset_ids=[" output-1 "],
+        ),
+    )
+
+    assert result.message == "AI job created"
+    assert result.job.organization_id == "org-1"
+    assert result.job.operation_type == "image_generation"
+    assert result.job.status == "created"
+    assert result.job.estimated_credits == 0
+    assert result.job.reserved_credits == 0
+    assert result.job.consumed_credits == 0
+    assert result.job.released_credits == 0
+    assert result.job.created_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert result.job.input_asset_ids == ["asset-1"]
+    assert result.job.output_asset_ids == ["output-1"]
+    assert result.job.job_metadata["operation_type"] == "image_generation"
+    assert result.job.job_metadata["estimated_credits"] == 0
+    assert result.job.job_metadata["job_status"] == "created"
+    assert result.job.job_metadata["client_ref"] == "abc"
+    assert repository.created_jobs == [result.job]
+
+
+@pytest.mark.asyncio
+async def test_create_normalizes_operation_type(session: DummySession) -> None:
+    service, _repository, _gateway = _service(None)
+
+    result = await service.create_ai_job(
+        session,
+        AIJobAsyncCreateRequest(
+            organization_id="org-1",
+            operation_type="  image_generation  ",
+        ),
+    )
+
+    assert result.job.operation_type == "image_generation"
+    assert result.job.job_metadata["operation_type"] == "image_generation"
+
+
+@pytest.mark.asyncio
+async def test_create_returns_existing_job_when_idempotent_and_equivalent(session: DummySession) -> None:
+    existing = FakeJob(
+        organization_id="org-1",
+        status="created",
+        operation_type="image_generation",
+        idempotency_key="idem-1",
+        job_metadata={"client_ref": "abc", "operation_type": "image_generation", "estimated_credits": 0, "job_status": "created"},
+        reservation_entry_id=None,
+        reserved_credits=0,
+        estimated_credits=0,
+        project_id=None,
+        user_id=None,
+        provider_type=None,
+        provider_name=None,
+        workflow_id=None,
+        workflow_version=None,
+        workflow_hash=None,
+        model_name=None,
+        input_asset_ids=[],
+    )
+    service, repository, _gateway = _service(existing)
+
+    result = await service.create_ai_job(
+        session,
+        AIJobAsyncCreateRequest(
+            organization_id="org-1",
+            operation_type="image_generation",
+            idempotency_key="idem-1",
+            metadata={"client_ref": "abc"},
+        ),
+    )
+
+    assert result.job is existing
+    assert result.message == "AI job already exists"
+    assert not repository.created_jobs
+
+
+@pytest.mark.asyncio
+async def test_create_raises_conflict_for_same_idempotency_key_different_payload(session: DummySession) -> None:
+    existing = FakeJob(
+        organization_id="org-1",
+        status="created",
+        operation_type="image_generation",
+        idempotency_key="idem-1",
+        job_metadata={"client_ref": "abc", "operation_type": "image_generation", "estimated_credits": 0, "job_status": "created"},
+        reservation_entry_id=None,
+        reserved_credits=0,
+        estimated_credits=0,
+        project_id=None,
+        user_id=None,
+        provider_type=None,
+        provider_name=None,
+        workflow_id=None,
+        workflow_version=None,
+        workflow_hash=None,
+        model_name=None,
+        input_asset_ids=[],
+    )
+    service, repository, _gateway = _service(existing)
+
+    with pytest.raises(AIJobAsyncIdempotencyConflictError, match="Conflicting AI job create request"):
+        await service.create_ai_job(
+            session,
+            AIJobAsyncCreateRequest(
+                organization_id="org-1",
+                operation_type="image_generation",
+                idempotency_key="idem-1",
+                metadata={"client_ref": "different"},
+            ),
+        )
+
+    assert not repository.created_jobs
+
+
+@pytest.mark.asyncio
+async def test_create_idempotency_key_is_tenant_scoped(session: DummySession) -> None:
+    existing = FakeJob(
+        organization_id="org-2",
+        status="created",
+        operation_type="image_generation",
+        idempotency_key="idem-1",
+        job_metadata={"client_ref": "abc", "operation_type": "image_generation", "estimated_credits": 0, "job_status": "created"},
+        reservation_entry_id=None,
+        reserved_credits=0,
+        estimated_credits=0,
+        project_id=None,
+        user_id=None,
+        provider_type=None,
+        provider_name=None,
+        workflow_id=None,
+        workflow_version=None,
+        workflow_hash=None,
+        model_name=None,
+        input_asset_ids=[],
+    )
+    service, repository, _gateway = _service(existing)
+
+    result = await service.create_ai_job(
+        session,
+        AIJobAsyncCreateRequest(
+            organization_id="org-1",
+            operation_type="image_generation",
+            idempotency_key="idem-1",
+            metadata={"client_ref": "abc"},
+        ),
+    )
+
+    assert result.job.organization_id == "org-1"
+    assert result.job is not existing
+    assert repository.created_jobs
+
+
+@pytest.mark.asyncio
+async def test_estimate_uses_get_for_update(session: DummySession) -> None:
+    service, repository, _gateway = _service(FakeJob(status="created", reservation_entry_id=None, reserved_credits=0))
+
+    await service.estimate_ai_job(
+        session,
+        AIJobAsyncEstimateRequest(organization_id="org-1", job_id="job-1"),
+    )
+
+    assert repository.calls[0] == ("get_for_update", ("org-1", "job-1"))
+    assert not any(method == "get" for method, _ in repository.calls)
+
+
+@pytest.mark.asyncio
+async def test_estimate_fails_if_job_not_found(session: DummySession) -> None:
+    service, _repository, gateway = _service(None)
+
+    with pytest.raises(AIJobAsyncNotFoundError):
+        await service.estimate_ai_job(
+            session,
+            AIJobAsyncEstimateRequest(organization_id="org-1", job_id="missing"),
+        )
+
+    assert gateway.calls == []
+
+
+@pytest.mark.asyncio
+async def test_estimate_delegates_to_gateway_and_saves_job(session: DummySession) -> None:
+    job = FakeJob(status="created", reservation_entry_id=None, reserved_credits=0, estimated_credits=0)
+    service, repository, gateway = _service(job)
+
+    result = await service.estimate_ai_job(
+        session,
+        AIJobAsyncEstimateRequest(
+            organization_id="org-1",
+            job_id="job-1",
+            estimated_credits=7,
+        ),
+    )
+
+    method, payload = gateway.calls[-1]
+    assert method == "estimate_credit_cost"
+    assert payload["session"] is session
+    assert payload["operation_type"] == "image_generation"
+    assert payload["estimated_credits"] == 7
+    assert result.job.operation_type == "image_generation"
+    assert result.job.estimated_credits == 11
+    assert result.job.status == "estimated"
+    assert result.job.estimated_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert result.job.job_metadata["job_status"] == "estimated"
+    assert result.job.job_metadata["estimated_credits"] == 11
+    assert repository.saved_jobs == [job]
+
+
+@pytest.mark.asyncio
+async def test_check_uses_get_for_update(session: DummySession) -> None:
+    service, repository, _gateway = _service(FakeJob(status="estimated", reservation_entry_id=None, reserved_credits=0, estimated_credits=11))
+
+    await service.check_ai_job_credits(
+        session,
+        AIJobAsyncCreditCheckRequest(organization_id="org-1", job_id="job-1"),
+    )
+
+    assert repository.calls[0] == ("get_for_update", ("org-1", "job-1"))
+    assert not any(method == "get" for method, _ in repository.calls)
+
+
+@pytest.mark.asyncio
+async def test_check_fails_if_job_not_found(session: DummySession) -> None:
+    service, _repository, gateway = _service(None)
+
+    with pytest.raises(AIJobAsyncNotFoundError):
+        await service.check_ai_job_credits(
+            session,
+            AIJobAsyncCreditCheckRequest(organization_id="org-1", job_id="missing"),
+        )
+
+    assert gateway.calls == []
+
+
+@pytest.mark.asyncio
+async def test_check_requires_positive_credits_when_job_has_no_estimate(session: DummySession) -> None:
+    job = FakeJob(status="estimated", reservation_entry_id=None, estimated_credits=0, reserved_credits=0)
+    service, repository, gateway = _service(job)
+
+    with pytest.raises(AIJobAsyncAccountingError, match="estimated_credits must be a positive integer"):
+        await service.check_ai_job_credits(
+            session,
+            AIJobAsyncCreditCheckRequest(organization_id="org-1", job_id="job-1"),
+        )
+
+    assert gateway.calls == []
+    assert repository.saved_jobs == []
+
+
+@pytest.mark.asyncio
+async def test_check_delegates_to_gateway_and_saves_job(session: DummySession) -> None:
+    job = FakeJob(status="estimated", reservation_entry_id=None, estimated_credits=11, reserved_credits=0)
+    service, repository, gateway = _service(job)
+
+    result = await service.check_ai_job_credits(
+        session,
+        AIJobAsyncCreditCheckRequest(
+            organization_id="org-1",
+            job_id="job-1",
+            estimated_credits=9,
+        ),
+    )
+
+    method, payload = gateway.calls[-1]
+    assert method == "check_credit_availability"
+    assert payload["session"] is session
+    assert payload["organization_id"] == "org-1"
+    assert payload["operation_type"] == "image_generation"
+    assert payload["estimated_credits"] == 9
+    assert result.job.status == "credit_checked"
+    assert result.job.credit_checked_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert result.job.job_metadata["job_status"] == "credit_checked"
+    assert result.job.job_metadata["estimated_credits"] == 9
+    assert repository.saved_jobs == [job]
 
 
 @pytest.mark.asyncio

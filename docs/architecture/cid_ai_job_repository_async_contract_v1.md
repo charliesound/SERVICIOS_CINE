@@ -101,12 +101,11 @@ Primary use cases include transitions involving jobs currently in:
 - `consume_pending`
 - `release_pending`
 
-Expected behavior by backend:
+Expected behavior:
 
-- PostgreSQL: use `SELECT ... FOR UPDATE` or equivalent row-level lock.
-- SQLite and lightweight test backends: provide controlled degradation without real row locking while keeping the same repository contract.
-
-The contract must remain explicit that SQLite fallback is a test convenience, not proof of production locking semantics.
+- `get_for_update` must issue `SELECT ... FOR UPDATE` via `stmt.with_for_update()`.
+- PostgreSQL is the only supported backend for this contract.
+- SQLite is not a contractual backend and must not be used as a fallback or test convenience for locking behavior.
 
 ## 7. Transaction Rules
 
@@ -174,19 +173,18 @@ This protects against accidental or malicious cross-tenant mutation in higher la
 Future implementation must be covered by tests that prove the repository contract, including at least:
 
 - `get(...)` filters by tenant;
-- `get_for_update(...)` filters by tenant;
+- `get_for_update(...)` filters by tenant and applies `with_for_update()`;
 - `find_by_idempotency_key(...)` does not collide cross-tenant;
 - `save(...)` rejects changes to `organization_id`;
 - repository methods do not call `commit()`;
 - repository methods may use `flush()` when required;
-- PostgreSQL-backed tests verify contractual locking behavior;
-- SQLite/test fallback is explicit and controlled even without real row locks.
+- PostgreSQL is the only backend; no SQLite fallback is permitted.
 
 Recommended future test layers:
 
 - pure repository tests with fake/session spy coverage for commit/flush behavior;
 - lightweight integration tests with temporary DB/session;
-- PostgreSQL-specific tests for real `FOR UPDATE` semantics when available.
+- PostgreSQL-specific tests for real `FOR UPDATE` semantics.
 
 ## 12. Recommended Roadmap
 

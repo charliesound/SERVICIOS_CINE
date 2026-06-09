@@ -1,6 +1,6 @@
 # CID AI Job Accounting Gateway Async Contract v1
 
-Version: 1.0
+Version: 1.1
 Status: SPEC / ARCHITECTURE
 Date: 2026-06-09
 Scope: canonical async accounting gateway contract for AI Job credit operations
@@ -227,9 +227,30 @@ Before mutating, the gateway must verify that the reservation entry:
 
 - belongs to the same `organization_id`;
 - belongs to the same `job_id`;
-- has not already been consumed or released (depending on the operation).
+- has type `reserve`;
+- has not already been fully consumed or fully released (depending on the operation);
+- for partial settlement: has remaining available amount if releasing surplus after partial consume;
+- the requested settlement amount does not exceed the available reserved amount;
+- the current state of the job permits the operation.
 
-### 8.3 Ledger Evolution
+### 8.3 Partial Settlement
+
+The gateway must support partial settlement semantics:
+
+- consuming less than the full reserved amount is allowed, leaving surplus on the reservation;
+- releasing the surplus after a partial consume is allowed, using the same `reservation_entry_id`;
+- releasing the full reservation without prior consume is allowed;
+- consuming after a full release must fail;
+- releasing after a full consume must fail;
+- consuming after a partial release is blocked by default unless a future explicit split-settlement policy enables it;
+- double consume on the same reservation is blocked;
+- double release on the same reservation is blocked.
+
+When partial settlement occurs, the `AIJob` must not transition to the terminal `consumed` state if a surplus release is still pending. The orchestration layer must keep the job in an existing non-terminal settlement state such as `consume_pending` or `release_pending`, or introduce an explicit future split-settlement state before implementation. This document does not implicitly create a new runtime status.
+
+Split settlement (partial consume + surplus release) is an explicit policy, not an implicit behavior. The future implementation must document the policy before enabling this path.
+
+### 8.4 Ledger Evolution
 
 The current ledger must evolve to operate against a concrete reservation entry. This contract prepares that boundary without implementing it yet.
 
@@ -259,11 +280,12 @@ The gateway must produce clear, typed errors. Conceptual categories:
 | `insufficient_credits` | Not enough credits for reservation or consumption |
 | `reservation_not_found` | `reservation_entry_id` does not exist |
 | `idempotency_conflict` | Different payload with same idempotency key |
-| `reservation_already_consumed` | Reservation was already consumed |
-| `reservation_already_released` | Reservation was already released |
+| `reservation_already_consumed` | Reservation was fully consumed, no surplus remains |
+| `reservation_already_released` | Reservation was fully released, no amount remains |
 | `cross_tenant_reservation` | Reservation belongs to a different organization |
 | `accounting_unavailable` | Ledger or gate service is temporarily unavailable |
-| `invalid_amount` | Credit amount is zero, negative, or exceeds policy limits |
+| `invalid_amount` | Credit amount is zero, negative, or exceeds available reserved amount |
+| `surplus_exceeds_available` | Release amount exceeds remaining surplus after partial consume |
 
 These are conceptual categories for the contract. The actual error types and codes are defined during implementation.
 
@@ -288,6 +310,9 @@ Every gateway call must pass accounting metadata for auditability:
 - `actual_credits`
 - `reservation_entry_id`
 - `settlement_action`
+- `reservation_amount`
+- `settlement_amount`
+- `attempt_number`
 
 Not all fields are present in every call. For example, `estimate` does not produce `reservation_entry_id`; `consume` does not produce `estimated_credits`. The contract requires that every relevant field be passed when available.
 
@@ -302,8 +327,13 @@ Future implementation must be covered by tests proving the contract:
 - the same raw key in a different tenant does not collide;
 - retry of `reserve` with same key does not duplicate ledger entries;
 - retry of `consume` with same key does not duplicate ledger entries;
-- `consume` after `release` fails;
-- `release` after `consume` fails;
+- full release then consume fails;
+- full consume then release fails;
+- partial consume then release of surplus succeeds;
+- partial consume then release more than available surplus fails;
+- retry of surplus release with same key does not duplicate;
+- different payload with same release key produces conflict;
+- terminal `consumed` blocks later release unless split settlement was still pending and documented;
 - gateway does not call `commit()`;
 - gateway uses the session received from the caller.
 

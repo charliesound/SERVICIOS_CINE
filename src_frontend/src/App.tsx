@@ -66,6 +66,7 @@ import AppRegistryPage from './pages/AppRegistryPage'
 import ModulesCatalogPage from './pages/ModulesCatalogPage'
 import ScriptAnalysisProPage from './pages/ScriptAnalysisProPage'
 import BreakdownPage from './pages/BreakdownPage'
+import AIJobsPage from './pages/command-center/AIJobsPage'
 import { applySeo, SEO_DEFAULT_DESCRIPTION, SEO_DEFAULT_TITLE } from '@/utils/seo'
 
 function RouteSeoDefaults() {
@@ -173,6 +174,7 @@ export default function App() {
             }
           />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/command-center/ai-jobs" element={<AIJobsPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/modules" element={<ModulesCatalogPage />} />
           <Route path="/projects/new" element={<NewProjectPage />} />

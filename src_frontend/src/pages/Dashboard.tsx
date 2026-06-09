@@ -200,9 +200,14 @@ export default function Dashboard() {
         <div className="card card-hover">
           <div className="flex items-center justify-between mb-4">
             <h2 className="heading-md">{t('internal.dashboard.recentJobs')}</h2>
-            <Link to="/queue" className="btn-ghost flex items-center gap-1 text-sm">
+            <div className="flex gap-3">
+              <Link to="/command-center/ai-jobs" className="btn-secondary flex items-center gap-1 text-sm bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20">
+                {t('internal.commandCenter.aiJobs.title')} <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link to="/queue" className="btn-ghost flex items-center gap-1 text-sm">
               {t('internal.common.viewAll')} <ArrowRight className="w-4 h-4" />
             </Link>
+            </div>
           </div>
 
           <div className="space-y-2">

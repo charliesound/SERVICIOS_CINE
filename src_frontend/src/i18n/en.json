@@ -814,6 +814,61 @@
     }
   },
   "internal": {
+    "commandCenter": {
+      "aiJobs": {
+        "title": "AI Jobs & Credits",
+        "subtitle": "AI job history and consumption audit",
+        "credits": {
+          "available": "Available Credits",
+          "reserved": "Reserved Credits",
+          "consumed": "Consumed Credits",
+          "total": "Total Acquired"
+        },
+        "jobs": {
+          "table": {
+            "jobInfo": "Job / Type",
+            "status": "Status",
+            "costs": "Cost (Est/Res/Cons/Rel)",
+            "createdAt": "Date",
+            "actions": "Actions"
+          },
+          "status": {
+            "created": "Created",
+            "estimated": "Estimated",
+            "credit_checked": "Credit Checked",
+            "reserved": "Reserved",
+            "queued": "Queued",
+            "running": "Running",
+            "succeeded": "Completed",
+            "failed": "Failed",
+            "cancelled": "Cancelled",
+            "consume_pending": "Consume Pending",
+            "consumed": "Consumed",
+            "release_pending": "Release Pending",
+            "released": "Released",
+            "expired": "Expired"
+          },
+          "actions": {
+            "cancel": "Cancel Job",
+            "viewAudit": "View Audit",
+            "close": "Close"
+          },
+          "audit": {
+            "title": "Job Audit",
+            "event": "Event",
+            "amount": "Amount",
+            "date": "Date",
+            "emptyAudit": "No audit events found."
+          },
+          "costLabels": {
+            "estimated": "Est:",
+            "reserved": "Res:",
+            "consumed": "Cons:",
+            "released": "Rel:"
+          }
+        }
+      }
+    },
     "common": {
       "retry": "Retry",
       "backToProjects": "← Back to projects",

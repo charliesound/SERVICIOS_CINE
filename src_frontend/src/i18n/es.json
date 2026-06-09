@@ -814,6 +814,61 @@
     }
   },
   "internal": {
+    "commandCenter": {
+      "aiJobs": {
+        "title": "AI Jobs & Créditos",
+        "subtitle": "Historial de trabajos de IA y auditoría de consumo",
+        "credits": {
+          "available": "Créditos Disponibles",
+          "reserved": "Créditos Reservados",
+          "consumed": "Créditos Consumidos",
+          "total": "Total Adquiridos"
+        },
+        "jobs": {
+          "table": {
+            "jobInfo": "Job / Tipo",
+            "status": "Estado",
+            "costs": "Coste (Est/Res/Cons/Lib)",
+            "createdAt": "Fecha",
+            "actions": "Acciones"
+          },
+          "status": {
+            "created": "Creado",
+            "estimated": "Estimado",
+            "credit_checked": "Crédito Verificado",
+            "reserved": "Reservado",
+            "queued": "En Cola",
+            "running": "En Ejecución",
+            "succeeded": "Completado",
+            "failed": "Fallido",
+            "cancelled": "Cancelado",
+            "consume_pending": "Consumo Pendiente",
+            "consumed": "Consumido",
+            "release_pending": "Liberación Pendiente",
+            "released": "Liberado",
+            "expired": "Expirado"
+          },
+          "actions": {
+            "cancel": "Cancelar Job",
+            "viewAudit": "Ver Auditoría",
+            "close": "Cerrar"
+          },
+          "audit": {
+            "title": "Auditoría de Job",
+            "event": "Evento",
+            "amount": "Cantidad",
+            "date": "Fecha",
+            "emptyAudit": "No se encontraron eventos de auditoría."
+          },
+          "costLabels": {
+            "estimated": "Est:",
+            "reserved": "Res:",
+            "consumed": "Cons:",
+            "released": "Lib:"
+          }
+        }
+      }
+    },
     "common": {
       "retry": "Reintentar",
       "backToProjects": "← Volver a proyectos",

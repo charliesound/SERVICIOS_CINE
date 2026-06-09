@@ -1,5 +1,11 @@
 # CID Database Canonical Policy v1
 
+> **SUPERSEDED**: This document is superseded for future work by
+> docs/architecture/cid_postgresql_only_policy_v1.md.
+> Any older allowance for SQLite legacy/local/test fallback is obsolete
+> for new CID SaaS phases.
+> Keep this document only as historical transition context.
+
 ## Objective
 Establish PostgreSQL as the canonical database for CID production environments
 and define the transition path from the current SQLite/PostgreSQL dual reality.

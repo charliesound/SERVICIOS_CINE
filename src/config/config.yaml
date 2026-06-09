@@ -62,10 +62,9 @@ frontend:
   dev_url: "http://localhost:3000"
 
 database:
-  url: "sqlite+aiosqlite:///./ailinkcinema_s2.db"
-  runtime_schema_sync: true
-  sqlite_legacy_bootstrap: true
-  use_alembic: false
+  url: ""
+  runtime_schema_sync: false
+  use_alembic: true
 
 features:
   workflows: true

@@ -20,7 +20,7 @@ class TestSettingsProdValidation:
             Settings(
                 app_env="production",
                 jwt_secret="",
-                database_url="sqlite+aiosqlite:///test.db",
+                database_url="postgresql+asyncpg://cid_test_user@localhost:5432/cid_test",
             )
 
     def test_production_with_short_jwt_secret_fails(self):
@@ -30,7 +30,7 @@ class TestSettingsProdValidation:
             Settings(
                 app_env="production",
                 jwt_secret="short",
-                database_url="sqlite+aiosqlite:///test.db",
+                database_url="postgresql+asyncpg://cid_test_user@localhost:5432/cid_test",
             )
 
     def test_production_with_cors_wildcard_fails(self):
@@ -40,7 +40,7 @@ class TestSettingsProdValidation:
             Settings(
                 app_env="production",
                 jwt_secret="a" * 32,
-                database_url="sqlite+aiosqlite:///test.db",
+                database_url="postgresql+asyncpg://cid_test_user@localhost:5432/cid_test",
                 cors_allowed_origins=["*"],
             )
 
@@ -60,7 +60,7 @@ class TestSettingsProdValidation:
         s = Settings(
             app_env="production",
             jwt_secret="a" * 32,
-            database_url="sqlite+aiosqlite:///test.db",
+            database_url="postgresql+asyncpg://cid_test_user@localhost:5432/cid_test",
             cors_allowed_origins=["https://example.com"],
             auth_disabled=False,
         )
@@ -101,7 +101,7 @@ class TestLegacyConfigCompat:
         assert "app" in config
         assert "auth" in config
         url = get_database_url()
-        assert url.startswith(("sqlite", "postgresql"))
+        assert url == "" or url.startswith("postgresql")
 
     def test_legacy_get_llm_settings(self):
         from config import get_llm_settings

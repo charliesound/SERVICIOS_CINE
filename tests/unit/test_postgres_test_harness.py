@@ -116,7 +116,8 @@ class TestPostgresHarnessValidation:
                 "postgresql+asyncpg://cid_test_user@localhost:5432/cidproduction"
             )
 
-    def test_builds_minimum_billing_metadata_without_connecting(self) -> None:
+    def test_builds_minimum_billing_metadata_without_connecting(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://cid_test_user@localhost:5432/cid_test")
         metadata = build_billing_test_metadata()
 
         assert set(metadata.tables) == set(MINIMUM_BILLING_TABLES)
@@ -124,7 +125,7 @@ class TestPostgresHarnessValidation:
     def test_skip_helper_is_explicit_when_unconfigured(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("TEST_" + "DATABASE_" + "URL", raising=False)
 
-        with pytest.raises(pytest.skip.Exception, match="There is no SQLite fallback"):
+        with pytest.raises(pytest.skip.Exception, match="Real PostgreSQL integration checks are skipped"):
             skip_if_postgres_test_unconfigured()
 
 

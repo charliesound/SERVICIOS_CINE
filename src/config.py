@@ -16,23 +16,18 @@ import yaml
 from core.config import PROJECT_ROOT as _PROJECT_ROOT
 from core.config import get_settings as _get_settings
 
-_DEFAULT_DATABASE_URL = f"sqlite+aiosqlite:///{_PROJECT_ROOT / 'ailinkcinema_s2.db'}"
-
+_DEFAULT_DATABASE_URL = ""
 logger = logging.getLogger(__name__)
-
 
 # ── Re-export key paths for any legacy consumer ──────────────────────────
 def get_base_dir() -> Path:
     return Path(__file__).resolve().parent
 
-
 def get_project_root() -> Path:
     return get_base_dir().parent
 
-
 def get_config_path() -> Path:
     return get_base_dir() / "config" / "config.yaml"
-
 
 # ── Legacy YAML-based load (kept for modules that read config.yaml raw) ──
 def load_config(force_reload: bool = False) -> Dict[str, Any]:
@@ -57,7 +52,6 @@ def load_config(force_reload: bool = False) -> Dict[str, Any]:
     data = _apply_env_overrides(data)
     data = _merge_settings(data)
     return data
-
 
 def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
     """Apply environment variable overrides on top of YAML."""
@@ -137,7 +131,6 @@ def _apply_env_overrides(data: Dict[str, Any]) -> Dict[str, Any]:
 
     return data
 
-
 def _apply_bool_env(env_var: str, target: dict, key: str, app_env: str | None = None) -> None:
     val = os.getenv(env_var)
     if val is not None:
@@ -145,10 +138,8 @@ def _apply_bool_env(env_var: str, target: dict, key: str, app_env: str | None = 
     elif app_env and app_env.lower() == "production":
         target[key] = False
 
-
 def _parse_bool(value: str) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
-
 
 def _merge_settings(data: Dict[str, Any]) -> Dict[str, Any]:
     """Layer Pydantic Settings values on top of the YAML dict for alignment."""
@@ -168,7 +159,6 @@ def _merge_settings(data: Dict[str, Any]) -> Dict[str, Any]:
 
         data.setdefault("database", {}).setdefault("url", s.database_url)
         data.setdefault("database", {}).setdefault("runtime_schema_sync", s.database_runtime_schema_sync)
-        data.setdefault("database", {}).setdefault("sqlite_legacy_bootstrap", s.database_sqlite_legacy_bootstrap)
         data.setdefault("database", {}).setdefault("use_alembic", s.database_use_alembic)
 
         data.setdefault("demo", {}).setdefault("enabled", s.demo_enabled)
@@ -183,17 +173,14 @@ def _merge_settings(data: Dict[str, Any]) -> Dict[str, Any]:
         pass
     return data
 
-
 def get_config() -> Dict[str, Any]:
     return load_config()
-
 
 def get_database_config() -> Dict[str, Any]:
     db_config = get_config().get("database", {})
     if not isinstance(db_config, dict):
         raise ValueError("config.database debe ser un objeto YAML")
     return db_config
-
 
 def get_database_url() -> str:
     env_url = os.getenv("DATABASE_URL")
@@ -202,23 +189,14 @@ def get_database_url() -> str:
 
     configured_url = get_database_config().get("url")
     if isinstance(configured_url, str) and configured_url.strip():
-        url = configured_url.strip()
-        if url.startswith("sqlite+aiosqlite:///") or url.startswith("sqlite:///"):
-            prefix = "sqlite+aiosqlite:///" if url.startswith("sqlite+aiosqlite:///") else "sqlite:///"
-            db_path = url[len(prefix) :]
-            if not os.path.isabs(db_path):
-                db_path = str(get_project_root() / db_path)
-                return f"{prefix}{db_path}"
-        return url
+        return configured_url.strip()
 
     return _DEFAULT_DATABASE_URL
-
 
 def get_database_settings() -> Dict[str, Any]:
     db_config = dict(get_database_config())
     db_config["url"] = get_database_url()
     return db_config
-
 
 def get_llm_settings() -> Dict[str, Any]:
     llm_config = get_config().get("llm", {})
@@ -250,7 +228,6 @@ def get_llm_settings() -> Dict[str, Any]:
         "enable_fallback": bool(llm_config.get("enable_fallback", True)),
     }
 
-
 def validate_runtime_security(data: Dict[str, Any]) -> None:
     """Legacy security validation — delegates to core Settings validators.
 
@@ -263,7 +240,6 @@ def validate_runtime_security(data: Dict[str, Any]) -> None:
         assert s is not None  # force validation
     except Exception as exc:
         raise RuntimeError(f"Runtime security validation failed via Settings: {exc}") from exc
-
 
 # ── Legacy module-level singleton ────────────────────────────────────────
 # Kept so ``from config import config`` continues to work.

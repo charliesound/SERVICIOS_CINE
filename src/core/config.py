@@ -11,7 +11,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -53,9 +52,8 @@ class Settings(BaseSettings):
     auth_disabled: bool = False
 
     # ── Database ─────────────────────────────────────────────────────────
-    database_url: str = "sqlite+aiosqlite:///./ailinkcinema_s2.db"
+    database_url: str = ""
     database_runtime_schema_sync: bool = True
-    database_sqlite_legacy_bootstrap: bool = True
     database_use_alembic: bool = False
 
     # ── Redis (optional) ────────────────────────────────────────────────
@@ -193,6 +191,10 @@ class Settings(BaseSettings):
         env = info.data.get("app_env")
         if env == "production" and not v:
             raise ValueError("DATABASE_URL is required in production")
+        if v and not v.startswith("postgresql+asyncpg://"):
+            raise ValueError(
+                "CID requires postgresql+asyncpg:// DATABASE_URL."
+            )
         return v
 
     @field_validator("log_level")
@@ -227,11 +229,9 @@ class Settings(BaseSettings):
             )
         return self
 
-
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()
-
 
 def reload_settings() -> Settings:
     get_settings.cache_clear()

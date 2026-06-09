@@ -111,6 +111,7 @@ from models.change_governance import (
     SHOT_TYPES,
     PLANNING_ITEM_STATUSES,
 )
+from models.ai_job import AIJob
 from models.billing import (
     BillingAccount,
     CIDSubscription,
@@ -242,6 +243,7 @@ __all__ = [
     "CID_FEEDBACK_STATUSES",
     "CID_FEEDBACK_AUDIT_ACTIONS",
     "CID_LEARNING_RULE_TYPES",
+    "AIJob",
     "BillingAccount",
     "CIDSubscription",
     "PlanSnapshot",

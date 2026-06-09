@@ -29,6 +29,8 @@ fi
 ALLOWLIST=(
   "docs/architecture/cid_postgresql_only_policy_v1.md"
   "docs/architecture/cid_database_canonical_policy_v1.md"
+  "docs/architecture/cid_postgresql_only_tests_quarantine_v1.md"
+  "pytest.ini"
   "scripts/dev/guard_no_sqlite_regressions.sh"
   "scripts/db/migrate_sqlite_to_postgres_cid.py"
 )

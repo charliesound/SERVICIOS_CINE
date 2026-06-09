@@ -427,6 +427,10 @@ def _install_alembic_run_proxy(module, db_path: Path | None) -> None:
 @pytest.fixture(autouse=True, scope="module")
 def integration_module_backend_context(request):
     module = request.module
+    if getattr(module, "SKIP_INTEGRATION_BACKEND_CONTEXT", False):
+        yield
+        return
+
     db_path = _apply_test_environment(module)
     _rebind_backend_globals(module)
     _install_alembic_bootstrap(module, db_path)

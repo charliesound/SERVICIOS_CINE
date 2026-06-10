@@ -830,7 +830,7 @@ This contract explicitly does not scope the following items. They are deferred t
 6. Update the internal trigger route to inject and use `AIJobWorkerMockExecutionService`.
 7. Add unit tests for the new repository, service, and route behavior.
 8. Add PostgreSQL integration tests for unique constraint and concurrent attempt creation.
-9. Update `guard_no_sqlite_regressions.sh` allowlist if new files trigger false positives.
+9. Keep repository policy guards passing for all future implementation phases.
 10. Update `AGENTS.md` if new module conventions are established.
 
 ### 18.2 Hardening Phase (Future)

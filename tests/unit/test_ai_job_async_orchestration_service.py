@@ -25,6 +25,8 @@ from services.ai_job_async_orchestration_service import (
     AIJobAsyncCreateRequest,
     AIJobAsyncIdempotencyConflictError,
     AIJobAsyncEstimateRequest,
+    AIJobAsyncExecutionTransitionRequest,
+    AIJobAsyncInvalidStateError,
     AIJobAsyncNotFoundError,
     AIJobAsyncListRequest,
     AIJobAsyncOrchestrationService,
@@ -108,7 +110,14 @@ class FakeJob:
         self.reserved_at = None
         self.estimated_at = None
         self.credit_checked_at = None
+        self.queued_at = None
+        self.started_at = None
+        self.finished_at = None
+        self.cancel_requested_at = None
+        self.cancelled_at = None
+        self.consume_pending_at = None
         self.consumed_at = None
+        self.release_pending_at = None
         self.released_at = None
         self.job_metadata = job_metadata if job_metadata is not None else {
             "client_ref": "abc",
@@ -449,6 +458,207 @@ async def test_get_ai_job_history_derives_timestamped_events(session: DummySessi
         "estimated",
         "reserved",
     ]
+
+
+@pytest.mark.asyncio
+async def test_enqueue_ai_job_uses_lock_and_sets_queued_at(session: DummySession) -> None:
+    job = FakeJob(status="reserved")
+    service, repository, gateway = _service(job)
+
+    result = await service.enqueue_ai_job(
+        session,
+        AIJobAsyncExecutionTransitionRequest(
+            organization_id="org-1",
+            job_id="job-1",
+            execution_attempt_id="attempt-1",
+        ),
+    )
+
+    assert repository.calls[0] == ("get_for_update", ("org-1", "job-1"))
+    assert result.job.status == "queued"
+    assert result.job.queued_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert result.job.job_metadata["execution"]["execution_attempt_id"] == "attempt-1"
+    assert result.transition_plan.to_status == "queued"
+    assert repository.saved_jobs == [job]
+    assert gateway.calls == []
+
+
+@pytest.mark.asyncio
+async def test_start_ai_job_sets_started_at(session: DummySession) -> None:
+    job = FakeJob(status="queued")
+    service, repository, _gateway = _service(job)
+
+    result = await service.start_ai_job(
+        session,
+        AIJobAsyncExecutionTransitionRequest(
+            organization_id="org-1",
+            job_id="job-1",
+            execution_attempt_id="attempt-1",
+        ),
+    )
+
+    assert result.job.status == "running"
+    assert result.job.started_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert repository.saved_jobs == [job]
+
+
+@pytest.mark.asyncio
+async def test_succeed_ai_job_sets_finished_at_and_output_metadata(session: DummySession) -> None:
+    job = FakeJob(status="running", job_metadata={"client_ref": "abc"})
+    service, repository, _gateway = _service(job)
+
+    result = await service.succeed_ai_job(
+        session,
+        AIJobAsyncExecutionTransitionRequest(
+            organization_id="org-1",
+            job_id="job-1",
+            execution_attempt_id="attempt-1",
+            output_metadata={"asset_id": "asset-output"},
+        ),
+    )
+
+    assert result.job.status == "succeeded"
+    assert result.job.finished_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert result.job.job_metadata["client_ref"] == "abc"
+    assert result.job.job_metadata["execution"]["finished_status"] == "succeeded"
+    assert result.job.job_metadata["mock_worker"]["output"] == {"asset_id": "asset-output"}
+    assert repository.saved_jobs == [job]
+
+
+@pytest.mark.asyncio
+async def test_fail_ai_job_sets_finished_at_and_error_metadata(session: DummySession) -> None:
+    job = FakeJob(status="running", job_metadata={"client_ref": "abc"})
+    service, repository, _gateway = _service(job)
+
+    result = await service.fail_ai_job(
+        session,
+        AIJobAsyncExecutionTransitionRequest(
+            organization_id="org-1",
+            job_id="job-1",
+            execution_attempt_id="attempt-1",
+            error_metadata={"code": "mock_failure"},
+        ),
+    )
+
+    assert result.job.status == "failed"
+    assert result.job.finished_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert result.job.job_metadata["client_ref"] == "abc"
+    assert result.job.job_metadata["execution"]["finished_status"] == "failed"
+    assert result.job.job_metadata["mock_worker"]["error"] == {"code": "mock_failure"}
+    assert repository.saved_jobs == [job]
+
+
+@pytest.mark.asyncio
+async def test_mark_consume_pending_from_succeeded(session: DummySession) -> None:
+    job = FakeJob(status="succeeded")
+    service, repository, _gateway = _service(job)
+
+    result = await service.mark_consume_pending(
+        session,
+        AIJobAsyncExecutionTransitionRequest(organization_id="org-1", job_id="job-1"),
+    )
+
+    assert result.job.status == "consume_pending"
+    assert result.job.consume_pending_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert repository.saved_jobs == [job]
+
+
+@pytest.mark.asyncio
+async def test_mark_release_pending_from_failed(session: DummySession) -> None:
+    job = FakeJob(status="failed")
+    service, repository, _gateway = _service(job)
+
+    result = await service.mark_release_pending(
+        session,
+        AIJobAsyncExecutionTransitionRequest(organization_id="org-1", job_id="job-1"),
+    )
+
+    assert result.job.status == "release_pending"
+    assert result.job.release_pending_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert repository.saved_jobs == [job]
+
+
+@pytest.mark.asyncio
+async def test_execution_transition_rejects_invalid_state(session: DummySession) -> None:
+    service, repository, _gateway = _service(FakeJob(status="created"))
+
+    with pytest.raises(AIJobAsyncInvalidStateError):
+        await service.start_ai_job(
+            session,
+            AIJobAsyncExecutionTransitionRequest(
+                organization_id="org-1",
+                job_id="job-1",
+                execution_attempt_id="attempt-1",
+            ),
+        )
+
+    assert repository.saved_jobs == []
+
+
+@pytest.mark.asyncio
+async def test_execution_transition_raises_not_found_for_wrong_tenant(session: DummySession) -> None:
+    service, repository, _gateway = _service(FakeJob(organization_id="org-2", status="reserved"))
+
+    with pytest.raises(AIJobAsyncNotFoundError):
+        await service.enqueue_ai_job(
+            session,
+            AIJobAsyncExecutionTransitionRequest(
+                organization_id="org-1",
+                job_id="job-1",
+                execution_attempt_id="attempt-1",
+            ),
+        )
+
+    assert repository.calls == [("get_for_update", ("org-1", "job-1"))]
+    assert repository.saved_jobs == []
+
+
+@pytest.mark.asyncio
+async def test_worker_driven_transition_requires_execution_attempt_id(session: DummySession) -> None:
+    service, repository, _gateway = _service(FakeJob(status="reserved"))
+
+    with pytest.raises(Exception, match="execution_attempt_id"):
+        await service.enqueue_ai_job(
+            session,
+            AIJobAsyncExecutionTransitionRequest(
+                organization_id="org-1",
+                job_id="job-1",
+                execution_attempt_id=" ",
+            ),
+        )
+
+    assert repository.calls == []
+
+
+@pytest.mark.asyncio
+async def test_get_ai_job_history_uses_canonical_finished_status(session: DummySession) -> None:
+    job = FakeJob(status="succeeded")
+    job.finished_at = datetime(2026, 6, 9, 12, 0, 0)
+    service, _repository, _gateway = _service(job)
+
+    result = await service.get_ai_job_history(session, "org-1", "job-1")
+
+    statuses = [event["status"] for event in result.events]
+    assert "finished" not in statuses
+    assert "succeeded" in statuses
+
+
+@pytest.mark.asyncio
+async def test_get_ai_job_history_uses_metadata_finished_status_after_settlement(session: DummySession) -> None:
+    job = FakeJob(
+        status="consumed",
+        job_metadata={"execution": {"finished_status": "succeeded"}},
+    )
+    job.finished_at = datetime(2026, 6, 9, 12, 0, 0)
+    job.consumed_at = datetime(2026, 6, 9, 12, 1, 0)
+    service, _repository, _gateway = _service(job)
+
+    result = await service.get_ai_job_history(session, "org-1", "job-1")
+
+    statuses = [event["status"] for event in result.events]
+    assert "finished" not in statuses
+    assert "succeeded" in statuses
+    assert "consumed" in statuses
 
 
 @pytest.mark.asyncio

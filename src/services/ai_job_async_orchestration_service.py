@@ -10,12 +10,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.ai_job import AIJob
 from services.ai_job_status_service import (
+    AI_JOB_STATUS_CANCELLED,
     AI_JOB_STATUS_CONSUMED,
+    AI_JOB_STATUS_CONSUME_PENDING,
     AI_JOB_STATUS_CREDIT_CHECKED,
     AI_JOB_STATUS_CREATED,
+    AI_JOB_STATUS_FAILED,
+    AI_JOB_STATUS_PARTIAL_SUCCEEDED,
+    AI_JOB_STATUS_QUEUED,
     AI_JOB_STATUS_RELEASED,
+    AI_JOB_STATUS_RELEASE_PENDING,
     AI_JOB_STATUS_RESERVED,
     AI_JOB_STATUS_ESTIMATED,
+    AI_JOB_STATUS_RUNNING,
+    AI_JOB_STATUS_SUCCEEDED,
 )
 from services.ai_job_transition_service import (
     AIJobTransitionError,
@@ -36,6 +44,7 @@ __all__ = [
     "AIJobAsyncConsumeRequest",
     "AIJobAsyncReleaseRequest",
     "AIJobAsyncListRequest",
+    "AIJobAsyncExecutionTransitionRequest",
     "AIJobAsyncHistoryResult",
     "AIJobAsyncOrchestrationResult",
     "AIJobAsyncOrchestrationService",
@@ -128,6 +137,18 @@ class AIJobAsyncListRequest:
     created_before: datetime | None = None
     limit: int = 50
     cursor: str | None = None
+
+
+@dataclass(frozen=True)
+class AIJobAsyncExecutionTransitionRequest:
+    organization_id: str
+    job_id: str
+    execution_attempt_id: str | None = None
+    metadata: dict[str, Any] | None = None
+    output_metadata: dict[str, Any] | None = None
+    error_metadata: dict[str, Any] | None = None
+    requested_by: str | None = None
+    reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -434,6 +455,97 @@ class AIJobAsyncOrchestrationService:
             message="reserved",
         )
 
+    async def enqueue_ai_job(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncExecutionTransitionRequest,
+    ) -> AIJobAsyncOrchestrationResult:
+        return await self._transition_ai_job_execution(
+            session,
+            request,
+            to_status=AI_JOB_STATUS_QUEUED,
+            message="queued",
+            require_execution_attempt=True,
+        )
+
+    async def start_ai_job(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncExecutionTransitionRequest,
+    ) -> AIJobAsyncOrchestrationResult:
+        return await self._transition_ai_job_execution(
+            session,
+            request,
+            to_status=AI_JOB_STATUS_RUNNING,
+            message="running",
+            require_execution_attempt=True,
+        )
+
+    async def succeed_ai_job(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncExecutionTransitionRequest,
+    ) -> AIJobAsyncOrchestrationResult:
+        return await self._transition_ai_job_execution(
+            session,
+            request,
+            to_status=AI_JOB_STATUS_SUCCEEDED,
+            message="succeeded",
+            require_execution_attempt=True,
+        )
+
+    async def fail_ai_job(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncExecutionTransitionRequest,
+    ) -> AIJobAsyncOrchestrationResult:
+        return await self._transition_ai_job_execution(
+            session,
+            request,
+            to_status=AI_JOB_STATUS_FAILED,
+            message="failed",
+            require_execution_attempt=True,
+        )
+
+    async def cancel_ai_job(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncExecutionTransitionRequest,
+    ) -> AIJobAsyncOrchestrationResult:
+        return await self._transition_ai_job_execution(
+            session,
+            request,
+            to_status=AI_JOB_STATUS_CANCELLED,
+            message="cancelled",
+            require_execution_attempt=True,
+        )
+
+    async def mark_consume_pending(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncExecutionTransitionRequest,
+    ) -> AIJobAsyncOrchestrationResult:
+        return await self._transition_ai_job_execution(
+            session,
+            request,
+            to_status=AI_JOB_STATUS_CONSUME_PENDING,
+            message="consume pending",
+            require_execution_attempt=False,
+        )
+
+    async def mark_release_pending(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncExecutionTransitionRequest,
+    ) -> AIJobAsyncOrchestrationResult:
+        return await self._transition_ai_job_execution(
+            session,
+            request,
+            to_status=AI_JOB_STATUS_RELEASE_PENDING,
+            message="release pending",
+            require_execution_attempt=False,
+        )
+
     async def consume_ai_job_credits(
         self,
         session: AsyncSession,
@@ -538,6 +650,48 @@ class AIJobAsyncOrchestrationService:
             )
         return job
 
+    async def _transition_ai_job_execution(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncExecutionTransitionRequest,
+        *,
+        to_status: str,
+        message: str,
+        require_execution_attempt: bool,
+    ) -> AIJobAsyncOrchestrationResult:
+        _ = session
+        organization_id = self._require_text(request.organization_id, "organization_id")
+        job_id = self._require_text(request.job_id, "job_id")
+        execution_attempt_id = None
+        if request.execution_attempt_id is not None:
+            execution_attempt_id = self._normalize_text(
+                request.execution_attempt_id,
+                "execution_attempt_id",
+            )
+        if require_execution_attempt and execution_attempt_id is None:
+            raise AIJobAsyncOrchestrationError(
+                "execution_attempt_id must be a non-empty string"
+            )
+        job = await self._load_job_for_mutation(organization_id, job_id)
+        plan = self._build_transition_plan(job.status, to_status)
+        self._apply_transition(job, plan)
+        job.job_metadata = self._build_execution_metadata(
+            existing_metadata=getattr(job, "job_metadata", None),
+            job_status=job.status,
+            execution_attempt_id=execution_attempt_id,
+            metadata=request.metadata,
+            output_metadata=request.output_metadata,
+            error_metadata=request.error_metadata,
+            requested_by=request.requested_by,
+            reason=request.reason,
+        )
+        saved_job = await self.repository.save(job)
+        return AIJobAsyncOrchestrationResult(
+            job=saved_job,
+            transition_plan=plan,
+            message=message,
+        )
+
     def _build_transition_plan(self, from_status: str, to_status: str) -> AIJobTransitionPlan:
         try:
             return build_ai_job_transition_plan(from_status, to_status)
@@ -557,7 +711,6 @@ class AIJobAsyncOrchestrationService:
             ("reserved", "reserved_at"),
             ("queued", "queued_at"),
             ("running", "started_at"),
-            ("finished", "finished_at"),
             ("cancel_requested", "cancel_requested_at"),
             ("cancelled", "cancelled_at"),
             ("consume_pending", "consume_pending_at"),
@@ -579,8 +732,40 @@ class AIJobAsyncOrchestrationService:
                     "job_id": getattr(job, "id", None),
                 }
             )
+        finished_status = self._resolve_finished_history_status(job)
+        finished_at = getattr(job, "finished_at", None)
+        if finished_status is not None and finished_at is not None:
+            events.append(
+                {
+                    "status": finished_status,
+                    "timestamp": finished_at,
+                    "actor_type": "system",
+                    "message": "AI job {0}".format(finished_status),
+                    "job_id": getattr(job, "id", None),
+                }
+            )
         events.sort(key=lambda item: item["timestamp"])
         return events
+
+    def _resolve_finished_history_status(self, job: Any) -> str | None:
+        status = getattr(job, "status", None)
+        if status in {
+            AI_JOB_STATUS_SUCCEEDED,
+            AI_JOB_STATUS_PARTIAL_SUCCEEDED,
+            AI_JOB_STATUS_FAILED,
+        }:
+            return status
+        metadata = self._normalize_metadata(getattr(job, "job_metadata", None))
+        execution = metadata.get("execution")
+        if isinstance(execution, dict):
+            last_finished_status = execution.get("finished_status")
+            if last_finished_status in {
+                AI_JOB_STATUS_SUCCEEDED,
+                AI_JOB_STATUS_PARTIAL_SUCCEEDED,
+                AI_JOB_STATUS_FAILED,
+            }:
+                return last_finished_status
+        return None
 
     def _require_ledger_entry_id(self, result: Any, message: str) -> str:
         ledger_entry_id = getattr(result, "ledger_entry_id", None)
@@ -667,6 +852,51 @@ class AIJobAsyncOrchestrationService:
         )
         payload["estimated_credits"] = estimated_credits
         payload["job_status"] = job_status
+        return payload
+
+    def _build_execution_metadata(
+        self,
+        *,
+        existing_metadata: dict[str, Any] | None,
+        job_status: str,
+        execution_attempt_id: str | None,
+        metadata: dict[str, Any] | None,
+        output_metadata: dict[str, Any] | None,
+        error_metadata: dict[str, Any] | None,
+        requested_by: str | None,
+        reason: str | None,
+    ) -> dict[str, Any]:
+        payload = self._normalize_metadata(existing_metadata)
+        payload["job_status"] = job_status
+        execution = self._normalize_metadata(payload.get("execution"))
+        if execution_attempt_id is not None:
+            execution["execution_attempt_id"] = execution_attempt_id
+        if metadata is not None:
+            execution["metadata"] = self._normalize_metadata(metadata)
+        normalized_requested_by = self._normalize_optional_text(requested_by)
+        if normalized_requested_by is not None:
+            execution["requested_by"] = normalized_requested_by
+        normalized_reason = self._normalize_optional_text(reason)
+        if normalized_reason is not None:
+            execution["reason"] = normalized_reason
+        if job_status in {
+            AI_JOB_STATUS_SUCCEEDED,
+            AI_JOB_STATUS_PARTIAL_SUCCEEDED,
+            AI_JOB_STATUS_FAILED,
+        }:
+            execution["finished_status"] = job_status
+        if execution:
+            payload["execution"] = execution
+
+        if output_metadata is not None or error_metadata is not None:
+            mock_worker = self._normalize_metadata(payload.get("mock_worker"))
+            if execution_attempt_id is not None:
+                mock_worker["execution_attempt_id"] = execution_attempt_id
+            if output_metadata is not None:
+                mock_worker["output"] = self._normalize_metadata(output_metadata)
+            if error_metadata is not None:
+                mock_worker["error"] = self._normalize_metadata(error_metadata)
+            payload["mock_worker"] = mock_worker
         return payload
 
     def _build_create_payload(

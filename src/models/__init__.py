@@ -112,6 +112,19 @@ from models.change_governance import (
     PLANNING_ITEM_STATUSES,
 )
 from models.ai_job import AIJob
+from models.ai_job_execution_attempt import (
+    AIJobExecutionAttempt,
+    AI_JOB_EXECUTION_ATTEMPT_MODES,
+    AI_JOB_EXECUTION_ATTEMPT_STATUSES,
+    ATTEMPT_MODE_CANCEL,
+    ATTEMPT_MODE_FAILURE,
+    ATTEMPT_MODE_SUCCESS,
+    ATTEMPT_STATUS_CANCELLED,
+    ATTEMPT_STATUS_CONFLICTED,
+    ATTEMPT_STATUS_FAILED,
+    ATTEMPT_STATUS_IN_PROGRESS,
+    ATTEMPT_STATUS_SUCCEEDED,
+)
 from models.billing import (
     BillingAccount,
     CIDSubscription,
@@ -244,6 +257,17 @@ __all__ = [
     "CID_FEEDBACK_AUDIT_ACTIONS",
     "CID_LEARNING_RULE_TYPES",
     "AIJob",
+    "AIJobExecutionAttempt",
+    "AI_JOB_EXECUTION_ATTEMPT_MODES",
+    "AI_JOB_EXECUTION_ATTEMPT_STATUSES",
+    "ATTEMPT_MODE_CANCEL",
+    "ATTEMPT_MODE_FAILURE",
+    "ATTEMPT_MODE_SUCCESS",
+    "ATTEMPT_STATUS_CANCELLED",
+    "ATTEMPT_STATUS_CONFLICTED",
+    "ATTEMPT_STATUS_FAILED",
+    "ATTEMPT_STATUS_IN_PROGRESS",
+    "ATTEMPT_STATUS_SUCCEEDED",
     "BillingAccount",
     "CIDSubscription",
     "PlanSnapshot",

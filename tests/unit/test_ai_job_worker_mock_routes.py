@@ -4,7 +4,6 @@ import os
 import sys
 import importlib.util
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 from fastapi import FastAPI
@@ -23,9 +22,19 @@ os.environ.setdefault("AUTH_SECRET_KEY", "a" * 32)
 os.environ.setdefault("APP_SECRET_KEY", "a" * 32)
 
 from database import get_db
-from dependencies.ai_job_worker_mock import get_ai_job_worker_mock_service
+from dependencies.ai_job_worker_mock import get_ai_job_worker_mock_execution_service
 from dependencies.tenant_context import get_tenant_context
 from schemas.auth_schema import TenantContext
+from services.ai_job_worker_mock_execution_service import (
+    AIJobWorkerMockExecutionConflictError,
+    AIJobWorkerMockExecutionError,
+    AIJobWorkerMockExecutionFingerprintMismatchError,
+    AIJobWorkerMockExecutionInProgressError,
+    AIJobWorkerMockExecutionInvalidStateError,
+    AIJobWorkerMockExecutionReplayError,
+    AIJobWorkerMockExecutionResult,
+)
+from services.ai_job_worker_mock_service import AIJobWorkerMockResult
 
 ROUTE_MODULE_PATH = SRC_DIR / "routes" / "internal_ai_job_worker_mock_routes.py"
 spec = importlib.util.spec_from_file_location(
@@ -39,11 +48,11 @@ spec.loader.exec_module(routes_module)
 router = routes_module.router
 
 
-class FakeWorkerMockService:
+class FakeWorkerMockExecutionService:
     def __init__(self) -> None:
         self.calls: list[tuple[str, object]] = []
 
-    def _result(self, **overrides: object) -> SimpleNamespace:
+    def _worker_result(self, **overrides: object) -> AIJobWorkerMockResult:
         defaults: dict[str, object] = {
             "organization_id": "org-tenant",
             "job_id": "job-1",
@@ -57,41 +66,71 @@ class FakeWorkerMockService:
             "error_metadata": None,
         }
         defaults.update(overrides)
-        return SimpleNamespace(**defaults)
+        return AIJobWorkerMockResult(**defaults)  # type: ignore[arg-type]
 
     async def execute(self, session, command):
         del session
         self.calls.append(("execute", command))
         if command.mode == "success":
-            return self._result(
+            result = self._worker_result(
                 mode="success",
                 status="consumed",
                 consumed_credits=getattr(command, "actual_credits", None) or 5,
             )
+            return AIJobWorkerMockExecutionResult(
+                result=result,
+                replay=False,
+                attempt_status="succeeded",
+                execution_attempt_id=command.execution_attempt_id,
+            )
         if command.mode == "failure":
-            return self._result(
+            result = self._worker_result(
                 mode="failure",
                 status="released",
                 released_credits=getattr(command, "release_credits", None) or 5,
                 consumed_credits=None,
                 consume_entry_id=None,
+                release_entry_id="entry-release-1",
                 output_metadata=None,
                 error_metadata={"code": getattr(command, "mock_error_code", None)},
             )
+            return AIJobWorkerMockExecutionResult(
+                result=result,
+                replay=False,
+                attempt_status="failed",
+                execution_attempt_id=command.execution_attempt_id,
+            )
         if command.mode == "cancel":
-            return self._result(
+            result = self._worker_result(
                 mode="cancel",
                 status="released",
                 released_credits=getattr(command, "release_credits", None) or 3,
                 consumed_credits=None,
                 consume_entry_id=None,
+                release_entry_id="entry-release-1",
                 output_metadata=None,
                 error_metadata=None,
+            )
+            return AIJobWorkerMockExecutionResult(
+                result=result,
+                replay=False,
+                attempt_status="cancelled",
+                execution_attempt_id=command.execution_attempt_id,
             )
         raise ValueError("unexpected mode in fake")
 
 
-class FailingWorkerMockService:
+class FakeDirectWorkerMockService:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, object]] = []
+
+    async def execute(self, session, command):
+        del session
+        self.calls.append(("execute", command))
+        raise AssertionError("route must not call direct worker service")
+
+
+class FailingWorkerMockExecutionService:
     def __init__(self, error: Exception) -> None:
         self._error = error
         self.calls: list[tuple[str, object]] = []
@@ -102,9 +141,32 @@ class FailingWorkerMockService:
         raise self._error
 
 
+class ReplayWorkerMockExecutionService:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, object]] = []
+
+    async def execute(self, session, command):
+        del session
+        self.calls.append(("execute", command))
+        return AIJobWorkerMockExecutionResult(
+            result=AIJobWorkerMockResult(
+                organization_id=command.organization_id,
+                job_id=command.job_id,
+                mode=command.mode,
+                status="consumed",
+                consumed_credits=8,
+                consume_entry_id="entry-replayed-consume",
+                output_metadata=None,
+            ),
+            replay=True,
+            attempt_status="succeeded",
+            execution_attempt_id=command.execution_attempt_id,
+        )
+
+
 @pytest.fixture
-def fake_worker() -> FakeWorkerMockService:
-    return FakeWorkerMockService()
+def fake_execution_service() -> FakeWorkerMockExecutionService:
+    return FakeWorkerMockExecutionService()
 
 
 def _tenant(auth_method: str = "internal_api_key", user_id: str = "user-1") -> TenantContext:
@@ -119,7 +181,7 @@ def _tenant(auth_method: str = "internal_api_key", user_id: str = "user-1") -> T
 
 
 def _app(
-    worker_service: object,
+    execution_service: object,
     tenant: TenantContext | None = None,
 ) -> FastAPI:
     application = FastAPI()
@@ -131,18 +193,20 @@ def _app(
     async def override_tenant():
         return tenant or _tenant()
 
-    async def override_worker():
-        return worker_service
+    async def override_execution_service():
+        return execution_service
 
     application.dependency_overrides[get_db] = override_db
     application.dependency_overrides[get_tenant_context] = override_tenant
-    application.dependency_overrides[get_ai_job_worker_mock_service] = override_worker
+    application.dependency_overrides[
+        get_ai_job_worker_mock_execution_service
+    ] = override_execution_service
     return application
 
 
 @pytest.fixture
-def app(fake_worker: FakeWorkerMockService) -> FastAPI:
-    return _app(fake_worker)
+def app(fake_execution_service: FakeWorkerMockExecutionService) -> FastAPI:
+    return _app(fake_execution_service)
 
 
 @pytest.fixture
@@ -162,8 +226,10 @@ def _valid_payload(**overrides: object) -> dict:
 # ── Authorization tests ───────────────────────────────────────────────────
 
 
-def test_rejects_jwt_normal_caller(fake_worker: FakeWorkerMockService) -> None:
-    app = _app(fake_worker, tenant=_tenant(auth_method="jwt"))
+def test_rejects_jwt_normal_caller(
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
+    app = _app(fake_execution_service, tenant=_tenant(auth_method="jwt"))
     with TestClient(app) as c:
         response = c.post(
             "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
@@ -172,8 +238,10 @@ def test_rejects_jwt_normal_caller(fake_worker: FakeWorkerMockService) -> None:
     assert response.status_code == 403
 
 
-def test_rejects_non_internal_auth_method(fake_worker: FakeWorkerMockService) -> None:
-    app = _app(fake_worker, tenant=_tenant(auth_method="api_key"))
+def test_rejects_non_internal_auth_method(
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
+    app = _app(fake_execution_service, tenant=_tenant(auth_method="api_key"))
     with TestClient(app) as c:
         response = c.post(
             "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
@@ -182,13 +250,25 @@ def test_rejects_non_internal_auth_method(fake_worker: FakeWorkerMockService) ->
     assert response.status_code == 403
 
 
-def test_accepts_internal_api_key(client: TestClient, fake_worker: FakeWorkerMockService) -> None:
+def test_accepts_internal_api_key(
+    client: TestClient,
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
     response = client.post(
         "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
         json=_valid_payload(),
     )
     assert response.status_code == 200
-    assert len(fake_worker.calls) == 1
+    assert len(fake_execution_service.calls) == 1
+
+
+def test_endpoint_calls_execution_wrapper(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
+        json=_valid_payload(),
+    )
+    assert response.status_code == 200
+    assert response.json()["attempt_status"] == "succeeded"
 
 
 # ── Query / body safety tests ────────────────────────────────────────────
@@ -223,7 +303,11 @@ def test_rejects_requested_by_in_body(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_job_id_in_body_rejected_by_schema(client: TestClient, fake_worker: FakeWorkerMockService) -> None:
+def test_job_id_in_body_rejected_by_schema(
+    client: TestClient,
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
+    del fake_execution_service
     payload = _valid_payload()
     payload["job_id"] = "body-job"  # type: ignore[assignment]
     response = client.post(
@@ -233,13 +317,16 @@ def test_job_id_in_body_rejected_by_schema(client: TestClient, fake_worker: Fake
     assert response.status_code == 422
 
 
-def test_job_id_from_path_not_body(client: TestClient, fake_worker: FakeWorkerMockService) -> None:
+def test_job_id_from_path_not_body(
+    client: TestClient,
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
     response = client.post(
         "/api/v1/internal/ai-jobs/job-path/mock-worker/execute",
         json=_valid_payload(),
     )
     assert response.status_code == 200
-    command = fake_worker.calls[-1][1]
+    command = fake_execution_service.calls[-1][1]
     assert command.job_id == "job-path"
     assert command.organization_id == "org-tenant"
 
@@ -247,45 +334,59 @@ def test_job_id_from_path_not_body(client: TestClient, fake_worker: FakeWorkerMo
 # ── Command construction tests ────────────────────────────────────────────
 
 
-def test_builds_command_from_tenant_context(client: TestClient, fake_worker: FakeWorkerMockService) -> None:
+def test_builds_command_from_tenant_context(
+    client: TestClient,
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
     response = client.post(
         "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
         json=_valid_payload(),
     )
     assert response.status_code == 200
-    command = fake_worker.calls[-1][1]
+    command = fake_execution_service.calls[-1][1]
     assert command.organization_id == "org-tenant"
     assert command.job_id == "job-1"
     assert command.execution_attempt_id == "attempt-1"
     assert command.mode == "success"
 
 
-def test_requested_by_derived_from_tenant_user_id(client: TestClient, fake_worker: FakeWorkerMockService) -> None:
+def test_requested_by_derived_from_tenant_user_id(
+    client: TestClient,
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
     response = client.post(
         "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
         json=_valid_payload(),
     )
     assert response.status_code == 200
-    command = fake_worker.calls[-1][1]
+    command = fake_execution_service.calls[-1][1]
     assert command.requested_by == "user-1"
 
 
-def test_requested_by_fallback_to_internal_trigger(fake_worker: FakeWorkerMockService) -> None:
-    app = _app(fake_worker, tenant=_tenant(auth_method="internal_api_key", user_id=""))
+def test_requested_by_fallback_to_internal_trigger(
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
+    app = _app(
+        fake_execution_service,
+        tenant=_tenant(auth_method="internal_api_key", user_id=""),
+    )
     with TestClient(app) as c:
         response = c.post(
             "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
             json=_valid_payload(),
         )
     assert response.status_code == 200
-    command = fake_worker.calls[-1][1]
+    command = fake_execution_service.calls[-1][1]
     assert command.requested_by == "internal_trigger"
 
 
 # ── Flow tests ────────────────────────────────────────────────────────────
 
 
-def test_success_flow(client: TestClient, fake_worker: FakeWorkerMockService) -> None:
+def test_success_flow(
+    client: TestClient,
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
     response = client.post(
         "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
         json=_valid_payload(mode="success"),
@@ -295,11 +396,35 @@ def test_success_flow(client: TestClient, fake_worker: FakeWorkerMockService) ->
     assert body["mode"] == "success"
     assert body["status"] == "consumed"
     assert body["consumed_credits"] == 5
+    assert body["consume_entry_id"] == "entry-consume-1"
     assert body["job_id"] == "job-1"
     assert body["organization_id"] == "org-tenant"
+    assert body["replay"] is False
+    assert body["attempt_status"] == "succeeded"
 
 
-def test_failure_flow(client: TestClient, fake_worker: FakeWorkerMockService) -> None:
+def test_terminal_replay_returns_200_with_replay_true() -> None:
+    execution_service = ReplayWorkerMockExecutionService()
+    app = _app(execution_service)
+    with TestClient(app) as c:
+        response = c.post(
+            "/api/v1/internal/ai-jobs/job-replay/mock-worker/execute",
+            json=_valid_payload(mode="success"),
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["replay"] is True
+    assert body["attempt_status"] == "succeeded"
+    assert body["job_id"] == "job-replay"
+    assert body["consumed_credits"] == 8
+    assert body["consume_entry_id"] == "entry-replayed-consume"
+    assert len(execution_service.calls) == 1
+
+
+def test_failure_flow(
+    client: TestClient,
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
     response = client.post(
         "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
         json=_valid_payload(mode="failure", mock_error_code="test_error"),
@@ -309,10 +434,16 @@ def test_failure_flow(client: TestClient, fake_worker: FakeWorkerMockService) ->
     assert body["mode"] == "failure"
     assert body["status"] == "released"
     assert body["released_credits"] == 5
+    assert body["release_entry_id"] == "entry-release-1"
     assert body["job_id"] == "job-1"
+    assert body["replay"] is False
+    assert body["attempt_status"] == "failed"
 
 
-def test_cancel_flow(client: TestClient, fake_worker: FakeWorkerMockService) -> None:
+def test_cancel_flow(
+    client: TestClient,
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
     response = client.post(
         "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
         json=_valid_payload(mode="cancel"),
@@ -322,6 +453,9 @@ def test_cancel_flow(client: TestClient, fake_worker: FakeWorkerMockService) -> 
     assert body["mode"] == "cancel"
     assert body["status"] == "released"
     assert body["released_credits"] == 3
+    assert body["release_entry_id"] == "entry-release-1"
+    assert body["replay"] is False
+    assert body["attempt_status"] == "cancelled"
 
 
 # ── Validation tests ──────────────────────────────────────────────────────
@@ -367,23 +501,26 @@ def test_extra_fields_rejected(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_credit_override_fields_pass_for_internal(client: TestClient, fake_worker: FakeWorkerMockService) -> None:
+def test_credit_override_fields_pass_for_internal(
+    client: TestClient,
+    fake_execution_service: FakeWorkerMockExecutionService,
+) -> None:
     response = client.post(
         "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
         json=_valid_payload(mode="success", actual_credits=10),
     )
     assert response.status_code == 200
-    command = fake_worker.calls[-1][1]
+    command = fake_execution_service.calls[-1][1]
     assert command.actual_credits == 10
 
 
 # ── Error mapping tests ───────────────────────────────────────────────────
 
 
-def test_worker_mock_error_maps_to_400(fake_worker: FakeWorkerMockService) -> None:
+def test_worker_mock_error_maps_to_400() -> None:
     from services.ai_job_worker_mock_service import AIJobWorkerMockError
 
-    failing = FailingWorkerMockService(AIJobWorkerMockError("bad command"))
+    failing = FailingWorkerMockExecutionService(AIJobWorkerMockError("bad command"))
     app = _app(failing)
     with TestClient(app) as c:
         response = c.post(
@@ -394,10 +531,12 @@ def test_worker_mock_error_maps_to_400(fake_worker: FakeWorkerMockService) -> No
     assert "bad command" in response.json()["detail"]
 
 
-def test_settlement_error_maps_to_409(fake_worker: FakeWorkerMockService) -> None:
+def test_settlement_error_maps_to_409() -> None:
     from services.ai_job_worker_mock_service import AIJobWorkerMockSettlementError
 
-    failing = FailingWorkerMockService(AIJobWorkerMockSettlementError("settlement conflict"))
+    failing = FailingWorkerMockExecutionService(
+        AIJobWorkerMockSettlementError("settlement conflict")
+    )
     app = _app(failing)
     with TestClient(app) as c:
         response = c.post(
@@ -408,10 +547,10 @@ def test_settlement_error_maps_to_409(fake_worker: FakeWorkerMockService) -> Non
     assert "settlement conflict" in response.json()["detail"]
 
 
-def test_not_found_maps_to_404(fake_worker: FakeWorkerMockService) -> None:
+def test_not_found_maps_to_404() -> None:
     from services.ai_job_async_orchestration_service import AIJobAsyncNotFoundError
 
-    failing = FailingWorkerMockService(
+    failing = FailingWorkerMockExecutionService(
         AIJobAsyncNotFoundError("AI job not found for organization org-tenant: job-x")
     )
     app = _app(failing)
@@ -423,10 +562,12 @@ def test_not_found_maps_to_404(fake_worker: FakeWorkerMockService) -> None:
     assert response.status_code == 404
 
 
-def test_invalid_state_maps_to_409(fake_worker: FakeWorkerMockService) -> None:
+def test_invalid_state_maps_to_409() -> None:
     from services.ai_job_async_orchestration_service import AIJobAsyncInvalidStateError
 
-    failing = FailingWorkerMockService(AIJobAsyncInvalidStateError("invalid transition"))
+    failing = FailingWorkerMockExecutionService(
+        AIJobAsyncInvalidStateError("invalid transition")
+    )
     app = _app(failing)
     with TestClient(app) as c:
         response = c.post(
@@ -436,10 +577,10 @@ def test_invalid_state_maps_to_409(fake_worker: FakeWorkerMockService) -> None:
     assert response.status_code == 409
 
 
-def test_orchestration_error_maps_to_400(fake_worker: FakeWorkerMockService) -> None:
+def test_orchestration_error_maps_to_400() -> None:
     from services.ai_job_async_orchestration_service import AIJobAsyncOrchestrationError
 
-    failing = FailingWorkerMockService(AIJobAsyncOrchestrationError("bad request"))
+    failing = FailingWorkerMockExecutionService(AIJobAsyncOrchestrationError("bad request"))
     app = _app(failing)
     with TestClient(app) as c:
         response = c.post(
@@ -447,6 +588,90 @@ def test_orchestration_error_maps_to_400(fake_worker: FakeWorkerMockService) -> 
             json=_valid_payload(),
         )
     assert response.status_code == 400
+
+
+def test_fingerprint_mismatch_maps_to_409() -> None:
+    failing = FailingWorkerMockExecutionService(
+        AIJobWorkerMockExecutionFingerprintMismatchError("internal fingerprint detail")
+    )
+    app = _app(failing)
+    with TestClient(app) as c:
+        response = c.post(
+            "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
+            json=_valid_payload(),
+        )
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Execution attempt conflict"
+
+
+def test_in_progress_maps_to_409() -> None:
+    failing = FailingWorkerMockExecutionService(
+        AIJobWorkerMockExecutionInProgressError("internal in-progress detail")
+    )
+    app = _app(failing)
+    with TestClient(app) as c:
+        response = c.post(
+            "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
+            json=_valid_payload(),
+        )
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Execution attempt is in progress"
+
+
+def test_invalid_stored_state_maps_to_409() -> None:
+    failing = FailingWorkerMockExecutionService(
+        AIJobWorkerMockExecutionInvalidStateError("internal invalid state detail")
+    )
+    app = _app(failing)
+    with TestClient(app) as c:
+        response = c.post(
+            "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
+            json=_valid_payload(),
+        )
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Execution attempt state conflict"
+
+
+def test_replay_reconstruction_error_maps_to_500() -> None:
+    failing = FailingWorkerMockExecutionService(
+        AIJobWorkerMockExecutionReplayError("internal replay detail")
+    )
+    app = _app(failing)
+    with TestClient(app) as c:
+        response = c.post(
+            "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
+            json=_valid_payload(),
+        )
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Execution attempt replay failed"
+
+
+def test_generic_wrapper_conflict_maps_to_409() -> None:
+    failing = FailingWorkerMockExecutionService(
+        AIJobWorkerMockExecutionConflictError("internal conflict detail")
+    )
+    app = _app(failing)
+    with TestClient(app) as c:
+        response = c.post(
+            "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
+            json=_valid_payload(),
+        )
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Execution attempt conflict"
+
+
+def test_generic_wrapper_error_maps_to_500() -> None:
+    failing = FailingWorkerMockExecutionService(
+        AIJobWorkerMockExecutionError("internal execution detail")
+    )
+    app = _app(failing)
+    with TestClient(app) as c:
+        response = c.post(
+            "/api/v1/internal/ai-jobs/job-1/mock-worker/execute",
+            json=_valid_payload(),
+        )
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Execution attempt failed"
 
 
 # ── Isolation tests ───────────────────────────────────────────────────────
@@ -457,11 +682,13 @@ def test_router_has_no_forbidden_direct_dependencies() -> None:
     forbidden_terms = (
         "AsyncSessionLocal",
         "session.commit",
+        "commit()",
         "CreditLedgerService",
         "CreditGateService",
         "AIJobAccountingGateway",
         "AIJobCostingService",
         "AIJobRepository",
+        "AIJobWorkerMockService",
     )
     for term in forbidden_terms:
         assert term not in source, f"forbidden term found: {term}"

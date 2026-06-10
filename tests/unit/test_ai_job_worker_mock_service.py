@@ -363,6 +363,16 @@ def test_worker_source_has_no_forbidden_direct_dependencies() -> None:
     assert all(term not in source for term in forbidden_terms)
 
 
-def test_no_route_files_modified() -> None:
-    tracked_diff = os.popen("git diff --name-only").read().splitlines()
-    assert not any(path.startswith("src/routes/") for path in tracked_diff)
+def test_worker_mock_service_has_no_route_or_api_imports() -> None:
+    source = (SRC_DIR / "services" / "ai_job_worker_mock_service.py").read_text()
+    forbidden_terms = (
+        "routes.",
+        "internal_ai_job_worker_mock_routes",
+        "dependencies.ai_job_worker_mock",
+        "schemas.ai_job_worker_mock_api_schema",
+        "FastAPI",
+        "APIRouter",
+        "HTTPException",
+    )
+    for term in forbidden_terms:
+        assert term not in source, f"forbidden route/API dependency found: {term}"

@@ -25,6 +25,8 @@ class AIJobWorkerMockExecuteResponse(BaseModel):
     job_id: str
     mode: str
     status: str
+    replay: bool = False
+    attempt_status: str | None = None
     consumed_credits: int | None = None
     released_credits: int | None = None
     consume_entry_id: str | None = None

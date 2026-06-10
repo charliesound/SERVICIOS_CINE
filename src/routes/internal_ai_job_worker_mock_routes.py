@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from dependencies.ai_job_worker_mock import get_ai_job_worker_mock_service
+from dependencies.ai_job_worker_mock import get_ai_job_worker_mock_execution_service
 from dependencies.tenant_context import get_tenant_context
 from schemas.ai_job_worker_mock_api_schema import (
     AIJobWorkerMockExecuteRequest,
@@ -24,8 +24,16 @@ from services.ai_job_worker_mock_service import (
     AIJobWorkerMockCommand,
     AIJobWorkerMockError,
     AIJobWorkerMockInvalidModeError,
-    AIJobWorkerMockService,
     AIJobWorkerMockSettlementError,
+)
+from services.ai_job_worker_mock_execution_service import (
+    AIJobWorkerMockExecutionConflictError,
+    AIJobWorkerMockExecutionError,
+    AIJobWorkerMockExecutionFingerprintMismatchError,
+    AIJobWorkerMockExecutionInProgressError,
+    AIJobWorkerMockExecutionInvalidStateError,
+    AIJobWorkerMockExecutionReplayError,
+    AIJobWorkerMockExecutionService,
 )
 
 logger = logging.getLogger("servicios_cine.routes.internal_ai_job_worker_mock")
@@ -61,6 +69,18 @@ def _resolve_requested_by(tenant: TenantContext) -> str:
 
 
 def _map_worker_error(exc: Exception) -> None:
+    if isinstance(exc, AIJobWorkerMockExecutionFingerprintMismatchError):
+        raise HTTPException(status_code=409, detail="Execution attempt conflict") from exc
+    if isinstance(exc, AIJobWorkerMockExecutionInProgressError):
+        raise HTTPException(status_code=409, detail="Execution attempt is in progress") from exc
+    if isinstance(exc, AIJobWorkerMockExecutionInvalidStateError):
+        raise HTTPException(status_code=409, detail="Execution attempt state conflict") from exc
+    if isinstance(exc, AIJobWorkerMockExecutionReplayError):
+        raise HTTPException(status_code=500, detail="Execution attempt replay failed") from exc
+    if isinstance(exc, AIJobWorkerMockExecutionConflictError):
+        raise HTTPException(status_code=409, detail="Execution attempt conflict") from exc
+    if isinstance(exc, AIJobWorkerMockExecutionError):
+        raise HTTPException(status_code=500, detail="Execution attempt failed") from exc
     if isinstance(exc, AIJobWorkerMockInvalidModeError):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     if isinstance(exc, AIJobWorkerMockSettlementError):
@@ -90,7 +110,9 @@ async def execute_mock_worker_endpoint(
     request: Request,
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
-    worker: AIJobWorkerMockService = Depends(get_ai_job_worker_mock_service),
+    execution_service: AIJobWorkerMockExecutionService = Depends(
+        get_ai_job_worker_mock_execution_service
+    ),
 ) -> AIJobWorkerMockExecuteResponse:
     _ensure_internal_caller(tenant)
     _reject_forged_organization_query(request)
@@ -110,16 +132,19 @@ async def execute_mock_worker_endpoint(
     )
 
     try:
-        result = await worker.execute(db, command)
+        execution_result = await execution_service.execute(db, command)
     except Exception as exc:
         _map_worker_error(exc)
         raise  # unreachable but satisfies type checker
+    result = execution_result.result
 
     return AIJobWorkerMockExecuteResponse(
         organization_id=result.organization_id,
         job_id=result.job_id,
         mode=str(result.mode),
         status=result.status,
+        replay=execution_result.replay,
+        attempt_status=execution_result.attempt_status,
         consumed_credits=result.consumed_credits,
         released_credits=result.released_credits,
         consume_entry_id=result.consume_entry_id,

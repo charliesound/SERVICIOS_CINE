@@ -186,6 +186,10 @@ def _register_routers(app: FastAPI, settings) -> None:
     app.include_router(metrics_router, tags=["metrics"])
     app.include_router(events_router, tags=["events"])
 
+    from routes.ai_job_routes import router as ai_job_router
+
+    app.include_router(ai_job_router, tags=["ai-jobs"])
+
     # ── Project / project-related ────────────────────────────────────────
     from routes.project_routes import router as project_router
 

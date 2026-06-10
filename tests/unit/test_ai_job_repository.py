@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import os
 import re
 import sys
 import uuid
@@ -14,6 +15,11 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
+
+os.environ.setdefault(
+    "DATABASE_URL",
+    "postgresql+asyncpg://cid_test_user@localhost:5432/cid_test",
+)
 
 from models.ai_job import AIJob
 from repositories.ai_job_repository import (

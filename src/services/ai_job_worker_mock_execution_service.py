@@ -120,10 +120,13 @@ class AIJobWorkerMockExecutionService:
         attempt = self._build_attempt(command, fingerprint)
 
         try:
-            await repository.create(attempt)
+            async with session.begin_nested():
+                await repository.create(attempt)
         except IntegrityError as exc:
             if not self._is_unique_attempt_integrity_error(exc):
                 raise
+            # Savepoint rollback keeps the outer session usable and
+            # automatically removes the pending attempt from the session.
             return await self._handle_existing_attempt(
                 repository,
                 command,

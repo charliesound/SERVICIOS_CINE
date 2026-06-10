@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import os
 import sys
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -49,6 +50,10 @@ class DummySession:
 
     async def commit(self) -> None:
         self.commits += 1
+
+    @asynccontextmanager
+    async def begin_nested(self) -> DummySession:  # type: ignore[misc]
+        yield self
 
 
 class UniqueOrig(Exception):

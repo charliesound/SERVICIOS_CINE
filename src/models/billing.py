@@ -328,7 +328,7 @@ class CreditBalance(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_hex)
-    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False)
     included_monthly_remaining: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     purchased_balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     promotional_balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -373,13 +373,13 @@ class CreditLedgerEntry(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_hex)
-    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
-    project_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
-    user_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
-    job_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
-    subscription_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    project_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    user_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    job_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    subscription_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     credit_package_purchase_id: Mapped[Optional[str]] = mapped_column(
-        String(36), nullable=True, index=True
+        String(36), nullable=True
     )
     entry_type: Mapped[str] = mapped_column(String(40), nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False)

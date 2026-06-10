@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import os
 import sys
 import uuid
@@ -61,6 +62,13 @@ SKIP_INTEGRATION_BACKEND_CONTEXT = True
 
 def _unique_id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex}"
+
+
+def _consume_entry_id(command: AIJobWorkerMockCommand) -> str:
+    digest = hashlib.sha256(
+        f"{command.organization_id}:{command.job_id}:{command.execution_attempt_id}".encode("utf-8")
+    ).hexdigest()[:28]
+    return f"consume-{digest}"
 
 
 def _skip_if_postgres_test_dsn_is_unavailable_or_unsafe() -> None:
@@ -173,7 +181,7 @@ class FakeWorkerService:
             mode=command.mode,
             status="consumed",
             consumed_credits=command.actual_credits or 7,
-            consume_entry_id=f"consume-{command.execution_attempt_id}",
+            consume_entry_id=_consume_entry_id(command),
             output_metadata=command.mock_output_metadata or {},
         )
 
@@ -216,7 +224,7 @@ async def test_first_execution_persists_attempt() -> None:
             assert attempt.status == ATTEMPT_STATUS_SUCCEEDED
             assert attempt.fingerprint_version == FINGERPRINT_VERSION
             assert attempt.result_status == "consumed"
-            assert attempt.consume_entry_id == f"consume-{command.execution_attempt_id}"
+            assert attempt.consume_entry_id == _consume_entry_id(command)
             assert attempt.consumed_credits == 9
             assert attempt.started_at is not None
             assert attempt.finished_at is not None
@@ -246,7 +254,7 @@ async def test_terminal_replay_same_fingerprint_does_not_call_worker_again() -> 
             assert replay_result.replay is True
             assert replay_result.attempt_status == ATTEMPT_STATUS_SUCCEEDED
             assert replay_result.result.status == "consumed"
-            assert replay_result.result.consume_entry_id == f"consume-{command.execution_attempt_id}"
+            assert replay_result.result.consume_entry_id == _consume_entry_id(command)
             assert replay_result.result.consumed_credits == 8
             assert first_worker.calls == [command]
             assert replay_worker.calls == []

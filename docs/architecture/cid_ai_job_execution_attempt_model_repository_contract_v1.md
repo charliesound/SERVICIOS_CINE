@@ -439,7 +439,7 @@ The repository follows the same conventions as `AIJobRepository`:
 - May call `flush()` when constraint visibility is required (especially for insert-first unique violation detection).
 - Never instantiates `AsyncSessionLocal`.
 - All methods require `organization_id` — no tenantless access.
-- No SQLite fallback or dialect branching.
+- No fallback or dialect branching.
 
 ### 13.3 Required Methods
 
@@ -598,7 +598,7 @@ Marks an attempt as conflicted without settlement fields.
 - No method uses `AsyncSessionLocal`.
 - No method calls `commit()`.
 - `flush()` is allowed for constraint detection and id generation.
-- No SQLite fallback or dialect branching for locking (`with_for_update()` is PostgreSQL-only).
+- No fallback or dialect branching for locking (`with_for_update()` is PostgreSQL-only).
 
 ## 14. Repository Concurrency
 
@@ -623,10 +623,10 @@ The repository does **not** catch `IntegrityError` internally. It propagates the
 
 `get_for_update()` must use PostgreSQL `SELECT ... FOR UPDATE` to lock the existing attempt row before the replay/conflict decision. This prevents the race condition described in Section 11.3 of the hardening contract.
 
-### 14.4 No SQLite Fallback
+### 14.4 No Dialect Fallback
 
 - `with_for_update()` is a PostgreSQL feature.
-- No `_is_sqlite` checks, no dialect branching, no fallback to `SELECT ...` without lock.
+- No dialect checks, no dialect branching, no fallback to `SELECT ...` without lock.
 - The repository contract is PostgreSQL-only.
 
 ## 15. Future Error Classes
@@ -753,7 +753,7 @@ The attempt record stores `consume_entry_id` and `release_entry_id` as reference
 
 The `ai_job_execution_attempts` table must be created via Alembic migration in a dedicated implementation phase. Rules:
 
-1. The migration must be PostgreSQL-only (no SQLite compatibility branches).
+1. The migration must be PostgreSQL-only with no compatibility backend branches.
 2. The migration must create the table with all columns, constraints, and indexes defined in this contract.
 3. The migration must have a safe downgrade that drops the table.
 4. The migration must not modify existing tables (`ai_jobs`, `credit_ledger_entries`, etc.).
@@ -770,7 +770,7 @@ The `ai_job_execution_attempts` table must be created via Alembic migration in a
 
 The migration and model files must pass the existing repository policy guards:
 
-- `guard_no_sqlite_regressions.sh`: no SQLite references in new files.
+- Repository policy guards must pass for all new files.
 - `guard_wsl_repo.sh`: no Windows paths, secrets, or nested copies.
 
 ## 19. Future Test Requirements
@@ -804,7 +804,7 @@ The migration and model files must pass the existing repository policy guards:
 | Canonical modes | All valid modes are accepted by the check constraint |
 | Invalid modes rejected | Invalid mode string is rejected by the check constraint |
 | Fingerprint is 64 hex chars | Stored fingerprint matches SHA-256 format |
-| No SQLite fallback | Repository code contains no SQLite imports, checks, or dialect branching |
+| No fallback | Repository code contains no alternate backend imports, checks, or dialect branching |
 | No `AsyncSessionLocal` | Repository code does not import or use `AsyncSessionLocal` |
 | No `commit()` | Repository code does not call `commit()` |
 | All methods require `organization_id` | No method signature accepts `organization_id` as optional |
@@ -824,7 +824,7 @@ The migration and model files must pass the existing repository policy guards:
 
 - Unit tests must use fake/spy repositories, not real databases.
 - PostgreSQL integration tests must use a real PostgreSQL instance (or testcontainers).
-- No SQLite in-memory databases are permitted for integration tests.
+- No in-memory compatibility backend is permitted for integration tests.
 - Tests must clean up created rows after each test (transaction rollback or explicit deletion).
 
 ## 20. Acceptance Criteria for Future Implementation
@@ -838,7 +838,7 @@ The future model and repository implementation is acceptable only when:
 5. Required indexes are present.
 6. No method on `AIJobExecutionAttemptRepository` accepts or performs a lookup without `organization_id`.
 7. No method uses `AsyncSessionLocal` or calls `commit()`.
-8. No SQLite fallback or dialect branching exists in the repository code.
+8. No fallback or dialect branching exists in the repository code.
 9. `get_for_update` uses `stmt.with_for_update()` (PostgreSQL row locking).
 10. All unit tests in Section 19.1 pass.
 11. All model/contract tests in Section 19.2 pass.

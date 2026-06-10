@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import re
 import sys
@@ -7,7 +8,7 @@ import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AsyncIterator, Sequence
+from typing import Any, AsyncIterator, Awaitable, Iterable, Sequence, TypeVar
 from urllib.parse import urlparse
 
 import pytest
@@ -22,6 +23,7 @@ if str(SRC_DIR) not in sys.path:
 
 
 TEST_DATABASE_ENV = "TEST_" + "DATABASE_" + "URL"
+T = TypeVar("T")
 BLOCKED_DATABASE_MARKERS = ("prod", "production", "live", "real", "main")
 MINIMUM_BILLING_TABLES = (
     "credit_balances",
@@ -202,6 +204,130 @@ def build_billing_test_metadata(table_names: Sequence[str] | None = None) -> Met
 
 def generate_temporary_schema_name() -> str:
     return f"cid_test_{uuid.uuid4().hex}"
+
+
+def _require_positive_int(value: int, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError(f"{field_name} must be a positive integer")
+    return value
+
+
+def _require_positive_timeout_seconds(value: float, field_name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        raise ValueError(f"{field_name} must be a positive number")
+    return float(value)
+
+
+async def set_local_postgres_timeouts(
+    session: AsyncSession,
+    *,
+    statement_timeout_ms: int,
+    lock_timeout_ms: int,
+) -> None:
+    statement_timeout_ms = _require_positive_int(
+        statement_timeout_ms,
+        "statement_timeout_ms",
+    )
+    lock_timeout_ms = _require_positive_int(lock_timeout_ms, "lock_timeout_ms")
+    await session.execute(
+        text("SET LOCAL statement_timeout = '{0}ms'".format(statement_timeout_ms))
+    )
+    await session.execute(text("SET LOCAL lock_timeout = '{0}ms'".format(lock_timeout_ms)))
+
+
+@asynccontextmanager
+async def postgres_session_with_timeouts(
+    session_factory: async_sessionmaker[AsyncSession],
+    *,
+    statement_timeout_ms: int,
+    lock_timeout_ms: int,
+) -> AsyncIterator[AsyncSession]:
+    session = session_factory()
+    try:
+        await set_local_postgres_timeouts(
+            session,
+            statement_timeout_ms=statement_timeout_ms,
+            lock_timeout_ms=lock_timeout_ms,
+        )
+        yield session
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
+
+
+async def run_with_async_timeout(
+    awaitable: Awaitable[T],
+    *,
+    timeout_seconds: float,
+    label: str,
+) -> T:
+    timeout_seconds = _require_positive_timeout_seconds(
+        timeout_seconds,
+        "timeout_seconds",
+    )
+    if not isinstance(label, str) or not label.strip():
+        raise ValueError("label must be a non-empty string")
+    try:
+        return await asyncio.wait_for(awaitable, timeout=timeout_seconds)
+    except asyncio.TimeoutError as exc:
+        raise AssertionError(
+            "Timed out while waiting for {0} after {1:g}s".format(
+                label,
+                timeout_seconds,
+            )
+        ) from exc
+
+
+@asynccontextmanager
+async def open_independent_sessions(
+    session_factory: async_sessionmaker[AsyncSession],
+    *,
+    count: int = 2,
+) -> AsyncIterator[tuple[AsyncSession, ...]]:
+    count = _require_positive_int(count, "count")
+    if count < 2:
+        raise ValueError("count must be at least 2")
+    sessions = tuple(session_factory() for _ in range(count))
+    try:
+        yield sessions
+    finally:
+        for session in sessions:
+            try:
+                await session.rollback()
+            finally:
+                await session.close()
+
+
+async def cleanup_concurrent_tasks(
+    tasks: Iterable[asyncio.Task[Any]],
+    *,
+    timeout_seconds: float,
+) -> None:
+    timeout_seconds = _require_positive_timeout_seconds(
+        timeout_seconds,
+        "timeout_seconds",
+    )
+    task_list = list(tasks)
+    for task in task_list:
+        if task.done() and not task.cancelled():
+            task.result()
+
+    pending = [task for task in task_list if not task.done()]
+    if not pending:
+        return
+    for task in pending:
+        task.cancel()
+    results = await asyncio.wait_for(
+        asyncio.gather(*pending, return_exceptions=True),
+        timeout=timeout_seconds,
+    )
+    for result in results:
+        if isinstance(result, asyncio.CancelledError):
+            continue
+        if isinstance(result, BaseException):
+            raise result
 
 
 @asynccontextmanager

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import SQLAlchemyError
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT / "src"
@@ -28,8 +29,10 @@ from models.ai_job_execution_attempt import (
 from repositories.ai_job_execution_attempt_repository import AIJobExecutionAttemptRepository
 from services.ai_job_worker_mock_execution_service import (
     FINGERPRINT_VERSION,
+    AIJobWorkerMockExecutionConflictError,
     AIJobWorkerMockExecutionFingerprintMismatchError,
     AIJobWorkerMockExecutionInProgressError,
+    AIJobWorkerMockExecutionResult,
     AIJobWorkerMockExecutionService,
     compute_execution_attempt_fingerprint,
 )
@@ -39,7 +42,11 @@ from services.ai_job_worker_mock_service import (
 )
 from tests.helpers.postgres_test_harness import (
     PostgresTestConfigError,
+    cleanup_concurrent_tasks,
+    open_independent_sessions,
+    postgres_session_with_timeouts,
     require_validated_test_db_dsn,
+    run_with_async_timeout,
     skip_if_postgres_test_unconfigured,
     temporary_postgres_billing_harness,
 )
@@ -357,8 +364,107 @@ async def test_in_progress_conflict_baseline_does_not_call_worker() -> None:
 
 
 @pytest.mark.asyncio
-async def test_concurrent_same_key_same_payload_is_deferred_until_locking_harness_is_ready() -> None:
-    pytest.skip(
-        "Concurrent first-writer test is deferred until the PostgreSQL harness exposes "
-        "safe transaction timeout controls for blocked unique-key inserts."
+async def test_concurrent_same_key_same_payload_calls_worker_at_most_once() -> None:
+    _skip_if_postgres_test_dsn_is_unavailable_or_unsafe()
+    command = _command(actual_credits=6)
+    worker_entered = asyncio.Event()
+    release_worker = asyncio.Event()
+    worker = FakeWorkerService(
+        worker_entered=worker_entered,
+        release_worker=release_worker,
     )
+    tasks: list[asyncio.Task[AIJobWorkerMockExecutionResult]] = []
+
+    async with temporary_postgres_billing_harness(AI_JOB_ATTEMPT_TABLES) as harness:
+        async with harness.session_factory() as setup_session:
+            await _create_ai_job(setup_session, command)
+            # Test-level commit makes the job visible to independent sessions.
+            await setup_session.commit()
+
+        try:
+            async with open_independent_sessions(harness.session_factory, count=2) as (
+                session_a,
+                session_b,
+            ):
+
+                async def execute_first() -> AIJobWorkerMockExecutionResult:
+                    async with postgres_session_with_timeouts(
+                        lambda: session_a,  # type: ignore[arg-type]
+                        statement_timeout_ms=4_000,
+                        lock_timeout_ms=2_000,
+                    ) as session:
+                        result = await _service(worker).execute(session, command)
+                        # Test-level commit releases the unique-key wait for session B.
+                        await session.commit()
+                        return result
+
+                async def execute_second() -> AIJobWorkerMockExecutionResult:
+                    async with postgres_session_with_timeouts(
+                        lambda: session_b,  # type: ignore[arg-type]
+                        statement_timeout_ms=4_000,
+                        lock_timeout_ms=2_000,
+                    ) as session:
+                        result = await _service(worker).execute(session, command)
+                        await session.commit()
+                        return result
+
+                task_a = asyncio.create_task(execute_first())
+                tasks.append(task_a)
+                await run_with_async_timeout(
+                    worker_entered.wait(),
+                    timeout_seconds=2,
+                    label="first worker entry",
+                )
+
+                task_b = asyncio.create_task(execute_second())
+                tasks.append(task_b)
+                release_worker.set()
+                gathered = await run_with_async_timeout(
+                    asyncio.gather(task_a, task_b, return_exceptions=True),
+                    timeout_seconds=8,
+                    label="same-key concurrent wrapper executions",
+                )
+        finally:
+            await cleanup_concurrent_tasks(
+                [task for task in tasks if not task.done()],
+                timeout_seconds=2,
+            )
+
+        successes = [item for item in gathered if isinstance(item, AIJobWorkerMockExecutionResult)]
+        failures = [item for item in gathered if isinstance(item, BaseException)]
+
+        assert len(worker.calls) == 1
+        assert any(result.replay is False for result in successes)
+        replay_results = [result for result in successes if result.replay is True]
+        assert len(replay_results) <= 1
+        assert all(
+            isinstance(
+                failure,
+                (
+                    AIJobWorkerMockExecutionConflictError,
+                    SQLAlchemyError,
+                ),
+            )
+            for failure in failures
+        )
+        assert len(successes) + len(failures) == 2
+        assert all(task.done() for task in tasks)
+
+        async with harness.session_factory() as session:
+            assert await _count_attempts(
+                session,
+                command.organization_id,
+                command.job_id,
+                command.execution_attempt_id,
+            ) == 1
+            attempt = await _load_attempt(
+                session,
+                command.organization_id,
+                command.job_id,
+                command.execution_attempt_id,
+            )
+            assert attempt is not None
+            assert attempt.status == ATTEMPT_STATUS_SUCCEEDED
+
+        async with harness.session_factory() as cleanup_session:
+            await _cleanup_attempt_key(cleanup_session, command)

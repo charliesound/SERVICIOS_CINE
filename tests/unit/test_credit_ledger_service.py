@@ -63,12 +63,24 @@ from schemas.credit_ledger_schema import (
 # --- Fake session helpers (no real DB) ------------------------------------
 
 
+class FakeScalars:
+    def __init__(self, values):
+        self._values = values
+
+    def all(self):
+        return self._values
+
+
 class FakeScalarResult:
-    def __init__(self, value):
+    def __init__(self, value=None, values=None):
         self._value = value
+        self._values = values or ([] if value is None else [value])
 
     def scalar_one_or_none(self):
         return self._value
+
+    def scalars(self):
+        return FakeScalars(self._values)
 
 
 class FakeAsyncSession:
@@ -84,6 +96,7 @@ class FakeAsyncSession:
     def __init__(self) -> None:
         self.added: list = []
         self.balances: dict[str, CreditBalance] = {}
+        self.ledger_entries: dict[str, CreditLedgerEntry] = {}
         self.idempotency_index: dict[str, CreditLedgerEntry] = {}
         self.commits: int = 0
         self.flushes: int = 0
@@ -101,17 +114,39 @@ class FakeAsyncSession:
                     if col == "organization_id":
                         return FakeScalarResult(self.balances.get(val))
             if model is CreditLedgerEntry:
-                for col, val in _filters_from_stmt(stmt):
+                filters = _filters_from_stmt(stmt)
+                for col, val in filters:
                     if col == "idempotency_key":
                         return FakeScalarResult(self.idempotency_index.get(val))
+                entries = list(self.ledger_entries.values())
+                entries.extend(
+                    obj
+                    for obj in self.added
+                    if isinstance(obj, CreditLedgerEntry)
+                    and obj.id not in self.ledger_entries
+                )
+                for col, val in filters:
+                    entries = [
+                        entry
+                        for entry in entries
+                        if getattr(entry, col, None) == val
+                    ]
+                if any(col == "id" for col, _ in filters):
+                    return FakeScalarResult(entries[0] if entries else None)
+                return FakeScalarResult(
+                    entries[0] if len(entries) == 1 else None,
+                    values=entries,
+                )
         return FakeScalarResult(None)
 
     async def flush(self) -> None:
         self.flushes += 1
         # index newly added entries by idempotency_key for later lookups
         for obj in self.added:
-            if isinstance(obj, CreditLedgerEntry) and obj.idempotency_key:
-                self.idempotency_index[obj.idempotency_key] = obj
+            if isinstance(obj, CreditLedgerEntry):
+                self.ledger_entries[obj.id] = obj
+                if obj.idempotency_key:
+                    self.idempotency_index[obj.idempotency_key] = obj
 
     async def commit(self) -> None:
         self.commits += 1
@@ -122,6 +157,10 @@ class FakeAsyncSession:
             if not getattr(obj, "id", None):
                 obj.id = uuid.uuid4().hex
             self.balances[obj.organization_id] = obj
+        if isinstance(obj, CreditLedgerEntry):
+            if not getattr(obj, "id", None):
+                obj.id = uuid.uuid4().hex
+            self.ledger_entries[obj.id] = obj
 
 
 def _filters_from_stmt(stmt) -> list[tuple[str, Any]]:
@@ -185,6 +224,28 @@ def make_balance(
         last_updated_at=datetime.utcnow(),
     )
     return balance
+
+
+def make_ledger_entry(
+    *,
+    entry_id: str = "entry-1",
+    organization_id: str = "org-1",
+    entry_type: str = LEDGER_ENTRY_TYPE_RESERVE,
+    status: str = LEDGER_STATUS_RESERVED,
+    amount: int = 50,
+    job_id: Optional[str] = "job-1",
+    metadata: Optional[dict[str, Any]] = None,
+) -> CreditLedgerEntry:
+    return CreditLedgerEntry(
+        id=entry_id,
+        organization_id=organization_id,
+        entry_type=entry_type,
+        status=status,
+        amount=amount,
+        job_id=job_id,
+        metadata_json=metadata,
+        created_at=datetime.utcnow(),
+    )
 
 
 # --- Pure function tests --------------------------------------------------
@@ -509,6 +570,318 @@ class TestConsumeReservedCredits:
         # unchanged
         assert balance.reserved_active == 5
         assert balance.consumed_period == 0
+
+
+class TestReservationEntryLinkage:
+    def _seed_balance_and_reservation(
+        self,
+        session: FakeAsyncSession,
+        *,
+        organization_id: str = "org-1",
+        reservation_id: str = "reservation-1",
+        reservation_amount: int = 50,
+        job_id: Optional[str] = "job-1",
+        entry_type: str = LEDGER_ENTRY_TYPE_RESERVE,
+        status: str = LEDGER_STATUS_RESERVED,
+    ) -> CreditLedgerEntry:
+        balance = make_balance(
+            organization_id=organization_id,
+            trial_balance=100,
+            reserved_active=reservation_amount,
+        )
+        session.balances[organization_id] = balance
+        reservation = make_ledger_entry(
+            entry_id=reservation_id,
+            organization_id=organization_id,
+            entry_type=entry_type,
+            status=status,
+            amount=reservation_amount,
+            job_id=job_id,
+        )
+        session.ledger_entries[reservation.id] = reservation
+        return reservation
+
+    def _seed_settlement(
+        self,
+        session: FakeAsyncSession,
+        *,
+        entry_id: str,
+        organization_id: str = "org-1",
+        reservation_id: str = "reservation-1",
+        entry_type: str,
+    ) -> None:
+        status = (
+            LEDGER_STATUS_CONSUMED
+            if entry_type == LEDGER_ENTRY_TYPE_CONSUME
+            else LEDGER_STATUS_RELEASED
+        )
+        session.ledger_entries[entry_id] = make_ledger_entry(
+            entry_id=entry_id,
+            organization_id=organization_id,
+            entry_type=entry_type,
+            status=status,
+            amount=50,
+            job_id="job-1",
+            metadata={"reservation_entry_id": reservation_id},
+        )
+
+    @pytest.mark.asyncio
+    async def test_consume_with_missing_reservation_entry_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        with pytest.raises(CreditReservationNotFoundError):
+            await service.consume_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                metadata={"reservation_entry_id": "missing"},
+            )
+
+    @pytest.mark.asyncio
+    async def test_release_with_missing_reservation_entry_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        with pytest.raises(CreditReservationNotFoundError):
+            await service.release_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                metadata={"reservation_entry_id": "missing"},
+            )
+
+    @pytest.mark.asyncio
+    async def test_consume_with_other_tenant_reservation_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = make_ledger_entry(
+            entry_id="reservation-1",
+            organization_id="org-2",
+            amount=50,
+        )
+        session.ledger_entries[reservation.id] = reservation
+        with pytest.raises(CreditReservationNotFoundError):
+            await service.consume_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_release_with_other_tenant_reservation_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = make_ledger_entry(
+            entry_id="reservation-1",
+            organization_id="org-2",
+            amount=50,
+        )
+        session.ledger_entries[reservation.id] = reservation
+        with pytest.raises(CreditReservationNotFoundError):
+            await service.release_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_consume_with_different_job_id_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(session, job_id="job-1")
+        with pytest.raises(CreditLedgerStateError):
+            await service.consume_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                job_id="job-2",
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_release_with_different_job_id_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(session, job_id="job-1")
+        with pytest.raises(CreditLedgerStateError):
+            await service.release_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                job_id="job-2",
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_consume_with_non_reserve_entry_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(
+            session, entry_type=LEDGER_ENTRY_TYPE_GRANT, status=LEDGER_STATUS_AVAILABLE
+        )
+        with pytest.raises(CreditLedgerStateError):
+            await service.consume_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_release_with_non_reserve_entry_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(
+            session, entry_type=LEDGER_ENTRY_TYPE_GRANT, status=LEDGER_STATUS_AVAILABLE
+        )
+        with pytest.raises(CreditLedgerStateError):
+            await service.release_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_consume_with_reservation_entry_enriches_metadata(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(session)
+
+        result = await service.consume_reserved_credits(
+            session,
+            "org-1",
+            amount=50,
+            metadata={"reservation_entry_id": reservation.id, "source": "ai-job"},
+        )
+
+        entry = session.ledger_entries[result.ledger_entry_id]
+        assert entry.entry_type == LEDGER_ENTRY_TYPE_CONSUME
+        assert entry.job_id == "job-1"
+        assert entry.metadata_json == {
+            "reservation_entry_id": reservation.id,
+            "source": "ai-job",
+            "reservation_amount": 50,
+            "settlement_amount": 50,
+            "settlement_action": "consume",
+            "job_id": "job-1",
+        }
+
+    @pytest.mark.asyncio
+    async def test_release_with_reservation_entry_enriches_metadata(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(session)
+
+        result = await service.release_reserved_credits(
+            session,
+            "org-1",
+            amount=50,
+            metadata={"reservation_entry_id": reservation.id, "source": "ai-job"},
+        )
+
+        entry = session.ledger_entries[result.ledger_entry_id]
+        assert entry.entry_type == LEDGER_ENTRY_TYPE_RELEASE
+        assert entry.job_id == "job-1"
+        assert entry.metadata_json == {
+            "reservation_entry_id": reservation.id,
+            "source": "ai-job",
+            "reservation_amount": 50,
+            "settlement_amount": 50,
+            "settlement_action": "release",
+            "job_id": "job-1",
+        }
+
+    @pytest.mark.asyncio
+    async def test_double_consume_same_reservation_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(session)
+        self._seed_settlement(
+            session, entry_id="consume-1", entry_type=LEDGER_ENTRY_TYPE_CONSUME
+        )
+        with pytest.raises(CreditLedgerStateError):
+            await service.consume_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_double_release_same_reservation_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(session)
+        self._seed_settlement(
+            session, entry_id="release-1", entry_type=LEDGER_ENTRY_TYPE_RELEASE
+        )
+        with pytest.raises(CreditLedgerStateError):
+            await service.release_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_consume_after_release_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(session)
+        self._seed_settlement(
+            session, entry_id="release-1", entry_type=LEDGER_ENTRY_TYPE_RELEASE
+        )
+        with pytest.raises(CreditLedgerStateError):
+            await service.consume_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_release_after_consume_fails(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(session)
+        self._seed_settlement(
+            session, entry_id="consume-1", entry_type=LEDGER_ENTRY_TYPE_CONSUME
+        )
+        with pytest.raises(CreditLedgerStateError):
+            await service.release_reserved_credits(
+                session,
+                "org-1",
+                amount=50,
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_consume_cannot_exceed_reservation_amount(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(session, reservation_amount=50)
+        with pytest.raises(CreditLedgerStateError):
+            await service.consume_reserved_credits(
+                session,
+                "org-1",
+                amount=51,
+                metadata={"reservation_entry_id": reservation.id},
+            )
+
+    @pytest.mark.asyncio
+    async def test_release_cannot_exceed_reservation_amount(
+        self, service: CreditLedgerService, session: FakeAsyncSession
+    ) -> None:
+        reservation = self._seed_balance_and_reservation(session, reservation_amount=50)
+        with pytest.raises(CreditLedgerStateError):
+            await service.release_reserved_credits(
+                session,
+                "org-1",
+                amount=51,
+                metadata={"reservation_entry_id": reservation.id},
+            )
 
 
 class TestGrantCredits:

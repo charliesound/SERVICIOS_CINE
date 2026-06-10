@@ -303,6 +303,139 @@ class CreditLedgerService:
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
+    def _extract_reservation_entry_id(
+        self, metadata: Optional[dict[str, Any]]
+    ) -> Optional[str]:
+        if not metadata or "reservation_entry_id" not in metadata:
+            return None
+        reservation_entry_id = str(metadata.get("reservation_entry_id") or "").strip()
+        if not reservation_entry_id:
+            raise CreditReservationNotFoundError("reservation_entry_id is required")
+        return reservation_entry_id
+
+    async def _get_reservation_entry(
+        self,
+        session: AsyncSession,
+        organization_id: str,
+        reservation_entry_id: str,
+    ) -> CreditLedgerEntry:
+        stmt = select(CreditLedgerEntry).where(
+            CreditLedgerEntry.id == reservation_entry_id,
+            CreditLedgerEntry.organization_id == organization_id,
+        )
+        result = await session.execute(stmt)
+        reservation = result.scalar_one_or_none()
+        if reservation is None:
+            raise CreditReservationNotFoundError(
+                "Reservation {0} not found for organization {1}".format(
+                    reservation_entry_id, organization_id
+                )
+            )
+        return reservation
+
+    async def _get_reservation_settlements(
+        self,
+        session: AsyncSession,
+        organization_id: str,
+        reservation_entry_id: str,
+    ) -> list[CreditLedgerEntry]:
+        stmt = select(CreditLedgerEntry).where(
+            CreditLedgerEntry.organization_id == organization_id
+        )
+        result = await session.execute(stmt)
+        entries = list(result.scalars().all())
+        settlements: list[CreditLedgerEntry] = []
+        for entry in entries:
+            if entry.entry_type not in {
+                LEDGER_ENTRY_TYPE_CONSUME,
+                LEDGER_ENTRY_TYPE_RELEASE,
+            }:
+                continue
+            metadata = getattr(entry, "metadata_json", None) or {}
+            entry_reservation_id = str(metadata.get("reservation_entry_id") or "").strip()
+            if entry_reservation_id == reservation_entry_id:
+                settlements.append(entry)
+        return settlements
+
+    async def _validate_linked_reservation(
+        self,
+        session: AsyncSession,
+        organization_id: str,
+        reservation_entry_id: str,
+        amount: int,
+        *,
+        job_id: Optional[str],
+        settlement_action: str,
+    ) -> CreditLedgerEntry:
+        reservation = await self._get_reservation_entry(
+            session=session,
+            organization_id=organization_id,
+            reservation_entry_id=reservation_entry_id,
+        )
+        if reservation.entry_type != LEDGER_ENTRY_TYPE_RESERVE:
+            raise CreditLedgerStateError(
+                "Reservation {0} is not a reserve entry".format(reservation_entry_id)
+            )
+        if reservation.status != LEDGER_STATUS_RESERVED:
+            raise CreditLedgerStateError(
+                "Reservation {0} is not in reserved status".format(
+                    reservation_entry_id
+                )
+            )
+        reservation_amount = int(reservation.amount or 0)
+        if reservation_amount <= 0:
+            raise CreditLedgerStateError(
+                "Reservation {0} has invalid amount".format(reservation_entry_id)
+            )
+        reservation_job_id = getattr(reservation, "job_id", None)
+        if job_id is not None and job_id != reservation_job_id:
+            raise CreditLedgerStateError(
+                "Reservation {0} does not match job_id {1}".format(
+                    reservation_entry_id, job_id
+                )
+            )
+        if amount > reservation_amount:
+            raise CreditLedgerStateError(
+                "Cannot {0} {1} credits: reservation amount is {2}".format(
+                    settlement_action, amount, reservation_amount
+                )
+            )
+        settlements = await self._get_reservation_settlements(
+            session=session,
+            organization_id=organization_id,
+            reservation_entry_id=reservation_entry_id,
+        )
+        if settlements:
+            raise CreditLedgerStateError(
+                "Reservation {0} already has a settlement".format(
+                    reservation_entry_id
+                )
+            )
+        return reservation
+
+    def _build_settlement_metadata(
+        self,
+        metadata: Optional[dict[str, Any]],
+        reservation: CreditLedgerEntry,
+        reservation_entry_id: str,
+        amount: int,
+        settlement_action: str,
+        job_id: Optional[str],
+    ) -> dict[str, Any]:
+        settlement_metadata: dict[str, Any] = dict(metadata or {})
+        settlement_job_id = job_id or getattr(reservation, "job_id", None)
+        settlement_metadata.update(
+            {
+                "reservation_entry_id": reservation_entry_id,
+                "reservation_amount": int(reservation.amount or 0),
+                "settlement_amount": amount,
+                "settlement_action": settlement_action,
+            }
+        )
+        if settlement_job_id is not None:
+            settlement_metadata["job_id"] = settlement_job_id
+        return settlement_metadata
+
     def _touch(self, balance: CreditBalance) -> None:
         balance.last_updated_at = self._now()
         balance.version = int(balance.version or 0) + 1
@@ -540,6 +673,18 @@ class CreditLedgerService:
                 existing_entry_id=getattr(existing, "id", None),
             )
 
+        reservation_entry_id = self._extract_reservation_entry_id(metadata)
+        reservation: Optional[CreditLedgerEntry] = None
+        if reservation_entry_id is not None:
+            reservation = await self._validate_linked_reservation(
+                session=session,
+                organization_id=organization_id,
+                reservation_entry_id=reservation_entry_id,
+                amount=amount,
+                job_id=job_id,
+                settlement_action="release",
+            )
+
         balance = await self._get_balance(session, organization_id)
         if balance is None:
             raise CreditBalanceNotFoundError(
@@ -553,6 +698,19 @@ class CreditLedgerService:
                 )
             )
 
+        entry_metadata = metadata
+        entry_job_id = job_id
+        if reservation_entry_id is not None and reservation is not None:
+            entry_metadata = self._build_settlement_metadata(
+                metadata=metadata,
+                reservation=reservation,
+                reservation_entry_id=reservation_entry_id,
+                amount=amount,
+                settlement_action="release",
+                job_id=job_id,
+            )
+            entry_job_id = job_id or getattr(reservation, "job_id", None)
+
         available_before = calculate_available_credits(balance)
         balance.reserved_active = reserved_active - amount
         available_after = calculate_available_credits(balance)
@@ -564,10 +722,10 @@ class CreditLedgerService:
             status=LEDGER_STATUS_RELEASED,
             amount=amount,
             balance_after=available_after,
-            job_id=job_id,
+            job_id=entry_job_id,
             reason=reason,
             idempotency_key=idempotency_key,
-            metadata=metadata,
+            metadata=entry_metadata,
             released_at=self._now(),
         )
         session.add(entry)
@@ -607,6 +765,18 @@ class CreditLedgerService:
                 existing_entry_id=getattr(existing, "id", None),
             )
 
+        reservation_entry_id = self._extract_reservation_entry_id(metadata)
+        reservation: Optional[CreditLedgerEntry] = None
+        if reservation_entry_id is not None:
+            reservation = await self._validate_linked_reservation(
+                session=session,
+                organization_id=organization_id,
+                reservation_entry_id=reservation_entry_id,
+                amount=amount,
+                job_id=job_id,
+                settlement_action="consume",
+            )
+
         balance = await self._get_balance(session, organization_id)
         if balance is None:
             raise CreditBalanceNotFoundError(
@@ -619,6 +789,19 @@ class CreditLedgerService:
                     amount, reserved_active
                 )
             )
+
+        entry_metadata = metadata
+        entry_job_id = job_id
+        if reservation_entry_id is not None and reservation is not None:
+            entry_metadata = self._build_settlement_metadata(
+                metadata=metadata,
+                reservation=reservation,
+                reservation_entry_id=reservation_entry_id,
+                amount=amount,
+                settlement_action="consume",
+                job_id=job_id,
+            )
+            entry_job_id = job_id or getattr(reservation, "job_id", None)
 
         available_before = calculate_available_credits(balance)
         allocation = allocate_credit_buckets(balance, amount)
@@ -636,10 +819,10 @@ class CreditLedgerService:
             balance_after=available_after,
             project_id=project_id,
             user_id=user_id,
-            job_id=job_id,
+            job_id=entry_job_id,
             reason=reason,
             idempotency_key=idempotency_key,
-            metadata=metadata,
+            metadata=entry_metadata,
             consumed_at=self._now(),
         )
         session.add(entry)

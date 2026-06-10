@@ -190,6 +190,12 @@ def _register_routers(app: FastAPI, settings) -> None:
 
     app.include_router(ai_job_router, tags=["ai-jobs"])
 
+    from routes.internal_ai_job_worker_mock_routes import (
+        router as internal_ai_job_worker_mock_router,
+    )
+
+    app.include_router(internal_ai_job_worker_mock_router, tags=["ai-jobs-internal"])
+
     # ── Project / project-related ────────────────────────────────────────
     from routes.project_routes import router as project_router
 

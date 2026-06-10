@@ -35,6 +35,8 @@ __all__ = [
     "AIJobAsyncReserveRequest",
     "AIJobAsyncConsumeRequest",
     "AIJobAsyncReleaseRequest",
+    "AIJobAsyncListRequest",
+    "AIJobAsyncHistoryResult",
     "AIJobAsyncOrchestrationResult",
     "AIJobAsyncOrchestrationService",
 ]
@@ -117,6 +119,24 @@ class AIJobAsyncReleaseRequest:
 
 
 @dataclass(frozen=True)
+class AIJobAsyncListRequest:
+    organization_id: str
+    status: str | None = None
+    project_id: str | None = None
+    operation_type: str | None = None
+    created_after: datetime | None = None
+    created_before: datetime | None = None
+    limit: int = 50
+    cursor: str | None = None
+
+
+@dataclass(frozen=True)
+class AIJobAsyncHistoryResult:
+    job_id: str
+    events: list[dict[str, Any]]
+
+
+@dataclass(frozen=True)
 class AIJobAsyncOrchestrationResult:
     job: Any
     transition_plan: AIJobTransitionPlan | None = None
@@ -137,6 +157,55 @@ class AIJobAsyncOrchestrationService:
         self.repository = repository
         self.accounting_gateway = accounting_gateway
         self._now = now_fn or datetime.utcnow
+
+    async def get_ai_job(
+        self,
+        session: AsyncSession,
+        organization_id: str,
+        job_id: str,
+    ) -> Any:
+        _ = session
+        normalized_organization_id = self._require_text(organization_id, "organization_id")
+        normalized_job_id = self._require_text(job_id, "job_id")
+        job = await self.repository.get(normalized_organization_id, normalized_job_id)
+        if job is None:
+            raise AIJobAsyncNotFoundError(
+                "AI job not found for organization {0}: {1}".format(
+                    normalized_organization_id,
+                    normalized_job_id,
+                )
+            )
+        return job
+
+    async def list_ai_jobs(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncListRequest,
+    ) -> tuple[list[Any], str | None]:
+        _ = session
+        organization_id = self._require_text(request.organization_id, "organization_id")
+        return await self.repository.list_for_organization(
+            organization_id,
+            status=self._normalize_optional_text(request.status),
+            project_id=self._normalize_optional_text(request.project_id),
+            operation_type=self._normalize_optional_text(request.operation_type),
+            created_after=request.created_after,
+            created_before=request.created_before,
+            limit=request.limit,
+            cursor=self._normalize_optional_text(request.cursor),
+        )
+
+    async def get_ai_job_history(
+        self,
+        session: AsyncSession,
+        organization_id: str,
+        job_id: str,
+    ) -> AIJobAsyncHistoryResult:
+        job = await self.get_ai_job(session, organization_id, job_id)
+        return AIJobAsyncHistoryResult(
+            job_id=str(getattr(job, "id", job_id)),
+            events=self._derive_history_events(job),
+        )
 
     async def create_ai_job(
         self,
@@ -479,6 +548,39 @@ class AIJobAsyncOrchestrationService:
         job.status = plan.to_status
         if plan.timestamp_field:
             setattr(job, plan.timestamp_field, self._now())
+
+    def _derive_history_events(self, job: Any) -> list[dict[str, Any]]:
+        event_fields = (
+            ("created", "created_at"),
+            ("estimated", "estimated_at"),
+            ("credit_checked", "credit_checked_at"),
+            ("reserved", "reserved_at"),
+            ("queued", "queued_at"),
+            ("running", "started_at"),
+            ("finished", "finished_at"),
+            ("cancel_requested", "cancel_requested_at"),
+            ("cancelled", "cancelled_at"),
+            ("consume_pending", "consume_pending_at"),
+            ("consumed", "consumed_at"),
+            ("release_pending", "release_pending_at"),
+            ("released", "released_at"),
+        )
+        events: list[dict[str, Any]] = []
+        for status, field_name in event_fields:
+            timestamp = getattr(job, field_name, None)
+            if timestamp is None:
+                continue
+            events.append(
+                {
+                    "status": status,
+                    "timestamp": timestamp,
+                    "actor_type": "system",
+                    "message": "AI job {0}".format(status),
+                    "job_id": getattr(job, "id", None),
+                }
+            )
+        events.sort(key=lambda item: item["timestamp"])
+        return events
 
     def _require_ledger_entry_id(self, result: Any, message: str) -> str:
         ledger_entry_id = getattr(result, "ledger_entry_id", None)

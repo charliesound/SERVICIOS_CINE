@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import select
@@ -56,6 +57,38 @@ class AIJobRepository:
         )
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def list_for_organization(
+        self,
+        organization_id: str,
+        *,
+        status: str | None = None,
+        project_id: str | None = None,
+        operation_type: str | None = None,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> tuple[list[AIJob], str | None]:
+        safe_limit = min(max(int(limit or 50), 1), 100)
+        stmt = select(AIJob).where(AIJob.organization_id == organization_id)
+        if status:
+            stmt = stmt.where(AIJob.status == status)
+        if project_id:
+            stmt = stmt.where(AIJob.project_id == project_id)
+        if operation_type:
+            stmt = stmt.where(AIJob.operation_type == operation_type)
+        if created_after:
+            stmt = stmt.where(AIJob.created_at >= created_after)
+        if created_before:
+            stmt = stmt.where(AIJob.created_at <= created_before)
+        if cursor:
+            stmt = stmt.where(AIJob.id < cursor)
+        stmt = stmt.order_by(AIJob.id.desc()).limit(safe_limit + 1)
+        result = await self._session.execute(stmt)
+        rows = list(result.scalars().all())
+        next_cursor = rows[safe_limit].id if len(rows) > safe_limit else None
+        return rows[:safe_limit], next_cursor
 
     async def save(self, job: AIJob) -> AIJob:
         if job.organization_id is None:

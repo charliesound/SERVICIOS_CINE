@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import uuid
+from datetime import datetime
 from pathlib import Path
 from typing import Any, AsyncIterator
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -53,7 +54,19 @@ class FakeScalarResult:
         self._value = value
 
     def scalar_one_or_none(self) -> Any:
+        if isinstance(self._value, list):
+            return self._value[0] if self._value else None
         return self._value
+
+    def scalars(self):
+        return self
+
+    def all(self) -> list[Any]:
+        if isinstance(self._value, list):
+            return self._value
+        if self._value is None:
+            return []
+        return [self._value]
 
 
 class FakeAsyncSession:
@@ -110,7 +123,7 @@ class FakeAsyncSession:
         where = stmt.whereclause
         if where is None:
             return FakeScalarResult(None)
-        filters = {}
+        filters = []
         for clause in self._flatten_where(where):
             left = getattr(clause, "left", None)
             right = getattr(clause, "right", None)
@@ -118,21 +131,36 @@ class FakeAsyncSession:
                 col_name = getattr(left, "name", None)
                 val = getattr(right, "value", None)
                 if col_name and val is not None:
-                    filters[col_name] = val
+                    filters.append((col_name, val, getattr(clause.operator, "__name__", "eq")))
+        matches = []
         for job_id, job in self._store.items():
             match = True
-            for col_name, val in filters.items():
+            for col_name, val, operator_name in filters:
                 if col_name == "organization_id":
                     actual = self._original_org.get(job_id, job.organization_id)
                 else:
                     actual = getattr(job, col_name, None)
-                if actual != val:
+                if operator_name == "eq" and actual != val:
+                    match = False
+                    break
+                if operator_name == "lt" and not (actual < val):
+                    match = False
+                    break
+                if operator_name == "ge" and not (actual >= val):
+                    match = False
+                    break
+                if operator_name == "le" and not (actual <= val):
                     match = False
                     break
             if match:
                 import copy
-                return FakeScalarResult(copy.copy(job))
-        return FakeScalarResult(None)
+                matches.append(copy.copy(job))
+        matches.sort(key=lambda item: item.id, reverse=True)
+        limit_clause = getattr(stmt, "_limit_clause", None)
+        limit = getattr(limit_clause, "value", None)
+        if limit is not None:
+            matches = matches[:limit]
+        return FakeScalarResult(matches)
 
     @staticmethod
     def _flatten_where(clause) -> list:
@@ -358,6 +386,81 @@ class TestRepositoryFindByIdempotencyKey:
         assert result_a is not None and result_a.id == job_a.id
         assert result_b is not None and result_b.id == job_b.id
         assert result_a.id != result_b.id
+
+
+# ---------------------------------------------------------------------------
+# Tests: list_for_organization (tenant-scoped filters + cursor)
+# ---------------------------------------------------------------------------
+
+class TestRepositoryListForOrganization:
+    @pytest.mark.asyncio
+    async def test_lists_only_jobs_for_requested_tenant(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        job_a = _new_job(organization_id="org-aaa", job_id="job-002")
+        job_b = _new_job(organization_id="org-bbb", job_id="job-003")
+        await repo.create(job_a)
+        await repo.create(job_b)
+
+        jobs, next_cursor = await repo.list_for_organization("org-aaa")
+
+        assert [job.id for job in jobs] == ["job-002"]
+        assert next_cursor is None
+
+    @pytest.mark.asyncio
+    async def test_list_applies_status_project_operation_and_date_filters(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        keep = _new_job(organization_id="org-aaa", job_id="job-003", status="reserved")
+        keep.project_id = "project-1"
+        keep.operation_type = "image_generation"
+        keep.created_at = datetime(2026, 6, 9, 12, 0, 0)
+        wrong_status = _new_job(organization_id="org-aaa", job_id="job-004", status="created")
+        wrong_status.project_id = "project-1"
+        wrong_status.operation_type = "image_generation"
+        wrong_status.created_at = datetime(2026, 6, 9, 12, 0, 0)
+        old_job = _new_job(organization_id="org-aaa", job_id="job-005", status="reserved")
+        old_job.project_id = "project-1"
+        old_job.operation_type = "image_generation"
+        old_job.created_at = datetime(2026, 6, 1, 12, 0, 0)
+        await repo.create(keep)
+        await repo.create(wrong_status)
+        await repo.create(old_job)
+
+        jobs, _next_cursor = await repo.list_for_organization(
+            "org-aaa",
+            status="reserved",
+            project_id="project-1",
+            operation_type="image_generation",
+            created_after=datetime(2026, 6, 8, 0, 0, 0),
+            created_before=datetime(2026, 6, 10, 0, 0, 0),
+        )
+
+        assert [job.id for job in jobs] == ["job-003"]
+
+    @pytest.mark.asyncio
+    async def test_list_returns_next_cursor_when_more_rows_exist(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        for job_id in ["job-001", "job-002", "job-003"]:
+            await repo.create(_new_job(organization_id="org-aaa", job_id=job_id))
+
+        jobs, next_cursor = await repo.list_for_organization("org-aaa", limit=2)
+
+        assert [job.id for job in jobs] == ["job-003", "job-002"]
+        assert next_cursor == "job-001"
+
+    @pytest.mark.asyncio
+    async def test_list_applies_cursor(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        for job_id in ["job-001", "job-002", "job-003"]:
+            await repo.create(_new_job(organization_id="org-aaa", job_id=job_id))
+
+        jobs, next_cursor = await repo.list_for_organization("org-aaa", cursor="job-003")
+
+        assert [job.id for job in jobs] == ["job-002", "job-001"]
+        assert next_cursor is None
 
 
 # ---------------------------------------------------------------------------

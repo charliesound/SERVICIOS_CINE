@@ -26,6 +26,7 @@ from services.ai_job_async_orchestration_service import (
     AIJobAsyncIdempotencyConflictError,
     AIJobAsyncEstimateRequest,
     AIJobAsyncNotFoundError,
+    AIJobAsyncListRequest,
     AIJobAsyncOrchestrationService,
     AIJobAsyncReleaseRequest,
     AIJobAsyncReserveRequest,
@@ -103,6 +104,7 @@ class FakeJob:
         self.input_asset_ids = input_asset_ids if input_asset_ids is not None else ["asset-1"]
         self.output_asset_ids = output_asset_ids if output_asset_ids is not None else []
         self.attempt_number = 1
+        self.created_at = datetime(2026, 6, 9, 10, 0, 0)
         self.reserved_at = None
         self.estimated_at = None
         self.credit_checked_at = None
@@ -146,9 +148,20 @@ class FakeRepository:
             return None
         return self.job
 
-    async def get(self, *args):  # pragma: no cover - fails loudly if used.
+    async def get(self, *args):
         self.calls.append(("get", args))
-        raise AssertionError("unexpected non-locking repository read")
+        organization_id, job_id = args
+        if self.job is None:
+            return None
+        if self.job.organization_id != organization_id or self.job.id != job_id:
+            return None
+        return self.job
+
+    async def list_for_organization(self, organization_id: str, **kwargs):
+        self.calls.append(("list_for_organization", (organization_id, kwargs)))
+        if self.job is None or self.job.organization_id != organization_id:
+            return [], None
+        return [self.job], None
 
     async def save(self, job: FakeJob) -> FakeJob:
         self.calls.append(("save", (job,)))
@@ -373,6 +386,69 @@ async def test_create_idempotency_key_is_tenant_scoped(session: DummySession) ->
     assert result.job.organization_id == "org-1"
     assert result.job is not existing
     assert repository.created_jobs
+
+
+@pytest.mark.asyncio
+async def test_get_ai_job_uses_tenant_scoped_repository_read(session: DummySession) -> None:
+    service, repository, _gateway = _service(FakeJob())
+
+    result = await service.get_ai_job(session, "org-1", "job-1")
+
+    assert result.id == "job-1"
+    assert repository.calls[-1] == ("get", ("org-1", "job-1"))
+
+
+@pytest.mark.asyncio
+async def test_get_ai_job_raises_not_found_for_wrong_tenant(session: DummySession) -> None:
+    service, _repository, _gateway = _service(FakeJob(organization_id="org-2"))
+
+    with pytest.raises(AIJobAsyncNotFoundError):
+        await service.get_ai_job(session, "org-1", "job-1")
+
+
+@pytest.mark.asyncio
+async def test_list_ai_jobs_delegates_with_tenant_and_filters(session: DummySession) -> None:
+    service, repository, _gateway = _service(FakeJob())
+
+    jobs, next_cursor = await service.list_ai_jobs(
+        session,
+        AIJobAsyncListRequest(
+            organization_id="org-1",
+            status=" created ",
+            project_id="project-1",
+            operation_type=" image_generation ",
+            limit=25,
+            cursor="job-0",
+        ),
+    )
+
+    assert [job.id for job in jobs] == ["job-1"]
+    assert next_cursor is None
+    method, args = repository.calls[-1]
+    organization_id, kwargs = args
+    assert method == "list_for_organization"
+    assert organization_id == "org-1"
+    assert kwargs["status"] == "created"
+    assert kwargs["operation_type"] == "image_generation"
+    assert kwargs["limit"] == 25
+    assert kwargs["cursor"] == "job-0"
+
+
+@pytest.mark.asyncio
+async def test_get_ai_job_history_derives_timestamped_events(session: DummySession) -> None:
+    job = FakeJob(status="reserved")
+    job.estimated_at = datetime(2026, 6, 9, 11, 0, 0)
+    job.reserved_at = datetime(2026, 6, 9, 12, 0, 0)
+    service, _repository, _gateway = _service(job)
+
+    result = await service.get_ai_job_history(session, "org-1", "job-1")
+
+    assert result.job_id == "job-1"
+    assert [event["status"] for event in result.events] == [
+        "created",
+        "estimated",
+        "reserved",
+    ]
 
 
 @pytest.mark.asyncio

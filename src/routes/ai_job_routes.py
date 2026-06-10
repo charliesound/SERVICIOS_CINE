@@ -4,7 +4,7 @@ from dataclasses import asdict, is_dataclass
 from datetime import date, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -31,6 +31,7 @@ from services.ai_job_async_orchestration_service import (
     AIJobAsyncEstimateRequest,
     AIJobAsyncIdempotencyConflictError,
     AIJobAsyncInvalidStateError,
+    AIJobAsyncListRequest,
     AIJobAsyncNotFoundError,
     AIJobAsyncOrchestrationError,
     AIJobAsyncOrchestrationService,
@@ -129,11 +130,9 @@ def _ensure_credit_override_allowed(
     )
 
 
-def _raise_not_implemented(endpoint_name: str) -> None:
-    raise HTTPException(
-        status_code=501,
-        detail=f"{endpoint_name} requires future AIJobAsyncOrchestrationService surface",
-    )
+def _reject_forged_organization_query(request: Request) -> None:
+    if "organization_id" in request.query_params:
+        raise HTTPException(status_code=422, detail="organization_id query is not allowed")
 
 
 @router.post("", response_model=AIJobMutationResponse)
@@ -306,24 +305,69 @@ async def release_ai_job_credits_endpoint(
 @router.get("/{job_id}", response_model=AIJobReadResponse)
 async def get_ai_job_endpoint(
     job_id: str,
+    db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    service: AIJobAsyncOrchestrationService = Depends(get_ai_job_orchestration_service),
 ) -> AIJobReadResponse:
-    del job_id, tenant
-    _raise_not_implemented("GET /api/v1/ai-jobs/{job_id}")
+    try:
+        job = await service.get_ai_job(db, tenant.organization_id, job_id)
+        return AIJobReadResponse(job=_job_response(job))
+    except Exception as exc:
+        _raise_http_from_error(exc)
+        raise
 
 
 @router.get("", response_model=AIJobListResponse)
 async def list_ai_jobs_endpoint(
+    request: Request,
+    status: str | None = None,
+    project_id: str | None = None,
+    operation_type: str | None = None,
+    created_after: datetime | None = None,
+    created_before: datetime | None = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = None,
+    db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    service: AIJobAsyncOrchestrationService = Depends(get_ai_job_orchestration_service),
 ) -> AIJobListResponse:
-    del tenant
-    _raise_not_implemented("GET /api/v1/ai-jobs")
+    _reject_forged_organization_query(request)
+    try:
+        jobs, next_cursor = await service.list_ai_jobs(
+            db,
+            AIJobAsyncListRequest(
+                organization_id=tenant.organization_id,
+                status=status,
+                project_id=project_id,
+                operation_type=operation_type,
+                created_after=created_after,
+                created_before=created_before,
+                limit=limit,
+                cursor=cursor,
+            ),
+        )
+        return AIJobListResponse(
+            items=[_job_response(job) for job in jobs],
+            next_cursor=next_cursor,
+        )
+    except Exception as exc:
+        _raise_http_from_error(exc)
+        raise
 
 
 @router.get("/{job_id}/history", response_model=AIJobHistoryResponse)
 async def get_ai_job_history_endpoint(
     job_id: str,
+    db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant_context),
+    service: AIJobAsyncOrchestrationService = Depends(get_ai_job_orchestration_service),
 ) -> AIJobHistoryResponse:
-    del job_id, tenant
-    _raise_not_implemented("GET /api/v1/ai-jobs/{job_id}/history")
+    try:
+        history = await service.get_ai_job_history(db, tenant.organization_id, job_id)
+        return AIJobHistoryResponse(
+            job_id=history.job_id,
+            events=_serialize(history.events),
+        )
+    except Exception as exc:
+        _raise_http_from_error(exc)
+        raise

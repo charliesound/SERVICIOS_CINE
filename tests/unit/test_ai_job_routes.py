@@ -92,6 +92,38 @@ class FakeAIJobService:
         self.calls.append(("release", request))
         return self._result("released")
 
+    async def get_ai_job(self, session, organization_id, job_id):
+        del session
+        self.calls.append(("get", (organization_id, job_id)))
+        return SimpleNamespace(
+            id=job_id,
+            organization_id=organization_id,
+            user_id="user-tenant",
+            operation_type="image_generation",
+            status="created",
+        )
+
+    async def list_ai_jobs(self, session, request):
+        del session
+        self.calls.append(("list", request))
+        return [
+            SimpleNamespace(
+                id="job-1",
+                organization_id=request.organization_id,
+                user_id="user-tenant",
+                operation_type="image_generation",
+                status=request.status or "created",
+            )
+        ], "job-next"
+
+    async def get_ai_job_history(self, session, organization_id, job_id):
+        del session
+        self.calls.append(("history", (organization_id, job_id)))
+        return SimpleNamespace(
+            job_id=job_id,
+            events=[{"status": "created", "timestamp": "2026-06-09T10:00:00"}],
+        )
+
 
 @pytest.fixture
 def fake_service() -> FakeAIJobService:
@@ -278,17 +310,46 @@ def test_release_internal_caller_invokes_service(app: FastAPI, fake_service: Fak
     assert request.release_credits == 2
 
 
-@pytest.mark.parametrize(
-    ("method", "path"),
-    [
-        ("get", "/api/v1/ai-jobs/job-1"),
-        ("get", "/api/v1/ai-jobs"),
-        ("get", "/api/v1/ai-jobs/job-1/history"),
-    ],
-)
-def test_read_list_history_return_501(client: TestClient, method: str, path: str) -> None:
-    response = getattr(client, method)(path)
-    assert response.status_code == 501
+def test_get_ai_job_uses_tenant_and_path_job_id(client: TestClient, fake_service: FakeAIJobService) -> None:
+    response = client.get("/api/v1/ai-jobs/job-path")
+
+    assert response.status_code == 200
+    assert response.json()["job"]["id"] == "job-path"
+    assert fake_service.calls[-1] == ("get", ("org-tenant", "job-path"))
+
+
+def test_list_ai_jobs_uses_tenant_and_filters(client: TestClient, fake_service: FakeAIJobService) -> None:
+    response = client.get(
+        "/api/v1/ai-jobs",
+        params={"status": "created", "project_id": "project-1", "limit": 25},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["items"][0]["organization_id"] == "org-tenant"
+    assert body["next_cursor"] == "job-next"
+    call, request = fake_service.calls[-1]
+    assert call == "list"
+    assert request.organization_id == "org-tenant"
+    assert request.status == "created"
+    assert request.project_id == "project-1"
+    assert request.limit == 25
+
+
+def test_list_ai_jobs_rejects_organization_id_query(client: TestClient) -> None:
+    response = client.get("/api/v1/ai-jobs", params={"organization_id": "org-forged"})
+    assert response.status_code == 422
+
+
+def test_get_ai_job_history_uses_tenant_and_path_job_id(
+    client: TestClient,
+    fake_service: FakeAIJobService,
+) -> None:
+    response = client.get("/api/v1/ai-jobs/job-path/history")
+
+    assert response.status_code == 200
+    assert response.json()["job_id"] == "job-path"
+    assert fake_service.calls[-1] == ("history", ("org-tenant", "job-path"))
 
 
 @pytest.mark.parametrize(

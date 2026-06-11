@@ -45,6 +45,7 @@ __all__ = [
     "AIJobAsyncReserveRequest",
     "AIJobAsyncCancelRequest",
     "AIJobAsyncCancelCreditReleaseRequest",
+    "AIJobAsyncCancelCreditReleaseReconciliationRequest",
     "AIJobAsyncConsumeRequest",
     "AIJobAsyncReleaseRequest",
     "AIJobAsyncListRequest",
@@ -52,6 +53,8 @@ __all__ = [
     "AIJobAsyncHistoryResult",
     "AIJobAsyncOrchestrationResult",
     "AIJobAsyncCancelCreditReleaseResult",
+    "AIJobAsyncCancelCreditReleaseReconciliationJobResult",
+    "AIJobAsyncCancelCreditReleaseReconciliationResult",
     "AIJobAsyncOrchestrationService",
 ]
 
@@ -134,6 +137,15 @@ class AIJobAsyncCancelCreditReleaseRequest:
 
 
 @dataclass(frozen=True)
+class AIJobAsyncCancelCreditReleaseReconciliationRequest:
+    organization_id: str
+    max_items: int = 50
+    dry_run: bool = False
+    requested_by: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
 class AIJobAsyncConsumeRequest:
     organization_id: str
     job_id: str
@@ -197,6 +209,31 @@ class AIJobAsyncCancelCreditReleaseResult:
     idempotent: bool
     release_entry_id: str | None
     message: str
+
+
+@dataclass(frozen=True)
+class AIJobAsyncCancelCreditReleaseReconciliationJobResult:
+    job_id: str
+    organization_id: str
+    status_before: str | None
+    status_after: str | None
+    release_entry_id: str | None
+    release_performed: bool
+    idempotent: bool
+    error_category: str
+    message: str
+
+
+@dataclass(frozen=True)
+class AIJobAsyncCancelCreditReleaseReconciliationResult:
+    organization_id: str
+    scanned_count: int
+    processed_count: int
+    released_count: int
+    skipped_count: int
+    failed_count: int
+    dry_run: bool
+    per_job_results: list[AIJobAsyncCancelCreditReleaseReconciliationJobResult]
 
 
 class AIJobAsyncOrchestrationService:
@@ -839,6 +876,115 @@ class AIJobAsyncOrchestrationService:
             message=message,
         )
 
+    async def process_cancelled_ai_job_credit_releases(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncCancelCreditReleaseReconciliationRequest,
+    ) -> AIJobAsyncCancelCreditReleaseReconciliationResult:
+        organization_id = self._require_text(request.organization_id, "organization_id")
+        max_items = self._resolve_reconciliation_max_items(request.max_items)
+        candidates = await self.repository.list_cancelled_credit_release_candidates(
+            organization_id,
+            limit=max_items,
+        )
+        per_job_results: list[AIJobAsyncCancelCreditReleaseReconciliationJobResult] = []
+
+        for job in candidates:
+            status_before = self._normalize_optional_text(getattr(job, "status", None))
+            job_id = str(getattr(job, "id", "") or "")
+            if request.dry_run:
+                per_job_results.append(
+                    AIJobAsyncCancelCreditReleaseReconciliationJobResult(
+                        job_id=job_id,
+                        organization_id=organization_id,
+                        status_before=status_before,
+                        status_after=status_before,
+                        release_entry_id=self._normalize_optional_text(
+                            getattr(job, "release_entry_id", None)
+                        ),
+                        release_performed=False,
+                        idempotent=False,
+                        error_category="dry_run_eligible",
+                        message="AI job eligible for cancelled credit release",
+                    )
+                )
+                continue
+
+            try:
+                release_result = await self.release_cancelled_ai_job_reserved_credits(
+                    session,
+                    AIJobAsyncCancelCreditReleaseRequest(
+                        organization_id=organization_id,
+                        job_id=job_id,
+                        requested_by=request.requested_by,
+                    ),
+                )
+                per_job_results.append(
+                    self._build_reconciliation_job_result(
+                        job_id=job_id,
+                        organization_id=organization_id,
+                        status_before=status_before,
+                        release_result=release_result,
+                    )
+                )
+            except AIJobAsyncNotFoundError as exc:
+                per_job_results.append(
+                    self._build_reconciliation_error_result(
+                        job=job,
+                        organization_id=organization_id,
+                        status_before=status_before,
+                        error_category="terminal_error",
+                        message=str(exc),
+                    )
+                )
+            except AIJobAsyncInvalidStateError as exc:
+                per_job_results.append(
+                    self._build_reconciliation_error_result(
+                        job=job,
+                        organization_id=organization_id,
+                        status_before=status_before,
+                        error_category=self._map_invalid_state_reconciliation_category(str(exc)),
+                        message=str(exc),
+                    )
+                )
+            except AIJobAsyncAccountingError as exc:
+                per_job_results.append(
+                    self._build_reconciliation_error_result(
+                        job=job,
+                        organization_id=organization_id,
+                        status_before=status_before,
+                        error_category="terminal_error",
+                        message=str(exc),
+                    )
+                )
+            except RuntimeError as exc:
+                per_job_results.append(
+                    self._build_reconciliation_error_result(
+                        job=job,
+                        organization_id=organization_id,
+                        status_before=status_before,
+                        error_category="retryable_error",
+                        message=str(exc),
+                    )
+                )
+            except Exception as exc:
+                per_job_results.append(
+                    self._build_reconciliation_error_result(
+                        job=job,
+                        organization_id=organization_id,
+                        status_before=status_before,
+                        error_category="unexpected_error",
+                        message=str(exc),
+                    )
+                )
+
+        return self._build_reconciliation_result(
+            organization_id=organization_id,
+            dry_run=bool(request.dry_run),
+            scanned_count=len(candidates),
+            per_job_results=per_job_results,
+        )
+
     async def _load_job_for_mutation(self, organization_id: str, job_id: str) -> Any:
         job = await self.repository.get_for_update(organization_id, job_id)
         if job is None:
@@ -941,6 +1087,101 @@ class AIJobAsyncOrchestrationService:
             ),
             message=message,
         )
+
+    def _build_reconciliation_job_result(
+        self,
+        *,
+        job_id: str,
+        organization_id: str,
+        status_before: str | None,
+        release_result: AIJobAsyncCancelCreditReleaseResult,
+    ) -> AIJobAsyncCancelCreditReleaseReconciliationJobResult:
+        if release_result.release_performed:
+            error_category = "released_now"
+        elif release_result.idempotent and release_result.release_required:
+            error_category = "idempotent_replay"
+        elif release_result.release_entry_id is not None:
+            error_category = "skipped_already_released"
+        else:
+            error_category = "skipped_no_reservation"
+        return AIJobAsyncCancelCreditReleaseReconciliationJobResult(
+            job_id=job_id,
+            organization_id=organization_id,
+            status_before=status_before,
+            status_after=release_result.status,
+            release_entry_id=release_result.release_entry_id,
+            release_performed=release_result.release_performed,
+            idempotent=release_result.idempotent,
+            error_category=error_category,
+            message=release_result.message,
+        )
+
+    def _build_reconciliation_error_result(
+        self,
+        *,
+        job: Any,
+        organization_id: str,
+        status_before: str | None,
+        error_category: str,
+        message: str,
+    ) -> AIJobAsyncCancelCreditReleaseReconciliationJobResult:
+        return AIJobAsyncCancelCreditReleaseReconciliationJobResult(
+            job_id=str(getattr(job, "id", "") or ""),
+            organization_id=organization_id,
+            status_before=status_before,
+            status_after=self._normalize_optional_text(getattr(job, "status", None)),
+            release_entry_id=self._normalize_optional_text(
+                getattr(job, "release_entry_id", None)
+            ),
+            release_performed=False,
+            idempotent=False,
+            error_category=error_category,
+            message=message,
+        )
+
+    def _build_reconciliation_result(
+        self,
+        *,
+        organization_id: str,
+        dry_run: bool,
+        scanned_count: int,
+        per_job_results: list[AIJobAsyncCancelCreditReleaseReconciliationJobResult],
+    ) -> AIJobAsyncCancelCreditReleaseReconciliationResult:
+        released_count = sum(
+            1
+            for item in per_job_results
+            if item.error_category in {"released_now", "idempotent_replay"}
+        )
+        failed_count = sum(
+            1
+            for item in per_job_results
+            if item.error_category
+            in {"retryable_error", "terminal_error", "unexpected_error"}
+        )
+        skipped_count = len(per_job_results) - released_count - failed_count
+        return AIJobAsyncCancelCreditReleaseReconciliationResult(
+            organization_id=organization_id,
+            scanned_count=scanned_count,
+            processed_count=len(per_job_results),
+            released_count=released_count,
+            skipped_count=skipped_count,
+            failed_count=failed_count,
+            dry_run=dry_run,
+            per_job_results=per_job_results,
+        )
+
+    def _map_invalid_state_reconciliation_category(self, message: str) -> str:
+        lowered = message.lower()
+        if "consumption" in lowered or "consumed" in lowered:
+            return "skipped_consumed"
+        return "skipped_not_eligible"
+
+    def _resolve_reconciliation_max_items(self, value: int) -> int:
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise AIJobAsyncOrchestrationError("max_items must be a positive integer")
+        if value <= 0:
+            raise AIJobAsyncOrchestrationError("max_items must be a positive integer")
+        return min(value, 100)
 
     def _derive_history_events(self, job: Any) -> list[dict[str, Any]]:
         event_fields = (

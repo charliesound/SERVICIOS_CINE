@@ -532,6 +532,8 @@ def test_cancel_route_does_not_call_internal_credit_release_service() -> None:
     cancel_block = cancel_block[: cancel_block.index("@router.post", 1)]
     assert "release_cancelled_ai_job_reserved_credits" not in cancel_block
     assert "AIJobAsyncCancelCreditReleaseRequest" not in cancel_block
+    assert "process_cancelled_ai_job_credit_releases" not in cancel_block
+    assert "AIJobAsyncCancelCreditReleaseReconciliationRequest" not in cancel_block
 
 
 def test_get_ai_job_uses_tenant_and_path_job_id(client: TestClient, fake_service: FakeAIJobService) -> None:

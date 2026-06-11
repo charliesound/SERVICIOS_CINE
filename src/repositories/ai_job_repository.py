@@ -8,6 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import get_history, instance_state
 
 from models.ai_job import AIJob
+from services.ai_job_status_service import (
+    AI_JOB_STATUS_CANCELLED,
+    AI_JOB_STATUS_CANCEL_REQUESTED,
+    AI_JOB_STATUS_RELEASE_PENDING,
+)
 
 
 class AIJobRepositoryError(Exception):
@@ -89,6 +94,36 @@ class AIJobRepository:
         rows = list(result.scalars().all())
         next_cursor = rows[safe_limit].id if len(rows) > safe_limit else None
         return rows[:safe_limit], next_cursor
+
+    async def list_cancelled_credit_release_candidates(
+        self,
+        organization_id: str,
+        *,
+        limit: int,
+    ) -> list[AIJob]:
+        safe_limit = min(max(int(limit or 1), 1), 100)
+        stmt = (
+            select(AIJob)
+            .where(AIJob.organization_id == organization_id)
+            .where(
+                AIJob.status.in_(
+                    (
+                        AI_JOB_STATUS_CANCEL_REQUESTED,
+                        AI_JOB_STATUS_CANCELLED,
+                        AI_JOB_STATUS_RELEASE_PENDING,
+                    )
+                )
+            )
+            .where(AIJob.reservation_entry_id.is_not(None))
+            .where(AIJob.consume_entry_id.is_(None))
+            .where(AIJob.release_entry_id.is_(None))
+            .where(AIJob.consumed_credits == 0)
+            .where(AIJob.reserved_credits > 0)
+            .order_by(AIJob.created_at.asc(), AIJob.id.asc())
+            .limit(safe_limit)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
 
     async def save(self, job: AIJob) -> AIJob:
         if job.organization_id is None:

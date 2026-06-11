@@ -21,8 +21,10 @@ from services.ai_job_async_orchestration_service import (
     AIJobAsyncAccountingError,
     AIJobAsyncCancelRequest,
     AIJobAsyncCancelCreditReleaseRequest,
+    AIJobAsyncCancelCreditReleaseReconciliationRequest,
     AIJobAsyncInvalidStateError,
     AIJobAsyncNotFoundError,
+    AIJobAsyncOrchestrationError,
     AIJobAsyncOrchestrationService,
 )
 from services.credit_ledger_service import DuplicateIdempotencyKeyError
@@ -70,13 +72,23 @@ class FakeJob:
 
 
 class FakeRepository:
-    def __init__(self, job: FakeJob | None) -> None:
+    def __init__(
+        self,
+        job: FakeJob | None,
+        candidates: list[FakeJob] | None = None,
+    ) -> None:
         self.job = job
+        self.candidates = candidates
         self.calls: list[tuple[str, tuple]] = []
         self.saved_jobs: list[FakeJob] = []
 
     async def get_for_update(self, organization_id: str, job_id: str) -> FakeJob | None:
         self.calls.append(("get_for_update", (organization_id, job_id)))
+        if self.candidates is not None:
+            for job in self.candidates:
+                if job.organization_id == organization_id and job.id == job_id:
+                    return job
+            return None
         if self.job is None:
             return None
         if self.job.organization_id != organization_id or self.job.id != job_id:
@@ -85,6 +97,11 @@ class FakeRepository:
 
     async def get(self, organization_id: str, job_id: str) -> FakeJob | None:
         self.calls.append(("get", (organization_id, job_id)))
+        if self.candidates is not None:
+            for job in self.candidates:
+                if job.organization_id == organization_id and job.id == job_id:
+                    return job
+            return None
         if self.job is None:
             return None
         if self.job.organization_id != organization_id or self.job.id != job_id:
@@ -97,15 +114,41 @@ class FakeRepository:
         self.job = job
         return job
 
+    async def list_cancelled_credit_release_candidates(
+        self,
+        organization_id: str,
+        *,
+        limit: int,
+    ) -> list[FakeJob]:
+        self.calls.append(
+            ("list_cancelled_credit_release_candidates", (organization_id, limit))
+        )
+        source = self.candidates if self.candidates is not None else []
+        return [
+            job
+            for job in source
+            if job.organization_id == organization_id
+            and job.status in {"cancel_requested", "cancelled", "release_pending"}
+            and job.reservation_entry_id is not None
+            and job.consume_entry_id is None
+            and job.release_entry_id is None
+            and job.consumed_credits == 0
+            and job.reserved_credits > 0
+        ][:limit]
+
 
 class FakeAccountingGateway:
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict]] = []
         self.release_entry_id = "release-entry-1"
         self.release_error: Exception | None = None
+        self.release_errors_by_job_id: dict[str, Exception] = {}
 
     async def release_reserved_credits_for_job(self, _session, **kwargs):
         self.calls.append(("release_reserved_credits_for_job", kwargs))
+        job_error = self.release_errors_by_job_id.get(str(kwargs.get("job_id", "")))
+        if job_error is not None:
+            raise job_error
         if self.release_error is not None:
             raise self.release_error
         return FakeAccountingResult(ledger_entry_id=self.release_entry_id)
@@ -125,6 +168,19 @@ def _service(
     job: FakeJob | None,
 ) -> tuple[AIJobAsyncOrchestrationService, FakeRepository, FakeAccountingGateway]:
     repository = FakeRepository(job)
+    gateway = FakeAccountingGateway()
+    service = AIJobAsyncOrchestrationService(
+        repository=repository,
+        accounting_gateway=gateway,
+        now_fn=lambda: datetime(2026, 6, 9, 12, 0, 0),
+    )
+    return service, repository, gateway
+
+
+def _service_with_candidates(
+    candidates: list[FakeJob],
+) -> tuple[AIJobAsyncOrchestrationService, FakeRepository, FakeAccountingGateway]:
+    repository = FakeRepository(None, candidates=candidates)
     gateway = FakeAccountingGateway()
     service = AIJobAsyncOrchestrationService(
         repository=repository,
@@ -679,4 +735,238 @@ async def test_release_cancelled_reserved_credits_non_eligible_status_rejects(
         )
 
     assert repository.saved_jobs == []
+    assert gateway.calls == []
+
+
+def _candidate(job_id: str, **overrides) -> FakeJob:
+    values = {
+        "id": job_id,
+        "status": "cancelled",
+        "reserved_credits": 8,
+        "reservation_entry_id": f"reservation-{job_id}",
+    }
+    values.update(overrides)
+    return FakeJob(**values)
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_releases_eligible_jobs(
+    session: DummySession,
+) -> None:
+    jobs = [_candidate("job-1"), _candidate("job-2", status="release_pending")]
+    service, repository, gateway = _service_with_candidates(jobs)
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(
+            organization_id="org-1",
+            max_items=10,
+        ),
+    )
+
+    assert result.organization_id == "org-1"
+    assert result.scanned_count == 2
+    assert result.processed_count == 2
+    assert result.released_count == 2
+    assert result.skipped_count == 0
+    assert result.failed_count == 0
+    assert [item.error_category for item in result.per_job_results] == [
+        "released_now",
+        "released_now",
+    ]
+    assert [job.status for job in jobs] == ["released", "released"]
+    assert [job.release_entry_id for job in jobs] == ["release-entry-1", "release-entry-1"]
+    assert [call for call, _ in gateway.calls] == [
+        "release_reserved_credits_for_job",
+        "release_reserved_credits_for_job",
+    ]
+    assert repository.calls[0] == (
+        "list_cancelled_credit_release_candidates",
+        ("org-1", 10),
+    )
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_dry_run_does_not_release(
+    session: DummySession,
+) -> None:
+    jobs = [_candidate("job-1"), _candidate("job-2")]
+    service, repository, gateway = _service_with_candidates(jobs)
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(
+            organization_id="org-1",
+            max_items=10,
+            dry_run=True,
+        ),
+    )
+
+    assert result.dry_run is True
+    assert result.scanned_count == 2
+    assert result.processed_count == 2
+    assert result.released_count == 0
+    assert result.skipped_count == 2
+    assert result.failed_count == 0
+    assert [item.error_category for item in result.per_job_results] == [
+        "dry_run_eligible",
+        "dry_run_eligible",
+    ]
+    assert [job.status for job in jobs] == ["cancelled", "cancelled"]
+    assert gateway.calls == []
+    assert [call for call, _ in repository.calls] == [
+        "list_cancelled_credit_release_candidates"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_max_items_limits_candidates(
+    session: DummySession,
+) -> None:
+    service, _repository, gateway = _service_with_candidates(
+        [_candidate("job-1"), _candidate("job-2"), _candidate("job-3")]
+    )
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(
+            organization_id="org-1",
+            max_items=2,
+        ),
+    )
+
+    assert result.scanned_count == 2
+    assert [item.job_id for item in result.per_job_results] == ["job-1", "job-2"]
+    assert len(gateway.calls) == 2
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_selector_excludes_ineligible_jobs(
+    session: DummySession,
+) -> None:
+    service, _repository, gateway = _service_with_candidates(
+        [
+            _candidate("eligible"),
+            _candidate("no-reservation", reservation_entry_id=None),
+            _candidate("already-released", release_entry_id="release-entry"),
+            _candidate("consumed-entry", consume_entry_id="consume-entry"),
+            _candidate("consumed-credits", consumed_credits=1),
+            _candidate("released-status", status="released"),
+            _candidate("succeeded-status", status="succeeded"),
+            _candidate("no-credits", reserved_credits=0),
+            _candidate("wrong-org", organization_id="org-2"),
+        ]
+    )
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(organization_id="org-1"),
+    )
+
+    assert result.scanned_count == 1
+    assert [item.job_id for item in result.per_job_results] == ["eligible"]
+    assert len(gateway.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_job_error_does_not_abort_batch(
+    session: DummySession,
+) -> None:
+    jobs = [_candidate("job-1"), _candidate("job-2")]
+    service, _repository, gateway = _service_with_candidates(jobs)
+    gateway.release_errors_by_job_id["job-1"] = RuntimeError("gateway unavailable")
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(organization_id="org-1"),
+    )
+
+    assert result.processed_count == 2
+    assert result.released_count == 1
+    assert result.failed_count == 1
+    assert [item.error_category for item in result.per_job_results] == [
+        "retryable_error",
+        "released_now",
+    ]
+    assert jobs[0].release_entry_id is None
+    assert jobs[1].release_entry_id == "release-entry-1"
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_counts_idempotent_replay(
+    session: DummySession,
+) -> None:
+    service, _repository, gateway = _service_with_candidates([_candidate("job-1")])
+    gateway.release_error = DuplicateIdempotencyKeyError(
+        "ai_job:org-1:job-1:release:cancel:reservation-job-1",
+        existing_entry_id="release-entry-1",
+    )
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(organization_id="org-1"),
+    )
+
+    assert result.released_count == 1
+    assert result.failed_count == 0
+    assert result.per_job_results[0].error_category == "idempotent_replay"
+    assert result.per_job_results[0].idempotent is True
+    assert result.per_job_results[0].release_entry_id == "release-entry-1"
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_accounting_error_is_terminal(
+    session: DummySession,
+) -> None:
+    service, _repository, gateway = _service_with_candidates([_candidate("job-1")])
+    gateway.release_error = DuplicateIdempotencyKeyError(
+        "ai_job:org-1:job-1:release:cancel:reservation-job-1",
+        existing_entry_id=None,
+    )
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(organization_id="org-1"),
+    )
+
+    assert result.released_count == 0
+    assert result.failed_count == 1
+    assert result.per_job_results[0].error_category == "terminal_error"
+    assert "without existing entry id" in result.per_job_results[0].message
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_requires_organization_id(
+    session: DummySession,
+) -> None:
+    service, repository, gateway = _service_with_candidates([_candidate("job-1")])
+
+    with pytest.raises(AIJobAsyncOrchestrationError, match="organization_id"):
+        await service.process_cancelled_ai_job_credit_releases(
+            session,
+            AIJobAsyncCancelCreditReleaseReconciliationRequest(organization_id=" "),
+        )
+
+    assert repository.calls == []
+    assert gateway.calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("max_items", [0, -1, True, "bad"])
+async def test_process_cancelled_credit_releases_validates_max_items(
+    session: DummySession,
+    max_items,
+) -> None:
+    service, repository, gateway = _service_with_candidates([_candidate("job-1")])
+
+    with pytest.raises(AIJobAsyncOrchestrationError, match="max_items"):
+        await service.process_cancelled_ai_job_credit_releases(
+            session,
+            AIJobAsyncCancelCreditReleaseReconciliationRequest(
+                organization_id="org-1",
+                max_items=max_items,
+            ),
+        )
+
+    assert repository.calls == []
     assert gateway.calls == []

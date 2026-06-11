@@ -14,6 +14,8 @@ from services.ai_job_cancellation_credit_release_scheduler_service import (
     MAX_ITEMS_CAP,
     MAX_ITEMS_DEFAULT,
     REQUESTED_BY_DEFAULT,
+    SECRET_ERROR_MESSAGE,
+    _validate_tick_request,
 )
 
 
@@ -96,6 +98,23 @@ class TestAKillSwitch:
         assert result.processed_tenant_count == 0
         assert result.tenant_count == 0
 
+    async def test_no_session_opened_when_disabled(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        original = scheduler_service._session_provider
+        call_count = 0
+
+        @contextlib.asynccontextmanager
+        async def tracking_provider() -> Any:
+            nonlocal call_count
+            call_count += 1
+            yield MagicMock()
+
+        scheduler_service._session_provider = tracking_provider
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(enabled=False)
+        await scheduler_service.run_tick(request)
+        assert call_count == 0
+
 
 class TestBTenantIteration:
     async def test_two_tenants_both_called(
@@ -129,7 +148,6 @@ class TestBTenantIteration:
             args, _ = calls[i]
             req_obj = args[1]
             assert req_obj.organization_id == expected_org
-        assert req_obj.organization_id == "org-beta"
 
     async def test_no_tenants_returns_empty(
         self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
@@ -190,6 +208,17 @@ class TestCMaxItems:
         request = AIJobCancellationCreditReleaseSchedulerTickRequest(
             tenants=(
                 AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1", max_items=0),
+            ),
+        )
+        with pytest.raises(ValueError, match="max_items must be >= 1"):
+            await scheduler_service.run_tick(request)
+
+    async def test_max_items_negative_raises(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1", max_items=-5),
             ),
         )
         with pytest.raises(ValueError, match="max_items must be >= 1"):
@@ -396,7 +425,518 @@ class TestGFailurePorTenant:
         assert result.total_failed_count == 1
 
 
-class TestHBoundarySeguridadCodigo:
+class TestHRequestedByValidation:
+    @pytest.mark.parametrize("bad_value", ["", "   "])
+    async def test_empty_or_whitespace_requested_by_rejected(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService, bad_value: str
+    ) -> None:
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            requested_by=bad_value,
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        with pytest.raises(ValueError, match="requested_by must be non-empty"):
+            await scheduler_service.run_tick(request)
+
+    @pytest.mark.parametrize("bad_value", ["", "   "])
+    async def test_invalid_requested_by_does_not_open_session(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService, bad_value: str
+    ) -> None:
+        original = scheduler_service._session_provider
+        call_count = 0
+
+        @contextlib.asynccontextmanager
+        async def tracking_provider() -> Any:
+            nonlocal call_count
+            call_count += 1
+            yield MagicMock()
+
+        scheduler_service._session_provider = tracking_provider
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            requested_by=bad_value,
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        with pytest.raises(ValueError):
+            await scheduler_service.run_tick(request)
+        assert call_count == 0
+
+    async def test_requested_by_with_spaces_trimmed_and_propagated(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.return_value = _make_result()
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            requested_by="  ops-user  ",
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        await scheduler_service.run_tick(request)
+        call = scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.call_args_list[0]
+        req_obj = call[0][1]
+        assert req_obj.requested_by == "ops-user"
+
+
+class TestIDuplicateOrgId:
+    async def test_exact_duplicate_rejected(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        with pytest.raises(ValueError, match="Duplicate organization_id"):
+            await scheduler_service.run_tick(request)
+
+    async def test_case_duplicate_rejected(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="Org-1"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        with pytest.raises(ValueError, match="Duplicate organization_id"):
+            await scheduler_service.run_tick(request)
+
+    async def test_whitespace_duplicate_rejected(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="  org-1  "),
+            ),
+        )
+        with pytest.raises(ValueError, match="Duplicate organization_id"):
+            await scheduler_service.run_tick(request)
+
+    async def test_duplicate_does_not_open_session(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        call_count = 0
+
+        @contextlib.asynccontextmanager
+        async def tracking_provider() -> Any:
+            nonlocal call_count
+            call_count += 1
+            yield MagicMock()
+
+        scheduler_service._session_provider = tracking_provider
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        with pytest.raises(ValueError):
+            await scheduler_service.run_tick(request)
+        assert call_count == 0
+
+    async def test_unique_org_ids_pass_validation(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.side_effect = [
+            _make_result(),
+            _make_result(),
+        ]
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-a"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-b"),
+            ),
+        )
+        result = await scheduler_service.run_tick(request)
+        assert result.processed_tenant_count == 2
+
+    async def test_three_way_duplicate_rejected(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-x"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-y"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-x"),
+            ),
+        )
+        with pytest.raises(ValueError, match="Duplicate organization_id"):
+            await scheduler_service.run_tick(request)
+
+
+class TestJSessionPerTenant:
+    async def test_each_tenant_gets_own_session(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        s1 = MagicMock()
+        s1.commit = AsyncMock()
+        s2 = MagicMock()
+        s2.commit = AsyncMock()
+        sessions = iter([s1, s2])
+
+        @contextlib.asynccontextmanager
+        async def fresh_session_provider() -> Any:
+            yield next(sessions)
+
+        scheduler_service._session_provider = fresh_session_provider
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.side_effect = [
+            _make_result(),
+            _make_result(),
+        ]
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-a"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-b"),
+            ),
+        )
+        await scheduler_service.run_tick(request)
+        s1.commit.assert_awaited_once()
+        s2.commit.assert_awaited_once()
+
+    async def test_session_provider_called_twice_for_two_tenants(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        call_count = 0
+
+        @contextlib.asynccontextmanager
+        async def tracking_provider() -> Any:
+            nonlocal call_count
+            call_count += 1
+            yield MagicMock()
+
+        scheduler_service._session_provider = tracking_provider
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.side_effect = [
+            _make_result(),
+            _make_result(),
+        ]
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-a"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-b"),
+            ),
+        )
+        await scheduler_service.run_tick(request)
+        assert call_count == 2
+
+    async def test_disabled_tenant_does_not_open_session(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        call_count = 0
+
+        @contextlib.asynccontextmanager
+        async def tracking_provider() -> Any:
+            nonlocal call_count
+            call_count += 1
+            yield MagicMock()
+
+        scheduler_service._session_provider = tracking_provider
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-a", enabled=False),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-b", enabled=True),
+            ),
+        )
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.return_value = _make_result()
+        await scheduler_service.run_tick(request)
+        assert call_count == 1
+
+
+class TestKNoCommitOnFailure:
+    async def test_no_commit_on_exception(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        s1 = MagicMock()
+        s1.commit = AsyncMock()
+        s2 = MagicMock()
+        s2.commit = AsyncMock()
+        sessions = iter([s1, s2])
+
+        @contextlib.asynccontextmanager
+        async def fresh_session_provider() -> Any:
+            yield next(sessions)
+
+        scheduler_service._session_provider = fresh_session_provider
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.side_effect = [
+            _make_result(),
+            Exception("fail"),
+        ]
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-a"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-b"),
+            ),
+        )
+        await scheduler_service.run_tick(request)
+        s1.commit.assert_awaited_once()
+        s2.commit.assert_not_awaited()
+
+    async def test_rollback_called_when_available(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        s = MagicMock()
+        s.commit = AsyncMock()
+        s.rollback = AsyncMock()
+
+        @contextlib.asynccontextmanager
+        async def provider() -> Any:
+            yield s
+
+        scheduler_service._session_provider = provider
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.side_effect = Exception(
+            "fail"
+        )
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        await scheduler_service.run_tick(request)
+        s.rollback.assert_awaited_once()
+        s.commit.assert_not_awaited()
+
+    async def test_tick_continues_after_failure(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        s1 = MagicMock()
+        s1.commit = AsyncMock()
+        s2 = MagicMock()
+        s2.commit = AsyncMock()
+        s2.rollback = AsyncMock()
+        s3 = MagicMock()
+        s3.commit = AsyncMock()
+        sessions = iter([s1, s2, s3])
+
+        @contextlib.asynccontextmanager
+        async def fresh_provider() -> Any:
+            yield next(sessions)
+
+        scheduler_service._session_provider = fresh_provider
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.side_effect = [
+            _make_result(),
+            Exception("middle fails"),
+            _make_result(),
+        ]
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-a"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-b"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-c"),
+            ),
+        )
+        result = await scheduler_service.run_tick(request)
+        assert result.processed_tenant_count == 2
+        assert result.failed_tenant_count == 1
+        s1.commit.assert_awaited_once()
+        s2.rollback.assert_awaited_once()
+        s2.commit.assert_not_awaited()
+        s3.commit.assert_awaited_once()
+
+
+class TestLNoMutationOnInvalid:
+    @pytest.mark.parametrize(
+        "desc,req",
+        [
+            (
+                "disabled scheduler",
+                AIJobCancellationCreditReleaseSchedulerTickRequest(
+                    enabled=False,
+                    tenants=(AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),),
+                ),
+            ),
+            (
+                "empty tenants",
+                AIJobCancellationCreditReleaseSchedulerTickRequest(),
+            ),
+        ],
+    )
+    async def test_no_mutation_no_calls_no_session(
+        self,
+        scheduler_service: AIJobCancellationCreditReleaseSchedulerService,
+        desc: str,
+        req: AIJobCancellationCreditReleaseSchedulerTickRequest,
+    ) -> None:
+        _ = desc
+        call_count = 0
+
+        @contextlib.asynccontextmanager
+        async def tracking_provider() -> Any:
+            nonlocal call_count
+            call_count += 1
+            yield MagicMock()
+
+        scheduler_service._session_provider = tracking_provider
+        await scheduler_service.run_tick(req)
+        assert call_count == 0
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "desc,req",
+        [
+            (
+                "invalid org_id empty",
+                AIJobCancellationCreditReleaseSchedulerTickRequest(
+                    tenants=(AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id=""),),
+                ),
+            ),
+            (
+                "invalid org_id whitespace",
+                AIJobCancellationCreditReleaseSchedulerTickRequest(
+                    tenants=(AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="   "),),
+                ),
+            ),
+            (
+                "max_items zero",
+                AIJobCancellationCreditReleaseSchedulerTickRequest(
+                    tenants=(AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1", max_items=0),),
+                ),
+            ),
+            (
+                "duplicate org_id",
+                AIJobCancellationCreditReleaseSchedulerTickRequest(
+                    tenants=(
+                        AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+                        AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+                    ),
+                ),
+            ),
+            (
+                "requested_by empty",
+                AIJobCancellationCreditReleaseSchedulerTickRequest(
+                    requested_by="",
+                    tenants=(AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),),
+                ),
+            ),
+        ],
+    )
+    async def test_invalid_request_no_session_no_calls(
+        self,
+        scheduler_service: AIJobCancellationCreditReleaseSchedulerService,
+        desc: str,
+        req: AIJobCancellationCreditReleaseSchedulerTickRequest,
+    ) -> None:
+        _ = desc
+        call_count = 0
+
+        @contextlib.asynccontextmanager
+        async def tracking_provider() -> Any:
+            nonlocal call_count
+            call_count += 1
+            yield MagicMock()
+
+        scheduler_service._session_provider = tracking_provider
+        with pytest.raises(ValueError):
+            await scheduler_service.run_tick(req)
+        assert call_count == 0
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.assert_not_called()
+
+
+class TestMRobustErrorSanitization:
+    @pytest.mark.parametrize(
+        "secret_fragment",
+        [
+            "DATABASE_URL",
+            "postgresql+asyncpg://user:password@localhost:5432/db",
+            "password=",
+            "token=",
+            "secret=",
+            "bearer",
+            "localhost",
+            "cid_test",
+        ],
+    )
+    async def test_error_message_contains_no_secret_fragments(
+        self,
+        scheduler_service: AIJobCancellationCreditReleaseSchedulerService,
+        secret_fragment: str,
+    ) -> None:
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.side_effect = Exception(
+            f"error with {secret_fragment}"
+        )
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        result = await scheduler_service.run_tick(request)
+        err = result.per_tenant_results[0].error_message or ""
+        assert err == SECRET_ERROR_MESSAGE
+
+    async def test_error_message_is_constant_string(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.side_effect = Exception(
+            "anything"
+        )
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        result = await scheduler_service.run_tick(request)
+        assert result.per_tenant_results[0].error_message == SECRET_ERROR_MESSAGE
+
+
+class TestNDryRunSafety:
+    async def test_dry_run_propagated_to_all_tenants(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.side_effect = [
+            _make_result(),
+            _make_result(),
+        ]
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            dry_run=True,
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-a"),
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-b"),
+            ),
+        )
+        await scheduler_service.run_tick(request)
+        for call in scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.call_args_list:
+            req_obj = call[0][1]
+            assert req_obj.dry_run is True
+
+    async def test_dry_run_still_commits_on_success(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        s = MagicMock()
+        s.commit = AsyncMock()
+
+        @contextlib.asynccontextmanager
+        async def provider() -> Any:
+            yield s
+
+        scheduler_service._session_provider = provider
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.return_value = _make_result()
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            dry_run=True,
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        await scheduler_service.run_tick(request)
+        s.commit.assert_awaited_once()
+
+    async def test_dry_run_does_not_add_release_logic(
+        self, scheduler_service: AIJobCancellationCreditReleaseSchedulerService
+    ) -> None:
+        scheduler_service._orchestration_service.process_cancelled_ai_job_credit_releases.return_value = _make_result()
+        request = AIJobCancellationCreditReleaseSchedulerTickRequest(
+            dry_run=True,
+            tenants=(
+                AIJobCancellationCreditReleaseSchedulerTenantConfig(organization_id="org-1"),
+            ),
+        )
+        result = await scheduler_service.run_tick(request)
+        assert result.dry_run is True
+        assert result.total_scanned_count == 10
+
+
+class TestOBoundarySeguridadCodigo:
 
     SERVICE_PATH = "src/services/ai_job_cancellation_credit_release_scheduler_service.py"
 
@@ -429,17 +969,31 @@ class TestHBoundarySeguridadCodigo:
     def test_no_fastapi_or_router(self, source: str) -> None:
         assert "FastAPI" not in source and "APIRouter" not in source and "@router" not in source
 
+    def test_no_background_tasks(self, source: str) -> None:
+        assert "BackgroundTasks" not in source
+
+    def test_no_startup(self, source: str) -> None:
+        assert "startup" not in source
+
+    def test_no_on_event(self, source: str) -> None:
+        assert "on_event" not in source
+
+    def test_no_lifespan(self, source: str) -> None:
+        assert "lifespan" not in source
+
     def test_no_scheduler_activation_keywords(self, source: str) -> None:
         lower = source.lower()
         assert "import schedule" not in lower
         assert "from schedule" not in lower
         assert "cron(" not in lower
         assert "cron " not in lower
-        assert "backgroundtasks" not in lower
         assert "@repeat" not in lower
 
+    def test_no_scripts_import(self, source: str) -> None:
+        assert "scripts" not in source
 
-class TestINoRuntimeActivation:
+
+class TestPNoRuntimeActivation:
     def test_no_app_import(self) -> None:
         import sys
 

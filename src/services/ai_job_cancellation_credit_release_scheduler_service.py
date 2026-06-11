@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, AsyncIterator, Callable
 
 DANGEROUS_ORG_IDS = frozenset({"*", "all", "all-tenants", "global"})
@@ -57,6 +57,33 @@ class AIJobCancellationCreditReleaseSchedulerTickResult:
     per_tenant_results: tuple[AIJobCancellationCreditReleaseSchedulerTenantResult, ...] = ()
 
 
+def _validate_tick_request(request: AIJobCancellationCreditReleaseSchedulerTickRequest) -> None:
+    requested_by = request.requested_by.strip() if request.requested_by else ""
+    if not requested_by:
+        raise ValueError("requested_by must be non-empty")
+
+    seen: set[str] = set()
+    for tenant in request.tenants:
+        org_id = tenant.organization_id.strip() if tenant.organization_id else ""
+        normalized = org_id.lower()
+        if not org_id:
+            raise ValueError("organization_id must be explicit and non-empty")
+        if normalized in DANGEROUS_ORG_IDS:
+            raise ValueError(
+                f"Rejected dangerous organization_id: {org_id!r}"
+            )
+        if normalized in seen:
+            raise ValueError(
+                f"Duplicate organization_id: {org_id!r}"
+            )
+        seen.add(normalized)
+
+        if tenant.max_items <= 0:
+            raise ValueError(
+                f"max_items must be >= 1, got {tenant.max_items} for {org_id}"
+            )
+
+
 class AIJobCancellationCreditReleaseSchedulerService:
     def __init__(
         self,
@@ -95,6 +122,8 @@ class AIJobCancellationCreditReleaseSchedulerService:
                 tenant_count=0,
             )
 
+        _validate_tick_request(request)
+
         per_tenant: list[AIJobCancellationCreditReleaseSchedulerTenantResult] = []
         processed_count = 0
         skipped_count = 0
@@ -107,32 +136,20 @@ class AIJobCancellationCreditReleaseSchedulerService:
 
         for tenant in tenants:
             org_id = tenant.organization_id.strip()
-            normalized_org_id = org_id.lower()
-            if not org_id:
-                raise ValueError("organization_id must be explicit and non-empty")
-            if normalized_org_id in DANGEROUS_ORG_IDS:
-                raise ValueError(
-                    f"Rejected dangerous organization_id: {org_id!r}"
-                )
+            max_items = tenant.max_items
+            if max_items > MAX_ITEMS_CAP:
+                max_items = MAX_ITEMS_CAP
 
             if not tenant.enabled:
                 per_tenant.append(
                     AIJobCancellationCreditReleaseSchedulerTenantResult(
                         organization_id=org_id,
                         status="disabled",
-                        max_items=tenant.max_items,
+                        max_items=max_items,
                     )
                 )
                 skipped_count += 1
                 continue
-
-            max_items = tenant.max_items
-            if max_items <= 0:
-                raise ValueError(
-                    f"max_items must be >= 1, got {max_items} for {org_id}"
-                )
-            if max_items > MAX_ITEMS_CAP:
-                max_items = MAX_ITEMS_CAP
 
             try:
                 from services.ai_job_async_orchestration_service import (
@@ -143,13 +160,23 @@ class AIJobCancellationCreditReleaseSchedulerService:
                     organization_id=org_id,
                     max_items=max_items,
                     dry_run=request.dry_run,
-                    requested_by=request.requested_by,
+                    requested_by=request.requested_by.strip(),
                 )
 
                 async with self._session_provider() as session:
-                    result = await self._orchestration_service.process_cancelled_ai_job_credit_releases(
-                        session, reconcile_request
-                    )
+                    try:
+                        result = await self._orchestration_service.process_cancelled_ai_job_credit_releases(
+                            session, reconcile_request
+                        )
+                    except Exception:
+                        rollback_fn = getattr(session, "rollback", None)
+                        if rollback_fn is not None:
+                            try:
+                                await rollback_fn()
+                            except Exception:
+                                pass
+                        raise
+
                     await session.commit()
 
                 per_tenant.append(
@@ -171,7 +198,7 @@ class AIJobCancellationCreditReleaseSchedulerService:
                 total_skipped += getattr(result, "skipped_count", 0) or 0
                 total_failed += getattr(result, "failed_count", 0) or 0
 
-            except Exception as exc:
+            except Exception:
                 per_tenant.append(
                     AIJobCancellationCreditReleaseSchedulerTenantResult(
                         organization_id=org_id,

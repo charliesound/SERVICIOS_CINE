@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -42,17 +42,29 @@ class FakeAIJobService:
         self.calls: list[tuple[str, object]] = []
         self.insufficient_check = False
 
-    def _result(self, message: str = "ok", accounting: object | None = None):
+    def _result(
+        self,
+        message: str = "ok",
+        accounting: object | None = None,
+        *,
+        status: str = "created",
+        from_status: str = "created",
+        to_status: str = "estimated",
+        job_id: str = "job-1",
+        organization_id: str = "org-tenant",
+        metadata: dict | None = None,
+    ):
         return SimpleNamespace(
             job=SimpleNamespace(
-                id="job-1",
-                organization_id="org-tenant",
+                id=job_id,
+                organization_id=organization_id,
                 user_id="user-tenant",
                 operation_type="image_generation",
-                status="created",
+                status=status,
                 estimated_credits=1,
+                job_metadata=metadata or {},
             ),
-            transition_plan=SimpleNamespace(from_status="created", to_status="estimated"),
+            transition_plan=SimpleNamespace(from_status=from_status, to_status=to_status),
             accounting_result=accounting,
             message=message,
         )
@@ -81,6 +93,49 @@ class FakeAIJobService:
         del session
         self.calls.append(("reserve", request))
         return self._result("reserved")
+
+    async def request_cancel_ai_job(self, session, request):
+        del session
+        self.calls.append(("cancel", request))
+        if request.job_id == "missing-job":
+            raise ai_job_routes_under_test.AIJobAsyncNotFoundError("AI job not found")
+        if request.job_id == "succeeded-job":
+            raise ai_job_routes_under_test.AIJobAsyncInvalidStateError(
+                "AI job cannot be cancelled from status: succeeded"
+            )
+        if request.job_id == "already-cancelled-job":
+            return self._result(
+                "AI job already cancelled",
+                status="cancelled",
+                from_status="cancelled",
+                to_status="cancelled",
+                job_id=request.job_id,
+                metadata={"execution": {"reason": request.reason}},
+            )
+        if request.job_id in {"reserved-job", "queued-job", "running-job"}:
+            from_status = request.job_id.removesuffix("-job")
+            return self._result(
+                "cancel requested",
+                status="cancel_requested",
+                from_status=from_status,
+                to_status="cancel_requested",
+                job_id=request.job_id,
+                metadata={"execution": {"reason": request.reason}},
+            )
+        if request.job_id == "estimated-job":
+            from_status = "estimated"
+        elif request.job_id == "credit-checked-job":
+            from_status = "credit_checked"
+        else:
+            from_status = "created"
+        return self._result(
+            "cancelled",
+            status="cancelled",
+            from_status=from_status,
+            to_status="cancelled",
+            job_id=request.job_id,
+            metadata={"execution": {"reason": request.reason}},
+        )
 
     async def consume_ai_job_credits(self, session, request):
         del session
@@ -261,6 +316,28 @@ def test_reserve_route_requires_write_permission_dependency() -> None:
     assert "Depends(require_write_permission)" in reserve_block
 
 
+def test_cancel_route_requires_write_permission_dependency() -> None:
+    source = (SRC_DIR / "routes" / "ai_job_routes.py").read_text()
+    cancel_block = source[source.index("async def request_cancel_ai_job_endpoint") :]
+    cancel_block = cancel_block[: cancel_block.index("@router.post", 1)]
+    assert "Depends(require_write_permission)" in cancel_block
+
+
+def test_cancel_rejects_without_write_permission(
+    app: FastAPI,
+    fake_service: FakeAIJobService,
+) -> None:
+    async def deny_write_permission():
+        raise HTTPException(status_code=403, detail="denied")
+
+    app.dependency_overrides[require_write_permission] = deny_write_permission
+    with TestClient(app) as test_client:
+        response = test_client.post("/api/v1/ai-jobs/job-1/cancel", json={})
+
+    assert response.status_code == 403
+    assert fake_service.calls == []
+
+
 def test_router_does_not_import_low_level_ai_job_dependencies() -> None:
     source = ROUTE_MODULE_PATH.read_text()
     assert "AIJobCostingService" not in source
@@ -308,6 +385,112 @@ def test_release_internal_caller_invokes_service(app: FastAPI, fake_service: Fak
     assert request.organization_id == "org-tenant"
     assert request.job_id == "job-1"
     assert request.release_credits == 2
+
+
+@pytest.mark.parametrize("job_id", ["job-1", "estimated-job", "credit-checked-job"])
+def test_cancel_pre_execution_job_returns_cancelled(
+    client: TestClient,
+    fake_service: FakeAIJobService,
+    job_id: str,
+) -> None:
+    response = client.post(
+        f"/api/v1/ai-jobs/{job_id}/cancel",
+        json={"reason": "user requested", "metadata": {"source": "test"}},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["job_id"] == job_id
+    assert body["organization_id"] == "org-tenant"
+    assert body["status"] == "cancelled"
+    assert body["cancel_requested"] is False
+    assert body["idempotent"] is False
+    assert body["message"] == "cancelled"
+    assert body["reason"] == "user requested"
+    call, request = fake_service.calls[-1]
+    assert call == "cancel"
+    assert request.organization_id == "org-tenant"
+    assert request.job_id == job_id
+    assert request.requested_by == "user-tenant"
+    assert request.reason == "user requested"
+    assert request.metadata == {"source": "test"}
+
+
+@pytest.mark.parametrize("job_id", ["reserved-job", "queued-job", "running-job"])
+def test_cancel_reserved_or_running_job_returns_cancel_requested(
+    client: TestClient,
+    fake_service: FakeAIJobService,
+    job_id: str,
+) -> None:
+    response = client.post(f"/api/v1/ai-jobs/{job_id}/cancel", json={})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["job_id"] == job_id
+    assert body["status"] == "cancel_requested"
+    assert body["cancel_requested"] is True
+    assert body["idempotent"] is False
+    assert body["message"] == "cancel requested"
+    assert fake_service.calls[-1][0] == "cancel"
+
+
+def test_repeated_cancel_returns_idempotent_result(
+    client: TestClient,
+    fake_service: FakeAIJobService,
+) -> None:
+    response = client.post("/api/v1/ai-jobs/already-cancelled-job/cancel", json={})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "cancelled"
+    assert body["idempotent"] is True
+    assert body["message"] == "AI job already cancelled"
+    assert fake_service.calls[-1][0] == "cancel"
+
+
+def test_cancel_succeeded_job_maps_to_409(client: TestClient) -> None:
+    response = client.post("/api/v1/ai-jobs/succeeded-job/cancel", json={})
+    assert response.status_code == 409
+
+
+def test_cancel_missing_or_wrong_tenant_job_maps_to_404(client: TestClient) -> None:
+    response = client.post("/api/v1/ai-jobs/missing-job/cancel", json={})
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"organization_id": "org-forged"},
+        {"job_id": "body-job"},
+        {"requested_by": "attacker"},
+        {"status": "cancelled"},
+        {"release_credits": 1},
+        {"unknown_field": True},
+    ],
+)
+def test_cancel_body_rejects_forbidden_fields(client: TestClient, payload: dict) -> None:
+    response = client.post("/api/v1/ai-jobs/job-1/cancel", json=payload)
+    assert response.status_code == 422
+
+
+def test_cancel_rejects_organization_id_query(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/ai-jobs/job-1/cancel",
+        params={"organization_id": "org-forged"},
+        json={},
+    )
+    assert response.status_code == 422
+
+
+def test_cancel_does_not_call_worker_or_attempt_dependencies(
+    client: TestClient,
+    fake_service: FakeAIJobService,
+) -> None:
+    response = client.post("/api/v1/ai-jobs/job-1/cancel", json={})
+
+    assert response.status_code == 200
+    assert [name for name, _payload in fake_service.calls] == ["cancel"]
 
 
 def test_get_ai_job_uses_tenant_and_path_job_id(client: TestClient, fake_service: FakeAIJobService) -> None:
@@ -358,6 +541,7 @@ def test_get_ai_job_history_uses_tenant_and_path_job_id(
         ("/api/v1/ai-jobs/job-1/estimate", {"job_id": "body-job"}),
         ("/api/v1/ai-jobs/job-1/check-credits", {"organization_id": "org-forged"}),
         ("/api/v1/ai-jobs/job-1/reserve", {"amount": 999}),
+        ("/api/v1/ai-jobs/job-1/cancel", {"organization_id": "org-forged"}),
         ("/api/v1/ai-jobs/job-1/consume", {"job_id": "body-job"}),
         ("/api/v1/ai-jobs/job-1/release", {"organization_id": "org-forged"}),
     ],

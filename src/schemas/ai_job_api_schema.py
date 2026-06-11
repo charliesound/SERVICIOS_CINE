@@ -41,6 +41,13 @@ class AIJobReserveRequest(BaseModel):
     caller_key: str | None = None
 
 
+class AIJobCancelRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str | None = Field(default=None, min_length=1, max_length=500)
+    metadata: dict[str, Any] | None = None
+
+
 class AIJobConsumeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -60,6 +67,17 @@ class AIJobMutationResponse(BaseModel):
     message: str = ""
     transition: dict[str, Any] | None = None
     accounting: dict[str, Any] | None = None
+
+
+class AIJobCancelResponse(BaseModel):
+    job_id: str
+    organization_id: str
+    status: str
+    cancel_requested: bool
+    idempotent: bool = False
+    message: str = ""
+    reason: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class AIJobReadResponse(BaseModel):

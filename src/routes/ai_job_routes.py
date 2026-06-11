@@ -11,6 +11,8 @@ from database import get_db
 from dependencies.ai_job_orchestration import get_ai_job_orchestration_service
 from dependencies.tenant_context import get_tenant_context, require_write_permission
 from schemas.ai_job_api_schema import (
+    AIJobCancelRequest,
+    AIJobCancelResponse,
     AIJobConsumeRequest,
     AIJobCreateRequest,
     AIJobCreditCheckRequest,
@@ -25,6 +27,7 @@ from schemas.ai_job_api_schema import (
 from schemas.auth_schema import TenantContext
 from services.ai_job_async_orchestration_service import (
     AIJobAsyncAccountingError,
+    AIJobAsyncCancelRequest,
     AIJobAsyncConsumeRequest,
     AIJobAsyncCreateRequest,
     AIJobAsyncCreditCheckRequest,
@@ -84,6 +87,34 @@ def _result_response(result: Any) -> AIJobMutationResponse:
         message=str(getattr(result, "message", "") or ""),
         transition=transition if isinstance(transition, dict) else None,
         accounting=accounting if isinstance(accounting, dict) else None,
+    )
+
+
+def _cancel_response(result: Any) -> AIJobCancelResponse:
+    job = getattr(result, "job", None)
+    data = _job_response(job)
+    status = str(data.get("status", "") or "")
+    message = str(getattr(result, "message", "") or "")
+    metadata = data.get("metadata")
+    reason = None
+    if isinstance(metadata, dict):
+        execution = metadata.get("execution")
+        if isinstance(execution, dict):
+            raw_reason = execution.get("reason")
+            if isinstance(raw_reason, str):
+                reason = raw_reason
+    return AIJobCancelResponse(
+        job_id=str(data.get("id", "") or ""),
+        organization_id=str(data.get("organization_id", "") or ""),
+        status=status,
+        cancel_requested=status == "cancel_requested",
+        idempotent=message in {
+            "AI job already cancelled",
+            "AI job cancellation already requested",
+        },
+        message=message,
+        reason=reason,
+        metadata=metadata if isinstance(metadata, dict) else None,
     )
 
 
@@ -245,6 +276,34 @@ async def reserve_ai_job_credits_endpoint(
             ),
         )
         return _result_response(result)
+    except Exception as exc:
+        _raise_http_from_error(exc)
+        raise
+
+
+@router.post("/{job_id}/cancel", response_model=AIJobCancelResponse)
+async def request_cancel_ai_job_endpoint(
+    job_id: str,
+    request: Request,
+    payload: AIJobCancelRequest | None = None,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(require_write_permission),
+    service: AIJobAsyncOrchestrationService = Depends(get_ai_job_orchestration_service),
+) -> AIJobCancelResponse:
+    _reject_forged_organization_query(request)
+    payload = payload or AIJobCancelRequest()
+    try:
+        result = await service.request_cancel_ai_job(
+            db,
+            AIJobAsyncCancelRequest(
+                organization_id=tenant.organization_id,
+                job_id=job_id,
+                metadata=payload.metadata,
+                requested_by=tenant.user_id or "internal_trigger",
+                reason=payload.reason,
+            ),
+        )
+        return _cancel_response(result)
     except Exception as exc:
         _raise_http_from_error(exc)
         raise

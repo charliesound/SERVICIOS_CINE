@@ -12,6 +12,12 @@ from services.ai_job_async_orchestration_service import (
     AIJobAsyncOrchestrationService,
     AIJobAsyncReleaseRequest,
 )
+from services.ai_job_status_service import (
+    AI_JOB_STATUS_CANCELLED,
+    AI_JOB_STATUS_CANCEL_REQUESTED,
+    AI_JOB_STATUS_RELEASED,
+    AI_JOB_STATUS_RELEASE_PENDING,
+)
 
 AIJobWorkerMockMode = Literal["success", "failure", "cancel"]
 
@@ -28,6 +34,18 @@ class AIJobWorkerMockInvalidModeError(AIJobWorkerMockError):
 
 class AIJobWorkerMockSettlementError(AIJobWorkerMockError):
     """Raised when the mock worker cannot safely settle reserved credits."""
+
+
+class AIJobWorkerMockCancelledJobError(AIJobWorkerMockError):
+    """Raised when execution would race a cancellation/release state."""
+
+
+WORKER_EXECUTION_BLOCKED_STATUSES = {
+    AI_JOB_STATUS_CANCEL_REQUESTED,
+    AI_JOB_STATUS_CANCELLED,
+    AI_JOB_STATUS_RELEASE_PENDING,
+    AI_JOB_STATUS_RELEASED,
+}
 
 
 @dataclass(frozen=True)
@@ -96,6 +114,7 @@ class AIJobWorkerMockService:
                 command.job_id,
             ),
         )
+        self._ensure_execution_not_cancelled(initial_job)
         actual_credits = self._resolve_credits(
             command.actual_credits,
             getattr(initial_job, "reserved_credits", None),
@@ -152,6 +171,7 @@ class AIJobWorkerMockService:
                 command.job_id,
             ),
         )
+        self._ensure_execution_not_cancelled(initial_job)
         release_credits = self._resolve_credits(
             command.release_credits,
             getattr(initial_job, "reserved_credits", None),
@@ -249,6 +269,15 @@ class AIJobWorkerMockService:
         if job is None:
             raise AIJobWorkerMockError("AI job not found for mock worker execution")
         return job
+
+    def _ensure_execution_not_cancelled(self, job: Any) -> None:
+        status = getattr(job, "status", None)
+        if status in WORKER_EXECUTION_BLOCKED_STATUSES:
+            raise AIJobWorkerMockCancelledJobError(
+                "Mock worker execution is blocked for AI job status: {0}".format(
+                    status
+                )
+            )
 
     def _transition_request(
         self,
@@ -384,10 +413,12 @@ class AIJobWorkerMockService:
 
 __all__ = [
     "AIJobWorkerMockCommand",
+    "AIJobWorkerMockCancelledJobError",
     "AIJobWorkerMockError",
     "AIJobWorkerMockInvalidModeError",
     "AIJobWorkerMockMode",
     "AIJobWorkerMockResult",
     "AIJobWorkerMockService",
     "AIJobWorkerMockSettlementError",
+    "WORKER_EXECUTION_BLOCKED_STATUSES",
 ]

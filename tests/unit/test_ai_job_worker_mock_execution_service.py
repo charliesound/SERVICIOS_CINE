@@ -39,6 +39,7 @@ from services.ai_job_worker_mock_execution_service import (  # noqa: E402
     compute_execution_attempt_fingerprint,
 )
 from services.ai_job_worker_mock_service import (  # noqa: E402
+    AIJobWorkerMockCancelledJobError,
     AIJobWorkerMockCommand,
     AIJobWorkerMockResult,
 )
@@ -251,6 +252,35 @@ async def test_first_execution_creates_attempt_before_worker_call() -> None:
     await service.execute(DummySession(), _command())
 
     assert events == ["repo.create", "worker.execute", "repo.save"]
+    assert len(worker.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_worker_guard_error_does_not_save_success_attempt() -> None:
+    class GuardedWorker(FakeWorker):
+        async def execute(
+            self,
+            session: DummySession,
+            command: AIJobWorkerMockCommand,
+        ) -> AIJobWorkerMockResult:
+            self.events.append("worker.execute")
+            self.calls.append((session, command))
+            raise AIJobWorkerMockCancelledJobError(
+                "Mock worker execution is blocked for AI job status: cancel_requested"
+            )
+
+    events: list[str] = []
+    repository = FakeRepository(events=events)
+    worker = GuardedWorker(events=events)
+    service = _service(repository=repository, worker=worker)
+
+    with pytest.raises(AIJobWorkerMockCancelledJobError, match="cancel_requested"):
+        await service.execute(DummySession(), _command())
+
+    assert events == ["repo.create", "worker.execute"]
+    assert repository.saved_attempt is None
+    assert repository.created_attempt is not None
+    assert repository.created_attempt.status == ATTEMPT_STATUS_IN_PROGRESS
     assert len(worker.calls) == 1
 
 

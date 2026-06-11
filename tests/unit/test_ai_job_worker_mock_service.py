@@ -17,6 +17,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from services.ai_job_worker_mock_service import (
+    AIJobWorkerMockCancelledJobError,
     AIJobWorkerMockCommand,
     AIJobWorkerMockError,
     AIJobWorkerMockInvalidModeError,
@@ -122,6 +123,11 @@ class FakeOrchestrationService:
         self.job.release_entry_id = "release-entry-1"
         return SimpleNamespace(job=self.job)
 
+    async def release_cancelled_ai_job_reserved_credits(self, session, request):
+        del session, request
+        self.calls.append(("release_cancelled", object()))
+        raise AssertionError("cancelled release service must not be called")
+
 
 @pytest.fixture
 def session() -> DummySession:
@@ -169,6 +175,52 @@ async def test_success_path_calls_orchestration_in_order(session: DummySession) 
     assert result.consume_entry_id == "consume-entry-1"
     assert result.consumed_credits == 9
     assert result.output_metadata == {"asset_id": "asset-1"}
+
+
+@pytest.mark.parametrize(
+    "status",
+    ["cancel_requested", "cancelled", "release_pending", "released"],
+)
+@pytest.mark.asyncio
+async def test_success_path_rejects_cancellation_or_release_states(
+    session: DummySession,
+    status: str,
+) -> None:
+    job = FakeJob(status=status, reserved_credits=9)
+    service, orchestration = _service(job)
+
+    with pytest.raises(AIJobWorkerMockCancelledJobError, match=status):
+        await service.execute(session, _command(mode="success"))
+
+    assert [name for name, _payload in orchestration.calls] == ["get"]
+    assert job.status == status
+    assert job.consume_entry_id is None
+    assert job.consumed_credits == 0
+    assert job.release_entry_id is None
+    assert job.released_credits == 0
+
+
+@pytest.mark.parametrize(
+    "status",
+    ["cancel_requested", "cancelled", "release_pending", "released"],
+)
+@pytest.mark.asyncio
+async def test_failure_path_rejects_cancellation_or_release_states(
+    session: DummySession,
+    status: str,
+) -> None:
+    job = FakeJob(status=status, reserved_credits=9)
+    service, orchestration = _service(job)
+
+    with pytest.raises(AIJobWorkerMockCancelledJobError, match=status):
+        await service.execute(session, _command(mode="failure"))
+
+    assert [name for name, _payload in orchestration.calls] == ["get"]
+    assert job.status == status
+    assert job.consume_entry_id is None
+    assert job.consumed_credits == 0
+    assert job.release_entry_id is None
+    assert job.released_credits == 0
 
 
 @pytest.mark.asyncio

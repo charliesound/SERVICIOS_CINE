@@ -970,3 +970,145 @@ async def test_process_cancelled_credit_releases_validates_max_items(
 
     assert repository.calls == []
     assert gateway.calls == []
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_caps_max_items_at_100(
+    session: DummySession,
+) -> None:
+    jobs = [_candidate("job-1")]
+    service, repository, gateway = _service_with_candidates(jobs)
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(
+            organization_id="org-1",
+            max_items=200,
+        ),
+    )
+
+    assert result.scanned_count == 1
+    assert repository.calls[0] == (
+        "list_cancelled_credit_release_candidates",
+        ("org-1", 100),
+    )
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_not_found_does_not_abort(
+    session: DummySession,
+) -> None:
+    jobs = [_candidate("job-1"), _candidate("job-2")]
+    service, _repository, gateway = _service_with_candidates(jobs)
+    gateway.release_errors_by_job_id["job-1"] = AIJobAsyncNotFoundError("job disappeared")
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(organization_id="org-1"),
+    )
+
+    assert result.processed_count == 2
+    assert result.released_count == 1
+    assert result.failed_count == 1
+    error_categories = [item.error_category for item in result.per_job_results]
+    assert "terminal_error" in error_categories
+    assert jobs[0].release_entry_id is None
+    assert jobs[1].release_entry_id == "release-entry-1"
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_unexpected_error_does_not_abort(
+    session: DummySession,
+) -> None:
+    jobs = [_candidate("job-1"), _candidate("job-2")]
+    service, _repository, gateway = _service_with_candidates(jobs)
+    gateway.release_errors_by_job_id["job-1"] = ValueError("weird error")
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(organization_id="org-1"),
+    )
+
+    assert result.processed_count == 2
+    assert result.released_count == 1
+    assert result.failed_count == 1
+    assert result.per_job_results[0].error_category == "unexpected_error"
+    assert jobs[0].release_entry_id is None
+    assert jobs[1].release_entry_id == "release-entry-1"
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_invalid_state_consumption_maps_to_skipped_consumed(
+    session: DummySession,
+) -> None:
+    jobs = [_candidate("job-1")]
+    service, _repository, gateway = _service_with_candidates(jobs)
+    gateway.release_errors_by_job_id["job-1"] = AIJobAsyncInvalidStateError(
+        "Cannot release after consumption"
+    )
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(organization_id="org-1"),
+    )
+
+    assert result.failed_count == 0
+    assert result.skipped_count == 1
+    assert result.per_job_results[0].error_category == "skipped_consumed"
+    assert result.per_job_results[0].idempotent is False
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_invalid_state_generic_maps_to_skipped_not_eligible(
+    session: DummySession,
+) -> None:
+    jobs = [_candidate("job-1")]
+    service, _repository, gateway = _service_with_candidates(jobs)
+    gateway.release_errors_by_job_id["job-1"] = AIJobAsyncInvalidStateError(
+        "Job cannot be released in current state"
+    )
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(organization_id="org-1"),
+    )
+
+    assert result.failed_count == 0
+    assert result.skipped_count == 1
+    assert result.per_job_results[0].error_category == "skipped_not_eligible"
+    assert result.per_job_results[0].idempotent is False
+
+
+@pytest.mark.asyncio
+async def test_process_cancelled_credit_releases_skipped_count_matches_others(
+    session: DummySession,
+) -> None:
+    jobs = [
+        _candidate("job-1"),
+        _candidate("job-2"),
+        _candidate("job-3"),
+        _candidate("job-4"),
+    ]
+    service, _repository, gateway = _service_with_candidates(jobs)
+    gateway.release_errors_by_job_id["job-1"] = AIJobAsyncInvalidStateError(
+        "Cannot release after consumption"
+    )
+    gateway.release_errors_by_job_id["job-3"] = RuntimeError("timeout")
+
+    result = await service.process_cancelled_ai_job_credit_releases(
+        session,
+        AIJobAsyncCancelCreditReleaseReconciliationRequest(organization_id="org-1"),
+    )
+
+    assert result.processed_count == 4
+    assert result.released_count == 2  # job-2, job-4
+    assert result.failed_count == 1  # job-3 retryable_error
+    assert result.skipped_count == 1  # job-1 skipped_consumed
+    assert result.released_count + result.failed_count + result.skipped_count == 4
+    error_categories = [item.error_category for item in result.per_job_results]
+    assert error_categories == [
+        "skipped_consumed",
+        "released_now",
+        "retryable_error",
+        "released_now",
+    ]

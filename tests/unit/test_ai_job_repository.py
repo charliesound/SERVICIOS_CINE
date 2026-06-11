@@ -129,33 +129,84 @@ class FakeAsyncSession:
             right = getattr(clause, "right", None)
             if left is not None and right is not None:
                 col_name = getattr(left, "name", None)
-                val = getattr(right, "value", None)
-                if col_name and val is not None:
-                    filters.append((col_name, val, getattr(clause.operator, "__name__", "eq")))
+                if col_name:
+                    op_name = getattr(clause.operator, "__name__", "") or "eq"
+
+                    if op_name in ("in_op", "in_"):
+                        vals = getattr(right, "value", None)
+                        if isinstance(vals, (list, tuple, set, frozenset)):
+                            filters.append((col_name, set(vals), "in_"))
+                    elif op_name in ("is_not",) and type(right).__name__ == "Null":
+                        filters.append((col_name, None, "is_not"))
+                    elif op_name in ("is_", "eq") and type(right).__name__ == "Null":
+                        filters.append((col_name, None, "is_"))
+                    else:
+                        val = getattr(right, "value", None)
+                        if val is not None:
+                            filters.append((col_name, val, op_name))
         matches = []
         for job_id, job in self._store.items():
             match = True
-            for col_name, val, operator_name in filters:
+            for col_name, val, op_name in filters:
                 if col_name == "organization_id":
                     actual = self._original_org.get(job_id, job.organization_id)
                 else:
                     actual = getattr(job, col_name, None)
-                if operator_name == "eq" and actual != val:
+
+                if op_name in ("in_",):
+                    if actual not in val:
+                        match = False
+                        break
+                elif op_name in ("is_not",):
+                    if actual is None:
+                        match = False
+                        break
+                elif op_name in ("is_",):
+                    if actual is not None:
+                        match = False
+                        break
+                elif op_name in ("eq",) and actual != val:
                     match = False
                     break
-                if operator_name == "lt" and not (actual < val):
+                elif op_name in ("ne",) and actual == val:
                     match = False
                     break
-                if operator_name == "ge" and not (actual >= val):
+                elif op_name in ("lt",) and not (actual < val):
                     match = False
                     break
-                if operator_name == "le" and not (actual <= val):
+                elif op_name in ("le",) and not (actual <= val):
+                    match = False
+                    break
+                elif op_name in ("gt",) and not (actual > val):
+                    match = False
+                    break
+                elif op_name in ("ge",) and not (actual >= val):
                     match = False
                     break
             if match:
                 import copy
                 matches.append(copy.copy(job))
-        matches.sort(key=lambda item: item.id, reverse=True)
+
+        order_by_clauses = getattr(stmt, "_order_by_clauses", None) or ()
+        if order_by_clauses:
+            sort_cols = []
+            for clause in order_by_clauses:
+                element = getattr(clause, "element", None)
+                col_name = getattr(element, "name", None)
+                if col_name:
+                    sort_cols.append(col_name)
+            if sort_cols:
+                all_desc = all(
+                    getattr(clause.modifier, '__name__', '') == 'desc_op'
+                    for clause in order_by_clauses
+                ) if order_by_clauses else False
+
+                def _sort_key(item):
+                    return tuple(getattr(item, c, None) or "" for c in sort_cols)
+                matches.sort(key=_sort_key, reverse=all_desc)
+        else:
+            matches.sort(key=lambda item: item.id, reverse=True)
+
         limit_clause = getattr(stmt, "_limit_clause", None)
         limit = getattr(limit_clause, "value", None)
         if limit is not None:
@@ -539,3 +590,231 @@ class TestRepositoryExceptions:
 
     def test_repository_error_is_subclass_of_exception(self) -> None:
         assert issubclass(AIJobRepositoryError, Exception)
+
+
+# ---------------------------------------------------------------------------
+# Tests: list_cancelled_credit_release_candidates
+# ---------------------------------------------------------------------------
+
+class TestRepositoryListCancelledCreditReleaseCandidates:
+    """Behavioral tests for the reconciliation candidate selector."""
+
+    @pytest.mark.asyncio
+    async def test_returns_eligible_job(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        job = _new_job(status="cancel_requested")
+        job.reservation_entry_id = "res-1"
+        job.reserved_credits = 8
+        job.consumed_credits = 0
+        job.consume_entry_id = None
+        job.release_entry_id = None
+        await repo.create(job)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=10
+        )
+
+        assert len(candidates) == 1
+        assert candidates[0].id == job.id
+
+    @pytest.mark.asyncio
+    async def test_excludes_wrong_tenant(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        job = _new_job(organization_id="org-bbb", status="cancelled")
+        job.reservation_entry_id = "res-1"
+        job.reserved_credits = 8
+        await repo.create(job)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=10
+        )
+
+        assert candidates == []
+
+    @pytest.mark.asyncio
+    async def test_excludes_non_eligible_status(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        job = _new_job(status="created")
+        job.reservation_entry_id = "res-1"
+        job.reserved_credits = 8
+        await repo.create(job)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=10
+        )
+
+        assert candidates == []
+
+    @pytest.mark.asyncio
+    async def test_excludes_missing_reservation_entry(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        job = _new_job(status="cancelled")
+        job.reservation_entry_id = None
+        job.reserved_credits = 8
+        await repo.create(job)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=10
+        )
+
+        assert candidates == []
+
+    @pytest.mark.asyncio
+    async def test_excludes_already_released(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        job = _new_job(status="cancelled")
+        job.reservation_entry_id = "res-1"
+        job.release_entry_id = "rel-1"
+        job.reserved_credits = 8
+        await repo.create(job)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=10
+        )
+
+        assert candidates == []
+
+    @pytest.mark.asyncio
+    async def test_excludes_already_consumed(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        job = _new_job(status="cancelled")
+        job.reservation_entry_id = "res-1"
+        job.consume_entry_id = "con-1"
+        job.reserved_credits = 8
+        await repo.create(job)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=10
+        )
+
+        assert candidates == []
+
+    @pytest.mark.asyncio
+    async def test_excludes_non_zero_consumed_credits(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        job = _new_job(status="cancelled")
+        job.reservation_entry_id = "res-1"
+        job.reserved_credits = 8
+        job.consumed_credits = 1
+        await repo.create(job)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=10
+        )
+
+        assert candidates == []
+
+    @pytest.mark.asyncio
+    async def test_excludes_zero_reserved_credits(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        job = _new_job(status="cancelled")
+        job.reservation_entry_id = "res-1"
+        job.reserved_credits = 0
+        await repo.create(job)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=10
+        )
+
+        assert candidates == []
+
+    @pytest.mark.asyncio
+    async def test_returns_multiple_eligible_statuses(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        for i, status in enumerate(["cancel_requested", "cancelled", "release_pending"]):
+            j = _new_job(job_id=f"job-{i}", organization_id="org-aaa", status=status)
+            j.reservation_entry_id = f"res-{i}"
+            j.reserved_credits = 8
+            j.consumed_credits = 0
+            await repo.create(j)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=10
+        )
+
+        assert len(candidates) == 3
+
+    @pytest.mark.asyncio
+    async def test_respects_limit(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        for i in range(5):
+            j = _new_job(job_id=f"job-{i}", organization_id="org-aaa", status="cancelled")
+            j.reservation_entry_id = f"res-{i}"
+            j.reserved_credits = 8
+            j.consumed_credits = 0
+            j.created_at = datetime(2026, 6, 9, 10, i, 0)
+            await repo.create(j)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=2
+        )
+
+        assert len(candidates) == 2
+
+    @pytest.mark.asyncio
+    async def test_orders_by_created_at_asc_then_id_asc(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        job_a = _new_job(job_id="job-a", organization_id="org-aaa", status="cancelled")
+        job_a.reservation_entry_id = "res-a"
+        job_a.reserved_credits = 8
+        job_a.consumed_credits = 0
+        job_a.created_at = datetime(2026, 6, 9, 12, 0, 0)
+        await repo.create(job_a)
+        job_b = _new_job(job_id="job-b", organization_id="org-aaa", status="cancelled")
+        job_b.reservation_entry_id = "res-b"
+        job_b.reserved_credits = 8
+        job_b.consumed_credits = 0
+        job_b.created_at = datetime(2026, 6, 9, 11, 0, 0)
+        await repo.create(job_b)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=10
+        )
+
+        assert len(candidates) == 2
+        assert [c.id for c in candidates] == ["job-b", "job-a"]
+
+    @pytest.mark.asyncio
+    async def test_safe_limit_caps_at_100(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        for i in range(150):
+            j = _new_job(job_id=f"job-{i:03d}", organization_id="org-aaa", status="cancelled")
+            j.reservation_entry_id = f"res-{i}"
+            j.reserved_credits = 8
+            j.consumed_credits = 0
+            await repo.create(j)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=200
+        )
+
+        assert len(candidates) == 100
+
+    @pytest.mark.asyncio
+    async def test_safe_limit_floors_at_one(self) -> None:
+        session = FakeAsyncSession()
+        repo = AIJobRepository(session)
+        for i in range(3):
+            j = _new_job(job_id=f"job-{i}", organization_id="org-aaa", status="cancelled")
+            j.reservation_entry_id = f"res-{i}"
+            j.reserved_credits = 8
+            j.consumed_credits = 0
+            await repo.create(j)
+
+        candidates = await repo.list_cancelled_credit_release_candidates(
+            "org-aaa", limit=0
+        )
+
+        assert len(candidates) == 1

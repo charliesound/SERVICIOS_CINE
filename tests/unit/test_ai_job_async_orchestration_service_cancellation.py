@@ -18,6 +18,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from services.ai_job_async_orchestration_service import (
+    AIJobAsyncAccountingError,
     AIJobAsyncCancelRequest,
     AIJobAsyncCancelCreditReleaseRequest,
     AIJobAsyncInvalidStateError,
@@ -368,6 +369,63 @@ async def test_release_cancelled_reserved_credits_from_cancel_requested_once(
 
 
 @pytest.mark.asyncio
+async def test_release_cancelled_reserved_credits_from_cancelled_status(
+    session: DummySession,
+) -> None:
+    job = FakeJob(
+        status="cancelled",
+        reserved_credits=8,
+        reservation_entry_id="reservation-entry-1",
+        consume_entry_id=None,
+    )
+    service, repository, gateway = _service(job)
+
+    result = await service.release_cancelled_ai_job_reserved_credits(
+        session,
+        AIJobAsyncCancelCreditReleaseRequest(organization_id="org-1", job_id="job-1"),
+    )
+
+    assert result.status == "released"
+    assert result.release_performed is True
+    assert job.cancelled_at is None
+    assert job.release_pending_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert job.released_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert job.release_entry_id == "release-entry-1"
+    assert job.released_credits == 8
+    assert job.reserved_credits == 8
+    assert job.consume_entry_id is None
+    assert repository.saved_jobs == [job]
+    assert len(gateway.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_release_cancelled_reserved_credits_from_release_pending_status(
+    session: DummySession,
+) -> None:
+    job = FakeJob(
+        status="release_pending",
+        reserved_credits=8,
+        reservation_entry_id="reservation-entry-1",
+        release_pending_at=datetime(2026, 6, 9, 11, 0, 0),
+    )
+    service, repository, gateway = _service(job)
+
+    result = await service.release_cancelled_ai_job_reserved_credits(
+        session,
+        AIJobAsyncCancelCreditReleaseRequest(organization_id="org-1", job_id="job-1"),
+    )
+
+    assert result.status == "released"
+    assert result.release_performed is True
+    assert job.release_pending_at == datetime(2026, 6, 9, 11, 0, 0)
+    assert job.released_at == datetime(2026, 6, 9, 12, 0, 0)
+    assert job.release_entry_id == "release-entry-1"
+    assert job.released_credits == 8
+    assert repository.saved_jobs == [job]
+    assert len(gateway.calls) == 1
+
+
+@pytest.mark.asyncio
 async def test_release_cancelled_reserved_credits_with_release_entry_is_idempotent(
     session: DummySession,
 ) -> None:
@@ -392,6 +450,39 @@ async def test_release_cancelled_reserved_credits_with_release_entry_is_idempote
     assert result.release_entry_id == "release-entry-1"
     assert repository.saved_jobs == [job]
     assert gateway.calls == []
+
+
+@pytest.mark.asyncio
+async def test_release_cancelled_reserved_credits_sequential_rerun_does_not_call_ledger_twice(
+    session: DummySession,
+) -> None:
+    job = FakeJob(
+        status="cancelled",
+        reserved_credits=8,
+        reservation_entry_id="reservation-entry-1",
+    )
+    service, repository, gateway = _service(job)
+
+    first = await service.release_cancelled_ai_job_reserved_credits(
+        session,
+        AIJobAsyncCancelCreditReleaseRequest(organization_id="org-1", job_id="job-1"),
+    )
+    second = await service.release_cancelled_ai_job_reserved_credits(
+        session,
+        AIJobAsyncCancelCreditReleaseRequest(organization_id="org-1", job_id="job-1"),
+    )
+
+    assert first.release_performed is True
+    assert first.idempotent is False
+    assert second.release_performed is False
+    assert second.idempotent is True
+    assert second.release_entry_id == "release-entry-1"
+    assert job.release_entry_id == "release-entry-1"
+    assert job.released_credits == 8
+    assert job.reserved_credits == 8
+    assert job.consume_entry_id is None
+    assert [call for call, _kwargs in gateway.calls] == ["release_reserved_credits_for_job"]
+    assert repository.saved_jobs == [job, job]
 
 
 @pytest.mark.asyncio
@@ -512,6 +603,61 @@ async def test_release_cancelled_reserved_credits_reconciles_duplicate_idempoten
     assert job.release_entry_id == "release-entry-1"
     assert job.released_credits == 8
     assert repository.saved_jobs == [job]
+    assert len(gateway.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_release_cancelled_reserved_credits_duplicate_without_existing_id_rejects(
+    session: DummySession,
+) -> None:
+    job = FakeJob(
+        status="release_pending",
+        reserved_credits=8,
+        reservation_entry_id="reservation-entry-1",
+    )
+    service, repository, gateway = _service(job)
+    gateway.release_error = DuplicateIdempotencyKeyError(
+        "ai_job:org-1:job-1:release:cancel:reservation-entry-1",
+        existing_entry_id=None,
+    )
+
+    with pytest.raises(AIJobAsyncAccountingError, match="without existing entry id"):
+        await service.release_cancelled_ai_job_reserved_credits(
+            session,
+            AIJobAsyncCancelCreditReleaseRequest(organization_id="org-1", job_id="job-1"),
+        )
+
+    assert job.status == "release_pending"
+    assert job.release_entry_id is None
+    assert job.released_credits == 0
+    assert repository.saved_jobs == []
+    assert len(gateway.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_release_cancelled_reserved_credits_gateway_error_does_not_mark_released(
+    session: DummySession,
+) -> None:
+    job = FakeJob(
+        status="cancelled",
+        reserved_credits=8,
+        reservation_entry_id="reservation-entry-1",
+    )
+    service, repository, gateway = _service(job)
+    gateway.release_error = RuntimeError("ledger unavailable")
+
+    with pytest.raises(RuntimeError, match="ledger unavailable"):
+        await service.release_cancelled_ai_job_reserved_credits(
+            session,
+            AIJobAsyncCancelCreditReleaseRequest(organization_id="org-1", job_id="job-1"),
+        )
+
+    assert job.status == "cancelled"
+    assert job.release_entry_id is None
+    assert job.released_credits == 0
+    assert job.release_pending_at is None
+    assert job.released_at is None
+    assert repository.saved_jobs == []
     assert len(gateway.calls) == 1
 
 

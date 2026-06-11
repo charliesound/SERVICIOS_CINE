@@ -526,6 +526,14 @@ def test_cancel_does_not_call_worker_or_attempt_dependencies(
     assert [name for name, _payload in fake_service.calls] == ["cancel"]
 
 
+def test_cancel_route_does_not_call_internal_credit_release_service() -> None:
+    source = ROUTE_MODULE_PATH.read_text()
+    cancel_block = source[source.index("async def request_cancel_ai_job_endpoint") :]
+    cancel_block = cancel_block[: cancel_block.index("@router.post", 1)]
+    assert "release_cancelled_ai_job_reserved_credits" not in cancel_block
+    assert "AIJobAsyncCancelCreditReleaseRequest" not in cancel_block
+
+
 def test_get_ai_job_uses_tenant_and_path_job_id(client: TestClient, fake_service: FakeAIJobService) -> None:
     response = client.get("/api/v1/ai-jobs/job-path")
 

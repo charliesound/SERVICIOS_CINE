@@ -338,11 +338,30 @@ def test_cancel_rejects_without_write_permission(
     assert fake_service.calls == []
 
 
+def test_cancel_rejects_read_only_role_with_real_write_dependency(
+    app: FastAPI,
+    fake_service: FakeAIJobService,
+) -> None:
+    async def override_read_only_tenant():
+        return _tenant(role="viewer")
+
+    app.dependency_overrides[get_tenant_context] = override_read_only_tenant
+    app.dependency_overrides.pop(require_write_permission, None)
+    with TestClient(app) as test_client:
+        response = test_client.post("/api/v1/ai-jobs/job-1/cancel", json={})
+
+    assert response.status_code == 403
+    assert fake_service.calls == []
+
+
 def test_router_does_not_import_low_level_ai_job_dependencies() -> None:
     source = ROUTE_MODULE_PATH.read_text()
     assert "AIJobCostingService" not in source
     assert "AIJobAccountingGateway" not in source
     assert "AIJobRepository" not in source
+    assert "AIJobWorkerMock" not in source
+    assert "AIJobExecutionAttempt" not in source
+    assert "CreditLedger" not in source
 
 
 def test_consume_rejects_non_internal_caller(client: TestClient) -> None:
@@ -407,6 +426,18 @@ def test_cancel_pre_execution_job_returns_cancelled(
     assert body["idempotent"] is False
     assert body["message"] == "cancelled"
     assert body["reason"] == "user requested"
+    assert body["metadata"] == {"execution": {"reason": "user requested"}}
+    assert body["metadata"].get("source") is None
+    assert set(body) == {
+        "job_id",
+        "organization_id",
+        "status",
+        "cancel_requested",
+        "idempotent",
+        "message",
+        "reason",
+        "metadata",
+    }
     call, request = fake_service.calls[-1]
     assert call == "cancel"
     assert request.organization_id == "org-tenant"
@@ -466,6 +497,8 @@ def test_cancel_missing_or_wrong_tenant_job_maps_to_404(client: TestClient) -> N
         {"requested_by": "attacker"},
         {"status": "cancelled"},
         {"release_credits": 1},
+        {"release_pending": True},
+        {"release_required": True},
         {"unknown_field": True},
     ],
 )

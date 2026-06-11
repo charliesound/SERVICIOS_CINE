@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -58,6 +58,10 @@ from schemas.credit_ledger_schema import (
     CreditLedgerOperationResult,
     CREDIT_GRANT_BUCKETS,
 )
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 # --- Fake session helpers (no real DB) ------------------------------------
@@ -221,7 +225,7 @@ def make_balance(
         refunded_total=refunded_total,
         adjusted_total=adjusted_total,
         version=version,
-        last_updated_at=datetime.utcnow(),
+        last_updated_at=_utcnow(),
     )
     return balance
 
@@ -244,7 +248,7 @@ def make_ledger_entry(
         amount=amount,
         job_id=job_id,
         metadata_json=metadata,
-        created_at=datetime.utcnow(),
+        created_at=_utcnow(),
     )
 
 
@@ -949,7 +953,7 @@ class TestIdempotency:
             status=LEDGER_STATUS_AVAILABLE,
             amount=42,
             idempotency_key="dup-key",
-            created_at=datetime.utcnow(),
+            created_at=_utcnow(),
         )
         session.idempotency_index["dup-key"] = existing
 
@@ -972,7 +976,7 @@ class TestIdempotency:
             status=LEDGER_STATUS_RESERVED,
             amount=10,
             idempotency_key="dup-key-2",
-            created_at=datetime.utcnow(),
+            created_at=_utcnow(),
         )
         session.idempotency_index["dup-key-2"] = existing
         # Need a real balance for the reserve to be possible; create one

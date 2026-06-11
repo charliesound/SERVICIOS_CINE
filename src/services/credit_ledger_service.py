@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import select
@@ -35,6 +35,10 @@ LEDGER_STATUS_AVAILABLE = "available"
 LEDGER_STATUS_RESERVED = "reserved"
 LEDGER_STATUS_RELEASED = "available"
 LEDGER_STATUS_CONSUMED = "consumed"
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 __all__ = [
     "CREDIT_CONSUMPTION_BUCKET_ORDER",
@@ -276,7 +280,7 @@ class CreditLedgerService:
     """
 
     def __init__(self) -> None:
-        self._now = datetime.utcnow
+        self._now = _utcnow
 
     # ----- internal helpers -------------------------------------------------
 

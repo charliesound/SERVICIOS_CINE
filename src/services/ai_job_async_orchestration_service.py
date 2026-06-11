@@ -9,6 +9,7 @@ from typing import Any, Callable
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.ai_job import AIJob
+from services.credit_ledger_service import DuplicateIdempotencyKeyError
 from services.ai_job_status_service import (
     AI_JOB_STATUS_CANCELLED,
     AI_JOB_STATUS_CANCEL_REQUESTED,
@@ -43,12 +44,14 @@ __all__ = [
     "AIJobAsyncCreditCheckRequest",
     "AIJobAsyncReserveRequest",
     "AIJobAsyncCancelRequest",
+    "AIJobAsyncCancelCreditReleaseRequest",
     "AIJobAsyncConsumeRequest",
     "AIJobAsyncReleaseRequest",
     "AIJobAsyncListRequest",
     "AIJobAsyncExecutionTransitionRequest",
     "AIJobAsyncHistoryResult",
     "AIJobAsyncOrchestrationResult",
+    "AIJobAsyncCancelCreditReleaseResult",
     "AIJobAsyncOrchestrationService",
 ]
 
@@ -123,6 +126,14 @@ class AIJobAsyncCancelRequest:
 
 
 @dataclass(frozen=True)
+class AIJobAsyncCancelCreditReleaseRequest:
+    organization_id: str
+    job_id: str
+    requested_by: str | None = None
+    reason: str | None = None
+
+
+@dataclass(frozen=True)
 class AIJobAsyncConsumeRequest:
     organization_id: str
     job_id: str
@@ -174,6 +185,18 @@ class AIJobAsyncOrchestrationResult:
     transition_plan: AIJobTransitionPlan | None = None
     accounting_result: Any = None
     message: str = ""
+
+
+@dataclass(frozen=True)
+class AIJobAsyncCancelCreditReleaseResult:
+    job_id: str
+    organization_id: str
+    status: str
+    release_required: bool
+    release_performed: bool
+    idempotent: bool
+    release_entry_id: str | None
+    message: str
 
 
 class AIJobAsyncOrchestrationService:
@@ -709,6 +732,113 @@ class AIJobAsyncOrchestrationService:
             message="released",
         )
 
+    async def release_cancelled_ai_job_reserved_credits(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncCancelCreditReleaseRequest,
+    ) -> AIJobAsyncCancelCreditReleaseResult:
+        organization_id = self._require_text(request.organization_id, "organization_id")
+        job_id = self._require_text(request.job_id, "job_id")
+        job = await self._load_job_for_mutation(organization_id, job_id)
+
+        release_entry_id = self._normalize_optional_text(
+            getattr(job, "release_entry_id", None)
+        )
+        if release_entry_id is not None:
+            self._finish_cancel_release_without_ledger_if_needed(job)
+            saved_job = await self.repository.save(job)
+            return self._build_cancel_credit_release_result(
+                saved_job,
+                release_required=False,
+                release_performed=False,
+                idempotent=True,
+                message="AI job reserved credits already released",
+            )
+
+        reservation_entry_id = self._normalize_optional_text(
+            getattr(job, "reservation_entry_id", None)
+        )
+        if reservation_entry_id is None:
+            return self._build_cancel_credit_release_result(
+                job,
+                release_required=False,
+                release_performed=False,
+                idempotent=True,
+                message="AI job has no reserved credits to release",
+            )
+
+        if self._normalize_optional_text(getattr(job, "consume_entry_id", None)) is not None:
+            raise AIJobAsyncInvalidStateError(
+                "AI job reserved credits cannot be released after consumption"
+            )
+        if int(getattr(job, "consumed_credits", 0) or 0) > 0:
+            raise AIJobAsyncInvalidStateError(
+                "AI job reserved credits cannot be released after consumption"
+            )
+        if job.status not in {
+            AI_JOB_STATUS_CANCEL_REQUESTED,
+            AI_JOB_STATUS_CANCELLED,
+            AI_JOB_STATUS_RELEASE_PENDING,
+        }:
+            raise AIJobAsyncInvalidStateError(
+                "AI job reserved credits cannot be released from status: {0}".format(
+                    job.status
+                )
+            )
+
+        credits = self._resolve_positive_credits(
+            getattr(job, "reserved_credits", None),
+            field_name="release_credits",
+        )
+        caller_key = "cancel:{0}".format(reservation_entry_id)
+        try:
+            accounting_result = await self.accounting_gateway.release_reserved_credits_for_job(
+                session,
+                organization_id=organization_id,
+                job_id=job_id,
+                reservation_entry_id=reservation_entry_id,
+                release_credits=credits,
+                project_id=getattr(job, "project_id", None),
+                user_id=getattr(job, "user_id", None),
+                operation_type=getattr(job, "operation_type", None),
+                provider_type=getattr(job, "provider_type", None),
+                provider_name=getattr(job, "provider_name", None),
+                workflow_id=getattr(job, "workflow_id", None),
+                workflow_version=getattr(job, "workflow_version", None),
+                workflow_hash=getattr(job, "workflow_hash", None),
+                model_name=getattr(job, "model_name", None),
+                input_asset_ids=getattr(job, "input_asset_ids", None),
+                caller_key=caller_key,
+            )
+            job.release_entry_id = self._require_ledger_entry_id(
+                accounting_result,
+                "Release result missing ledger_entry_id",
+            )
+            release_performed = True
+            idempotent = False
+            message = "released cancelled AI job reserved credits"
+        except DuplicateIdempotencyKeyError as exc:
+            existing_entry_id = self._normalize_optional_text(exc.existing_entry_id)
+            if existing_entry_id is None:
+                raise AIJobAsyncAccountingError(
+                    "Duplicate release idempotency key without existing entry id"
+                ) from exc
+            job.release_entry_id = existing_entry_id
+            release_performed = False
+            idempotent = True
+            message = "AI job reserved credits release already exists"
+
+        job.released_credits = credits
+        self._finish_cancel_release_without_ledger_if_needed(job)
+        saved_job = await self.repository.save(job)
+        return self._build_cancel_credit_release_result(
+            saved_job,
+            release_required=True,
+            release_performed=release_performed,
+            idempotent=idempotent,
+            message=message,
+        )
+
     async def _load_job_for_mutation(self, organization_id: str, job_id: str) -> Any:
         job = await self.repository.get_for_update(organization_id, job_id)
         if job is None:
@@ -772,6 +902,45 @@ class AIJobAsyncOrchestrationService:
         job.status = plan.to_status
         if plan.timestamp_field:
             setattr(job, plan.timestamp_field, self._now())
+
+    def _finish_cancel_release_without_ledger_if_needed(self, job: Any) -> None:
+        if job.status == AI_JOB_STATUS_CANCEL_REQUESTED:
+            self._apply_transition(
+                job,
+                self._build_transition_plan(job.status, AI_JOB_STATUS_CANCELLED),
+            )
+        if job.status == AI_JOB_STATUS_CANCELLED:
+            self._apply_transition(
+                job,
+                self._build_transition_plan(job.status, AI_JOB_STATUS_RELEASE_PENDING),
+            )
+        if job.status == AI_JOB_STATUS_RELEASE_PENDING:
+            self._apply_transition(
+                job,
+                self._build_transition_plan(job.status, AI_JOB_STATUS_RELEASED),
+            )
+
+    def _build_cancel_credit_release_result(
+        self,
+        job: Any,
+        *,
+        release_required: bool,
+        release_performed: bool,
+        idempotent: bool,
+        message: str,
+    ) -> AIJobAsyncCancelCreditReleaseResult:
+        return AIJobAsyncCancelCreditReleaseResult(
+            job_id=str(getattr(job, "id", "")),
+            organization_id=str(getattr(job, "organization_id", "")),
+            status=str(getattr(job, "status", "")),
+            release_required=release_required,
+            release_performed=release_performed,
+            idempotent=idempotent,
+            release_entry_id=self._normalize_optional_text(
+                getattr(job, "release_entry_id", None)
+            ),
+            message=message,
+        )
 
     def _derive_history_events(self, job: Any) -> list[dict[str, Any]]:
         event_fields = (

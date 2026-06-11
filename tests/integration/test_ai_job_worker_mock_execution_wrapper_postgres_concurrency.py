@@ -588,3 +588,104 @@ async def test_concurrent_same_key_different_payload_rejects_mismatched_fingerpr
 
         async with harness.session_factory() as cleanup_session:
             await _cleanup_attempt_key(cleanup_session, command)
+
+
+@pytest.mark.asyncio
+async def test_terminal_replay_waits_for_for_update_lock_without_calling_worker() -> None:
+    _skip_if_postgres_test_dsn_is_unavailable_or_unsafe()
+    command = _command(actual_credits=9)
+    worker = FakeWorkerService()
+    lock_held = asyncio.Event()
+    lock_released = asyncio.Event()
+
+    async with temporary_postgres_billing_harness(AI_JOB_ATTEMPT_TABLES) as harness:
+        async with harness.session_factory() as setup_session:
+            await _create_ai_job(setup_session, command)
+            setup_session.add(
+                AIJobExecutionAttempt(
+                    organization_id=command.organization_id,
+                    job_id=command.job_id,
+                    execution_attempt_id=command.execution_attempt_id,
+                    mode=command.mode,
+                    status=ATTEMPT_STATUS_SUCCEEDED,
+                    fingerprint=compute_execution_attempt_fingerprint(command),
+                    fingerprint_version=FINGERPRINT_VERSION,
+                    requested_by=command.requested_by,
+                    result_status="consumed",
+                    consume_entry_id=_consume_entry_id(command),
+                    consumed_credits=command.actual_credits or 9,
+                )
+            )
+            await setup_session.commit()
+
+        async with open_independent_sessions(harness.session_factory, count=2) as (
+            session_a,
+            session_b,
+        ):
+            async def hold_lock() -> None:
+                async with postgres_session_with_timeouts(
+                    lambda: session_a,  # type: ignore[arg-type]
+                    statement_timeout_ms=4_000,
+                    lock_timeout_ms=2_000,
+                ) as session:
+                    repo = AIJobExecutionAttemptRepository(session)
+                    existing = await repo.get_for_update(
+                        command.organization_id,
+                        command.job_id,
+                        command.execution_attempt_id,
+                    )
+                    assert existing is not None
+                    assert existing.status == ATTEMPT_STATUS_SUCCEEDED
+                    lock_held.set()
+                    await run_with_async_timeout(
+                        lock_released.wait(),
+                        timeout_seconds=5,
+                        label="hold lock until test releases",
+                    )
+
+            async def blocked_replay() -> AIJobWorkerMockExecutionResult:
+                async with postgres_session_with_timeouts(
+                    lambda: session_b,  # type: ignore[arg-type]
+                    statement_timeout_ms=6_000,
+                    lock_timeout_ms=4_000,
+                ) as session:
+                    return await _service(worker).execute(session, command)
+
+            task_lock = asyncio.create_task(hold_lock())
+            task_replay = asyncio.create_task(blocked_replay())
+
+            await run_with_async_timeout(
+                lock_held.wait(),
+                timeout_seconds=2,
+                label="lock holder ready",
+            )
+
+            await asyncio.sleep(0.15)
+            assert task_replay.done() is False, "replay should be blocked by FOR UPDATE lock"
+
+            lock_released.set()
+            result = await run_with_async_timeout(
+                task_replay,
+                timeout_seconds=5,
+                label="replay after lock release",
+            )
+
+            await run_with_async_timeout(
+                task_lock,
+                timeout_seconds=2,
+                label="lock holder finished",
+            )
+
+            assert result.replay is True
+            assert result.attempt_status == ATTEMPT_STATUS_SUCCEEDED
+            assert result.result.consume_entry_id == _consume_entry_id(command)
+            assert worker.calls == []
+            assert await _count_attempts(
+                session_b,  # type: ignore[arg-type]
+                command.organization_id,
+                command.job_id,
+                command.execution_attempt_id,
+            ) == 1
+
+        async with harness.session_factory() as cleanup_session:
+            await _cleanup_attempt_key(cleanup_session, command)

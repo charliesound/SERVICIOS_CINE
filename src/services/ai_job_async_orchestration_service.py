@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.ai_job import AIJob
 from services.ai_job_status_service import (
     AI_JOB_STATUS_CANCELLED,
+    AI_JOB_STATUS_CANCEL_REQUESTED,
     AI_JOB_STATUS_CONSUMED,
     AI_JOB_STATUS_CONSUME_PENDING,
     AI_JOB_STATUS_CREDIT_CHECKED,
@@ -41,6 +42,7 @@ __all__ = [
     "AIJobAsyncEstimateRequest",
     "AIJobAsyncCreditCheckRequest",
     "AIJobAsyncReserveRequest",
+    "AIJobAsyncCancelRequest",
     "AIJobAsyncConsumeRequest",
     "AIJobAsyncReleaseRequest",
     "AIJobAsyncListRequest",
@@ -109,6 +111,15 @@ class AIJobAsyncReserveRequest:
     job_id: str
     estimated_credits: int | None = None
     caller_key: str | None = None
+
+
+@dataclass(frozen=True)
+class AIJobAsyncCancelRequest:
+    organization_id: str
+    job_id: str
+    metadata: dict[str, Any] | None = None
+    requested_by: str | None = None
+    reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -518,6 +529,65 @@ class AIJobAsyncOrchestrationService:
             to_status=AI_JOB_STATUS_CANCELLED,
             message="cancelled",
             require_execution_attempt=True,
+        )
+
+    async def request_cancel_ai_job(
+        self,
+        session: AsyncSession,
+        request: AIJobAsyncCancelRequest,
+    ) -> AIJobAsyncOrchestrationResult:
+        _ = session
+        organization_id = self._require_text(request.organization_id, "organization_id")
+        job_id = self._require_text(request.job_id, "job_id")
+        job = await self._load_job_for_mutation(organization_id, job_id)
+
+        if job.status == AI_JOB_STATUS_CANCEL_REQUESTED:
+            return AIJobAsyncOrchestrationResult(
+                job=job,
+                message="AI job cancellation already requested",
+            )
+        if job.status == AI_JOB_STATUS_CANCELLED:
+            return AIJobAsyncOrchestrationResult(
+                job=job,
+                message="AI job already cancelled",
+            )
+
+        if job.status in {
+            AI_JOB_STATUS_CREATED,
+            AI_JOB_STATUS_ESTIMATED,
+            AI_JOB_STATUS_CREDIT_CHECKED,
+        }:
+            target_status = AI_JOB_STATUS_CANCELLED
+            message = "cancelled"
+        elif job.status in {
+            AI_JOB_STATUS_RESERVED,
+            AI_JOB_STATUS_QUEUED,
+            AI_JOB_STATUS_RUNNING,
+        }:
+            target_status = AI_JOB_STATUS_CANCEL_REQUESTED
+            message = "cancel requested"
+        else:
+            raise AIJobAsyncInvalidStateError(
+                "AI job cannot be cancelled from status: {0}".format(job.status)
+            )
+
+        plan = self._build_transition_plan(job.status, target_status)
+        self._apply_transition(job, plan)
+        job.job_metadata = self._build_execution_metadata(
+            existing_metadata=getattr(job, "job_metadata", None),
+            job_status=job.status,
+            execution_attempt_id=None,
+            metadata=request.metadata,
+            output_metadata=None,
+            error_metadata=None,
+            requested_by=request.requested_by,
+            reason=request.reason,
+        )
+        saved_job = await self.repository.save(job)
+        return AIJobAsyncOrchestrationResult(
+            job=saved_job,
+            transition_plan=plan,
+            message=message,
         )
 
     async def mark_consume_pending(

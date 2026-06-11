@@ -476,3 +476,115 @@ async def test_concurrent_same_key_same_payload_calls_worker_at_most_once() -> N
 
         async with harness.session_factory() as cleanup_session:
             await _cleanup_attempt_key(cleanup_session, command)
+
+
+@pytest.mark.asyncio
+async def test_concurrent_same_key_different_payload_rejects_mismatched_fingerprint() -> None:
+    _skip_if_postgres_test_dsn_is_unavailable_or_unsafe()
+    command = _command(actual_credits=6)
+    conflicting = _command(
+        organization_id=command.organization_id,
+        job_id=command.job_id,
+        execution_attempt_id=command.execution_attempt_id,
+        actual_credits=11,
+    )
+    worker_entered = asyncio.Event()
+    release_worker = asyncio.Event()
+    worker = FakeWorkerService(
+        worker_entered=worker_entered,
+        release_worker=release_worker,
+    )
+    tasks: list[asyncio.Task[object]] = []
+
+    async with temporary_postgres_billing_harness(AI_JOB_ATTEMPT_TABLES) as harness:
+        async with harness.session_factory() as setup_session:
+            await _create_ai_job(setup_session, command)
+            await setup_session.commit()
+
+        try:
+            async with open_independent_sessions(harness.session_factory, count=2) as (
+                session_a,
+                session_b,
+            ):
+
+                async def execute_winner() -> AIJobWorkerMockExecutionResult:
+                    async with postgres_session_with_timeouts(
+                        lambda: session_a,  # type: ignore[arg-type]
+                        statement_timeout_ms=4_000,
+                        lock_timeout_ms=2_000,
+                    ) as session:
+                        result = await _service(worker).execute(session, command)
+                        await session.commit()
+                        return result
+
+                async def execute_loser() -> AIJobWorkerMockExecutionResult:
+                    async with postgres_session_with_timeouts(
+                        lambda: session_b,  # type: ignore[arg-type]
+                        statement_timeout_ms=4_000,
+                        lock_timeout_ms=2_000,
+                    ) as session:
+                        result = await _service(worker).execute(session, conflicting)
+                        await session.commit()
+                        return result
+
+                task_a = asyncio.create_task(execute_winner())
+                tasks.append(task_a)
+                await run_with_async_timeout(
+                    worker_entered.wait(),
+                    timeout_seconds=2,
+                    label="first worker entry",
+                )
+
+                task_b = asyncio.create_task(execute_loser())
+                tasks.append(task_b)
+                release_worker.set()
+                gathered = await run_with_async_timeout(
+                    asyncio.gather(task_a, task_b, return_exceptions=True),
+                    timeout_seconds=8,
+                    label="different-payload concurrent wrapper executions",
+                )
+        finally:
+            await cleanup_concurrent_tasks(
+                [task for task in tasks if not task.done()],
+                timeout_seconds=2,
+            )
+
+        successes = [item for item in gathered if isinstance(item, AIJobWorkerMockExecutionResult)]
+        failures = [item for item in gathered if isinstance(item, BaseException)]
+
+        assert len(worker.calls) == 1
+        assert any(isinstance(f, AIJobWorkerMockExecutionFingerprintMismatchError) for f in failures)
+        assert all(
+            isinstance(
+                f,
+                (
+                    AIJobWorkerMockExecutionFingerprintMismatchError,
+                    AIJobWorkerMockExecutionConflictError,
+                    SQLAlchemyError,
+                ),
+            )
+            for f in failures
+        )
+        assert len(successes) + len(failures) == 2
+        assert all(task.done() for task in tasks)
+
+        async with harness.session_factory() as session:
+            assert await _count_attempts(
+                session,
+                command.organization_id,
+                command.job_id,
+                command.execution_attempt_id,
+            ) == 1
+            attempt = await _load_attempt(
+                session,
+                command.organization_id,
+                command.job_id,
+                command.execution_attempt_id,
+            )
+            assert attempt is not None
+            assert attempt.status == ATTEMPT_STATUS_SUCCEEDED
+            winner_command = worker.calls[0]
+            assert attempt.fingerprint == compute_execution_attempt_fingerprint(winner_command)
+
+        async with harness.session_factory() as cleanup_session:
+            await _cleanup_attempt_key(cleanup_session, command)

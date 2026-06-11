@@ -65,9 +65,9 @@ Required guarantees:
 - transaction isolation sufficient for conflicting inserts
 - `SELECT ... FOR UPDATE` row locking
 - independent sessions in integration tests
-- no SQLite fallback
+- no alternative database backend fallback
 
-SQLite is not part of this contract.
+Alternative local database backends are not part of this contract.
 
 ## Savepoint and IntegrityError handling
 

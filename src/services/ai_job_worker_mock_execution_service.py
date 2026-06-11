@@ -4,7 +4,7 @@ import hashlib
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
@@ -108,7 +108,7 @@ class AIJobWorkerMockExecutionService:
     ) -> None:
         self.worker_service = worker_service
         self.attempt_repository_factory = attempt_repository_factory
-        self._now = now_fn or datetime.utcnow
+        self._now = now_fn or (lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
     async def execute(
         self,

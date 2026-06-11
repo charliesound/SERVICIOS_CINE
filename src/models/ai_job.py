@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import CheckConstraint, DateTime, Index, Integer, JSON, String, Text
@@ -16,7 +16,7 @@ def _uuid_hex() -> str:
 
 
 def _utcnow() -> datetime:
-    return datetime.utcnow()
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def _enum_ck(column_name: str, values: tuple[str, ...]) -> str:

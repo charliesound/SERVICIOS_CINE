@@ -689,3 +689,61 @@ async def test_terminal_replay_waits_for_for_update_lock_without_calling_worker(
 
         async with harness.session_factory() as cleanup_session:
             await _cleanup_attempt_key(cleanup_session, command)
+
+
+@pytest.mark.asyncio
+async def test_stale_in_progress_attempt_does_not_duplicate_worker_or_attempt() -> None:
+    _skip_if_postgres_test_dsn_is_unavailable_or_unsafe()
+    command = _command(actual_credits=5)
+    worker = FakeWorkerService()
+
+    async with temporary_postgres_billing_harness(AI_JOB_ATTEMPT_TABLES) as harness:
+        async with harness.session_factory() as session:
+            await _create_ai_job(session, command)
+            session.add(
+                AIJobExecutionAttempt(
+                    organization_id=command.organization_id,
+                    job_id=command.job_id,
+                    execution_attempt_id=command.execution_attempt_id,
+                    mode=command.mode,
+                    status=ATTEMPT_STATUS_IN_PROGRESS,
+                    fingerprint=compute_execution_attempt_fingerprint(command),
+                    fingerprint_version=FINGERPRINT_VERSION,
+                    requested_by=command.requested_by,
+                )
+            )
+            await session.commit()
+
+        async with harness.session_factory() as session:
+            with pytest.raises(AIJobWorkerMockExecutionInProgressError):
+                await _service(worker).execute(session, command)
+
+            assert worker.calls == []
+
+            attempt = await _load_attempt(
+                session,
+                command.organization_id,
+                command.job_id,
+                command.execution_attempt_id,
+            )
+            assert attempt is not None
+            assert attempt.status == ATTEMPT_STATUS_IN_PROGRESS
+            assert attempt.fingerprint == compute_execution_attempt_fingerprint(command)
+            assert attempt.fingerprint_version == FINGERPRINT_VERSION
+            assert await _count_attempts(
+                session,
+                command.organization_id,
+                command.job_id,
+                command.execution_attempt_id,
+            ) == 1
+
+            post_error_count = await _count_attempts(
+                session,
+                command.organization_id,
+                command.job_id,
+                command.execution_attempt_id,
+            )
+            assert post_error_count == 1
+
+        async with harness.session_factory() as cleanup_session:
+            await _cleanup_attempt_key(cleanup_session, command)

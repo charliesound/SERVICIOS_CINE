@@ -428,3 +428,9 @@ def test_worker_mock_service_has_no_route_or_api_imports() -> None:
     )
     for term in forbidden_terms:
         assert term not in source, f"forbidden route/API dependency found: {term}"
+
+
+def test_worker_mock_service_does_not_call_cancelled_credit_release_service() -> None:
+    source = (SRC_DIR / "services" / "ai_job_worker_mock_service.py").read_text()
+    assert "release_cancelled_ai_job_reserved_credits" not in source
+    assert "AIJobAsyncCancelCreditReleaseRequest" not in source

@@ -273,15 +273,19 @@ async def test_worker_guard_error_does_not_save_success_attempt() -> None:
     repository = FakeRepository(events=events)
     worker = GuardedWorker(events=events)
     service = _service(repository=repository, worker=worker)
+    session = DummySession()
 
     with pytest.raises(AIJobWorkerMockCancelledJobError, match="cancel_requested"):
-        await service.execute(DummySession(), _command())
+        await service.execute(session, _command())
+
+    await session.commit()
 
     assert events == ["repo.create", "worker.execute"]
     assert repository.saved_attempt is None
     assert repository.created_attempt is not None
     assert repository.created_attempt.status == ATTEMPT_STATUS_IN_PROGRESS
     assert len(worker.calls) == 1
+    assert session.commits == 1
 
 
 @pytest.mark.asyncio

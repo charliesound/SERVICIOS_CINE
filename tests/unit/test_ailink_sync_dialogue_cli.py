@@ -12,6 +12,7 @@ CLI_PATH = Path("scripts/ailink_sync_dialogue_scan.py")
 IMPLEMENTATION_PATHS = [
     Path("src/ailink_tools/sync_dialogue/local_scanner.py"),
     Path("src/ailink_tools/sync_dialogue/schemas.py"),
+    Path("src/ailink_tools/sync_dialogue/matching.py"),
     Path("src/ailink_tools/sync_dialogue/exports.py"),
     CLI_PATH,
 ]
@@ -54,7 +55,7 @@ def test_input_file_returns_exit_code_2(
     assert "input path must be a directory" in capsys.readouterr().err
 
 
-def test_success_creates_json_and_csv_with_no_probe(
+def test_success_creates_json_media_csv_and_matches_csv_with_no_probe(
     tmp_path: Path, cli_module: ModuleType
 ) -> None:
     input_dir = tmp_path / "input"
@@ -69,11 +70,14 @@ def test_success_creates_json_and_csv_with_no_probe(
     assert code == 0
     json_path = output_dir / "scan_result.json"
     csv_path = output_dir / "media_files.csv"
+    matches_path = output_dir / "match_suggestions.csv"
     assert json_path.exists()
     assert csv_path.exists()
+    assert matches_path.exists()
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["summary"]["video_count"] == 1
     assert payload["summary"]["audio_count"] == 1
+    assert "match_suggestions" in payload
     with csv_path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
     assert [row["probe_status"] for row in rows] == ["not_run", "not_run"]
@@ -95,12 +99,15 @@ def test_custom_output_names_work(tmp_path: Path, cli_module: ModuleType) -> Non
             "custom.json",
             "--csv-name",
             "custom.csv",
+            "--matches-name",
+            "custom_matches.csv",
         ]
     )
 
     assert code == 0
     assert (output_dir / "custom.json").exists()
     assert (output_dir / "custom.csv").exists()
+    assert (output_dir / "custom_matches.csv").exists()
 
 
 def test_summary_contains_counts(
@@ -121,8 +128,10 @@ def test_summary_contains_counts(
     assert "video count: 1" in out
     assert "audio count: 0" in out
     assert "unsupported count: 1" in out
+    assert "match suggestions count: 0" in out
     assert "output json path:" in out
     assert "output csv path:" in out
+    assert "output matches path:" in out
 
 
 def test_unexpected_error_returns_exit_code_3(

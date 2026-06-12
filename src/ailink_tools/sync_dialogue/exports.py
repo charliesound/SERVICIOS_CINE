@@ -21,6 +21,19 @@ CSV_COLUMNS = [
     "format_name",
     "error_message",
 ]
+MATCH_CSV_COLUMNS = [
+    "video_relative_path",
+    "audio_relative_path",
+    "confidence",
+    "score",
+    "strategy",
+    "reasons",
+    "video_timecode",
+    "audio_timecode",
+    "video_duration_seconds",
+    "audio_duration_seconds",
+    "duration_delta_seconds",
+]
 
 
 def write_scan_json(result: SyncDialogueScanResult, output_path: str | Path) -> Path:
@@ -42,4 +55,17 @@ def write_media_csv(result: SyncDialogueScanResult, output_path: str | Path) -> 
         for media_file in result.media_files:
             row = media_file.to_dict()
             writer.writerow({column: row.get(column) for column in CSV_COLUMNS})
+    return path
+
+
+def write_matches_csv(result: SyncDialogueScanResult, output_path: str | Path) -> Path:
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=MATCH_CSV_COLUMNS)
+        writer.writeheader()
+        for suggestion in result.match_suggestions:
+            row = suggestion.to_dict()
+            row["reasons"] = "; ".join(suggestion.reasons)
+            writer.writerow({column: row.get(column) for column in MATCH_CSV_COLUMNS})
     return path

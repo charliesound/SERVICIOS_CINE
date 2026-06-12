@@ -4,8 +4,18 @@ import csv
 import json
 from pathlib import Path
 
-from ailink_tools.sync_dialogue.exports import CSV_COLUMNS, write_media_csv, write_scan_json
-from ailink_tools.sync_dialogue.schemas import SyncDialogueMediaFile, SyncDialogueScanResult
+from ailink_tools.sync_dialogue.exports import (
+    CSV_COLUMNS,
+    MATCH_CSV_COLUMNS,
+    write_matches_csv,
+    write_media_csv,
+    write_scan_json,
+)
+from ailink_tools.sync_dialogue.schemas import (
+    SyncDialogueMatchSuggestion,
+    SyncDialogueMediaFile,
+    SyncDialogueScanResult,
+)
 
 
 def _scan_result() -> SyncDialogueScanResult:
@@ -43,6 +53,21 @@ def _scan_result() -> SyncDialogueScanResult:
                 format_name="wav",
             ),
         ],
+        match_suggestions=[
+            SyncDialogueMatchSuggestion(
+                video_relative_path="clip.mov",
+                audio_relative_path="audio/sound.wav",
+                confidence="high",
+                score=0.95,
+                strategy="timecode",
+                reasons=["matching_timecode", "duration_delta_lte_1s"],
+                video_timecode="01:00:00:00",
+                audio_timecode="01:00:00:00",
+                video_duration_seconds=12.5,
+                audio_duration_seconds=12.3,
+                duration_delta_seconds=0.2,
+            )
+        ],
     )
 
 
@@ -53,6 +78,7 @@ def test_json_is_written_and_readable(tmp_path: Path) -> None:
     assert payload["summary"]["video_count"] == 1
     assert payload["summary"]["audio_count"] == 1
     assert len(payload["media_files"]) == 2
+    assert len(payload["match_suggestions"]) == 1
 
 
 def test_json_output_is_utf8(tmp_path: Path) -> None:
@@ -84,3 +110,22 @@ def test_csv_output_is_utf8(tmp_path: Path) -> None:
     output_path = write_media_csv(_scan_result(), tmp_path / "media.csv")
 
     assert output_path.read_bytes().decode("utf-8")
+
+
+def test_matches_csv_is_written_with_expected_columns(tmp_path: Path) -> None:
+    output_path = write_matches_csv(_scan_result(), tmp_path / "matches.csv")
+
+    with output_path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == MATCH_CSV_COLUMNS
+
+
+def test_matches_csv_serializes_reasons_stably(tmp_path: Path) -> None:
+    output_path = write_matches_csv(_scan_result(), tmp_path / "matches.csv")
+
+    with output_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert rows[0]["reasons"] == "matching_timecode; duration_delta_lte_1s"
+    assert rows[0]["video_relative_path"] == "clip.mov"
+    assert rows[0]["audio_relative_path"] == "audio/sound.wav"

@@ -14,6 +14,7 @@ IMPLEMENTATION_PATHS = [
     Path("src/ailink_tools/sync_dialogue/schemas.py"),
     Path("src/ailink_tools/sync_dialogue/matching.py"),
     Path("src/ailink_tools/sync_dialogue/exports.py"),
+    Path("src/ailink_tools/sync_dialogue/report_html.py"),
     CLI_PATH,
 ]
 
@@ -55,7 +56,7 @@ def test_input_file_returns_exit_code_2(
     assert "input path must be a directory" in capsys.readouterr().err
 
 
-def test_success_creates_json_media_csv_and_matches_csv_with_no_probe(
+def test_success_creates_json_media_csv_matches_csv_and_html_with_no_probe(
     tmp_path: Path, cli_module: ModuleType
 ) -> None:
     input_dir = tmp_path / "input"
@@ -71,9 +72,11 @@ def test_success_creates_json_media_csv_and_matches_csv_with_no_probe(
     json_path = output_dir / "scan_result.json"
     csv_path = output_dir / "media_files.csv"
     matches_path = output_dir / "match_suggestions.csv"
+    html_path = output_dir / "report.html"
     assert json_path.exists()
     assert csv_path.exists()
     assert matches_path.exists()
+    assert html_path.exists()
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["summary"]["video_count"] == 1
     assert payload["summary"]["audio_count"] == 1
@@ -101,6 +104,8 @@ def test_custom_output_names_work(tmp_path: Path, cli_module: ModuleType) -> Non
             "custom.csv",
             "--matches-name",
             "custom_matches.csv",
+            "--html-name",
+            "custom_report.html",
         ]
     )
 
@@ -108,6 +113,7 @@ def test_custom_output_names_work(tmp_path: Path, cli_module: ModuleType) -> Non
     assert (output_dir / "custom.json").exists()
     assert (output_dir / "custom.csv").exists()
     assert (output_dir / "custom_matches.csv").exists()
+    assert (output_dir / "custom_report.html").exists()
 
 
 def test_summary_contains_counts(
@@ -132,6 +138,7 @@ def test_summary_contains_counts(
     assert "output json path:" in out
     assert "output csv path:" in out
     assert "output matches path:" in out
+    assert "output html path:" in out
 
 
 def test_unexpected_error_returns_exit_code_3(
@@ -175,6 +182,9 @@ class TestBoundaryNoBackend:
             "docker",
             "alembic",
             "sqli" + "te",
+            "cdn",
+            "http://",
+            "https://",
         ],
     )
     def test_new_implementation_sources_do_not_reference_backend_or_external_services(

@@ -18,6 +18,7 @@ from ailink_tools.sync_dialogue.exports import (
 )
 from ailink_tools.sync_dialogue.local_scanner import scan_folder
 from ailink_tools.sync_dialogue.matching import suggest_matches
+from ailink_tools.sync_dialogue.report_html import write_report_html
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -32,6 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="match_suggestions.csv",
         help="Match suggestions CSV output filename",
     )
+    parser.add_argument("--html-name", default="report.html", help="HTML report output filename")
     return parser
 
 
@@ -55,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
         json_path = write_scan_json(result, output_dir / args.json_name)
         csv_path = write_media_csv(result, output_dir / args.csv_name)
         matches_path = write_matches_csv(result, output_dir / args.matches_name)
+        html_path = write_report_html(result, output_dir / args.html_name)
     except Exception as exc:
         print(f"error: scan failed: {exc}", file=sys.stderr)
         return 3
@@ -67,6 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"output json path: {json_path}")
     print(f"output csv path: {csv_path}")
     print(f"output matches path: {matches_path}")
+    print(f"output html path: {html_path}")
     return 0
 
 

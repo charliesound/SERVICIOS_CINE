@@ -42,6 +42,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     input_path = Path(args.input).expanduser()
     output_dir = Path(args.output_dir).expanduser()
+    try:
+        json_name = _validate_output_name(args.json_name, "json-name")
+        csv_name = _validate_output_name(args.csv_name, "csv-name")
+        matches_name = _validate_output_name(args.matches_name, "matches-name")
+        html_name = _validate_output_name(args.html_name, "html-name")
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
     if not input_path.exists():
         print("error: input path does not exist", file=sys.stderr)
@@ -54,10 +62,10 @@ def main(argv: list[str] | None = None) -> int:
         output_dir.mkdir(parents=True, exist_ok=True)
         scan_result = scan_folder(input_path, probe=not args.no_probe)
         result = replace(scan_result, match_suggestions=suggest_matches(scan_result))
-        json_path = write_scan_json(result, output_dir / args.json_name)
-        csv_path = write_media_csv(result, output_dir / args.csv_name)
-        matches_path = write_matches_csv(result, output_dir / args.matches_name)
-        html_path = write_report_html(result, output_dir / args.html_name)
+        json_path = write_scan_json(result, output_dir / json_name)
+        csv_path = write_media_csv(result, output_dir / csv_name)
+        matches_path = write_matches_csv(result, output_dir / matches_name)
+        html_path = write_report_html(result, output_dir / html_name)
     except Exception as exc:
         print(f"error: scan failed: {exc}", file=sys.stderr)
         return 3
@@ -72,6 +80,16 @@ def main(argv: list[str] | None = None) -> int:
     print(f"output matches path: {matches_path}")
     print(f"output html path: {html_path}")
     return 0
+
+
+def _validate_output_name(value: str, label: str) -> str:
+    name = value.strip() if value else ""
+    path = Path(name)
+    if not name or name in {".", ".."} or path.is_absolute():
+        raise ValueError(f"{label} must be a simple filename")
+    if "/" in name or "\\" in name or path.name != name:
+        raise ValueError(f"{label} must be a simple filename")
+    return name
 
 
 if __name__ == "__main__":

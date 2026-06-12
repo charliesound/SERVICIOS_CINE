@@ -116,6 +116,41 @@ def test_custom_output_names_work(tmp_path: Path, cli_module: ModuleType) -> Non
     assert (output_dir / "custom_report.html").exists()
 
 
+@pytest.mark.parametrize(
+    "option",
+    ["--json-name", "--csv-name", "--matches-name", "--html-name"],
+)
+@pytest.mark.parametrize(
+    "bad_name",
+    ["../escape.txt", "nested/file.txt", "/tmp/absolute.txt", "C:/escape.txt", "C:\\escape.txt", "", "   ", ".", ".."],
+)
+def test_output_names_reject_paths_before_writing_outputs(
+    tmp_path: Path,
+    cli_module: ModuleType,
+    capsys: pytest.CaptureFixture[str],
+    option: str,
+    bad_name: str,
+) -> None:
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "out"
+    _touch(input_dir / "clip.mov")
+    code = cli_module.main(
+        [
+            "--input",
+            str(input_dir),
+            "--output-dir",
+            str(output_dir),
+            "--no-probe",
+            option,
+            bad_name,
+        ]
+    )
+
+    assert code == 2
+    assert "must be a simple filename" in capsys.readouterr().err
+    assert not output_dir.exists()
+
+
 def test_summary_contains_counts(
     tmp_path: Path, cli_module: ModuleType, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from dataclasses import replace
 
 from ailink_tools.sync_dialogue.report_html import write_report_html
 from ailink_tools.sync_dialogue.schemas import (
@@ -169,6 +170,109 @@ def test_html_escapes_dynamic_content(tmp_path: Path) -> None:
     assert "&lt;unsafe&gt;&amp;root" in html
     assert "video/&lt;script&gt;.mov" in html
     assert "<script>.mov" not in html
+
+
+def test_html_escapes_ampersand_angles_and_quotes_in_dynamic_fields(tmp_path: Path) -> None:
+    media = replace(
+        _media("video/a.mov", kind="video"),
+        relative_path="video/A&B <clip> \"quote\" 'single'.mov",
+        filename="A&B <clip> \"quote\" 'single'.mov",
+        codec_name="codec<&>\"'",
+        format_name="fmt<&>\"'",
+        timecode="01:00:&<\"'",
+    )
+    suggestion = SyncDialogueMatchSuggestion(
+        video_relative_path="video/A&B.mov",
+        audio_relative_path="audio/A&B.wav",
+        confidence="high",
+        score=0.95,
+        strategy="timecode",
+        reasons=["reason<&>\"'"],
+    )
+    output_path = write_report_html(
+        _result([media], match_suggestions=[suggestion], root_path="/root/&<\"'"),
+        tmp_path / "report.html",
+    )
+    html = output_path.read_text(encoding="utf-8")
+
+    assert "&amp;" in html
+    assert "&lt;" in html
+    assert "&gt;" in html
+    assert "&quot;" in html
+    assert "&#x27;" in html
+    assert "reason&lt;&amp;&gt;&quot;&#x27;" in html
+
+
+def test_html_does_not_contain_script_tag_even_with_script_input(tmp_path: Path) -> None:
+    output_path = write_report_html(
+        _result([_media("video/<script>alert.mov", kind="video")]),
+        tmp_path / "report.html",
+    )
+    html = output_path.read_text(encoding="utf-8").lower()
+
+    assert "<script" not in html
+
+
+def test_html_contains_no_external_resources(tmp_path: Path) -> None:
+    output_path = write_report_html(_sample_result(), tmp_path / "report.html")
+    html = output_path.read_text(encoding="utf-8").lower()
+
+    assert "http://" not in html
+    assert "https://" not in html
+    assert "cdn" not in html
+    assert "<script" not in html
+    assert "src=" not in html
+    assert "href=" not in html
+
+
+def test_html_contains_meta_charset_and_print_styles(tmp_path: Path) -> None:
+    output_path = write_report_html(_sample_result(), tmp_path / "report.html")
+    html = output_path.read_text(encoding="utf-8")
+
+    assert '<meta charset="utf-8">' in html
+    assert "@media print" in html
+
+
+def test_matches_table_serializes_reasons_stably(tmp_path: Path) -> None:
+    suggestion = SyncDialogueMatchSuggestion(
+        video_relative_path="video/clip.mov",
+        audio_relative_path="audio/clip.wav",
+        confidence="high",
+        score=0.95,
+        strategy="timecode",
+        reasons=["matching_timecode", "duration_delta_lte_1s"],
+    )
+    output_path = write_report_html(
+        _result([
+            _media("video/clip.mov", kind="video"),
+            _media("audio/clip.wav", kind="audio"),
+        ], match_suggestions=[suggestion]),
+        tmp_path / "report.html",
+    )
+
+    assert "matching_timecode; duration_delta_lte_1s" in output_path.read_text(encoding="utf-8")
+
+
+def test_empty_video_audio_and_matches_tables_show_no_rows(tmp_path: Path) -> None:
+    output_path = write_report_html(_result([]), tmp_path / "report.html")
+    html = output_path.read_text(encoding="utf-8")
+
+    assert html.count("No rows.") == 3
+
+
+def test_media_absolute_paths_are_not_rendered_in_tables(tmp_path: Path) -> None:
+    media = replace(
+        _media("video/clip.mov", kind="video"),
+        path="/very/sensitive/internal/video/clip.mov",
+    )
+    output_path = write_report_html(
+        _result([media], root_path="/root/path/is/allowed"),
+        tmp_path / "report.html",
+    )
+    html = output_path.read_text(encoding="utf-8")
+
+    assert "/root/path/is/allowed" in html
+    assert "/very/sensitive/internal/video/clip.mov" not in html
 
 
 def test_html_contains_footer_media_not_uploaded(tmp_path: Path) -> None:

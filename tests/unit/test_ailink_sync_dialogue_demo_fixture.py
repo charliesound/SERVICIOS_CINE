@@ -73,7 +73,37 @@ def test_force_regenerates_existing_fixture(tmp_path: Path, fixture_module: Modu
     assert (fixture_dir / "video" / "scene01_take01.mov").exists()
 
 
-@pytest.mark.parametrize("bad_output", ["", "   ", "/", "C:/demo", "C:\\demo", "/mnt/c/demo"])
+def test_force_only_removes_fixture_directory_not_other_base_files(
+    tmp_path: Path, fixture_module: ModuleType
+) -> None:
+    fixture_module.create_fixture(tmp_path)
+    keep = tmp_path / "keep.txt"
+    keep.write_text("keep", encoding="utf-8")
+
+    fixture_module.create_fixture(tmp_path, force=True)
+
+    assert keep.read_text(encoding="utf-8") == "keep"
+
+
+def test_fixture_path_as_file_raises_value_error(tmp_path: Path, fixture_module: ModuleType) -> None:
+    (tmp_path / "demo_sync_dialogue").write_text("not a dir", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="not a directory"):
+        fixture_module.create_fixture(tmp_path, force=True)
+
+
+def test_main_fixture_path_as_file_returns_2(
+    tmp_path: Path, fixture_module: ModuleType, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (tmp_path / "demo_sync_dialogue").write_text("not a dir", encoding="utf-8")
+
+    code = fixture_module.main(["--output-dir", str(tmp_path), "--force"])
+
+    assert code == 2
+    assert "not a directory" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("bad_output", ["", "   ", "/", "C:/demo", "C:\\demo", "/mnt/c/demo", "/mnt/other/demo"])
 def test_invalid_or_dangerous_output_path_rejected(
     bad_output: str, fixture_module: ModuleType
 ) -> None:

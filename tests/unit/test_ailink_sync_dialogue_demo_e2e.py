@@ -96,7 +96,37 @@ def test_force_regenerates_existing_fixture_and_output(tmp_path: Path, e2e_modul
     assert (regenerated["output_path"] / "report.html").exists()
 
 
-@pytest.mark.parametrize("bad_work_dir", ["", "   ", "/", "C:/demo", "C:\\demo", "/mnt/c/demo"])
+def test_force_only_removes_fixture_and_output_not_other_work_dir_files(
+    tmp_path: Path, e2e_module: ModuleType
+) -> None:
+    work_dir = tmp_path / "demo"
+    e2e_module.run_demo(work_dir)
+    keep = work_dir / "keep.txt"
+    keep.write_text("keep", encoding="utf-8")
+
+    e2e_module.run_demo(work_dir, force=True)
+
+    assert keep.read_text(encoding="utf-8") == "keep"
+
+
+@pytest.mark.parametrize("name", ["fixture", "output"])
+def test_fixture_or_output_as_file_returns_error_2(
+    tmp_path: Path,
+    e2e_module: ModuleType,
+    capsys: pytest.CaptureFixture[str],
+    name: str,
+) -> None:
+    work_dir = tmp_path / "demo"
+    work_dir.mkdir()
+    (work_dir / name).write_text("not a dir", encoding="utf-8")
+
+    code = e2e_module.main(["--work-dir", str(work_dir), "--force"])
+
+    assert code == 2
+    assert "not a directory" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("bad_work_dir", ["", "   ", "/", "C:/demo", "C:\\demo", "/mnt/c/demo", "/mnt/other/demo"])
 def test_work_dir_empty_or_dangerous_rejected(
     bad_work_dir: str, e2e_module: ModuleType
 ) -> None:
@@ -138,6 +168,36 @@ def test_main_quiet_suppresses_success_summary(
 
     assert code == 0
     assert "AILink Sync Dialogue demo completed." not in capsys.readouterr().out
+
+
+def test_quiet_still_generates_outputs(tmp_path: Path, e2e_module: ModuleType) -> None:
+    work_dir = tmp_path / "demo"
+
+    code = e2e_module.main(["--work-dir", str(work_dir), "--quiet"])
+
+    assert code == 0
+    assert (work_dir / "output" / "report.html").exists()
+
+
+def test_summary_does_not_print_windows_like_paths(
+    tmp_path: Path, e2e_module: ModuleType, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code = e2e_module.main(["--work-dir", str(tmp_path / "demo")])
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "C:" not in out
+    assert "\\" not in out
+
+
+def test_parent_segments_are_normalized_by_resolve(
+    tmp_path: Path, e2e_module: ModuleType
+) -> None:
+    work_dir = tmp_path / "parent" / ".." / "demo"
+
+    summary = e2e_module.run_demo(work_dir)
+
+    assert ".." not in str(summary["output_path"])
 
 
 class TestBoundaryNoBackend:

@@ -25,6 +25,7 @@ EXPECTED_OUTPUTS = (
     "media_files.csv",
     "match_suggestions.csv",
     "report.html",
+    "report_es.html",
 )
 
 
@@ -48,6 +49,7 @@ def create_metadata_demo(output_dir: str | Path, *, force: bool = False) -> dict
     write_media_csv(result, output_path / "media_files.csv")
     write_matches_csv(result, output_path / "match_suggestions.csv")
     write_report_html(result, output_path / "report.html")
+    write_report_html(result, output_path / "report_es.html", language="es")
 
     missing = [name for name in EXPECTED_OUTPUTS if not (output_path / name).exists()]
     if missing:
@@ -61,6 +63,7 @@ def create_metadata_demo(output_dir: str | Path, *, force: bool = False) -> dict
         "match_suggestions_count": len(result.match_suggestions),
         "high_confidence_count": high_count,
         "report_html": output_path / "report.html",
+        "report_html_es": output_path / "report_es.html",
     }
 
 
@@ -175,6 +178,7 @@ def _print_summary(summary: dict[str, object]) -> None:
     print(f"Match suggestions count: {summary['match_suggestions_count']}")
     print(f"High confidence count: {summary['high_confidence_count']}")
     print(f"Report HTML: {summary['report_html']}")
+    print(f"Report HTML ES: {summary['report_html_es']}")
 
 
 def main(argv: list[str] | None = None) -> int:

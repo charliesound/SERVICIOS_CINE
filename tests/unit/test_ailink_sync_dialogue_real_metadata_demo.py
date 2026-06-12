@@ -22,13 +22,16 @@ def metadata_demo_module() -> ModuleType:
     return module
 
 
-def test_script_creates_four_outputs(tmp_path: Path, metadata_demo_module: ModuleType) -> None:
+def test_script_creates_expected_outputs(tmp_path: Path, metadata_demo_module: ModuleType) -> None:
     metadata_demo_module.create_metadata_demo(tmp_path)
 
     assert (tmp_path / "scan_result.json").exists()
     assert (tmp_path / "media_files.csv").exists()
     assert (tmp_path / "match_suggestions.csv").exists()
     assert (tmp_path / "report.html").exists()
+    assert (tmp_path / "report_es.html").exists()
+    assert (tmp_path / "report_es.html").exists()
+    assert (tmp_path / "report_es.html").exists()
 
 
 def test_json_contains_media_files_and_match_suggestions(
@@ -73,6 +76,16 @@ def test_report_html_contains_match_suggestions_and_high(
 
     assert "Match suggestions" in html
     assert "high" in html
+
+    html_es = (tmp_path / "report_es.html").read_text(encoding="utf-8")
+    assert "Sugerencias de sincronía" in html_es
+    assert "Archivos de vídeo" in html_es
+    assert "Archivos de audio" in html_es
+    assert "escena_take" in html_es
+    assert "escena_take_vídeo" in html_es
+    assert "escena_take_audio" in html_es
+    assert "scene01_take01" in html_es
+    assert "high" in html_es
 
 
 def test_wildtrack_roomtone_is_not_high_confidence(

@@ -285,3 +285,83 @@ def test_html_output_is_utf8(tmp_path: Path) -> None:
     output_path = write_report_html(_sample_result(), tmp_path / "report.html")
 
     assert output_path.read_bytes().decode("utf-8")
+
+
+def test_html_supports_spanish_labels(tmp_path: Path) -> None:
+    output_path = write_report_html(_sample_result(), tmp_path / "report_es.html", language="es")
+    html = output_path.read_text(encoding="utf-8")
+
+    assert '<html lang="es">' in html
+    assert "AILink Sync Dialogue — Informe de ingesta" in html
+    assert "Informe de escaneo local" in html
+    assert "Ruta raíz" in html
+    assert "Generado" in html
+    assert "Resumen" in html
+    assert "Total de archivos" in html
+    assert "Vídeos detectados" in html
+    assert "Audios detectados" in html
+    assert "Archivos no compatibles" in html
+    assert "Sugerencias encontradas" in html
+    assert "Archivos de vídeo" in html
+    assert "Archivos de audio" in html
+    assert "Sugerencias de sincronía" in html
+    assert "ruta_relativa" in html
+    assert "duración_segundos" in html
+    assert "confianza" in html
+    assert "puntuación" in html
+    assert "Generado localmente por AILink Sync Dialogue" in html
+
+
+def test_html_supports_spanish_alerts(tmp_path: Path) -> None:
+    output_path = write_report_html(
+        _result([
+            _media("video/a.mov", kind="video"),
+            _media("audio/a.wav", kind="audio"),
+        ], unsupported_count=2),
+        tmp_path / "report_es.html",
+        language="es",
+    )
+    html = output_path.read_text(encoding="utf-8")
+
+    assert "Se han ignorado 2 archivos no compatibles." in html
+    assert "No se han encontrado sugerencias de sincronía. Revisa timecode/metadata." in html
+
+
+def test_write_report_html_rejects_unsupported_language(tmp_path: Path) -> None:
+    output_path = tmp_path / "report.html"
+
+    try:
+        write_report_html(_sample_result(), output_path, language="fr")
+    except ValueError as exc:
+        assert "unsupported report language" in str(exc)
+    else:
+        raise AssertionError("expected unsupported language to raise ValueError")
+
+    assert not output_path.exists()
+
+
+
+def test_html_surfaces_scene_take_file_relationship_in_spanish_report(tmp_path: Path) -> None:
+    suggestion = SyncDialogueMatchSuggestion(
+        video_relative_path="video/scene01_take01.mov",
+        audio_relative_path="audio/scene01_take01.wav",
+        confidence="high",
+        score=0.95,
+        strategy="timecode",
+        reasons=["matching_timecode"],
+    )
+    result = _result(
+        [
+            _media("video/scene01_take01.mov", kind="video"),
+            _media("audio/scene01_take01.wav", kind="audio"),
+        ],
+        match_suggestions=[suggestion],
+    )
+
+    output_path = write_report_html(result, tmp_path / "report_es.html", language="es")
+    html = output_path.read_text(encoding="utf-8")
+
+    assert "escena_take" in html
+    assert "escena_take_vídeo" in html
+    assert "escena_take_audio" in html
+    assert "scene01_take01" in html

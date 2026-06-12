@@ -1,5 +1,6 @@
 """Tests for the AILink Sync Dialogue landing asset generator."""
 
+import hashlib
 import json
 import os
 import shutil
@@ -22,6 +23,17 @@ EXPECTED_PNGS = (
     "linkedin-beta-card.png",
 )
 
+EXPECTED_FILES = EXPECTED_PNGS + ("README.md", "assets_manifest.json")
+
+EXPECTED_DIMENSIONS = {
+    "hero-report-mockup.png": (1200, 800),
+    "report-summary.png": (800, 500),
+    "match-suggestions-table.png": (800, 600),
+    "media-files-table.png": (800, 600),
+    "privacy-local-first.png": (800, 400),
+    "linkedin-beta-card.png": (1080, 1080),
+}
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -36,19 +48,29 @@ def output_dir():
         shutil.rmtree(d)
 
 
-def _run_script(output_dir, extra_args=None):
+def _run_script(output_dir, extra_args=None, *, force=True, quiet=True):
     """Run the generator script and return (returncode, stdout, stderr)."""
     cmd = [
         sys.executable,
         str(DEMO_SCRIPT),
         "--output-dir", str(output_dir),
-        "--force",
-        "--quiet",
     ]
+    if force:
+        cmd.append("--force")
+    if quiet:
+        cmd.append("--quiet")
     if extra_args:
         cmd.extend(extra_args)
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     return r.returncode, r.stdout, r.stderr
+
+
+def _hash_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _load_manifest(output_dir: Path) -> dict:
+    return json.loads((output_dir / "assets_manifest.json").read_text(encoding="utf-8"))
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +152,145 @@ class TestGeneration:
         assert rc == 0
         sz = (output_dir / "media-files-table.png").stat().st_size
         assert sz > 5000, f"media-files-table.png too small: {sz}"
+
+
+class TestGatingAudit:
+    """Hardening checks before using the assets publicly."""
+
+    def test_generated_pack_contains_only_expected_top_level_files(self, output_dir):
+        rc, out, err = _run_script(output_dir)
+        assert rc == 0, err
+        generated = {p.name for p in output_dir.iterdir()}
+        assert generated == set(EXPECTED_FILES)
+
+    def test_demo_temp_directory_is_removed_after_success(self, output_dir):
+        rc, out, err = _run_script(output_dir)
+        assert rc == 0, err
+        assert not (output_dir.parent / ".sync_demo_tmp").exists()
+
+    def test_force_preserves_unrelated_files_and_subdirectories(self, output_dir):
+        sentinel = output_dir / "do-not-delete.txt"
+        nested = output_dir / "manual_notes"
+        nested.mkdir()
+        nested_sentinel = nested / "keep.txt"
+        sentinel.write_text("manual note", encoding="utf-8")
+        nested_sentinel.write_text("nested note", encoding="utf-8")
+        (output_dir / "hero-report-mockup.png").write_bytes(b"stale")
+
+        rc, out, err = _run_script(output_dir)
+        assert rc == 0, err
+
+        assert sentinel.read_text(encoding="utf-8") == "manual note"
+        assert nested_sentinel.read_text(encoding="utf-8") == "nested note"
+        assert (output_dir / "hero-report-mockup.png").read_bytes().startswith(
+            b"\x89PNG\r\n\x1a\n"
+        )
+
+    def test_without_force_rejects_existing_dir_before_temp_generation(self, output_dir):
+        sentinel = output_dir / "existing.txt"
+        sentinel.write_text("preserve me", encoding="utf-8")
+
+        rc, out, err = _run_script(output_dir, force=False)
+
+        assert rc != 0
+        assert "Use --force" in err
+        assert sentinel.read_text(encoding="utf-8") == "preserve me"
+        assert not (output_dir.parent / ".sync_demo_tmp").exists()
+
+    def test_manifest_matches_generated_pngs_exactly(self, output_dir):
+        rc, out, err = _run_script(output_dir)
+        assert rc == 0, err
+
+        manifest = _load_manifest(output_dir)
+        manifest_names = {asset["file_name"] for asset in manifest["assets"]}
+        disk_pngs = {p.name for p in output_dir.glob("*.png")}
+
+        assert manifest_names == set(EXPECTED_PNGS)
+        assert disk_pngs == set(EXPECTED_PNGS)
+
+    def test_manifest_dimensions_match_all_pngs(self, output_dir):
+        rc, out, err = _run_script(output_dir)
+        assert rc == 0, err
+
+        from PIL import Image
+
+        manifest = _load_manifest(output_dir)
+        for asset in manifest["assets"]:
+            fname = asset["file_name"]
+            with Image.open(output_dir / fname) as img:
+                assert img.size == EXPECTED_DIMENSIONS[fname]
+                assert asset["width"] == img.size[0]
+                assert asset["height"] == img.size[1]
+
+    def test_manifest_public_safety_contract(self, output_dir):
+        rc, out, err = _run_script(output_dir)
+        assert rc == 0, err
+
+        manifest = _load_manifest(output_dir)
+        assert manifest["version"] == 1
+        for asset in manifest["assets"]:
+            assert asset["public_safe"] is True
+            assert "No real media" in asset["notes"]
+            assert "no personal data" in asset["notes"]
+            assert "no client names" in asset["notes"]
+            assert "Controlled demo only" in asset["notes"]
+            assert asset["purpose"].strip()
+            assert asset["source"].strip()
+
+    def test_readme_lists_every_manifest_asset_once(self, output_dir):
+        rc, out, err = _run_script(output_dir)
+        assert rc == 0, err
+
+        readme = (output_dir / "README.md").read_text(encoding="utf-8")
+        manifest = _load_manifest(output_dir)
+        for asset in manifest["assets"]:
+            assert readme.count(f"`{asset['file_name']}`") == 1
+
+    def test_generated_text_outputs_have_no_forbidden_public_strings(self, output_dir):
+        rc, out, err = _run_script(output_dir)
+        assert rc == 0, err
+
+        combined = "\n".join(
+            [
+                (output_dir / "README.md").read_text(encoding="utf-8"),
+                (output_dir / "assets_manifest.json").read_text(encoding="utf-8"),
+            ]
+        )
+        forbidden = [
+            "/mnt/",
+            "\\wsl.localhost",
+            "C:",
+            "DATABASE_URL",
+            "TEST_DATABASE_URL",
+            "FastAPI",
+            "APIRouter",
+            "CreditLedger",
+            "AIJob",
+            "ComfyUI",
+            "Docker",
+            "Alembic",
+            "Stripe",
+            "http://",
+            "https://",
+            "sqli" + "te",
+            "cid_test",
+        ]
+        for pattern in forbidden:
+            assert pattern not in combined, f"Forbidden public string found: {pattern}"
+
+    def test_assets_regenerate_reproducibly(self, output_dir):
+        first = output_dir / "first"
+        second = output_dir / "second"
+
+        rc1, out1, err1 = _run_script(first)
+        rc2, out2, err2 = _run_script(second)
+
+        assert rc1 == 0, err1
+        assert rc2 == 0, err2
+
+        first_hashes = {name: _hash_file(first / name) for name in EXPECTED_FILES}
+        second_hashes = {name: _hash_file(second / name) for name in EXPECTED_FILES}
+        assert first_hashes == second_hashes
 
 
 class TestValidation:

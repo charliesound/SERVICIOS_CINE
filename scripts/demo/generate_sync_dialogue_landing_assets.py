@@ -543,76 +543,77 @@ def main():
     out_raw = validate_output_dir(args.output_dir)
     output_dir = Path(out_raw).resolve()
 
-    # Run the controlled demo
+    if output_dir.exists() and not args.force:
+        sys.exit(f"Error: {output_dir} exists. Use --force to overwrite.")
+
+    # Run the controlled demo in a temporary sibling folder.
     demo_dir = output_dir.parent / ".sync_demo_tmp"
-    if args.force and demo_dir.exists():
-        shutil.rmtree(demo_dir)
-    if not demo_dir.exists():
+
+    try:
+        if demo_dir.exists():
+            shutil.rmtree(demo_dir)
         demo_dir.mkdir(parents=True)
 
-    subprocess.run(
-        [
-            sys.executable, "scripts/demo/create_sync_dialogue_metadata_demo.py",
-            "--output-dir", str(demo_dir),
-            "--force",
-            "--quiet",
-        ],
-        check=True,
-        cwd=Path(__file__).resolve().parent.parent.parent,
-    )
+        subprocess.run(
+            [
+                sys.executable, "scripts/demo/create_sync_dialogue_metadata_demo.py",
+                "--output-dir", str(demo_dir),
+                "--force",
+                "--quiet",
+            ],
+            check=True,
+            cwd=Path(__file__).resolve().parent.parent.parent,
+        )
 
-    summary, media, matches = _read_demo_data(demo_dir)
+        summary, media, matches = _read_demo_data(demo_dir)
 
-    if not args.quiet:
-        print(f"Demo data loaded: {summary.get('video_count', 0)} videos, "
-              f"{summary.get('audio_count', 0)} audios, {len(matches)} matches")
+        if not args.quiet:
+            print(f"Demo data loaded: {summary.get('video_count', 0)} videos, "
+                  f"{summary.get('audio_count', 0)} audios, {len(matches)} matches")
 
-    # Create output directory
-    if output_dir.exists():
-        if args.force:
+        # Create output directory
+        if output_dir.exists() and args.force:
             for f in EXPECTED_PNGS:
                 (output_dir / f).unlink(missing_ok=True)
-        else:
-            sys.exit(f"Error: {output_dir} exists. Use --force to overwrite.")
-    output_dir.mkdir(parents=True, exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Generate PNG assets
-    if not args.quiet:
-        print(f"Generating assets in {output_dir} ...")
-
-    builder_calls = [
-        (build_hero_report, "hero-report-mockup.png", summary, matches, media),
-        (build_report_summary, "report-summary.png", summary, media),
-        (build_match_suggestions_table, "match-suggestions-table.png", matches),
-        (build_media_files_table, "media-files-table.png", media),
-        (build_privacy_local_first, "privacy-local-first.png"),
-        (build_linkedin_beta_card, "linkedin-beta-card.png", summary, matches),
-    ]
-    for call in builder_calls:
-        func = call[0]
-        fname = call[1]
-        func_args = call[2:]
-        out_path = output_dir / fname
-        func(out_path, *func_args)
+        # Generate PNG assets
         if not args.quiet:
-            sz = out_path.stat().st_size
-            print(f"  {fname}  ({sz:,} bytes)")
+            print(f"Generating assets in {output_dir} ...")
 
-    # Generate README and manifest
-    _make_readme(output_dir, EXPECTED_PNGS)
-    manifest = _make_manifest(output_dir, EXPECTED_PNGS, bool(media), bool(matches))
-    (output_dir / "assets_manifest.json").write_text(
-        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+        builder_calls = [
+            (build_hero_report, "hero-report-mockup.png", summary, matches, media),
+            (build_report_summary, "report-summary.png", summary, media),
+            (build_match_suggestions_table, "match-suggestions-table.png", matches),
+            (build_media_files_table, "media-files-table.png", media),
+            (build_privacy_local_first, "privacy-local-first.png"),
+            (build_linkedin_beta_card, "linkedin-beta-card.png", summary, matches),
+        ]
+        for call in builder_calls:
+            func = call[0]
+            fname = call[1]
+            func_args = call[2:]
+            out_path = output_dir / fname
+            func(out_path, *func_args)
+            if not args.quiet:
+                sz = out_path.stat().st_size
+                print(f"  {fname}  ({sz:,} bytes)")
 
-    if not args.quiet:
-        print(f"\nDone. {len(EXPECTED_PNGS)} assets generated.")
-        print(f"README: {output_dir / 'README.md'}")
-        print(f"Manifest: {output_dir / 'assets_manifest.json'}")
+        # Generate README and manifest
+        _make_readme(output_dir, EXPECTED_PNGS)
+        manifest = _make_manifest(output_dir, EXPECTED_PNGS, bool(media), bool(matches))
+        (output_dir / "assets_manifest.json").write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
 
-    # Cleanup demo temp
-    if demo_dir.exists():
-        shutil.rmtree(demo_dir)
+        if not args.quiet:
+            print(f"\nDone. {len(EXPECTED_PNGS)} assets generated.")
+            print(f"README: {output_dir / 'README.md'}")
+            print(f"Manifest: {output_dir / 'assets_manifest.json'}")
+
+    finally:
+        if demo_dir.exists():
+            shutil.rmtree(demo_dir)
 
 
 if __name__ == "__main__":

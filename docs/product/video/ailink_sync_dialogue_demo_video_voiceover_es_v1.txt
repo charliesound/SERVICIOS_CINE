@@ -1,0 +1,25 @@
+AILink Sync Dialogue — Locución demo ES v1
+
+Antes de empezar a montar, alguien tiene que entender qué hay dentro de la carpeta de rodaje: vídeos, audios separados, nombres de archivo, timecode, duración y metadata.
+
+AILink Sync Dialogue es una herramienta local para preparar material antes de montaje.
+
+Escanea una carpeta local y detecta archivos de vídeo y audio. Cuando la metadata está disponible, la organiza en tablas claras.
+
+Después sugiere posibles parejas de vídeo y audio usando señales como timecode, nombre, carpeta y duración.
+
+No decide por el montador. Entrega candidatos con score y razones explicables.
+
+El resultado se puede revisar en un informe HTML imprimible. También genera CSV y JSON para compartir con montaje y postproducción.
+
+Los outputs principales son report.html, media_files.csv, match_suggestions.csv y scan_result.json.
+
+En la versión actual, el material no se sube a la nube. El análisis se ejecuta localmente y los resultados se guardan en una carpeta del usuario.
+
+Todavía no incluye waveform sync, transcripción, claqueta visual, instalador final ni integración directa con editores.
+
+Es una beta privada para validar utilidad real con casos controlados.
+
+Buscamos escuelas, productoras y equipos de postproducción.
+
+Si quieres probarlo, contacta con AILinkCinema.

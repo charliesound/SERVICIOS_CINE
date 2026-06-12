@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AILink Sync Dialogue — Beta privada</title>
+  <meta name="description" content="Landing estática exportable de AILink Sync Dialogue para beta privada.">
+  <style>
+    :root {
+      --bg: #111222;
+      --panel: #1b1d32;
+      --panel-soft: #23263d;
+      --text: #f5f6fb;
+      --muted: #b9bed0;
+      --dim: #858aa3;
+      --accent: #4a90d9;
+      --green: #45a36b;
+      --border: #303451;
+      --warning: #d4a017;
+      --max: 1160px;
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 12% 0%, rgba(74, 144, 217, 0.22), transparent 34rem),
+        radial-gradient(circle at 90% 4%, rgba(69, 163, 107, 0.13), transparent 30rem),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    .wrap {
+      width: min(var(--max), calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(17,18,34,0.9);
+      backdrop-filter: blur(14px);
+    }
+
+    .nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+    }
+
+    .brand {
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .brand span {
+      display: block;
+      color: var(--dim);
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .button {
+      display: inline-flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: white;
+      font-weight: 900;
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .button.secondary {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .hero {
+      padding: 86px 0 66px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.02fr 0.98fr;
+      gap: 46px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      margin-bottom: 18px;
+      padding: 7px 12px;
+      border: 1px solid rgba(74,144,217,0.34);
+      border-radius: 999px;
+      background: rgba(74,144,217,0.11);
+      color: #8dc5ff;
+      font-size: 0.88rem;
+      font-weight: 900;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.5rem, 6vw, 5.2rem);
+      line-height: 0.96;
+      letter-spacing: -0.065em;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: clamp(2rem, 4vw, 3.1rem);
+      line-height: 1;
+      letter-spacing: -0.05em;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 1.18rem;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .lead {
+      margin-top: 24px;
+      max-width: 680px;
+      font-size: 1.16rem;
+      color: #d9dcec;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+    }
+
+    .microcopy {
+      margin-top: 16px;
+      color: var(--dim);
+      font-size: 0.95rem;
+    }
+
+    .visual-card {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+    }
+
+    .visual-card img,
+    .visual-stack img {
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    section {
+      padding: 66px 0;
+    }
+
+    .section-head {
+      max-width: 790px;
+      margin-bottom: 28px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      align-items: center;
+    }
+
+    .card {
+      min-height: 100%;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(27,29,50,0.86);
+    }
+
+    .tag {
+      display: inline-flex;
+      margin-bottom: 14px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(69,163,107,0.14);
+      color: #8be0aa;
+      font-size: 0.78rem;
+      font-weight: 900;
+    }
+
+    .tag.experimental {
+      background: rgba(212,160,23,0.14);
+      color: #f2ce68;
+    }
+
+    .list {
+      display: grid;
+      gap: 12px;
+      margin: 22px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .list li {
+      padding: 15px 17px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(35,38,61,0.76);
+      color: var(--muted);
+    }
+
+    .steps {
+      counter-reset: step;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .step {
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+
+    .step:before {
+      counter-increment: step;
+      content: counter(step);
+      display: inline-flex;
+      width: 34px;
+      height: 34px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      font-weight: 900;
+    }
+
+    .outputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .output-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .output-item {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(35,38,61,0.78);
+    }
+
+    .output-item code {
+      color: #8dc5ff;
+      font-weight: 900;
+    }
+
+    .visual-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .privacy {
+      padding: 34px;
+      border: 1px solid rgba(69,163,107,0.28);
+      border-radius: 32px;
+      background:
+        radial-gradient(circle at 8% 12%, rgba(69,163,107,0.16), transparent 20rem),
+        rgba(27,29,50,0.86);
+    }
+
+    .beta-box {
+      display: grid;
+      grid-template-columns: 1fr 0.86fr;
+      gap: 28px;
+      padding: 34px;
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      background: linear-gradient(145deg, rgba(74,144,217,0.16), rgba(27,29,50,0.92));
+    }
+
+    .beta-panel {
+      padding: 22px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px;
+      background: rgba(17,18,34,0.54);
+    }
+
+    .beta-panel ul {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--muted);
+    }
+
+    .note {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(212,160,23,0.28);
+      border-radius: 14px;
+      background: rgba(212,160,23,0.1);
+      color: #f2ce68;
+      font-size: 0.94rem;
+    }
+
+    details {
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(27,29,50,0.84);
+    }
+
+    details + details {
+      margin-top: 12px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    details p {
+      margin-top: 10px;
+    }
+
+    .footer {
+      padding: 36px 0;
+      border-top: 1px solid var(--border);
+      color: var(--dim);
+      font-size: 0.92rem;
+    }
+
+    .footer .wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 920px) {
+      .hero-grid,
+      .grid-2,
+      .outputs,
+      .beta-box {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-3,
+      .steps {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .nav-links {
+        display: none;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .wrap {
+        width: min(100% - 28px, var(--max));
+      }
+
+      .grid-3,
+      .steps {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <nav class="wrap nav" aria-label="Navegación principal">
+      <a class="brand" href="#top">AILinkCinema<span>AILink Sync Dialogue</span></a>
+      <div class="nav-links">
+        <a href="#que-hace">Qué hace</a>
+        <a href="#outputs">Outputs</a>
+        <a href="#privacidad">Privacidad</a>
+        <a href="#beta">Beta</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <a class="button" href="#beta">Solicitar beta</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Beta privada · herramienta local sin GPU</div>
+          <h1>Prepara el material de rodaje para montaje en minutos.</h1>
+          <p class="lead">AILink Sync Dialogue analiza carpetas locales de vídeo y audio, detecta metadata disponible y sugiere posibles matches antes de abrir el proyecto de edición. Genera informes HTML, CSV y JSON sin subir el material a la nube.</p>
+          <div class="actions">
+            <a class="button" href="#beta">Solicitar acceso beta</a>
+            <a class="button secondary" href="#outputs">Ver ejemplo de reporte</a>
+          </div>
+          <p class="microcopy">El material permanece en el disco del cliente. Sin cloud en la versión actual.</p>
+        </div>
+        <figure class="visual-card">
+          <img src="../assets/ailink_sync_dialogue/hero-report-mockup.png" alt="Mockup del reporte de ingesta con resumen de vídeos, audios y sugerencias de match">
+        </figure>
+      </div>
+    </section>
+
+    <section id="problema">
+      <div class="wrap grid-2">
+        <div class="section-head">
+          <h2>Antes de montar, alguien tiene que entender el material.</h2>
+          <p>En muchos rodajes, el equipo de postproducción recibe carpetas con vídeos, audios separados, notas sueltas y metadata difícil de revisar. Esa primera revisión consume tiempo antes de que el montaje creativo pueda empezar.</p>
+        </div>
+        <ul class="list">
+          <li>Carpetas de rodaje desordenadas.</li>
+          <li>Vídeo y audio separados.</li>
+          <li>Timecode y duración que hay que comprobar manualmente.</li>
+          <li>Metadata técnica dispersa.</li>
+          <li>Falta de un informe claro para montaje o postproducción.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="que-hace">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Qué hace ahora</h2>
+          <p>Una primera capa local para convertir carpetas de rodaje en información revisable y compartible.</p>
+        </div>
+        <div class="grid-3">
+          <article class="card"><span class="tag">Disponible beta</span><h3>Escaneo local</h3><p>Analiza una carpeta local del usuario y detecta archivos soportados de vídeo y audio.</p></article>
+          <article class="card"><span class="tag">Disponible beta</span><h3>Metadata con ffprobe</h3><p>Extrae duración, timecode, fps, canales, codec y formato cuando la metadata puede leerse.</p></article>
+          <article class="card"><span class="tag experimental">Experimental</span><h3>Sugerencias de matches</h3><p>Propone posibles parejas vídeo/audio por timecode, nombre, carpeta y duración, con score y razones explicables.</p></article>
+          <article class="card"><span class="tag">Disponible beta</span><h3>Reporte HTML</h3><p>Genera un reporte visual e imprimible para revisión humana, demo y comunicación con montaje.</p></article>
+          <article class="card"><span class="tag">Disponible beta</span><h3>CSV y JSON</h3><p>Exporta tablas para revisión y un resultado técnico completo para integraciones futuras.</p></article>
+          <article class="card"><span class="tag">Sin GPU</span><h3>Flujo ligero</h3><p>El prototipo actual no usa GPU ni cloud. Está pensado para una validación rápida del flujo.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="como-funciona">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Cómo funciona</h2>
+          <p>El prototipo actual se ejecuta por CLI. La interfaz gráfica vendrá después si la beta valida utilidad real.</p>
+        </div>
+        <div class="steps">
+          <article class="step"><h3>Selecciona carpeta local</h3><p>El usuario elige una carpeta de rodaje o proyecto.</p></article>
+          <article class="step"><h3>Analiza vídeo/audio</h3><p>Detecta archivos soportados y lee metadata si está disponible.</p></article>
+          <article class="step"><h3>Genera sugerencias</h3><p>Produce matches sugeridos con confianza, score, estrategia y razones.</p></article>
+          <article class="step"><h3>Revisa y comparte</h3><p>El equipo usa el reporte como base de revisión, no como decisión automática.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="outputs">
+      <div class="wrap outputs">
+        <div>
+          <div class="section-head">
+            <h2>Outputs claros para montaje y postproducción</h2>
+            <p>La herramienta no encierra la información en una caja negra: genera archivos simples para revisión humana.</p>
+          </div>
+          <div class="output-list">
+            <div class="output-item"><code>report.html</code><p>Reporte visual para abrir en navegador.</p></div>
+            <div class="output-item"><code>media_files.csv</code><p>Tabla para revisar clips y audios en hoja de cálculo.</p></div>
+            <div class="output-item"><code>match_suggestions.csv</code><p>Lista de candidatos de sincronía con confidence, score, strategy y reasons.</p></div>
+            <div class="output-item"><code>scan_result.json</code><p>Export completo para integraciones futuras o procesamiento técnico.</p></div>
+          </div>
+        </div>
+        <div class="visual-stack">
+          <img src="../assets/ailink_sync_dialogue/report-summary.png" alt="Resumen visual del reporte con totales y formatos de salida">
+          <img src="../assets/ailink_sync_dialogue/match-suggestions-table.png" alt="Tabla de sugerencias de match con confidence, score y estrategia">
+          <img src="../assets/ailink_sync_dialogue/media-files-table.png" alt="Inventario de archivos de vídeo y audio detectados">
+        </div>
+      </div>
+    </section>
+
+    <section id="privacidad">
+      <div class="wrap grid-2 privacy">
+        <div>
+          <h2>Privacidad local-first</h2>
+          <p>AILink Sync Dialogue está planteado como una herramienta local. En la versión actual, el análisis se ejecuta sobre una carpeta del usuario y los resultados se escriben en una carpeta local.</p>
+          <ul class="list">
+            <li>No hay subida de material audiovisual a servidores.</li>
+            <li>No hay cloud en esta versión.</li>
+            <li>Los outputs se generan localmente: HTML, CSV y JSON.</li>
+            <li>Reduce fricción legal y operativa para escuelas, productoras y equipos independientes.</li>
+          </ul>
+        </div>
+        <img src="../assets/ailink_sync_dialogue/privacy-local-first.png" alt="Pieza visual de privacidad local-first">
+      </div>
+    </section>
+
+    <section id="para-quien">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Para quién está pensado</h2>
+          <p>Especialmente útil para equipos que preparan material antes de entrar en el editor.</p>
+        </div>
+        <div class="grid-3">
+          <article class="card"><h3>Escuelas de cine</h3><p>Para enseñar ingesta, organización y revisión de material sin depender de cloud.</p></article>
+          <article class="card"><h3>Ayudantes de montaje</h3><p>Para tener una primera lectura del material antes de importar o sincronizar.</p></article>
+          <article class="card"><h3>Productoras pequeñas y medianas</h3><p>Para ordenar rodajes sin DIT dedicado en todos los proyectos.</p></article>
+          <article class="card"><h3>DIT/data wranglers</h3><p>Para entregar reportes claros junto al material.</p></article>
+          <article class="card"><h3>Postproducción</h3><p>Para entender vídeo, audio, metadata y candidatos de sincronía recibidos.</p></article>
+          <article class="card"><h3>Coordinación</h3><p>Para dar visibilidad rápida del material al equipo de producción y montaje.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="beta">
+      <div class="wrap beta-box">
+        <div>
+          <div class="eyebrow">Acceso anticipado controlado</div>
+          <h2>Solicita acceso a la beta privada.</h2>
+          <p>Buscamos escuelas, productoras y equipos de postproducción que quieran probar AILink Sync Dialogue con casos controlados y feedback directo. La beta no es un producto final cerrado.</p>
+          <div class="actions">
+            <a class="button" href="#contacto-pendiente">Quiero estar en la beta</a>
+            <a class="button secondary" href="#faq">Resolver dudas</a>
+          </div>
+          <p class="microcopy">El formulario real se implementará en una fase posterior, con política de privacidad y consentimiento legal revisado antes de publicación.</p>
+        </div>
+        <aside class="beta-panel">
+          <h3>Estado actual de la beta</h3>
+          <ul>
+            <li>Prototipo local por CLI.</li>
+            <li>Sin instalador todavía.</li>
+            <li>Sin integración directa con DaVinci, Avid o Premiere todavía.</li>
+            <li>Sin waveform sync, transcripción ni claqueta visual todavía.</li>
+            <li>Precio beta reducido por definir según caso de uso.</li>
+          </ul>
+          <p id="contacto-pendiente" class="note">Esta landing es un pack estático exportable. No envía datos y no conecta con CRM.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Preguntas frecuentes</h2>
+          <p>Respuestas honestas para evitar promesas fuera del estado actual.</p>
+        </div>
+        <details open><summary>¿Sube mi material a la nube?</summary><p>No en la versión actual. La herramienta trabaja localmente y genera outputs en la carpeta que el usuario elige.</p></details>
+        <details><summary>¿Necesito GPU?</summary><p>No. El prototipo actual no usa GPU.</p></details>
+        <details><summary>¿Funciona con DaVinci, Avid o Premiere?</summary><p>Todavía no hay integración directa. Hoy genera HTML, CSV y JSON que pueden servir como referencia antes de trabajar en el editor.</p></details>
+        <details><summary>¿Sincroniza automáticamente?</summary><p>No. Sugiere posibles matches vídeo/audio con razones explicables. La decisión final sigue siendo del equipo de montaje.</p></details>
+        <details><summary>¿Lee timecode?</summary><p>Sí, cuando la metadata está disponible y ffprobe puede leerla. Si no hay timecode, usa señales secundarias como nombre, carpeta y duración.</p></details>
+        <details><summary>¿Qué archivos genera?</summary><p>Genera scan_result.json, media_files.csv, match_suggestions.csv y report.html.</p></details>
+      </div>
+    </section>
+
+    <section id="final">
+      <div class="wrap beta-box">
+        <div>
+          <h2>Si preparas material de rodaje antes de montaje, queremos probarlo contigo.</h2>
+          <p>Esta primera versión está pensada para validar utilidad real antes de construir instalador, interfaz gráfica e integraciones.</p>
+        </div>
+        <img src="../assets/ailink_sync_dialogue/linkedin-beta-card.png" alt="Imagen cuadrada para anunciar la beta privada de AILink Sync Dialogue">
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div>AILinkCinema · AILink Sync Dialogue · Beta privada</div>
+      <div>Pack estático exportable · Sin formulario real · Sin tracking · Sin cloud</div>
+    </div>
+  </footer>
+</body>
+</html>

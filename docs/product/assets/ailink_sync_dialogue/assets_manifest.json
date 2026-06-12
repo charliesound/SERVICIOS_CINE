@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "file_name": "hero-report-mockup.png",
+      "purpose": "Hero image for the landing page showing the report with match suggestions",
+      "width": 1200,
+      "height": 800,
+      "source": "Generated from create_sync_dialogue_metadata_demo.py controlled demo",
+      "public_safe": true,
+      "notes": "No real media, no personal data, no client names. Controlled demo only."
+    },
+    {
+      "file_name": "report-summary.png",
+      "purpose": "Summary card showing file counts and output formats",
+      "width": 800,
+      "height": 500,
+      "source": "Generated from create_sync_dialogue_metadata_demo.py summary data",
+      "public_safe": true,
+      "notes": "No real media, no personal data, no client names. Controlled demo only."
+    },
+    {
+      "file_name": "match-suggestions-table.png",
+      "purpose": "Table of match suggestions with confidence, score, strategy and reasons",
+      "width": 800,
+      "height": 600,
+      "source": "Generated from create_sync_dialogue_metadata_demo.py match suggestions",
+      "public_safe": true,
+      "notes": "No real media, no personal data, no client names. Controlled demo only."
+    },
+    {
+      "file_name": "media-files-table.png",
+      "purpose": "Inventory table of detected video and audio files",
+      "width": 800,
+      "height": 600,
+      "source": "Generated from create_sync_dialogue_metadata_demo.py media files",
+      "public_safe": true,
+      "notes": "No real media, no personal data, no client names. Controlled demo only."
+    },
+    {
+      "file_name": "privacy-local-first.png",
+      "purpose": "Privacy-focused card stating local-first principles",
+      "width": 800,
+      "height": 400,
+      "source": "Generated programmatically with static copy",
+      "public_safe": true,
+      "notes": "No real media, no personal data, no client names. Controlled demo only."
+    },
+    {
+      "file_name": "linkedin-beta-card.png",
+      "purpose": "Square social media image for LinkedIn and Facebook beta announcement",
+      "width": 1080,
+      "height": 1080,
+      "source": "Generated from demo summary data with beta messaging",
+      "public_safe": true,
+      "notes": "No real media, no personal data, no client names. Controlled demo only."
+    }
+  ]
+}

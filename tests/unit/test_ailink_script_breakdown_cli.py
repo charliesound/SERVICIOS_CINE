@@ -69,9 +69,10 @@ def demo_file(tmp_path):
     return demo_path
 
 
-def test_cli_generates_both_files(tmp_path, demo_file):
+def test_cli_generates_both_files(tmp_path, demo_file, monkeypatch):
     """CLI must generate both JSON and Markdown files."""
-    output_dir = tmp_path / "output"
+    monkeypatch.chdir(tmp_path)
+    output_dir = Path("output")
     output_dir.mkdir()
 
     exit_code = cli_main([
@@ -132,9 +133,10 @@ def test_cli_rejects_mnt_path(tmp_path, demo_file):
     assert exit_code == 2
 
 
-def test_cli_respects_force(tmp_path, demo_file):
+def test_cli_respects_force(tmp_path, demo_file, monkeypatch):
     """CLI must respect --force flag."""
-    output_dir = tmp_path / "output"
+    monkeypatch.chdir(tmp_path)
+    output_dir = Path("output")
     output_dir.mkdir()
 
     # First run
@@ -160,9 +162,10 @@ def test_cli_respects_force(tmp_path, demo_file):
     assert exit_code == 0
 
 
-def test_cli_custom_names(tmp_path, demo_file):
+def test_cli_custom_names(tmp_path, demo_file, monkeypatch):
     """CLI must respect custom file names."""
-    output_dir = tmp_path / "output"
+    monkeypatch.chdir(tmp_path)
+    output_dir = Path("output")
     output_dir.mkdir()
 
     exit_code = cli_main([

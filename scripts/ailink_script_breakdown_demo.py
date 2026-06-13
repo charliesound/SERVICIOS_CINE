@@ -39,13 +39,17 @@ def _validate_output_dir(output_dir: Path) -> None:
     """Validate that the output directory is safe."""
     path_str = str(output_dir)
 
-    # Reject empty-ish paths
-    if not path_str or path_str.strip() in ("", "/"):
-        raise ValueError("output-dir no puede estar vacío o ser raíz")
+    # Reject empty or whitespace-only paths
+    if not path_str or not path_str.strip():
+        raise ValueError("output-dir no puede estar vacío")
 
     # Reject root
     if output_dir == Path("/"):
         raise ValueError("output-dir no puede ser /")
+
+    # Reject Windows-like paths (C:\, C:\Users\test, D:\demo, C:/path, etc.)
+    if len(path_str) >= 2 and path_str[1] == ":":
+        raise ValueError("rutas Windows-like no permitidas")
 
     # Reject /mnt paths (WSL) - check both forward and back slashes
     normalized = path_str.replace("\\", "/")
@@ -103,7 +107,13 @@ def main(argv: list[str] | None = None) -> int:
         # Parse
         result = parse_demo_script(text)
 
-        # Validate output directory
+        # Validate output directory - early check for empty/blank
+        if not args.output_dir or not args.output_dir.strip():
+            print(
+                "Error: output-dir no puede estar vacío",
+                file=sys.stderr,
+            )
+            return 2
         output_dir = Path(args.output_dir)
         _validate_output_dir(output_dir)
 

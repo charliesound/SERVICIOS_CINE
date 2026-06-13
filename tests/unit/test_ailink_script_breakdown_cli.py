@@ -220,3 +220,67 @@ def test_cli_no_html(tmp_path, demo_file):
 
     html_files = list(output_dir.rglob("*.html"))
     assert html_files == []
+
+
+def test_cli_with_excel_flag(tmp_path, demo_file, monkeypatch):
+    """CLI must generate Excel when --excel-name is provided."""
+    monkeypatch.chdir(tmp_path)
+    output_dir = Path("output")
+    output_dir.mkdir()
+
+    exit_code = cli_main([
+        "--input-demo", str(demo_file),
+        "--output-dir", str(output_dir),
+        "--excel-name", "breakdown.xlsx",
+    ])
+
+    assert exit_code == 0
+    assert (output_dir / "breakdown.xlsx").exists()
+
+
+def test_cli_without_excel_flag_no_xlsx(tmp_path, demo_file, monkeypatch):
+    """CLI must not generate Excel without --excel-name flag."""
+    monkeypatch.chdir(tmp_path)
+    output_dir = Path("output")
+    output_dir.mkdir()
+
+    exit_code = cli_main([
+        "--input-demo", str(demo_file),
+        "--output-dir", str(output_dir),
+    ])
+
+    assert exit_code == 0
+    xlsx_files = list(output_dir.rglob("*.xlsx"))
+    assert xlsx_files == []
+
+
+def test_cli_excel_respects_force(tmp_path, demo_file, monkeypatch):
+    """CLI must respect --force for Excel overwrite."""
+    monkeypatch.chdir(tmp_path)
+    output_dir = Path("output")
+    output_dir.mkdir()
+
+    # First run
+    exit_code = cli_main([
+        "--input-demo", str(demo_file),
+        "--output-dir", str(output_dir),
+        "--excel-name", "breakdown.xlsx",
+    ])
+    assert exit_code == 0
+
+    # Second run without --force should fail
+    exit_code = cli_main([
+        "--input-demo", str(demo_file),
+        "--output-dir", str(output_dir),
+        "--excel-name", "breakdown.xlsx",
+    ])
+    assert exit_code == 2
+
+    # Third run with --force should succeed
+    exit_code = cli_main([
+        "--input-demo", str(demo_file),
+        "--output-dir", str(output_dir),
+        "--excel-name", "breakdown.xlsx",
+        "--force",
+    ])
+    assert exit_code == 0

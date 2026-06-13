@@ -315,8 +315,8 @@ class TestDangerousPaths:
 class TestForbiddenFormats:
     """D1-D5: Verify no forbidden file formats are generated."""
 
-    def test_no_xlsx_generated(self, valid_demo_file, tmp_path, monkeypatch):
-        """D1: CLI must not generate .xlsx files."""
+    def test_no_xlsx_without_flag(self, valid_demo_file, tmp_path, monkeypatch):
+        """D1: CLI must not generate .xlsx without --excel-name flag."""
         monkeypatch.chdir(tmp_path)
         output_dir = Path("output")
         output_dir.mkdir()
@@ -325,6 +325,19 @@ class TestForbiddenFormats:
             "--output-dir", str(output_dir),
         ])
         assert list(output_dir.rglob("*.xlsx")) == []
+
+    def test_excel_only_with_explicit_flag(self, valid_demo_file, tmp_path, monkeypatch):
+        """D1b: Excel must only be generated with explicit --excel-name flag."""
+        monkeypatch.chdir(tmp_path)
+        output_dir = Path("output")
+        output_dir.mkdir()
+        exit_code = cli_main([
+            "--input-demo", str(valid_demo_file),
+            "--output-dir", str(output_dir),
+            "--excel-name", "test.xlsx",
+        ])
+        assert exit_code == 0
+        assert (output_dir / "test.xlsx").exists()
 
     def test_no_pdf_generated(self, valid_demo_file, tmp_path, monkeypatch):
         """D2: CLI must not generate .pdf files."""

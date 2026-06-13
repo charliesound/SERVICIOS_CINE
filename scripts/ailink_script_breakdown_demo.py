@@ -7,6 +7,7 @@ Usage:
         --output-dir <path> \
         [--json-name breakdown.json] \
         [--markdown-name breakdown.md] \
+        [--excel-name script_breakdown_demo_bruma.xlsx] \
         [--force]
 
 Exit codes:
@@ -32,6 +33,9 @@ from ailink_tools.script_breakdown.demo_parser import (
 from ailink_tools.script_breakdown.exports import (
     export_json,
     export_markdown,
+)
+from ailink_tools.script_breakdown.excel_export import (
+    export_excel,
 )
 
 
@@ -84,6 +88,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Nombre del archivo Markdown (default: breakdown.md)",
     )
     parser.add_argument(
+        "--excel-name",
+        default=None,
+        help="Nombre del archivo Excel (default: no generar Excel)",
+    )
+    parser.add_argument(
         "--force",
         action="store_true",
         help="Sobrescribir archivos existentes",
@@ -120,6 +129,7 @@ def main(argv: list[str] | None = None) -> int:
         # Build output paths
         json_path = output_dir / args.json_name
         md_path = output_dir / args.markdown_name
+        excel_path = output_dir / args.excel_name if args.excel_name else None
 
         # Check for existing files
         if not args.force:
@@ -137,13 +147,24 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
                 return 2
+            if excel_path and excel_path.exists():
+                print(
+                    f"Error: archivo ya existe: {excel_path}. "
+                    "Usa --force para sobrescribir.",
+                    file=sys.stderr,
+                )
+                return 2
 
         # Export
         export_json(result, json_path)
         export_markdown(result, md_path)
+        if excel_path:
+            export_excel(result, excel_path)
 
         print(f"Exportado JSON: {json_path}")
         print(f"Exportado Markdown: {md_path}")
+        if excel_path:
+            print(f"Exportado Excel: {excel_path}")
         return 0
 
     except ValueError as e:

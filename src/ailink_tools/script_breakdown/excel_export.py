@@ -1,237 +1,262 @@
-"""Excel export for Script-to-Production Breakdown demo."""
+"""Excel export for Script-to-Production Breakdown demo.
+
+Generates valid .xlsx files using only Python stdlib (zipfile, xml.etree).
+No external dependencies required.
+"""
 
 from __future__ import annotations
 
+import zipfile
 from pathlib import Path
-
-from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
-from openpyxl.utils import get_column_letter
+from xml.etree.ElementTree import Element, SubElement, tostring, parse
+from xml.sax.saxutils import escape
 
 from .schemas import BreakdownResult
 
 ALLOWED_EXTENSIONS = {".xlsx"}
 
+
 # ---------------------------------------------------------------------------
-# Style constants
+# XML constants for Office Open XML structure
 # ---------------------------------------------------------------------------
 
-HEADER_FILL = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
-HEADER_FONT = Font(bold=True, color="FFFFFF", size=11)
-ALT_FILL = PatternFill(start_color="D9E2F3", end_color="D9E2F3", fill_type="solid")
-TRAFFIC_FILLS = {
-    "verde": PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid"),
-    "amarillo": PatternFill(start_color="FFC000", end_color="FFC000", fill_type="solid"),
-    "naranja": PatternFill(start_color="ED7D31", end_color="ED7D31", fill_type="solid"),
-    "rojo": PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid"),
-}
-TRAFFIC_FONTS = {
-    "verde": Font(bold=True, color="FFFFFF"),
-    "amarillo": Font(bold=True, color="000000"),
-    "naranja": Font(bold=True, color="FFFFFF"),
-    "rojo": Font(bold=True, color="FFFFFF"),
-}
+CONTENT_TYPES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet4.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet5.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet6.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet7.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet8.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet9.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet10.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>"""
+
+RELS_ROOT = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"""
+
+WORKBOOK_RELS = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/>
+  <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet4.xml"/>
+  <Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet5.xml"/>
+  <Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet6.xml"/>
+  <Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet7.xml"/>
+  <Relationship Id="rId8" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet8.xml"/>
+  <Relationship Id="rId9" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet9.xml"/>
+  <Relationship Id="rId10" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet10.xml"/>
+  <Relationship Id="rId11" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>"""
+
+STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="3">
+    <font><sz val="11"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><name val="Calibri"/></font>
+  </fonts>
+  <fills count="4">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF4472C4"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFD9E2F3"/></patternFill></fill>
+  </fills>
+  <borders count="1">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+  </borders>
+  <cellStyleXfs count="1">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+  </cellStyleXfs>
+  <cellXfs count="4">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/>
+    <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+  </cellXfs>
+</styleSheet>"""
 
 
-def _validate_path(path: Path) -> None:
-    """Validate that the path has an allowed extension."""
-    if not path.name:
-        raise ValueError("Ruta vacía no permitida")
-    if path.suffix.lower() not in ALLOWED_EXTENSIONS:
-        raise ValueError(
-            f"Extensión no permitida: {path.suffix}. "
-            f"Permitidas: {ALLOWED_EXTENSIONS}"
-        )
+# ---------------------------------------------------------------------------
+# XML builders
+# ---------------------------------------------------------------------------
+
+def _esc(text: str) -> str:
+    """Escape XML text."""
+    return escape(str(text))
 
 
-def _style_header(ws, col_count: int) -> None:
-    """Apply header style to first row."""
-    for col in range(1, col_count + 1):
-        cell = ws.cell(row=1, column=col)
-        cell.fill = HEADER_FILL
-        cell.font = HEADER_FONT
-        cell.alignment = Alignment(horizontal="center", vertical="center")
+def _col_letter(col: int) -> str:
+    """Convert 1-based column number to Excel letter (1=A, 2=B, ...)."""
+    result = ""
+    while col > 0:
+        col, remainder = divmod(col - 1, 26)
+        result = chr(65 + remainder) + result
+    return result
 
 
-def _auto_width(ws) -> None:
-    """Auto-fit column widths based on content."""
-    for col_cells in ws.columns:
-        max_len = 0
-        col_letter = get_column_letter(col_cells[0].column)
-        for cell in col_cells:
-            if cell.value is not None:
-                max_len = max(max_len, len(str(cell.value)))
-        ws.column_dimensions[col_letter].width = min(max(max_len + 2, 12), 40)
+def _make_cell_xml(col: int, row: int, value: object, style: int = 0,
+                   formula: str | None = None) -> str:
+    """Build XML string for a single cell."""
+    ref = f"{_col_letter(col)}{row}"
+    if formula is not None:
+        return f'<c r="{ref}" s="{style}"><f>{_esc(formula)}</f></c>'
+    if value is None:
+        return f'<c r="{ref}" s="{style}"/>'
+    if isinstance(value, (int, float)):
+        return f'<c r="{ref}" s="{style}"><v>{value}</v></c>'
+    return f'<c r="{ref}" s="{style}" t="inlineStr"><is><t>{_esc(str(value))}</t></is></c>'
 
 
-def _add_alt_rows(ws, start_row: int = 2) -> None:
-    """Apply alternating row colors."""
-    for row in range(start_row, ws.max_row + 1):
-        if (row - start_row) % 2 == 1:
-            for col in range(1, ws.max_column + 1):
-                ws.cell(row=row, column=col).fill = ALT_FILL
+def _make_sheet_xml(headers: list[str], rows: list[list],
+                    total_row: list | None = None) -> str:
+    """Build complete worksheet XML."""
+    col_count = len(headers)
+    row_count = len(rows) + 1  # +1 for header
+    if total_row is not None:
+        row_count += 1
+
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">',
+        f'<dimension ref="A1:{_col_letter(col_count)}{row_count}"/>',
+        '<sheetViews><sheetView tabSelected="0" workbookViewId="0">',
+        '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>',
+        '</sheetView></sheetViews>',
+        '<sheetData>',
+    ]
+
+    # Header row (style 1 = bold blue)
+    lines.append('<row r="1">')
+    for ci, h in enumerate(headers, 1):
+        lines.append(_make_cell_xml(ci, 1, h, style=1))
+    lines.append('</row>')
+
+    # Data rows
+    for ri, row_data in enumerate(rows, 2):
+        lines.append(f'<row r="{ri}">')
+        for ci, val in enumerate(row_data, 1):
+            style = 2 if (ri % 2 == 0) else 0  # alternating row fill
+            lines.append(_make_cell_xml(ci, ri, val, style=style))
+        lines.append('</row>')
+
+    # Total row (if provided)
+    if total_row is not None:
+        tr = len(rows) + 2
+        lines.append(f'<row r="{tr}">')
+        for ci, val in enumerate(total_row, 1):
+            style = 3  # bold
+            if isinstance(val, str) and val.startswith("="):
+                lines.append(_make_cell_xml(ci, tr, None, style=style, formula=val))
+            else:
+                lines.append(_make_cell_xml(ci, tr, val, style=style))
+        lines.append('</row>')
+
+    lines.append('</sheetData>')
+    lines.append('<pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>')
+    lines.append('</worksheet>')
+    return "\n".join(lines)
 
 
-def _write_sheet(ws, headers: list[str], rows: list[list]) -> None:
-    """Write headers and rows to a worksheet."""
-    for col, header in enumerate(headers, 1):
-        ws.cell(row=1, column=col, value=header)
-    for row_idx, row_data in enumerate(rows, 2):
-        for col_idx, value in enumerate(row_data, 1):
-            ws.cell(row=row_idx, column=col_idx, value=value)
-    _style_header(ws, len(headers))
-    _auto_width(ws)
-    _add_alt_rows(ws)
-    ws.freeze_panes = "A2"
+def _make_workbook_xml(sheet_names: list[str]) -> str:
+    """Build workbook.xml with sheet references."""
+    sheets = ""
+    for i, name in enumerate(sheet_names, 1):
+        sheets += f'<sheet name="{_esc(name)}" sheetId="{i}" r:id="rId{i}"/>'
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        f'<sheets>{sheets}</sheets>'
+        '</workbook>'
+    )
 
+
+# ---------------------------------------------------------------------------
+# Data builders
+# ---------------------------------------------------------------------------
 
 def _build_resumen(result: BreakdownResult) -> list[list]:
-    """Build Resumen sheet data."""
     v = result.viability
     return [
-        [
-            "Título", result.project["title"],
-        ],
-        [
-            "Tipo", result.project["type"],
-        ],
-        [
-            "Género", result.project["genre"],
-        ],
-        [
-            "Duración (min)", result.project["duration_minutes"],
-        ],
-        [
-            "Semanas de rodaje", result.project["shooting_weeks"],
-        ],
-        [
-            "Moneda", result.project["currency"],
-        ],
-        [
-            "Viabilidad global", f"{v['global_score']}/{10}",
-        ],
-        [
-            "Semáforo", v["global_traffic_light"],
-        ],
-        [
-            "Resumen viabilidad", v["summary"],
-        ],
+        ["Título", result.project["title"]],
+        ["Tipo", result.project["type"]],
+        ["Género", result.project["genre"]],
+        ["Duración (min)", result.project["duration_minutes"]],
+        ["Semanas de rodaje", result.project["shooting_weeks"]],
+        ["Moneda", result.project["currency"]],
+        ["Viabilidad global", f"{v['global_score']}/{10}"],
+        ["Semáforo", v["global_traffic_light"]],
+        ["Resumen viabilidad", v["summary"]],
     ]
 
 
 def _build_escenas(result: BreakdownResult) -> list[list]:
-    """Build Escenas sheet rows."""
-    rows = []
-    for s in result.scenes:
-        rows.append([
-            s.scene_id,
-            s.number,
-            s.header,
-            s.location,
-            s.int_ext,
-            s.day_night,
-            ", ".join(s.characters),
-            s.complexity,
-            s.notes,
-        ])
-    return rows
+    return [
+        [s.scene_id, s.number, s.header, s.location, s.int_ext,
+         s.day_night, ", ".join(s.characters), s.complexity, s.notes]
+        for s in result.scenes
+    ]
 
 
 def _build_personajes(result: BreakdownResult) -> list[list]:
-    """Build Personajes sheet rows."""
-    rows = []
-    for c in result.characters:
-        rows.append([
-            c.character_id,
-            c.name,
-            c.role,
-            ", ".join(str(x) for x in c.scenes),
-            c.age,
-            c.complexity,
-            c.notes,
-        ])
-    return rows
+    return [
+        [c.character_id, c.name, c.role, ", ".join(str(x) for x in c.scenes),
+         c.age, c.complexity, c.notes]
+        for c in result.characters
+    ]
 
 
 def _build_localizaciones(result: BreakdownResult) -> list[list]:
-    """Build Localizaciones sheet rows."""
-    rows = []
-    for loc in result.locations:
-        rows.append([
-            loc.location_id,
-            loc.name,
-            loc.type,
-            loc.int_ext,
-            ", ".join(str(x) for x in loc.scenes),
-            loc.permits,
-            loc.complexity,
-        ])
-    return rows
+    return [
+        [loc.location_id, loc.name, loc.type, loc.int_ext,
+         ", ".join(str(x) for x in loc.scenes), loc.permits, loc.complexity]
+        for loc in result.locations
+    ]
 
 
 def _build_riesgos(result: BreakdownResult) -> list[list]:
-    """Build Riesgos sheet rows."""
-    rows = []
-    for r in result.risks:
-        rows.append([
-            r.risk_id,
-            r.description,
-            r.impact,
-            r.probability,
-            r.mitigation,
-        ])
-    return rows
+    return [
+        [r.risk_id, r.description, r.impact, r.probability, r.mitigation]
+        for r in result.risks
+    ]
 
 
 def _build_viabilidad(result: BreakdownResult) -> list[list]:
-    """Build Viabilidad sheet rows."""
-    rows = []
-    for ind in result.viability["indicators"]:
-        rows.append([
-            ind["indicator"],
-            ind["score"],
-            ind["max_score"],
-            ind["traffic_light"],
-            ind["justification"],
-            ind["recommendation"],
-        ])
-    return rows
+    return [
+        [ind["indicator"], ind["score"], ind["max_score"],
+         ind["traffic_light"], ind["justification"], ind["recommendation"]]
+        for ind in result.viability["indicators"]
+    ]
 
 
 def _build_presupuesto(result: BreakdownResult) -> list[list]:
-    """Build Presupuesto sheet rows."""
-    rows = []
-    for b in result.preliminary_budget:
-        rows.append([
-            b.budget_id,
-            b.category,
-            b.low,
-            b.mid,
-            b.high,
-            b.confidence,
-            b.assumptions,
-        ])
-    return rows
+    return [
+        [b.budget_id, b.category, b.low, b.mid, b.high,
+         b.confidence, b.assumptions]
+        for b in result.preliminary_budget
+    ]
 
 
 def _build_recomendaciones(result: BreakdownResult) -> list[list]:
-    """Build Recomendaciones sheet rows."""
-    rows = []
-    for i, rec in enumerate(result.recommendations, 1):
-        rows.append([i, rec])
-    return rows
+    return [[i, rec] for i, rec in enumerate(result.recommendations, 1)]
 
 
 def _build_revision_humana(result: BreakdownResult) -> list[list]:
-    """Build Revisión humana sheet rows."""
-    rows = []
-    for note in result.human_review_notes:
-        rows.append([note])
-    return rows
+    return [[note] for note in result.human_review_notes]
 
 
 def _build_metadata(result: BreakdownResult) -> list[list]:
-    """Build Metadata sheet rows."""
     m = result.metadata
     return [
         ["organization_id", m["organization_id"]],
@@ -241,35 +266,54 @@ def _build_metadata(result: BreakdownResult) -> list[list]:
         ["productora", m["organization_name"]],
         ["parser_version", m["parser_version"]],
         ["parser_type", m["parser_type"]],
-        ["is_demo", m["is_demo"]],
+        ["is_demo", str(m["is_demo"])],
     ]
 
 
-def _add_presupuesto_total(ws, row_start: int) -> None:
-    """Add TOTAL row with SUM formulas to Presupuesto sheet."""
-    total_row = row_start + 1
-    ws.cell(row=total_row, column=1, value="TOTAL")
-    ws.cell(row=total_row, column=1).font = Font(bold=True)
-    ws.cell(row=total_row, column=2, value="")
-    ws.cell(row=total_row, column=2).font = Font(bold=True)
+def _presupuesto_total_row(rows: list[list]) -> list:
+    """Build TOTAL row with SUM formulas."""
+    total_baja = sum(r[2] for r in rows if isinstance(r[2], (int, float)))
+    total_media = sum(r[3] for r in rows if isinstance(r[3], (int, float)))
+    total_alta = sum(r[4] for r in rows if isinstance(r[4], (int, float)))
+    n = len(rows) + 1  # last data row number (1-based, +1 for header)
+    return [
+        "TOTAL",
+        "",
+        f"=SUM(C2:C{n})",
+        f"=SUM(D2:D{n})",
+        f"=SUM(E2:E{n})",
+        "",
+        "",
+    ]
 
-    # SUM formulas for Baja (col 3), Media (col 4), Alta (col 5)
-    for col in [3, 4, 5]:
-        col_letter = get_column_letter(col)
-        formula = f"=SUM({col_letter}2:{col_letter}{row_start})"
-        cell = ws.cell(row=total_row, column=col, value=formula)
-        cell.font = Font(bold=True)
-        cell.number_format = "#,##0"
 
-    # Style total row
-    for col in range(1, 8):
-        cell = ws.cell(row=total_row, column=col)
-        if not cell.font.bold:
-            cell.font = Font(bold=True)
+# ---------------------------------------------------------------------------
+# Path validation
+# ---------------------------------------------------------------------------
+
+def _validate_path(path: Path) -> None:
+    if not path.name:
+        raise ValueError("Ruta vacía no permitida")
+    if path.suffix.lower() not in ALLOWED_EXTENSIONS:
+        raise ValueError(
+            f"Extensión no permitida: {path.suffix}. "
+            f"Permitidas: {ALLOWED_EXTENSIONS}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Main export
+# ---------------------------------------------------------------------------
+
+SHEET_NAMES = [
+    "Resumen", "Escenas", "Personajes", "Localizaciones",
+    "Riesgos", "Viabilidad", "Presupuesto", "Recomendaciones",
+    "Revisión humana", "Metadata",
+]
 
 
 def export_excel(result: BreakdownResult, path: Path) -> Path:
-    """Export breakdown result to Excel file.
+    """Export breakdown result to Excel file using only stdlib.
 
     Args:
         result: The breakdown result to export.
@@ -284,106 +328,39 @@ def export_excel(result: BreakdownResult, path: Path) -> Path:
     _validate_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    wb = Workbook()
+    # Build sheet data
+    sheets_data: list[tuple[str, list[str], list[list], list | None]] = [
+        ("Resumen", ["Campo", "Valor"], _build_resumen(result), None),
+        ("Escenas", ["ID", "Número", "Header", "Localización", "INT/EXT",
+         "Día/Noche", "Personajes", "Complejidad", "Notas"],
+         _build_escenas(result), None),
+        ("Personajes", ["ID", "Nombre", "Rol", "Escenas", "Edad",
+         "Complejidad", "Notas"], _build_personajes(result), None),
+        ("Localizaciones", ["ID", "Nombre", "Tipo", "INT/EXT", "Escenas",
+         "Permisos", "Complejidad"], _build_localizaciones(result), None),
+        ("Riesgos", ["ID", "Descripción", "Impacto", "Probabilidad",
+         "Mitigación"], _build_riesgos(result), None),
+        ("Viabilidad", ["Indicador", "Puntuación", "Máximo", "Semáforo",
+         "Justificación", "Recomendación"], _build_viabilidad(result), None),
+        ("Presupuesto", ["ID", "Categoría", "Baja", "Media", "Alta",
+         "Confianza", "Supuestos"], _build_presupuesto(result),
+         _presupuesto_total_row(_build_presupuesto(result))),
+        ("Recomendaciones", ["Número", "Recomendación"],
+         _build_recomendaciones(result), None),
+        ("Revisión humana", ["Nota"], _build_revision_humana(result), None),
+        ("Metadata", ["Campo", "Valor"], _build_metadata(result), None),
+    ]
 
-    # 1. Resumen
-    ws = wb.active
-    ws.title = "Resumen"
-    resumen_data = _build_resumen(result)
-    _write_sheet(ws, ["Campo", "Valor"], resumen_data)
+    # Write ZIP
+    with zipfile.ZipFile(str(path), "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("[Content_Types].xml", CONTENT_TYPES)
+        zf.writestr("_rels/.rels", RELS_ROOT)
+        zf.writestr("xl/workbook.xml", _make_workbook_xml(SHEET_NAMES))
+        zf.writestr("xl/_rels/workbook.xml.rels", WORKBOOK_RELS)
+        zf.writestr("xl/styles.xml", STYLES)
 
-    # 2. Escenas
-    ws_escenas = wb.create_sheet("Escenas")
-    _write_sheet(
-        ws_escenas,
-        ["ID", "Número", "Header", "Localización", "INT/EXT", "Día/Noche",
-         "Personajes", "Complejidad", "Notas"],
-        _build_escenas(result),
-    )
+        for i, (name, headers, rows, total) in enumerate(sheets_data, 1):
+            xml = _make_sheet_xml(headers, rows, total)
+            zf.writestr(f"xl/worksheets/sheet{i}.xml", xml)
 
-    # 3. Personajes
-    ws_personajes = wb.create_sheet("Personajes")
-    _write_sheet(
-        ws_personajes,
-        ["ID", "Nombre", "Rol", "Escenas", "Edad", "Complejidad", "Notas"],
-        _build_personajes(result),
-    )
-
-    # 4. Localizaciones
-    ws_localizaciones = wb.create_sheet("Localizaciones")
-    _write_sheet(
-        ws_localizaciones,
-        ["ID", "Nombre", "Tipo", "INT/EXT", "Escenas", "Permisos",
-         "Complejidad"],
-        _build_localizaciones(result),
-    )
-
-    # 5. Riesgos
-    ws_riesgos = wb.create_sheet("Riesgos")
-    _write_sheet(
-        ws_riesgos,
-        ["ID", "Descripción", "Impacto", "Probabilidad", "Mitigación"],
-        _build_riesgos(result),
-    )
-
-    # 6. Viabilidad
-    ws_viabilidad = wb.create_sheet("Viabilidad")
-    viabilidad_rows = _build_viabilidad(result)
-    _write_sheet(
-        ws_viabilidad,
-        ["Indicador", "Puntuación", "Máximo", "Semáforo", "Justificación",
-         "Recomendación"],
-        viabilidad_rows,
-    )
-    # Apply traffic light colors
-    for row_idx in range(2, ws_viabilidad.max_row + 1):
-        sem_cell = ws_viabilidad.cell(row=row_idx, column=4)
-        light = str(sem_cell.value).lower() if sem_cell.value else ""
-        if light in TRAFFIC_FILLS:
-            sem_cell.fill = TRAFFIC_FILLS[light]
-            sem_cell.font = TRAFFIC_FONTS[light]
-
-    # 7. Presupuesto
-    ws_presupuesto = wb.create_sheet("Presupuesto")
-    presupuesto_rows = _build_presupuesto(result)
-    _write_sheet(
-        ws_presupuesto,
-        ["ID", "Categoría", "Baja", "Media", "Alta", "Confianza",
-         "Supuestos"],
-        presupuesto_rows,
-    )
-    # Format budget columns as numbers
-    for row in range(2, ws_presupuesto.max_row + 1):
-        for col in [3, 4, 5]:
-            cell = ws_presupuesto.cell(row=row, column=col)
-            if cell.value is not None:
-                cell.number_format = "#,##0"
-    # Add TOTAL row
-    _add_presupuesto_total(ws_presupuesto, len(presupuesto_rows) + 1)
-
-    # 8. Recomendaciones
-    ws_recomendaciones = wb.create_sheet("Recomendaciones")
-    _write_sheet(
-        ws_recomendaciones,
-        ["Número", "Recomendación"],
-        _build_recomendaciones(result),
-    )
-
-    # 9. Revisión humana
-    ws_revision = wb.create_sheet("Revisión humana")
-    _write_sheet(
-        ws_revision,
-        ["Nota"],
-        _build_revision_humana(result),
-    )
-
-    # 10. Metadata
-    ws_metadata = wb.create_sheet("Metadata")
-    _write_sheet(
-        ws_metadata,
-        ["Campo", "Valor"],
-        _build_metadata(result),
-    )
-
-    wb.save(str(path))
     return path

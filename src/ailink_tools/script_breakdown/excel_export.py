@@ -133,6 +133,7 @@ def _make_sheet_xml(headers: list[str], rows: list[list],
         '<sheetViews><sheetView tabSelected="0" workbookViewId="0">',
         '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>',
         '</sheetView></sheetViews>',
+        _make_cols_xml(col_count),
         '<sheetData>',
     ]
 
@@ -168,6 +169,17 @@ def _make_sheet_xml(headers: list[str], rows: list[list],
     return "\n".join(lines)
 
 
+def _make_cols_xml(col_count: int) -> str:
+    """Build basic column widths for better first-open readability."""
+    widths = [24, 36, 18, 18, 18, 18, 42, 20, 42]
+    lines = ["<cols>"]
+    for col in range(1, col_count + 1):
+        width = widths[col - 1] if col <= len(widths) else 18
+        lines.append(f'<col min="{col}" max="{col}" width="{width}" customWidth="1"/>')
+    lines.append("</cols>")
+    return "".join(lines)
+
+
 def _make_workbook_xml(sheet_names: list[str]) -> str:
     """Build workbook.xml with sheet references."""
     sheets = ""
@@ -189,7 +201,13 @@ def _make_workbook_xml(sheet_names: list[str]) -> str:
 def _build_resumen(result: BreakdownResult) -> list[list]:
     v = result.viability
     return [
-        ["Título", result.project["title"]],
+        ["Proyecto", result.project["title"]],
+        ["Tipo de demo", "demo controlada"],
+        ["Guion", "guion ficticio"],
+        ["Límite", "no presupuesto definitivo"],
+        ["Revisión", "revisión humana requerida"],
+        ["Valor", "guion → producción → finanzas"],
+        ["Presupuesto", "presupuesto preliminar/revisable"],
         ["Tipo", result.project["type"]],
         ["Género", result.project["genre"]],
         ["Duración (min)", result.project["duration_minutes"]],
@@ -233,11 +251,18 @@ def _build_riesgos(result: BreakdownResult) -> list[list]:
 
 
 def _build_viabilidad(result: BreakdownResult) -> list[list]:
-    return [
+    rows = [
         [ind["indicator"], ind["score"], ind["max_score"],
          ind["traffic_light"], ind["justification"], ind["recommendation"]]
         for ind in result.viability["indicators"]
     ]
+    rows.extend([
+        ["Leyenda semáforos", "verde", "", "riesgo bajo", "", ""],
+        ["Leyenda semáforos", "amarillo", "", "revisión recomendada", "", ""],
+        ["Leyenda semáforos", "naranja", "", "atención prioritaria", "", ""],
+        ["Leyenda semáforos", "rojo", "", "riesgo crítico", "", ""],
+    ])
+    return rows
 
 
 def _build_presupuesto(result: BreakdownResult) -> list[list]:
@@ -306,9 +331,9 @@ def _validate_path(path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 SHEET_NAMES = [
-    "Resumen", "Escenas", "Personajes", "Localizaciones",
-    "Riesgos", "Viabilidad", "Presupuesto", "Recomendaciones",
-    "Revisión humana", "Metadata",
+    "Resumen", "Viabilidad", "Presupuesto", "Riesgos", "Escenas",
+    "Personajes", "Localizaciones", "Recomendaciones", "Revisión humana",
+    "Metadata",
 ]
 
 
@@ -331,6 +356,13 @@ def export_excel(result: BreakdownResult, path: Path) -> Path:
     # Build sheet data
     sheets_data: list[tuple[str, list[str], list[list], list | None]] = [
         ("Resumen", ["Campo", "Valor"], _build_resumen(result), None),
+        ("Viabilidad", ["Indicador", "Puntuación", "Máximo", "Semáforo",
+         "Justificación", "Recomendación"], _build_viabilidad(result), None),
+        ("Presupuesto", ["ID", "Categoría (presupuesto preliminar)", "Baja", "Media", "Alta",
+         "Confianza", "Supuestos"], _build_presupuesto(result),
+         _presupuesto_total_row(_build_presupuesto(result))),
+        ("Riesgos", ["ID", "Descripción", "Impacto", "Probabilidad",
+         "Mitigación"], _build_riesgos(result), None),
         ("Escenas", ["ID", "Número", "Header", "Localización", "INT/EXT",
          "Día/Noche", "Personajes", "Complejidad", "Notas"],
          _build_escenas(result), None),
@@ -338,13 +370,6 @@ def export_excel(result: BreakdownResult, path: Path) -> Path:
          "Complejidad", "Notas"], _build_personajes(result), None),
         ("Localizaciones", ["ID", "Nombre", "Tipo", "INT/EXT", "Escenas",
          "Permisos", "Complejidad"], _build_localizaciones(result), None),
-        ("Riesgos", ["ID", "Descripción", "Impacto", "Probabilidad",
-         "Mitigación"], _build_riesgos(result), None),
-        ("Viabilidad", ["Indicador", "Puntuación", "Máximo", "Semáforo",
-         "Justificación", "Recomendación"], _build_viabilidad(result), None),
-        ("Presupuesto", ["ID", "Categoría", "Baja", "Media", "Alta",
-         "Confianza", "Supuestos"], _build_presupuesto(result),
-         _presupuesto_total_row(_build_presupuesto(result))),
         ("Recomendaciones", ["Número", "Recomendación"],
          _build_recomendaciones(result), None),
         ("Revisión humana", ["Nota"], _build_revision_humana(result), None),

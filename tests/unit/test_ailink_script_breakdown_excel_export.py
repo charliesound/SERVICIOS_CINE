@@ -197,16 +197,29 @@ def test_export_excel_resumen_content(breakdown_result, excel_path):
     with _open_xlsx(excel_path) as zf:
         # Sheet 1 = Resumen
         row2 = _get_cell_values(zf, 1, 2)
-        row8 = _get_cell_values(zf, 1, 8)
+        row14 = _get_cell_values(zf, 1, 14)
     assert "Proyecto Demo Bruma" in row2
-    assert "Viabilidad global" in [v for v in row8 if v] or "5.5/10" in str(row8)
+    assert "Viabilidad global" in [v for v in row14 if v] or "5.5/10" in str(row14)
+
+
+def test_export_excel_resumen_has_visible_demo_limits(breakdown_result, excel_path):
+    """Resumen must make demo limitations visible."""
+    export_excel(breakdown_result, excel_path)
+    with _open_xlsx(excel_path) as zf:
+        xml = _get_sheet_xml(zf, 1)
+    assert "demo controlada" in xml
+    assert "guion ficticio" in xml
+    assert "no presupuesto definitivo" in xml
+    assert "revisión humana" in xml
+    assert "presupuesto preliminar" in xml
+    assert "guion → producción → finanzas" in xml
 
 
 def test_export_excel_escenas_row_count(breakdown_result, excel_path):
     """Escenas sheet must have 8 data rows + header = 9 rows."""
     export_excel(breakdown_result, excel_path)
     with _open_xlsx(excel_path) as zf:
-        count = _count_rows_in_sheet(zf, 2)  # Sheet 2 = Escenas
+        count = _count_rows_in_sheet(zf, 5)  # Sheet 5 = Escenas
     assert count == 9
 
 
@@ -214,7 +227,7 @@ def test_export_excel_personajes_row_count(breakdown_result, excel_path):
     """Personajes sheet must have 5 data rows + header = 6 rows."""
     export_excel(breakdown_result, excel_path)
     with _open_xlsx(excel_path) as zf:
-        count = _count_rows_in_sheet(zf, 3)  # Sheet 3 = Personajes
+        count = _count_rows_in_sheet(zf, 6)  # Sheet 6 = Personajes
     assert count == 6
 
 
@@ -222,7 +235,7 @@ def test_export_excel_presupuesto_has_total(breakdown_result, excel_path):
     """Presupuesto sheet must have 18 data rows + header + total = 20 rows."""
     export_excel(breakdown_result, excel_path)
     with _open_xlsx(excel_path) as zf:
-        count = _count_rows_in_sheet(zf, 7)  # Sheet 7 = Presupuesto
+        count = _count_rows_in_sheet(zf, 3)  # Sheet 3 = Presupuesto
     assert count == 20  # 1 header + 18 data + 1 total
 
 
@@ -230,7 +243,7 @@ def test_export_excel_presupuesto_total_formula(breakdown_result, excel_path):
     """Presupuesto TOTAL row must have SUM formulas."""
     export_excel(breakdown_result, excel_path)
     with _open_xlsx(excel_path) as zf:
-        row20 = _get_cell_values(zf, 7, 20)  # Sheet 7, row 20 = total
+        row20 = _get_cell_values(zf, 3, 20)  # Sheet 3, row 20 = total
     assert row20[0] == "TOTAL"
     # Check that columns C, D, E (indices 2, 3, 4) have SUM formulas
     for idx in [2, 3, 4]:
@@ -257,6 +270,18 @@ def test_export_excel_metadata_ids(breakdown_result, excel_path):
     assert metadata["tenant_id"] == "TENANT-DEMO-001"
     assert metadata["project_id"] == "PROJECT-DEMO-001"
     assert metadata["film_id"] == "FILM-DEMO-001"
+
+
+def test_export_excel_viabilidad_has_traffic_light_legend(breakdown_result, excel_path):
+    """Viabilidad sheet must include a textual semáforo legend."""
+    export_excel(breakdown_result, excel_path)
+    with _open_xlsx(excel_path) as zf:
+        xml = _get_sheet_xml(zf, 2)
+    assert "Leyenda semáforos" in xml
+    assert "verde" in xml
+    assert "amarillo" in xml
+    assert "naranja" in xml
+    assert "rojo" in xml
 
 
 def test_export_excel_is_valid_zip(breakdown_result, excel_path):

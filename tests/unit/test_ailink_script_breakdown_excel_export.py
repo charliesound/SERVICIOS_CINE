@@ -315,7 +315,7 @@ def test_export_excel_has_basic_alert_styles(breakdown_result, excel_path):
     assert "FFC6EFCE" in styles  # green
     assert "FFFFEB9C" in styles  # yellow
     assert "FFF4B183" in styles  # orange
-    assert "FFFFC7CE" in styles  # red
+    assert "FFF8696B" in styles  # red
     assert 's="4"' in viability_xml
     assert 's="5"' in viability_xml or 's="5"' in resumen_xml
     assert 's="6"' in viability_xml
@@ -334,6 +334,22 @@ def test_export_excel_orange_semaphore_is_not_yellow(breakdown_result, excel_pat
     assert "naranja" in viability_xml
     assert "atención prioritaria" in viability_xml
     assert 's="6"' in viability_xml
+
+
+def test_export_excel_red_semaphore_contrasts_with_orange(breakdown_result, excel_path):
+    """Rojo must use a stronger fill than naranja and keep visible alert text."""
+    export_excel(breakdown_result, excel_path)
+    with _open_xlsx(excel_path) as zf:
+        styles = zf.read("xl/styles.xml").decode("utf-8")
+        viability_xml = _get_sheet_xml(zf, 2)
+        resumen_xml = _get_sheet_xml(zf, 1)
+    assert "FFF4B183" in styles
+    assert "FFF8696B" in styles
+    assert styles.index("FFF4B183") != styles.index("FFF8696B")
+    assert "rojo" in viability_xml
+    assert "riesgo alto" in viability_xml
+    assert "alerta" in viability_xml
+    assert 's="7"' in viability_xml or 's="7"' in resumen_xml
 
 
 def test_export_excel_is_valid_zip(breakdown_result, excel_path):

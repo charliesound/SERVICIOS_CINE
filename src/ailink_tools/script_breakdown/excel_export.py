@@ -65,7 +65,7 @@ STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
     <font><b/><sz val="11"/><name val="Calibri"/></font>
   </fonts>
-  <fills count="8">
+  <fills count="9">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FF4472C4"/></patternFill></fill>
@@ -73,6 +73,7 @@ STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <fill><patternFill patternType="solid"><fgColor rgb="FFC6EFCE"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFFFEB9C"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFF4B183"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF8696B"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFFFC7CE"/></patternFill></fill>
   </fills>
   <borders count="1">

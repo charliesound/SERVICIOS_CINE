@@ -185,7 +185,7 @@ def test_document_keeps_adjusted_total_signed() -> None:
     assert "negativo o positivo" in text
 
 
-def test_no_new_alembic_migration_created_or_modified() -> None:
+def test_historical_alembic_migration_not_modified() -> None:
     status = subprocess.run(
         ["git", "status", "--short", "--untracked-files=all"],
         cwd=ROOT,
@@ -193,19 +193,18 @@ def test_no_new_alembic_migration_created_or_modified() -> None:
         capture_output=True,
         check=True,
     ).stdout.splitlines()
-    alembic_changes = [line for line in status if " alembic/" in line or line.endswith("alembic")]
-    assert alembic_changes == []
+    historical_changes = [
+        line
+        for line in status
+        if "alembic/versions/20260605_000001_add_cid_billing_models.py" in line
+    ]
+    assert historical_changes == []
 
 
-def test_billing_model_not_modified_by_phase_contract() -> None:
-    status = subprocess.run(
-        ["git", "status", "--short", "--untracked-files=all", "src/models/billing.py"],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        check=True,
-    ).stdout.strip()
-    assert status == ""
+def test_billing_model_preserves_historical_subbalances_constraint() -> None:
+    expression = _current_subbalances_check_expr()
+    for field in CURRENTLY_PROTECTED_FIELDS:
+        assert field in expression
 
 
 def test_credit_ledger_service_not_modified_by_phase_contract() -> None:

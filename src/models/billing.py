@@ -323,6 +323,11 @@ class CreditBalance(Base):
             "enterprise_balance >= 0 AND reserved_active >= 0",
             name="ck_credit_balances_non_negative_subbalances",
         ),
+        CheckConstraint(
+            "consumed_period >= 0 AND expired_total >= 0 AND "
+            "refunded_total >= 0 AND version >= 1",
+            name="ck_credit_balances_non_negative_counters",
+        ),
         Index("ix_credit_balances_organization_id", "organization_id"),
         Index("ix_credit_balances_last_updated_at", "last_updated_at"),
     )

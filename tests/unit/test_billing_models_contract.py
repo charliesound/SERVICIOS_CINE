@@ -450,6 +450,28 @@ class TestCheckConstraints:
         names = self._check_names(CreditBalance.__table__, "ck_credit_balances_")
         assert "ck_credit_balances_non_negative_subbalances" in names
 
+    def test_credit_balances_non_negative_counters(self) -> None:
+        names = self._check_names(CreditBalance.__table__, "ck_credit_balances_")
+        assert "ck_credit_balances_non_negative_counters" in names
+
+    def test_credit_balances_non_negative_counters_expression(self) -> None:
+        matching = [
+            constraint
+            for constraint in CreditBalance.__table__.constraints
+            if getattr(constraint, "name", None)
+            == "ck_credit_balances_non_negative_counters"
+        ]
+        assert len(matching) == 1
+        expression = str(matching[0].sqltext)
+        for expected in (
+            "consumed_period >= 0",
+            "expired_total >= 0",
+            "refunded_total >= 0",
+            "version >= 1",
+        ):
+            assert expected in expression
+        assert "adjusted_total" not in expression
+
 
 class TestIndexes:
     def test_credit_ledger_has_organization_index(self) -> None:

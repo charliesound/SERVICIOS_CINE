@@ -65,13 +65,14 @@ STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
     <font><b/><sz val="11"/><name val="Calibri"/></font>
   </fonts>
-  <fills count="7">
+  <fills count="8">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FF4472C4"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFD9E2F3"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFC6EFCE"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFFFEB9C"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF4B183"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFFFC7CE"/></patternFill></fill>
   </fills>
   <borders count="1">
@@ -80,7 +81,7 @@ STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
   <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
   </cellStyleXfs>
-  <cellXfs count="7">
+  <cellXfs count="8">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
     <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
     <xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/>
@@ -88,6 +89,7 @@ STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <xf numFmtId="0" fontId="2" fillId="4" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
     <xf numFmtId="0" fontId="2" fillId="5" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
     <xf numFmtId="0" fontId="2" fillId="6" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+    <xf numFmtId="0" fontId="2" fillId="7" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
   </cellXfs>
 </styleSheet>"""
 
@@ -211,11 +213,14 @@ def _cell_style(sheet_name: str, value: object, default_style: int) -> int:
 
     text = value.lower()
     green_terms = ["verde", "riesgo bajo", "viable", "bajo"]
-    yellow_terms = ["amarillo", "riesgo medio", "revisar", "revisión", "atención", "medio"]
-    red_terms = ["rojo", "riesgo alto", "alerta", "alto", "requiere decisión"]
+    yellow_terms = ["amarillo", "riesgo medio", "revisar", "revisión", "medio"]
+    orange_terms = ["naranja", "atención prioritaria", "riesgo elevado", "intermedio-alto"]
+    red_terms = ["rojo", "riesgo alto", "alto", "requiere decisión"]
 
-    if any(term in text for term in red_terms):
+    if any(term in text for term in orange_terms):
         return 6
+    if any(term in text for term in red_terms):
+        return 7
     if any(term in text for term in yellow_terms):
         return 5
     if any(term in text for term in green_terms):

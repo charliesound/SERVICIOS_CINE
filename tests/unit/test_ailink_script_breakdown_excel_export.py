@@ -305,7 +305,7 @@ def test_export_excel_viabilidad_has_traffic_light_legend(breakdown_result, exce
 
 
 def test_export_excel_has_basic_alert_styles(breakdown_result, excel_path):
-    """Workbook styles must include simple green/yellow/red alert fills."""
+    """Workbook styles must include separate green/yellow/orange/red fills."""
     export_excel(breakdown_result, excel_path)
     with _open_xlsx(excel_path) as zf:
         styles = zf.read("xl/styles.xml").decode("utf-8")
@@ -314,10 +314,26 @@ def test_export_excel_has_basic_alert_styles(breakdown_result, excel_path):
         resumen_xml = _get_sheet_xml(zf, 1)
     assert "FFC6EFCE" in styles  # green
     assert "FFFFEB9C" in styles  # yellow
+    assert "FFF4B183" in styles  # orange
     assert "FFFFC7CE" in styles  # red
     assert 's="4"' in viability_xml
     assert 's="5"' in viability_xml or 's="5"' in resumen_xml
-    assert 's="6"' in viability_xml or 's="6"' in risks_xml or 's="6"' in resumen_xml
+    assert 's="6"' in viability_xml
+    assert 's="7"' in viability_xml or 's="7"' in risks_xml or 's="7"' in resumen_xml
+
+
+def test_export_excel_orange_semaphore_is_not_yellow(breakdown_result, excel_path):
+    """Naranja must use its own fill/style and remain visible as text."""
+    export_excel(breakdown_result, excel_path)
+    with _open_xlsx(excel_path) as zf:
+        styles = zf.read("xl/styles.xml").decode("utf-8")
+        viability_xml = _get_sheet_xml(zf, 2)
+    assert "FFFFEB9C" in styles
+    assert "FFF4B183" in styles
+    assert styles.index("FFFFEB9C") != styles.index("FFF4B183")
+    assert "naranja" in viability_xml
+    assert "atención prioritaria" in viability_xml
+    assert 's="6"' in viability_xml
 
 
 def test_export_excel_is_valid_zip(breakdown_result, excel_path):

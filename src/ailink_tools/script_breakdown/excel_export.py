@@ -65,11 +65,14 @@ STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
     <font><b/><sz val="11"/><name val="Calibri"/></font>
   </fonts>
-  <fills count="4">
+  <fills count="7">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FF4472C4"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFD9E2F3"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFC6EFCE"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFEB9C"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFC7CE"/></patternFill></fill>
   </fills>
   <borders count="1">
     <border><left/><right/><top/><bottom/><diagonal/></border>
@@ -77,11 +80,14 @@ STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
   <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
   </cellStyleXfs>
-  <cellXfs count="4">
+  <cellXfs count="7">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
     <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
     <xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/>
     <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+    <xf numFmtId="0" fontId="2" fillId="4" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+    <xf numFmtId="0" fontId="2" fillId="5" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+    <xf numFmtId="0" fontId="2" fillId="6" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
   </cellXfs>
 </styleSheet>"""
 
@@ -118,10 +124,13 @@ def _make_cell_xml(col: int, row: int, value: object, style: int = 0,
 
 
 def _make_sheet_xml(headers: list[str], rows: list[list],
-                    total_row: list | None = None) -> str:
+                    total_row: list | None = None,
+                    extra_rows: list[list] | None = None,
+                    sheet_name: str = "") -> str:
     """Build complete worksheet XML."""
+    extra_rows = extra_rows or []
     col_count = len(headers)
-    row_count = len(rows) + 1  # +1 for header
+    row_count = len(rows) + 1 + len(extra_rows)  # +1 for header
     if total_row is not None:
         row_count += 1
 
@@ -147,7 +156,7 @@ def _make_sheet_xml(headers: list[str], rows: list[list],
     for ri, row_data in enumerate(rows, 2):
         lines.append(f'<row r="{ri}">')
         for ci, val in enumerate(row_data, 1):
-            style = 2 if (ri % 2 == 0) else 0  # alternating row fill
+            style = _cell_style(sheet_name, val, 2 if (ri % 2 == 0) else 0)
             lines.append(_make_cell_xml(ci, ri, val, style=style))
         lines.append('</row>')
 
@@ -161,6 +170,19 @@ def _make_sheet_xml(headers: list[str], rows: list[list],
                 lines.append(_make_cell_xml(ci, tr, None, style=style, formula=val))
             else:
                 lines.append(_make_cell_xml(ci, tr, val, style=style))
+        lines.append('</row>')
+
+    # Extra rows for visible budget summaries and demo warnings.
+    first_extra_row = len(rows) + 2 + (1 if total_row is not None else 0)
+    for offset, row_data in enumerate(extra_rows):
+        ri = first_extra_row + offset
+        lines.append(f'<row r="{ri}">')
+        for ci, val in enumerate(row_data, 1):
+            style = _cell_style(sheet_name, val, 3)
+            if isinstance(val, str) and val.startswith("="):
+                lines.append(_make_cell_xml(ci, ri, None, style=style, formula=val))
+            else:
+                lines.append(_make_cell_xml(ci, ri, val, style=style))
         lines.append('</row>')
 
     lines.append('</sheetData>')
@@ -178,6 +200,27 @@ def _make_cols_xml(col_count: int) -> str:
         lines.append(f'<col min="{col}" max="{col}" width="{width}" customWidth="1"/>')
     lines.append("</cols>")
     return "".join(lines)
+
+
+def _cell_style(sheet_name: str, value: object, default_style: int) -> int:
+    """Apply simple alert fills while keeping textual status visible."""
+    if sheet_name not in {"Resumen", "Viabilidad", "Riesgos"}:
+        return default_style
+    if not isinstance(value, str):
+        return default_style
+
+    text = value.lower()
+    green_terms = ["verde", "riesgo bajo", "viable", "bajo"]
+    yellow_terms = ["amarillo", "riesgo medio", "revisar", "revisión", "atención", "medio"]
+    red_terms = ["rojo", "riesgo alto", "alerta", "alto", "requiere decisión"]
+
+    if any(term in text for term in red_terms):
+        return 6
+    if any(term in text for term in yellow_terms):
+        return 5
+    if any(term in text for term in green_terms):
+        return 4
+    return default_style
 
 
 def _make_workbook_xml(sheet_names: list[str]) -> str:
@@ -208,6 +251,8 @@ def _build_resumen(result: BreakdownResult) -> list[list]:
         ["Revisión", "revisión humana requerida"],
         ["Valor", "guion → producción → finanzas"],
         ["Presupuesto", "presupuesto preliminar/revisable"],
+        ["Alerta presupuesto", "amarillo - revisar; no presupuesto definitivo"],
+        ["Alerta revisión", "rojo - requiere decisión humana"],
         ["Tipo", result.project["type"]],
         ["Género", result.project["genre"]],
         ["Duración (min)", result.project["duration_minutes"]],
@@ -258,9 +303,9 @@ def _build_viabilidad(result: BreakdownResult) -> list[list]:
     ]
     rows.extend([
         ["Leyenda semáforos", "verde", "", "riesgo bajo", "", ""],
-        ["Leyenda semáforos", "amarillo", "", "revisión recomendada", "", ""],
+        ["Leyenda semáforos", "amarillo", "", "riesgo medio - revisar", "", ""],
         ["Leyenda semáforos", "naranja", "", "atención prioritaria", "", ""],
-        ["Leyenda semáforos", "rojo", "", "riesgo crítico", "", ""],
+        ["Leyenda semáforos", "rojo", "", "riesgo alto - alerta", "", ""],
     ])
     return rows
 
@@ -312,6 +357,19 @@ def _presupuesto_total_row(rows: list[list]) -> list:
     ]
 
 
+def _presupuesto_visible_total_rows(rows: list[list]) -> list[list]:
+    """Build visible budget total block for producer-facing review."""
+    n = len(rows) + 1  # last data row number (1-based, +1 for header)
+    return [
+        ["", "", "", "", "", "", ""],
+        ["Total bajo", "presupuesto preliminar revisable", f"=SUM(C2:C{n})", "", "", "", ""],
+        ["Total medio", "presupuesto preliminar revisable", "", f"=SUM(D2:D{n})", "", "", ""],
+        ["Total alto", "presupuesto preliminar revisable", "", "", f"=SUM(E2:E{n})", "", ""],
+        ["Advertencia", "No presupuesto definitivo", "", "", "", "", ""],
+        ["Advertencia", "Requiere revisión humana", "", "", "", "", ""],
+    ]
+
+
 # ---------------------------------------------------------------------------
 # Path validation
 # ---------------------------------------------------------------------------
@@ -354,26 +412,28 @@ def export_excel(result: BreakdownResult, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
 
     # Build sheet data
-    sheets_data: list[tuple[str, list[str], list[list], list | None]] = [
-        ("Resumen", ["Campo", "Valor"], _build_resumen(result), None),
+    presupuesto_rows = _build_presupuesto(result)
+    sheets_data: list[tuple[str, list[str], list[list], list | None, list[list]]] = [
+        ("Resumen", ["Campo", "Valor"], _build_resumen(result), None, []),
         ("Viabilidad", ["Indicador", "Puntuación", "Máximo", "Semáforo",
-         "Justificación", "Recomendación"], _build_viabilidad(result), None),
+         "Justificación", "Recomendación"], _build_viabilidad(result), None, []),
         ("Presupuesto", ["ID", "Categoría (presupuesto preliminar)", "Baja", "Media", "Alta",
-         "Confianza", "Supuestos"], _build_presupuesto(result),
-         _presupuesto_total_row(_build_presupuesto(result))),
+         "Confianza", "Supuestos"], presupuesto_rows,
+         _presupuesto_total_row(presupuesto_rows),
+         _presupuesto_visible_total_rows(presupuesto_rows)),
         ("Riesgos", ["ID", "Descripción", "Impacto", "Probabilidad",
-         "Mitigación"], _build_riesgos(result), None),
+         "Mitigación"], _build_riesgos(result), None, []),
         ("Escenas", ["ID", "Número", "Header", "Localización", "INT/EXT",
          "Día/Noche", "Personajes", "Complejidad", "Notas"],
-         _build_escenas(result), None),
+         _build_escenas(result), None, []),
         ("Personajes", ["ID", "Nombre", "Rol", "Escenas", "Edad",
-         "Complejidad", "Notas"], _build_personajes(result), None),
+         "Complejidad", "Notas"], _build_personajes(result), None, []),
         ("Localizaciones", ["ID", "Nombre", "Tipo", "INT/EXT", "Escenas",
-         "Permisos", "Complejidad"], _build_localizaciones(result), None),
+         "Permisos", "Complejidad"], _build_localizaciones(result), None, []),
         ("Recomendaciones", ["Número", "Recomendación"],
-         _build_recomendaciones(result), None),
-        ("Revisión humana", ["Nota"], _build_revision_humana(result), None),
-        ("Metadata", ["Campo", "Valor"], _build_metadata(result), None),
+         _build_recomendaciones(result), None, []),
+        ("Revisión humana", ["Nota"], _build_revision_humana(result), None, []),
+        ("Metadata", ["Campo", "Valor"], _build_metadata(result), None, []),
     ]
 
     # Write ZIP
@@ -384,8 +444,8 @@ def export_excel(result: BreakdownResult, path: Path) -> Path:
         zf.writestr("xl/_rels/workbook.xml.rels", WORKBOOK_RELS)
         zf.writestr("xl/styles.xml", STYLES)
 
-        for i, (name, headers, rows, total) in enumerate(sheets_data, 1):
-            xml = _make_sheet_xml(headers, rows, total)
+        for i, (name, headers, rows, total, extra_rows) in enumerate(sheets_data, 1):
+            xml = _make_sheet_xml(headers, rows, total, extra_rows, name)
             zf.writestr(f"xl/worksheets/sheet{i}.xml", xml)
 
     return path

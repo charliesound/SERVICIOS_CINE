@@ -197,9 +197,10 @@ def test_export_excel_resumen_content(breakdown_result, excel_path):
     with _open_xlsx(excel_path) as zf:
         # Sheet 1 = Resumen
         row2 = _get_cell_values(zf, 1, 2)
-        row14 = _get_cell_values(zf, 1, 14)
+        xml = _get_sheet_xml(zf, 1)
     assert "Proyecto Demo Bruma" in row2
-    assert "Viabilidad global" in [v for v in row14 if v] or "5.5/10" in str(row14)
+    assert "Viabilidad global" in xml
+    assert "5.5/10" in xml
 
 
 def test_export_excel_resumen_has_visible_demo_limits(breakdown_result, excel_path):
@@ -232,11 +233,11 @@ def test_export_excel_personajes_row_count(breakdown_result, excel_path):
 
 
 def test_export_excel_presupuesto_has_total(breakdown_result, excel_path):
-    """Presupuesto sheet must have 18 data rows + header + total = 20 rows."""
+    """Presupuesto sheet must include total row and visible total block."""
     export_excel(breakdown_result, excel_path)
     with _open_xlsx(excel_path) as zf:
         count = _count_rows_in_sheet(zf, 3)  # Sheet 3 = Presupuesto
-    assert count == 20  # 1 header + 18 data + 1 total
+    assert count == 26  # 1 header + 18 data + 1 total + 6 visible block rows
 
 
 def test_export_excel_presupuesto_total_formula(breakdown_result, excel_path):
@@ -250,6 +251,22 @@ def test_export_excel_presupuesto_total_formula(breakdown_result, excel_path):
         val = row20[idx]
         assert val is not None, f"Missing formula at index {idx}"
         assert str(val).startswith("="), f"Col {idx} not a formula: {val}"
+
+
+def test_export_excel_presupuesto_has_visible_total_block(breakdown_result, excel_path):
+    """Presupuesto must show producer-facing total labels and warnings."""
+    export_excel(breakdown_result, excel_path)
+    with _open_xlsx(excel_path) as zf:
+        xml = _get_sheet_xml(zf, 3)
+    for expected in [
+        "Total bajo",
+        "Total medio",
+        "Total alto",
+        "presupuesto preliminar revisable",
+        "No presupuesto definitivo",
+        "Requiere revisión humana",
+    ]:
+        assert expected in xml
 
 
 def test_export_excel_metadata_ids(breakdown_result, excel_path):
@@ -282,6 +299,25 @@ def test_export_excel_viabilidad_has_traffic_light_legend(breakdown_result, exce
     assert "amarillo" in xml
     assert "naranja" in xml
     assert "rojo" in xml
+    assert "riesgo bajo" in xml
+    assert "riesgo medio" in xml
+    assert "riesgo alto" in xml
+
+
+def test_export_excel_has_basic_alert_styles(breakdown_result, excel_path):
+    """Workbook styles must include simple green/yellow/red alert fills."""
+    export_excel(breakdown_result, excel_path)
+    with _open_xlsx(excel_path) as zf:
+        styles = zf.read("xl/styles.xml").decode("utf-8")
+        viability_xml = _get_sheet_xml(zf, 2)
+        risks_xml = _get_sheet_xml(zf, 4)
+        resumen_xml = _get_sheet_xml(zf, 1)
+    assert "FFC6EFCE" in styles  # green
+    assert "FFFFEB9C" in styles  # yellow
+    assert "FFFFC7CE" in styles  # red
+    assert 's="4"' in viability_xml
+    assert 's="5"' in viability_xml or 's="5"' in resumen_xml
+    assert 's="6"' in viability_xml or 's="6"' in risks_xml or 's="6"' in resumen_xml
 
 
 def test_export_excel_is_valid_zip(breakdown_result, excel_path):

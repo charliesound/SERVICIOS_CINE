@@ -1,0 +1,11 @@
+{
+  "expected_assets": [
+    {
+      "file_name": "SC001_TK001_SOUND_A_PLACEHOLDER.bwf",
+      "human_review_required": false,
+      "source_kind": "production_sound"
+    }
+  ],
+  "fixture": "simple_sound_only",
+  "synthetic": true
+}

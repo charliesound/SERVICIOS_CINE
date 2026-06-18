@@ -1,0 +1,11 @@
+{
+  "created_outputs": [],
+  "dry_run": true,
+  "fixture": "dry_run_expected_outputs",
+  "planned_outputs": [
+    "00_project/project_manifest.json",
+    "01_media_catalog/media_catalog.json",
+    "99_logs/processing_log.md"
+  ],
+  "synthetic": true
+}

@@ -1,0 +1,11 @@
+{
+  "expected_assets": [
+    {
+      "file_name": "SC001_TK001_CAM_A_PLACEHOLDER.mov",
+      "human_review_required": false,
+      "source_kind": "camera_original"
+    }
+  ],
+  "fixture": "simple_camera_only",
+  "synthetic": true
+}

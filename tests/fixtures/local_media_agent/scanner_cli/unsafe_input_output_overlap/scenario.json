@@ -1,0 +1,8 @@
+{
+  "expected_exit_code": 2,
+  "expected_refusal": "input root equals output root",
+  "fixture": "unsafe_input_output_overlap",
+  "input_root": "SYNTHETIC_INPUT_ROOT",
+  "output_root": "SYNTHETIC_INPUT_ROOT",
+  "synthetic": true
+}

@@ -1,0 +1,30 @@
+{
+  "families": [
+    "ambiguous_unknown_files",
+    "dry_run_expected_outputs",
+    "empty_input_root",
+    "excluded_dirs",
+    "json_summary_expected_outputs",
+    "mixed_camera_sound_proxy",
+    "nested_project_tree",
+    "path_policy_examples",
+    "sidecar_metadata_only",
+    "simple_camera_only",
+    "simple_sound_only",
+    "unsafe_input_output_overlap"
+  ],
+  "forbidden": [
+    "actual media payloads",
+    "playable media payloads",
+    "client/private data",
+    "transcript payloads",
+    "subtitle payloads",
+    "runtime log payloads",
+    "ffmpeg",
+    "ffprobe",
+    "CID SaaS"
+  ],
+  "phase": "CID.LOCAL_MEDIA_AGENT.SCANNER.CLI.TEST.FIXTURES.BASELINE.V1",
+  "root": "tests/fixtures/local_media_agent/scanner_cli/",
+  "synthetic_only": true
+}

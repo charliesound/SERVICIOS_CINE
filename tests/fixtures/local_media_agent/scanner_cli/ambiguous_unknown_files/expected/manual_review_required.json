@@ -1,0 +1,6 @@
+{
+  "fixture": "ambiguous_unknown_files",
+  "human_review_required_count": 1,
+  "reason": "unknown synthetic placeholder extension",
+  "synthetic": true
+}

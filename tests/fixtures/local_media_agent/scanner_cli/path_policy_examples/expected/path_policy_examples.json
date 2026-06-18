@@ -1,0 +1,10 @@
+{
+  "examples": {
+    "hashed_path": "hash_placeholder_0001",
+    "local_relative_path": "input/CAMERA/SC001_TK001_CAM_A_PLACEHOLDER.mov",
+    "redacted_path": "[REDACTED_LOCAL_PATH]/SC001_TK001_CAM_A_PLACEHOLDER.mov",
+    "sanitized_path": "PROJECT_ROOT/CAMERA/SC001_TK001_CAM_A_PLACEHOLDER.mov"
+  },
+  "fixture": "path_policy_examples",
+  "synthetic": true
+}

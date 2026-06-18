@@ -1,0 +1,17 @@
+{
+  "candidate_media_count": 3,
+  "created_outputs": [
+    "00_project/project_manifest.json",
+    "01_media_catalog/media_catalog.json",
+    "99_logs/processing_log.md"
+  ],
+  "exit_code": 1,
+  "files_seen": 3,
+  "fixture": "json_summary_expected_outputs",
+  "human_review_required_count": 1,
+  "privacy_mode": "local_only",
+  "project_id": "synthetic_project_001",
+  "status": "completed_with_warnings",
+  "synthetic": true,
+  "warnings_count": 1
+}

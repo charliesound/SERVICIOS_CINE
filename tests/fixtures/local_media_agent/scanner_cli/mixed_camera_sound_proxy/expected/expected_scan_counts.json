@@ -1,0 +1,10 @@
+{
+  "candidate_media_count": 3,
+  "expected_source_kinds": [
+    "camera_original",
+    "production_sound",
+    "proxy"
+  ],
+  "fixture": "mixed_camera_sound_proxy",
+  "synthetic": true
+}

@@ -4,12 +4,13 @@ import argparse
 import csv
 import hashlib
 import json
+import shutil
 import sys
 from pathlib import Path
 from typing import Any
 
 
-PHASE = "CID.LOCAL_MEDIA_AGENT.SCANNER.CLI.SAFE.BASELINE.V1"
+PHASE = "CID.LOCAL_MEDIA_AGENT.SCANNER.CLI.FFPROBE.AVAILABILITY.PREFLIGHT.V1"
 
 VIDEO_EXTENSIONS = {".mov", ".mp4", ".mxf"}
 AUDIO_EXTENSIONS = {".wav", ".bwf", ".aif", ".aiff", ".flac"}
@@ -167,6 +168,31 @@ def _preflight(input_root: Path, output_root: Path, privacy_mode: str, path_poli
     return errors
 
 
+
+def _ffprobe_availability_preflight(enabled: bool) -> dict[str, Any]:
+    if not enabled:
+        return {
+            "requested": False,
+            "status": "skipped",
+            "available": None,
+            "warning_code": None,
+        }
+
+    if shutil.which("ffprobe") is not None:
+        return {
+            "requested": True,
+            "status": "available",
+            "available": True,
+            "warning_code": None,
+        }
+
+    return {
+        "requested": True,
+        "status": "missing",
+        "available": False,
+        "warning_code": "ffprobe_missing",
+    }
+
 def _asset_entry(index: int, path: Path, input_root: Path, path_policy: str) -> dict[str, Any]:
     extension = path.suffix.lower()
     source_kind, human_review_required, warnings = _source_kind(path)
@@ -232,6 +258,7 @@ def _write_outputs(
     path_policy: str,
     assets: list[dict[str, Any]],
     warnings: list[str],
+    ffprobe_preflight: dict[str, Any],
 ) -> None:
     human_review_assets = [asset for asset in assets if asset["human_review_required"]]
 
@@ -245,6 +272,7 @@ def _write_outputs(
             "path_policy": path_policy,
             "scanner": "cid-media-agent scan",
             "local_only": True,
+            "ffprobe_preflight": ffprobe_preflight,
         },
     )
     _write_json(
@@ -253,6 +281,7 @@ def _write_outputs(
             "status": "completed_with_warnings" if warnings or human_review_assets else "completed",
             "candidate_media_count": len(assets),
             "human_review_required_count": len(human_review_assets),
+            "ffprobe_preflight": ffprobe_preflight,
         },
     )
     _write_text(
@@ -312,6 +341,8 @@ def scan(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             "exit_code": 2,
         }
 
+    ffprobe_preflight = _ffprobe_availability_preflight(args.ffprobe_preflight)
+
     candidates = _iter_candidate_files(input_root)
     assets = [
         _asset_entry(index, path, input_root, path_policy)
@@ -324,6 +355,11 @@ def scan(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             for asset in assets
             for warning in asset["warnings"]
         }
+        | (
+            {ffprobe_preflight["warning_code"]}
+            if ffprobe_preflight["warning_code"]
+            else set()
+        )
     )
     human_review_required_count = sum(1 for asset in assets if asset["human_review_required"])
     exit_code = 1 if warnings or human_review_required_count else 0
@@ -338,6 +374,8 @@ def scan(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             "candidate_media_count": len(candidates),
             "warnings_count": len(warnings),
             "human_review_required_count": human_review_required_count,
+            "warnings": warnings,
+            "ffprobe_preflight": ffprobe_preflight,
             "created_outputs": [],
             "planned_outputs": SAFE_OUTPUTS,
             "exit_code": exit_code,
@@ -351,6 +389,7 @@ def scan(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         path_policy=path_policy,
         assets=assets,
         warnings=warnings,
+        ffprobe_preflight=ffprobe_preflight,
     )
 
     return exit_code, {
@@ -361,6 +400,8 @@ def scan(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         "candidate_media_count": len(candidates),
         "warnings_count": len(warnings),
         "human_review_required_count": human_review_required_count,
+        "warnings": warnings,
+        "ffprobe_preflight": ffprobe_preflight,
         "created_outputs": SAFE_OUTPUTS,
         "exit_code": exit_code,
     }
@@ -375,6 +416,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--privacy-mode", default="local_only")
     parser.add_argument("--path-policy", default="sanitized_path")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--ffprobe-preflight", action="store_true")
     parser.add_argument("--json", action="store_true", dest="json_output")
     parser.add_argument("--strict-local-only", action="store_true")
     return parser

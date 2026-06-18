@@ -48,6 +48,8 @@ def test_safe_baseline_doc_declares_scope_and_no_goals():
 def test_script_exists_and_has_no_forbidden_runtime_imports():
     assert SCRIPT_PATH.exists()
     text = SCRIPT_PATH.read_text(encoding="utf-8")
+    assert "shutil.which(\"ffprobe\")" in text
+
     for forbidden in [
         "subprocess",
         "requests",
@@ -56,7 +58,6 @@ def test_script_exists_and_has_no_forbidden_runtime_imports():
         "alembic",
         "stripe",
         "ffmpeg",
-        "ffprobe",
     ]:
         assert forbidden not in text.lower()
 

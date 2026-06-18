@@ -37,6 +37,8 @@ def test_execution_hardening_doc_declares_scope_and_no_goals():
 def test_script_exists_and_remains_local_only_without_forbidden_imports():
     assert SCRIPT.exists()
     text = SCRIPT.read_text(encoding="utf-8").lower()
+    assert "shutil.which(\"ffprobe\")" in text
+
     for forbidden in [
         "requests",
         "httpx",
@@ -46,7 +48,6 @@ def test_script_exists_and_remains_local_only_without_forbidden_imports():
         "alembic",
         "stripe",
         "ffmpeg",
-        "ffprobe",
         "database",
         "fastapi",
         "docker",

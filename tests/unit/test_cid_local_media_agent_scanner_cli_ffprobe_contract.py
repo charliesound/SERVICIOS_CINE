@@ -176,9 +176,14 @@ def test_ffprobe_contract_keeps_saas_and_billing_out_of_scope():
         assert phrase in text
 
 
-def test_this_phase_does_not_introduce_ffprobe_runtime_call_in_scanner():
+def test_scanner_does_not_introduce_ffprobe_media_probe_runtime():
     assert SCANNER.exists(), f"Missing scanner script: {SCANNER}"
-    scanner_text = SCANNER.read_text(encoding="utf-8")
-    assert "ffprobe" not in scanner_text.lower()
-    assert "ffmpeg" not in scanner_text.lower()
+    scanner_text = SCANNER.read_text(encoding="utf-8").lower()
+    assert "shutil.which(\"ffprobe\")" in scanner_text
+    assert "ffmpeg" not in scanner_text
     assert "subprocess.run" not in scanner_text
+    assert "subprocess.popen" not in scanner_text
+    assert "duration_seconds" not in scanner_text
+    assert "format_name" not in scanner_text
+    assert "codec_type" not in scanner_text
+    assert "streams" not in scanner_text

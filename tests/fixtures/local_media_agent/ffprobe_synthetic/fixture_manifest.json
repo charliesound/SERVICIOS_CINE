@@ -17,7 +17,7 @@
   "fixtures": [
     {
       "fixture_id": "synthetic_video_minimal",
-      "relative_path": "synthetic_video_minimal.mp4",
+      "relative_path": "synthetic_video_minimal.synthetic_media",
       "fixture_category": "synthetic_video_minimal",
       "media_kind": "video",
       "synthetic_origin": "generated_by_test_command",
@@ -33,7 +33,7 @@
     },
     {
       "fixture_id": "synthetic_audio_minimal",
-      "relative_path": "synthetic_audio_minimal.wav",
+      "relative_path": "synthetic_audio_minimal.synthetic_audio",
       "fixture_category": "synthetic_audio_minimal",
       "media_kind": "audio",
       "synthetic_origin": "generated_by_test_command",
@@ -49,7 +49,7 @@
     },
     {
       "fixture_id": "synthetic_video_with_audio_minimal",
-      "relative_path": "synthetic_video_with_audio_minimal.mp4",
+      "relative_path": "synthetic_video_with_audio_minimal.synthetic_media",
       "fixture_category": "synthetic_video_with_audio_minimal",
       "media_kind": "video_with_audio",
       "synthetic_origin": "generated_by_test_command",

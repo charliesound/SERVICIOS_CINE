@@ -22,7 +22,7 @@ def test_manifest_contract_document_exists_and_names_phase():
     assert "documentation-only and test-only" in text
 
 
-def test_manifest_contract_does_not_create_manifest_folder_fixtures_or_runtime():
+def test_manifest_contract_does_not_create_media_fixtures_or_runtime_and_allows_later_manifest_only_phase():
     text = _doc_text()
     required = [
         "It does not create fixture_manifest.json.",
@@ -39,8 +39,9 @@ def test_manifest_contract_does_not_create_manifest_folder_fixtures_or_runtime()
     for phrase in required:
         assert phrase in text
 
-    assert not FUTURE_FIXTURE_DIR.exists()
-    assert not FUTURE_MANIFEST.exists()
+    if FUTURE_FIXTURE_DIR.exists():
+        files = sorted(path.relative_to(FUTURE_FIXTURE_DIR).as_posix() for path in FUTURE_FIXTURE_DIR.rglob("*") if path.is_file())
+        assert files == ["fixture_manifest.json"]
 
 
 def test_future_manifest_path_is_documented_but_not_created():

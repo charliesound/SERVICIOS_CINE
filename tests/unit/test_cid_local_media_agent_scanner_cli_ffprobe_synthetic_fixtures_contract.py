@@ -37,11 +37,14 @@ def test_synthetic_fixtures_contract_does_not_create_fixtures_or_runtime():
         assert phrase in text
 
 
-def test_future_fixture_folder_is_documented_but_not_created_in_this_phase():
+def test_future_fixture_folder_is_documented_and_allows_later_manifest_only_phase():
     text = _doc_text()
     assert "tests/fixtures/local_media_agent/ffprobe_synthetic/" in text
     assert "This contract phase must not create that folder." in text
-    assert not FUTURE_FIXTURE_DIR.exists()
+
+    if FUTURE_FIXTURE_DIR.exists():
+        files = sorted(path.relative_to(FUTURE_FIXTURE_DIR).as_posix() for path in FUTURE_FIXTURE_DIR.rglob("*") if path.is_file())
+        assert files == ["fixture_manifest.json"]
 
 
 def test_allowed_future_fixture_categories_are_explicit():

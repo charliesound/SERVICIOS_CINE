@@ -1,0 +1,412 @@
+{
+  "schema_version": "cid_local_media_agent_synthetic_demo_report_fixture_schema_v1",
+  "fixture_id": "SYNTHETIC_LOCAL_DEMO_001",
+  "fixture_version": "v1",
+  "fixture_kind": "synthetic_end_to_end_local_demo_report",
+  "privacy_level": "synthetic_safe_labels_only",
+  "source_mode": "synthetic_contract",
+  "created_for_product": "CID Local Media Agent",
+  "created_for_ecosystem": "CID — Cinematic Intelligence Direction",
+  "local_input_label": "LOCAL_PROJECT_INPUT_SYNTHETIC",
+  "local_output_label": "LOCAL_PROJECT_OUTPUT_SYNTHETIC_REPORTS",
+  "cloud_upload": false,
+  "external_binary_execution": false,
+  "client_material_used": false,
+  "human_review_required": true,
+  "limitations": [
+    "Synthetic demo data only.",
+    "No real media analysis has been performed.",
+    "Synchronization has not been completed.",
+    "Transcription has not been completed.",
+    "Subtitle translation has not been completed.",
+    "DaVinci export has not been completed.",
+    "Human review is required before public-facing use.",
+    "The local-first privacy promise remains active.",
+    "Future implementation is required before runtime use."
+  ],
+  "items": [
+    {
+      "safe_item_id": "CAM_A_SYNTHETIC_CLIP_001",
+      "safe_display_label": "Synthetic Camera A Clip 001",
+      "category": "video",
+      "container_hint": "synthetic_mov",
+      "codec_hint": "synthetic_prores_like",
+      "duration_hint": "00:02:14:00",
+      "frame_rate_hint": "24.000",
+      "resolution_hint": "3840x2160",
+      "audio_channels_hint": "2",
+      "sample_rate_hint": "48000",
+      "timecode_hint": "SYNTHETIC_TC_10_00_00_00",
+      "camera_or_recorder_hint": "CAMERA_A_SYNTHETIC",
+      "shooting_day_hint": "SYNTHETIC_DAY_01",
+      "scene_or_block_hint": "SYNTHETIC_BLOCK_A",
+      "sync_candidate_group": "SYNC_GROUP_SYNTHETIC_A",
+      "language_hint": "SPANISH_SYNTHETIC",
+      "transcription_readiness": "NOT_RUN_REVIEW_READY",
+      "subtitle_readiness": "NOT_RUN_REVIEW_READY",
+      "human_review_required": true,
+      "warning_codes": [
+        "READY_FOR_EDITOR_REVIEW",
+        "READY_FOR_DIT_REVIEW"
+      ],
+      "recommended_department_review": [
+        "EDITORIAL_REVIEW",
+        "DIT_REVIEW"
+      ],
+      "report_notes": [
+        "Synthetic camera item prepared for editor-facing demo reporting.",
+        "Review metadata consistency before any real implementation claim."
+      ]
+    },
+    {
+      "safe_item_id": "CAM_A_SYNTHETIC_CLIP_002",
+      "safe_display_label": "Synthetic Camera A Clip 002",
+      "category": "video",
+      "container_hint": "synthetic_mov",
+      "codec_hint": "synthetic_prores_like",
+      "duration_hint": "00:01:48:00",
+      "frame_rate_hint": "24.000",
+      "resolution_hint": "3840x2160",
+      "audio_channels_hint": "2",
+      "sample_rate_hint": "48000",
+      "timecode_hint": "SYNTHETIC_TC_10_05_00_00",
+      "camera_or_recorder_hint": "CAMERA_A_SYNTHETIC",
+      "shooting_day_hint": "SYNTHETIC_DAY_01",
+      "scene_or_block_hint": "SYNTHETIC_BLOCK_A",
+      "sync_candidate_group": "SYNC_GROUP_SYNTHETIC_A",
+      "language_hint": "SPANISH_SYNTHETIC",
+      "transcription_readiness": "NOT_RUN_REVIEW_READY",
+      "subtitle_readiness": "NOT_RUN_REVIEW_READY",
+      "human_review_required": true,
+      "warning_codes": [
+        "POSSIBLE_DOUBLE_SYSTEM_SOUND",
+        "READY_FOR_SOUND_REVIEW"
+      ],
+      "recommended_department_review": [
+        "EDITORIAL_REVIEW",
+        "SOUND_REVIEW"
+      ],
+      "report_notes": [
+        "Synthetic camera item linked to a possible double-system sound review.",
+        "Assistant editor should verify sync candidates in future implementation."
+      ]
+    },
+    {
+      "safe_item_id": "CAM_B_SYNTHETIC_CLIP_001",
+      "safe_display_label": "Synthetic Camera B Clip 001",
+      "category": "video",
+      "container_hint": "synthetic_mxf",
+      "codec_hint": "synthetic_xavc_like",
+      "duration_hint": "00:02:12:00",
+      "frame_rate_hint": "25.000",
+      "resolution_hint": "3840x2160",
+      "audio_channels_hint": "2",
+      "sample_rate_hint": "48000",
+      "timecode_hint": "SYNTHETIC_TC_10_00_02_00",
+      "camera_or_recorder_hint": "CAMERA_B_SYNTHETIC",
+      "shooting_day_hint": "SYNTHETIC_DAY_01",
+      "scene_or_block_hint": "SYNTHETIC_BLOCK_B",
+      "sync_candidate_group": "SYNC_GROUP_SYNTHETIC_B",
+      "language_hint": "SPANISH_SYNTHETIC",
+      "transcription_readiness": "NOT_RUN_REVIEW_READY",
+      "subtitle_readiness": "NOT_RUN_REVIEW_READY",
+      "human_review_required": true,
+      "warning_codes": [
+        "FRAME_RATE_MISMATCH",
+        "NEEDS_HUMAN_REVIEW",
+        "READY_FOR_DIT_REVIEW"
+      ],
+      "recommended_department_review": [
+        "DIT_REVIEW",
+        "ASSISTANT_EDITOR_REVIEW"
+      ],
+      "report_notes": [
+        "Synthetic camera item demonstrates a frame-rate mismatch warning.",
+        "DIT and assistant editor review are required in the future workflow."
+      ]
+    },
+    {
+      "safe_item_id": "CAM_B_SYNTHETIC_CLIP_002",
+      "safe_display_label": "Synthetic Camera B Clip 002",
+      "category": "video",
+      "container_hint": "synthetic_mxf",
+      "codec_hint": "synthetic_xavc_like",
+      "duration_hint": "00:00:58:00",
+      "frame_rate_hint": "25.000",
+      "resolution_hint": "3840x2160",
+      "audio_channels_hint": "2",
+      "sample_rate_hint": "48000",
+      "timecode_hint": null,
+      "camera_or_recorder_hint": "CAMERA_B_SYNTHETIC",
+      "shooting_day_hint": "SYNTHETIC_DAY_01",
+      "scene_or_block_hint": "SYNTHETIC_BLOCK_B",
+      "sync_candidate_group": "SYNC_GROUP_SYNTHETIC_B",
+      "language_hint": "SPANISH_SYNTHETIC",
+      "transcription_readiness": "NOT_RUN_REVIEW_READY",
+      "subtitle_readiness": "NOT_RUN_REVIEW_READY",
+      "human_review_required": true,
+      "warning_codes": [
+        "MISSING_TIMECODE",
+        "NEEDS_HUMAN_REVIEW",
+        "READY_FOR_EDITOR_REVIEW"
+      ],
+      "recommended_department_review": [
+        "ASSISTANT_EDITOR_REVIEW",
+        "DIT_REVIEW"
+      ],
+      "report_notes": [
+        "Synthetic camera item demonstrates missing timecode handling.",
+        "Human review is mandatory before any editorial conclusion."
+      ]
+    },
+    {
+      "safe_item_id": "AUDIO_SYNTHETIC_TAKE_001",
+      "safe_display_label": "Synthetic Audio Take 001",
+      "category": "audio",
+      "container_hint": "synthetic_wav",
+      "codec_hint": "synthetic_pcm",
+      "duration_hint": "00:02:15:00",
+      "frame_rate_hint": null,
+      "resolution_hint": null,
+      "audio_channels_hint": "8",
+      "sample_rate_hint": "48000",
+      "timecode_hint": "SYNTHETIC_TC_10_00_00_00",
+      "camera_or_recorder_hint": "AUDIO_RECORDER_SYNTHETIC",
+      "shooting_day_hint": "SYNTHETIC_DAY_01",
+      "scene_or_block_hint": "SYNTHETIC_BLOCK_A",
+      "sync_candidate_group": "SYNC_GROUP_SYNTHETIC_A",
+      "language_hint": "SPANISH_SYNTHETIC",
+      "transcription_readiness": "NOT_RUN_REVIEW_READY",
+      "subtitle_readiness": "NOT_RUN_REVIEW_READY",
+      "human_review_required": true,
+      "warning_codes": [
+        "POSSIBLE_DOUBLE_SYSTEM_SOUND",
+        "READY_FOR_SOUND_REVIEW"
+      ],
+      "recommended_department_review": [
+        "SOUND_REVIEW",
+        "ASSISTANT_EDITOR_REVIEW"
+      ],
+      "report_notes": [
+        "Synthetic audio take prepared for double-system sound demo flow.",
+        "Future waveform sync must remain separately validated."
+      ]
+    },
+    {
+      "safe_item_id": "AUDIO_SYNTHETIC_TAKE_002",
+      "safe_display_label": "Synthetic Audio Take 002",
+      "category": "audio",
+      "container_hint": "synthetic_wav",
+      "codec_hint": "synthetic_pcm",
+      "duration_hint": "00:01:51:00",
+      "frame_rate_hint": null,
+      "resolution_hint": null,
+      "audio_channels_hint": "6",
+      "sample_rate_hint": "44100",
+      "timecode_hint": "SYNTHETIC_TC_10_05_00_00",
+      "camera_or_recorder_hint": "AUDIO_RECORDER_SYNTHETIC",
+      "shooting_day_hint": "SYNTHETIC_DAY_01",
+      "scene_or_block_hint": "SYNTHETIC_BLOCK_A",
+      "sync_candidate_group": "SYNC_GROUP_SYNTHETIC_A",
+      "language_hint": "SPANISH_SYNTHETIC",
+      "transcription_readiness": "NOT_RUN_REVIEW_READY",
+      "subtitle_readiness": "NOT_RUN_REVIEW_READY",
+      "human_review_required": true,
+      "warning_codes": [
+        "SAMPLE_RATE_MISMATCH",
+        "NEEDS_HUMAN_REVIEW",
+        "READY_FOR_SOUND_REVIEW"
+      ],
+      "recommended_department_review": [
+        "SOUND_REVIEW"
+      ],
+      "report_notes": [
+        "Synthetic audio item demonstrates sample-rate mismatch handling.",
+        "Sound department review remains required."
+      ]
+    },
+    {
+      "safe_item_id": "AUDIO_SYNTHETIC_ROOMTONE_001",
+      "safe_display_label": "Synthetic Room Tone 001",
+      "category": "audio",
+      "container_hint": "synthetic_wav",
+      "codec_hint": "synthetic_pcm",
+      "duration_hint": "00:00:45:00",
+      "frame_rate_hint": null,
+      "resolution_hint": null,
+      "audio_channels_hint": "2",
+      "sample_rate_hint": "48000",
+      "timecode_hint": null,
+      "camera_or_recorder_hint": "AUDIO_RECORDER_SYNTHETIC",
+      "shooting_day_hint": "SYNTHETIC_DAY_01",
+      "scene_or_block_hint": "SYNTHETIC_ROOMTONE_BLOCK",
+      "sync_candidate_group": "ROOMTONE_GROUP_SYNTHETIC",
+      "language_hint": "NO_DIALOGUE_SYNTHETIC",
+      "transcription_readiness": "NOT_APPLICABLE_SYNTHETIC",
+      "subtitle_readiness": "NOT_APPLICABLE_SYNTHETIC",
+      "human_review_required": true,
+      "warning_codes": [
+        "MISSING_TIMECODE",
+        "READY_FOR_SOUND_REVIEW"
+      ],
+      "recommended_department_review": [
+        "SOUND_REVIEW"
+      ],
+      "report_notes": [
+        "Synthetic room tone item supports sound department demo reporting.",
+        "No transcription or subtitle readiness is claimed."
+      ]
+    },
+    {
+      "safe_item_id": "STILLS_SYNTHETIC_REFERENCE_001",
+      "safe_display_label": "Synthetic Still Reference 001",
+      "category": "still_image",
+      "container_hint": "synthetic_jpeg",
+      "codec_hint": "synthetic_still_image",
+      "duration_hint": null,
+      "frame_rate_hint": null,
+      "resolution_hint": "4000x3000",
+      "audio_channels_hint": null,
+      "sample_rate_hint": null,
+      "timecode_hint": null,
+      "camera_or_recorder_hint": "STILLS_SOURCE_SYNTHETIC",
+      "shooting_day_hint": "SYNTHETIC_DAY_01",
+      "scene_or_block_hint": "SYNTHETIC_REFERENCE_BLOCK",
+      "sync_candidate_group": "REFERENCE_GROUP_SYNTHETIC",
+      "language_hint": "NO_DIALOGUE_SYNTHETIC",
+      "transcription_readiness": "NOT_APPLICABLE_SYNTHETIC",
+      "subtitle_readiness": "NOT_APPLICABLE_SYNTHETIC",
+      "human_review_required": true,
+      "warning_codes": [
+        "READY_FOR_DIT_REVIEW"
+      ],
+      "recommended_department_review": [
+        "DIT_REVIEW",
+        "PRODUCTION_REVIEW"
+      ],
+      "report_notes": [
+        "Synthetic still reference supports visual organization demo reporting.",
+        "No actual place or person identity is present."
+      ]
+    },
+    {
+      "safe_item_id": "DOC_SYNTHETIC_NOTES_001",
+      "safe_display_label": "Synthetic Production Notes 001",
+      "category": "production_document",
+      "container_hint": "synthetic_pdf",
+      "codec_hint": "synthetic_document",
+      "duration_hint": null,
+      "frame_rate_hint": null,
+      "resolution_hint": null,
+      "audio_channels_hint": null,
+      "sample_rate_hint": null,
+      "timecode_hint": null,
+      "camera_or_recorder_hint": "DOCUMENT_SOURCE_SYNTHETIC",
+      "shooting_day_hint": "SYNTHETIC_DAY_01",
+      "scene_or_block_hint": "DOCUMENTATION_BLOCK_SYNTHETIC",
+      "sync_candidate_group": "DOCUMENTATION_GROUP_SYNTHETIC",
+      "language_hint": "SPANISH_SYNTHETIC",
+      "transcription_readiness": "NOT_APPLICABLE_SYNTHETIC",
+      "subtitle_readiness": "READY_FOR_SUBTITLE_REVIEW_SYNTHETIC",
+      "human_review_required": true,
+      "warning_codes": [
+        "READY_FOR_SUBTITLE_REVIEW",
+        "NEEDS_HUMAN_REVIEW"
+      ],
+      "recommended_department_review": [
+        "SUBTITLE_REVIEW",
+        "PRODUCTION_REVIEW"
+      ],
+      "report_notes": [
+        "Synthetic document-like item supports subtitle and production review demo reporting.",
+        "No narrative, spoken content, customer title, or production-identifying label is present."
+      ]
+    },
+    {
+      "safe_item_id": "UNSUPPORTED_SYNTHETIC_ITEM_001",
+      "safe_display_label": "Synthetic Unsupported Item 001",
+      "category": "ignored_non_media",
+      "container_hint": "synthetic_unknown_container",
+      "codec_hint": null,
+      "duration_hint": null,
+      "frame_rate_hint": null,
+      "resolution_hint": null,
+      "audio_channels_hint": null,
+      "sample_rate_hint": null,
+      "timecode_hint": null,
+      "camera_or_recorder_hint": "UNKNOWN_SYNTHETIC_SOURCE",
+      "shooting_day_hint": "SYNTHETIC_DAY_01",
+      "scene_or_block_hint": "UNSUPPORTED_BLOCK_SYNTHETIC",
+      "sync_candidate_group": "UNSUPPORTED_GROUP_SYNTHETIC",
+      "language_hint": "UNKNOWN_SYNTHETIC",
+      "transcription_readiness": "NOT_APPLICABLE_SYNTHETIC",
+      "subtitle_readiness": "NOT_APPLICABLE_SYNTHETIC",
+      "human_review_required": true,
+      "warning_codes": [
+        "UNSUPPORTED_CONTAINER_HINT",
+        "NEEDS_HUMAN_REVIEW"
+      ],
+      "recommended_department_review": [
+        "IGNORE_OR_ARCHIVE_REVIEW"
+      ],
+      "report_notes": [
+        "Synthetic unsupported item demonstrates safe ignore/archive review behavior.",
+        "No runtime file handling is implied."
+      ]
+    }
+  ],
+  "project_summary": {
+    "total_items": 10,
+    "video_like_count": 4,
+    "audio_like_count": 3,
+    "still_like_count": 1,
+    "document_like_count": 1,
+    "ignored_or_unsupported_count": 1,
+    "sync_candidate_group_count": 6,
+    "items_requiring_human_review_count": 10,
+    "privacy_mode": "synthetic_safe_labels_only",
+    "demo_mode": "synthetic_end_to_end_local_demo",
+    "limitations_label": "synthetic_demo_not_real_media_analysis"
+  },
+  "suggested_folders": [
+    "01_VIDEO",
+    "02_AUDIO",
+    "03_STILLS",
+    "04_DOCUMENTS",
+    "05_REPORTS",
+    "06_REVIEW_NEEDED",
+    "07_EXPORTS_FOR_EDIT"
+  ],
+  "privacy_assertions": {
+    "uses_synthetic_labels_only": true,
+    "contains_real_client_media": false,
+    "contains_private_paths": false,
+    "contains_raw_filenames": false,
+    "contains_client_names": false,
+    "contains_person_names": false,
+    "contains_real_locations": false,
+    "contains_script_content": false,
+    "contains_dialogue_content": false,
+    "contains_transcription_content": false,
+    "requires_cloud_upload": false,
+    "requires_external_binary_execution": false,
+    "safe_for_public_demo_after_human_review": false
+  },
+  "validation_rules": {
+    "exact_item_count_required": true,
+    "unique_safe_item_ids_required": true,
+    "allowed_categories_only": true,
+    "allowed_warning_codes_only": true,
+    "allowed_department_reviews_only": true,
+    "private_paths_rejected": true,
+    "raw_filenames_rejected": true,
+    "real_names_rejected": true,
+    "script_content_rejected": true,
+    "dialogue_content_rejected": true,
+    "transcription_content_rejected": true,
+    "cloud_upload_rejected": true,
+    "external_binary_execution_rejected": true,
+    "human_review_required": true
+  },
+  "next_recommended_phase": "CID.LOCAL_MEDIA_AGENT.SYNTHETIC.END_TO_END.LOCAL_DEMO_REPORT.FIXTURE.JSON.CREATE.QA.GATE.V1"
+}

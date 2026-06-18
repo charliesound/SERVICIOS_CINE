@@ -1,5 +1,13 @@
 from pathlib import Path
 
+def _allowed_fixture_files_after_later_placeholder_create_phase():
+    return {
+        "fixture_manifest.json",
+        "synthetic_invalid_media_placeholder.bin",
+        "synthetic_permission_denied_placeholder.dat",
+        "synthetic_unsupported_media_placeholder.txt",
+    }
+
 
 DOC = Path(
     "docs/product/local_media_agent/"
@@ -41,7 +49,7 @@ def test_placeholders_contract_does_not_create_files_or_runtime():
 def test_only_manifest_exists_in_fixture_folder_during_contract_phase():
     assert FIXTURE_ROOT.exists(), "manifest phase should have created the fixture folder"
     files = sorted(path.relative_to(FIXTURE_ROOT).as_posix() for path in FIXTURE_ROOT.rglob("*") if path.is_file())
-    assert files == ["fixture_manifest.json"]
+    assert set(files) == _allowed_fixture_files_after_later_placeholder_create_phase()
 
 
 def test_allowed_future_placeholder_files_are_documented():

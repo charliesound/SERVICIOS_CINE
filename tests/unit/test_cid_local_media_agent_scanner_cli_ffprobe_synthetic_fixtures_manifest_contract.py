@@ -1,5 +1,13 @@
 from pathlib import Path
 
+def _allowed_fixture_files_after_later_placeholder_create_phase():
+    return {
+        "fixture_manifest.json",
+        "synthetic_invalid_media_placeholder.bin",
+        "synthetic_permission_denied_placeholder.dat",
+        "synthetic_unsupported_media_placeholder.txt",
+    }
+
 
 DOC = Path(
     "docs/product/local_media_agent/"
@@ -41,7 +49,7 @@ def test_manifest_contract_does_not_create_media_fixtures_or_runtime_and_allows_
 
     if FUTURE_FIXTURE_DIR.exists():
         files = sorted(path.relative_to(FUTURE_FIXTURE_DIR).as_posix() for path in FUTURE_FIXTURE_DIR.rglob("*") if path.is_file())
-        assert files == ["fixture_manifest.json"]
+        assert set(files) == _allowed_fixture_files_after_later_placeholder_create_phase()
 
 
 def test_future_manifest_path_is_documented_but_not_created():

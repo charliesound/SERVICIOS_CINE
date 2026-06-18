@@ -111,5 +111,63 @@
       "commit_allowed": false,
       "notes": "Planned future permission scenario placeholder; no file is created in this phase."
     }
-  ]
+  ],
+  "synthetic_placeholders_phase": "CID.LOCAL_MEDIA_AGENT.SCANNER.CLI.FFPROBE.SYNTHETIC.PLACEHOLDERS.CREATE.V1",
+  "synthetic_placeholders": [
+    {
+      "placeholder_id": "synthetic_invalid_media_placeholder",
+      "relative_path": "synthetic_invalid_media_placeholder.bin",
+      "placeholder_category": "synthetic_invalid_media",
+      "media_kind": "not_media",
+      "synthetic_origin": "created_by_contract_controlled_phase",
+      "intended_use": "future_ffprobe_failure_path_test",
+      "must_not_be_valid_media": true,
+      "must_not_execute_ffprobe": true,
+      "must_not_execute_ffmpeg": true
+    },
+    {
+      "placeholder_id": "synthetic_permission_denied_placeholder",
+      "relative_path": "synthetic_permission_denied_placeholder.dat",
+      "placeholder_category": "synthetic_permission_denied",
+      "media_kind": "not_media",
+      "synthetic_origin": "created_by_contract_controlled_phase",
+      "intended_use": "future_ffprobe_failure_path_test",
+      "must_not_be_valid_media": true,
+      "must_not_execute_ffprobe": true,
+      "must_not_execute_ffmpeg": true
+    },
+    {
+      "placeholder_id": "synthetic_unsupported_media_placeholder",
+      "relative_path": "synthetic_unsupported_media_placeholder.txt",
+      "placeholder_category": "synthetic_unsupported_media",
+      "media_kind": "not_media",
+      "synthetic_origin": "created_by_contract_controlled_phase",
+      "intended_use": "future_ffprobe_failure_path_test",
+      "must_not_be_valid_media": true,
+      "must_not_execute_ffprobe": true,
+      "must_not_execute_ffmpeg": true
+    }
+  ],
+  "synthetic_placeholders_policy": {
+    "contains_real_media": false,
+    "contains_video": false,
+    "contains_audio": false,
+    "executes_ffprobe": false,
+    "executes_ffmpeg": false,
+    "adds_subprocess_runtime": false,
+    "allowed_extensions": [
+      ".txt",
+      ".bin",
+      ".dat"
+    ],
+    "forbidden_extensions": [
+      ".mp4",
+      ".mov",
+      ".mxf",
+      ".wav",
+      ".aif",
+      ".aiff",
+      ".mp3"
+    ]
+  }
 }

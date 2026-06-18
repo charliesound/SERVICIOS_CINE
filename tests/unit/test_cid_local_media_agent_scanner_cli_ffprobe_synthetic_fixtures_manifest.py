@@ -1,6 +1,14 @@
 import json
 from pathlib import Path
 
+def _allowed_fixture_files_after_later_placeholder_create_phase():
+    return {
+        "fixture_manifest.json",
+        "synthetic_invalid_media_placeholder.bin",
+        "synthetic_permission_denied_placeholder.dat",
+        "synthetic_unsupported_media_placeholder.txt",
+    }
+
 
 MANIFEST = Path("tests/fixtures/local_media_agent/ffprobe_synthetic/fixture_manifest.json")
 FIXTURE_ROOT = Path("tests/fixtures/local_media_agent/ffprobe_synthetic")
@@ -126,7 +134,7 @@ def test_manifest_relative_paths_are_safe():
 
 def test_manifest_does_not_create_binary_fixture_files():
     files = [path for path in FIXTURE_ROOT.rglob("*") if path.is_file()]
-    assert files == [MANIFEST]
+    assert set(path.relative_to(FIXTURE_ROOT).as_posix() for path in files) == _allowed_fixture_files_after_later_placeholder_create_phase()
 
 
 def test_manifest_flags_are_booleans_and_commit_blocked_for_future_files():

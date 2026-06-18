@@ -180,8 +180,8 @@ def test_test_file_does_not_import_external_command_modules():
     forbidden = [
         "import " + "sub" + "process",
         "from " + "sub" + "process",
-        "import os",
-        "from os",
+        "import " + "o" + "s",
+        "from " + "o" + "s",
         "P" + "open(",
         "shell" + "=",
     ]

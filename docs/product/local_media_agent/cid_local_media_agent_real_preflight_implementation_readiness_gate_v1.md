@@ -67,7 +67,7 @@ The future implementation phase must not be opened unless:
 - no backup file is staged;
 - PostgreSQL-only guardrails remain intact;
 - the WSL repo guard passes;
-- the SQLite regression guard passes.
+- the PostgreSQL-only regression guard passes.
 
 ## Protected areas that remain closed
 

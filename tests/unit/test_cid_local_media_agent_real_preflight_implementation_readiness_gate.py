@@ -108,7 +108,7 @@ def test_repository_conditions_are_enumerated():
         "no protected file is modified",
         "postgresql-only guardrails remain intact",
         "wsl repo guard passes",
-        "sqlite regression guard passes",
+        "postgresql-only regression guard passes",
     ]
     for item in required:
         assert item in text

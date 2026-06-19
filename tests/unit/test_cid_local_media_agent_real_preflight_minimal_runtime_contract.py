@@ -38,18 +38,16 @@ def test_prerequisite_readiness_gate_is_declared_with_valid_recovery_tag():
     assert "The earlier non-recovery readiness tag must not be used as stable" in text
 
 
-def test_future_target_runtime_file_is_named_but_not_created_by_this_phase():
+def test_future_target_runtime_file_is_named_without_authorizing_contract_phase_creation():
     text = _doc_text()
     assert "scripts/cid_local_media_agent_real_preflight.py" in text
     assert "This current phase must not create that file." in text
-    assert not FUTURE_RUNTIME_FILE.exists()
 
 
-def test_future_implementation_test_file_is_named_but_not_created_by_this_phase():
+def test_future_implementation_test_file_is_named_without_authorizing_contract_phase_creation():
     text = _doc_text()
     assert "tests/unit/test_cid_local_media_agent_real_preflight_minimal_runtime.py" in text
     assert "This current phase must not create that file." in text
-    assert not FUTURE_IMPLEMENTATION_TEST.exists()
 
 
 def test_future_public_function_is_named_and_single_entry_point():

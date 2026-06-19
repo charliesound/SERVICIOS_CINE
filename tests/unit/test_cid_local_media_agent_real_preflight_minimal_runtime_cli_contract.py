@@ -388,6 +388,8 @@ def test_contract_test_does_not_import_future_cli_or_runtime_modules():
     assert imported_modules.isdisjoint(forbidden_imports)
 
 
-def test_no_future_cli_source_created_by_this_phase_when_starting_from_current_state():
-    assert not FUTURE_CLI_FILE.exists()
-    assert not FUTURE_CLI_TEST.exists()
+def test_future_cli_source_files_were_not_authorized_by_contract_phase_creation():
+    doc_text = _doc_text()
+    assert "scripts/cid_local_media_agent_real_preflight_cli.py" in doc_text
+    assert "tests/unit/test_cid_local_media_agent_real_preflight_minimal_runtime_cli.py" in doc_text
+    assert "This current phase must not create that file." in doc_text

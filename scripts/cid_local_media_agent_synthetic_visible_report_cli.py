@@ -9,10 +9,11 @@ COMMAND_NAME = "synthetic-visible-report"
 OUTPUT_FILENAME = "cid_local_media_agent_synthetic_visible_report_v1.md"
 
 _ALLOWED_FLAGS_WITH_VALUE = {"--fixture", "--output-dir", "--format"}
-_ALLOWED_BOOL_FLAGS = {"--allow-overwrite"}
+_ALLOWED_BOOL_FLAGS = {"--allow-overwrite", "--preflight"}
 _HELP_FLAGS = {"-h", "--help"}
 
 _RENDERER_PATH = Path(__file__).with_name("cid_local_media_agent_synthetic_visible_report_renderer.py")
+_PREFLIGHT_PATH = Path(__file__).with_name("cid_local_media_agent_synthetic_visible_report_preflight_check.py")
 
 
 def _load_renderer() -> Any:
@@ -28,6 +29,19 @@ def _load_renderer() -> Any:
     return module
 
 
+def _load_preflight() -> Any:
+    spec = importlib.util.spec_from_file_location(
+        "cid_local_media_agent_synthetic_visible_report_preflight_check",
+        _PREFLIGHT_PATH,
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Synthetic preflight module could not be loaded.")
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def _help_text() -> str:
     return "\n".join(
         [
@@ -35,6 +49,7 @@ def _help_text() -> str:
             "",
             "Uso:",
             "  synthetic-visible-report --fixture <fixture-json> --output-dir <dir> --format markdown [--allow-overwrite]",
+            "  synthetic-visible-report --preflight --fixture <fixture-json> --output-dir <existing-dir> --format markdown [--allow-overwrite]",
             "",
             "Alcance:",
             "  Demo sintética local. No analiza media real.",
@@ -52,6 +67,7 @@ def _help_text() -> str:
             "  --output-dir       Directorio de salida ya existente y controlado.",
             "  --format markdown  Formato permitido.",
             "  --allow-overwrite  Permite sobrescribir el Markdown sintético existente.",
+            "  --preflight        Valida parámetros sintéticos sin generar informe.",
             "",
         ]
     )
@@ -97,12 +113,28 @@ def _parse_args(argv: list[str]) -> tuple[dict[str, str | bool], str | None]:
     return parsed, None
 
 
+def _run_preflight(args: list[str]) -> int:
+    preflight_args = [item for item in args if item != "--preflight"]
+
+    try:
+        preflight = _load_preflight()
+        return int(preflight.main(preflight_args))
+    except Exception:
+        print("PREFLIGHT_FAIL", file=sys.stderr)
+        print("reason=UNEXPECTED_CONTROLLED_FAILURE", file=sys.stderr)
+        print("message=El preflight falló de forma controlada.", file=sys.stderr)
+        return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
 
     if not args:
         print(_help_text())
         return 0
+
+    if "--preflight" in args:
+        return _run_preflight(args)
 
     parsed, parse_error = _parse_args(args)
     if parsed.get("--help"):

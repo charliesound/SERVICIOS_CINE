@@ -167,9 +167,12 @@ def test_current_runtime_files_are_not_preflight_implementations_yet() -> None:
     renderer_source = _read(RENDERER_SCRIPT)
 
     assert "PREFLIGHT_PASS" not in cli_source
-    assert "PREFLIGHT_FAIL" not in cli_source
-    assert "--preflight" not in cli_source
-    assert "preflight" not in cli_source.lower()
+    assert "PREFLIGHT_FAIL" in cli_source
+    assert "reason=UNEXPECTED_CONTROLLED_FAILURE" in cli_source
+    assert "--preflight" in cli_source
+    assert "cid_local_media_agent_synthetic_visible_report_preflight_check.py" in cli_source
+    assert "def _run_preflight" in cli_source
+    assert "synthetic-visible-report-preflight" not in cli_source
 
     assert "PREFLIGHT_PASS" not in renderer_source
     assert "PREFLIGHT_FAIL" not in renderer_source

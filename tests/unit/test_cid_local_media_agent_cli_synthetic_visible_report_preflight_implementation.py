@@ -322,14 +322,15 @@ def test_preflight_rejects_missing_output_directory_and_file_output_without_path
     assert str(file_output) not in file_stderr
 
 
-def test_existing_cli_renderer_and_scanner_are_not_modified_by_preflight_phase() -> None:
+def test_preflight_helper_remains_isolated_after_cli_integration_phase() -> None:
     cli_source = _read(CLI_SCRIPT)
     renderer_source = _read(RENDERER_SCRIPT)
     scanner_source = _read(SCANNER_SCRIPT)
 
     assert "PREFLIGHT_PASS" not in cli_source
-    assert "PREFLIGHT_FAIL" not in cli_source
-    assert "--preflight" not in cli_source
+    assert "--preflight" in cli_source
+    assert "cid_local_media_agent_synthetic_visible_report_preflight_check.py" in cli_source
+    assert "def _run_preflight" in cli_source
     assert "synthetic-visible-report-preflight" not in cli_source
 
     assert "PREFLIGHT_PASS" not in renderer_source

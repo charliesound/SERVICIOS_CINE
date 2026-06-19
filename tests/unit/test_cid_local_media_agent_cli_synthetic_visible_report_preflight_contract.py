@@ -153,10 +153,13 @@ def test_preflight_contract_does_not_modify_current_cli_source_contract() -> Non
     assert "COMMAND_NAME = \"synthetic-visible-report\"" in source
     assert "OUTPUT_FILENAME = \"cid_local_media_agent_synthetic_visible_report_v1.md\"" in source
 
-    assert "preflight" not in source.lower()
+    assert "--preflight" in source
+    assert "cid_local_media_agent_synthetic_visible_report_preflight_check.py" in source
+    assert "def _run_preflight" in source
+    assert "synthetic-visible-report-preflight" not in source
     assert "PREFLIGHT_PASS" not in source
-    assert "PREFLIGHT_FAIL" not in source
-    assert "--preflight" not in source
+    assert "PREFLIGHT_FAIL" in source
+    assert "reason=UNEXPECTED_CONTROLLED_FAILURE" in source
     assert "cid_media" + "_agent_scan" not in source
 
 

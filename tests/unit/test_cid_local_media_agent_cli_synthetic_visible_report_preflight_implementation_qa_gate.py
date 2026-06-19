@@ -257,15 +257,16 @@ def test_preflight_rejects_unsupported_format_and_real_media_like_options(tmp_pa
     assert "Traceback" not in media_stderr
 
 
-def test_current_cli_renderer_and_scanner_remain_unintegrated_with_preflight() -> None:
+def test_cli_integration_exists_but_renderer_and_scanner_remain_unintegrated_with_preflight() -> None:
     cli_source = _read(CLI_SCRIPT)
     renderer_source = _read(RENDERER_SCRIPT)
     scanner_source = _read(SCANNER_SCRIPT)
 
+    assert "--preflight" in cli_source
+    assert "cid_local_media_agent_synthetic_visible_report_preflight_check.py" in cli_source
+    assert "def _run_preflight" in cli_source
     assert "synthetic-visible-report-preflight" not in cli_source
-    assert "--preflight" not in cli_source
     assert "PREFLIGHT_PASS" not in cli_source
-    assert "PREFLIGHT_FAIL" not in cli_source
 
     assert "synthetic-visible-report-preflight" not in renderer_source
     assert "PREFLIGHT_PASS" not in renderer_source

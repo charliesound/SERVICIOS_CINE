@@ -161,15 +161,15 @@ def test_readiness_gate_keeps_productization_and_real_media_blocked() -> None:
         assert item in text
 
 
-def test_current_runtime_sources_remain_unmodified_and_unintegrated_before_future_phase() -> None:
+def test_runtime_sources_are_integrated_only_through_cli_after_implementation_phase() -> None:
     cli_source = _read(CLI_SCRIPT)
     preflight_source = _read(PREFLIGHT_SCRIPT)
     renderer_source = _read(RENDERER_SCRIPT)
     scanner_source = _read(SCANNER_SCRIPT)
 
-    assert "--preflight" not in cli_source
-    assert "PREFLIGHT_PASS" not in cli_source
-    assert "PREFLIGHT_FAIL" not in cli_source
+    assert "--preflight" in cli_source
+    assert "cid_local_media_agent_synthetic_visible_report_preflight_check.py" in cli_source
+    assert "def _run_preflight" in cli_source
     assert "synthetic-visible-report-preflight" not in cli_source
 
     assert "PREFLIGHT_PASS" in preflight_source

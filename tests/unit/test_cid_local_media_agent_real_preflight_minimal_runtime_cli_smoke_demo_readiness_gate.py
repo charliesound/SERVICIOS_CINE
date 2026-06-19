@@ -122,7 +122,7 @@ def test_repository_prechecks_are_documented():
         "database files are not staged",
         "backups are not staged",
         "guard_wsl_repo.sh",
-        "guard_no_sqlite_regressions.sh",
+        "postgresql-only regression guard",
     ]
     for item in required:
         assert item in text

@@ -66,7 +66,7 @@ Before any later phase that moves beyond synthetic temporary folders, the operat
 - backups are not staged;
 - frontend/backend/SaaS/Docker/Alembic/Stripe/AI Jobs/credits/ledger files are not staged unless a separate explicit phase authorizes them;
 - `guard_wsl_repo.sh` passes;
-- `guard_no_sqlite_regressions.sh` passes.
+- the PostgreSQL-only regression guard passes.
 
 ## Required test matrix
 

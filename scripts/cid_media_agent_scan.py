@@ -16,7 +16,8 @@ VIDEO_EXTENSIONS = {".mov", ".mp4", ".mxf"}
 AUDIO_EXTENSIONS = {".wav", ".bwf", ".aif", ".aiff", ".flac"}
 SUBTITLE_EXTENSIONS = {".srt", ".vtt"}
 SIDECAR_EXTENSIONS = {".xml", ".ale", ".edl"}
-REPORT_EXTENSIONS = {".json", ".csv", ".txt"}
+REPORT_EXTENSIONS = {".json", ".csv"}
+NON_MEDIA_REJECTED_EXTENSIONS = {".txt", ".exe"}
 
 CANDIDATE_EXTENSIONS = (
     VIDEO_EXTENSIONS
@@ -125,17 +126,65 @@ def _source_kind(path: Path) -> tuple[str, bool, list[str]]:
     return "unknown", True, ["unsupported extension"]
 
 
-def _iter_candidate_files(input_root: Path) -> list[Path]:
-    candidates: list[Path] = []
+def _is_unknown_synthetic_placeholder(path: Path) -> bool:
+    file_name = path.name.upper()
+    parent_name = path.parent.name.upper()
+    local_hint = f"{parent_name} {file_name}"
+    return "UNKNOWN" in local_hint or "UNKNOWN_ASSET" in file_name
+
+
+def _is_candidate_file(path: Path) -> bool:
+    return (
+        path.suffix.lower() in CANDIDATE_EXTENSIONS
+        or _is_unknown_synthetic_placeholder(path)
+    )
+
+
+def _iter_scannable_files(input_root: Path) -> list[Path]:
+    files: list[Path] = []
     for path in sorted(input_root.rglob("*")):
         if not path.is_file():
             continue
         if any(part in EXCLUDED_DIR_NAMES for part in path.parts):
             continue
-        if path.suffix.lower() not in CANDIDATE_EXTENSIONS:
-            continue
-        candidates.append(path)
-    return candidates
+        files.append(path)
+    return files
+
+
+def _iter_candidate_files(input_root: Path) -> list[Path]:
+    return [
+        path
+        for path in _iter_scannable_files(input_root)
+        if _is_candidate_file(path)
+    ]
+
+
+def _count_extensions(paths: list[Path]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for path in paths:
+        extension = path.suffix.lower() or "[no_extension]"
+        counts[extension] = counts.get(extension, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _extension_semantic_counts(scanned_files: list[Path]) -> dict[str, dict[str, int]]:
+    accepted_files = [
+        path
+        for path in scanned_files
+        if path.suffix.lower() in (VIDEO_EXTENSIONS | AUDIO_EXTENSIONS)
+    ]
+    rejected_files = [
+        path
+        for path in scanned_files
+        if path.suffix.lower() in NON_MEDIA_REJECTED_EXTENSIONS
+        or path.suffix.lower() not in CANDIDATE_EXTENSIONS
+    ]
+
+    return {
+        "accepted_extension_counts": _count_extensions(accepted_files),
+        "rejected_extension_counts": _count_extensions(rejected_files),
+        "ignored_extension_counts": {},
+    }
 
 
 def _preflight(input_root: Path, output_root: Path, privacy_mode: str, path_policy: str) -> list[str]:
@@ -259,6 +308,7 @@ def _write_outputs(
     assets: list[dict[str, Any]],
     warnings: list[str],
     ffprobe_preflight: dict[str, Any],
+    extension_semantic_counts: dict[str, dict[str, int]],
 ) -> None:
     human_review_assets = [asset for asset in assets if asset["human_review_required"]]
 
@@ -282,6 +332,7 @@ def _write_outputs(
             "candidate_media_count": len(assets),
             "human_review_required_count": len(human_review_assets),
             "ffprobe_preflight": ffprobe_preflight,
+            **extension_semantic_counts,
         },
     )
     _write_text(
@@ -336,6 +387,9 @@ def scan(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             "candidate_media_count": 0,
             "warnings_count": len(preflight_errors),
             "human_review_required_count": 0,
+            "accepted_extension_counts": {},
+            "rejected_extension_counts": {},
+            "ignored_extension_counts": {},
             "created_outputs": [],
             "errors": preflight_errors,
             "exit_code": 2,
@@ -343,7 +397,13 @@ def scan(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
 
     ffprobe_preflight = _ffprobe_availability_preflight(args.ffprobe_preflight)
 
-    candidates = _iter_candidate_files(input_root)
+    scanned_files = _iter_scannable_files(input_root)
+    extension_semantic_counts = _extension_semantic_counts(scanned_files)
+    candidates = [
+        path
+        for path in scanned_files
+        if _is_candidate_file(path)
+    ]
     assets = [
         _asset_entry(index, path, input_root, path_policy)
         for index, path in enumerate(candidates, start=1)
@@ -376,6 +436,7 @@ def scan(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             "human_review_required_count": human_review_required_count,
             "warnings": warnings,
             "ffprobe_preflight": ffprobe_preflight,
+            **extension_semantic_counts,
             "created_outputs": [],
             "planned_outputs": SAFE_OUTPUTS,
             "exit_code": exit_code,
@@ -390,6 +451,7 @@ def scan(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         assets=assets,
         warnings=warnings,
         ffprobe_preflight=ffprobe_preflight,
+        extension_semantic_counts=extension_semantic_counts,
     )
 
     return exit_code, {
@@ -402,6 +464,7 @@ def scan(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         "human_review_required_count": human_review_required_count,
         "warnings": warnings,
         "ffprobe_preflight": ffprobe_preflight,
+        **extension_semantic_counts,
         "created_outputs": SAFE_OUTPUTS,
         "exit_code": exit_code,
     }

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -295,3 +297,39 @@ def test_unknown_scope_creep_flag_is_rejected_by_parser(
     captured = capsys.readouterr()
     assert code != 0
     assert "unrecognized arguments" in captured.err
+
+
+
+def test_cli_can_run_as_direct_script_from_repo_root(tmp_path: Path) -> None:
+    from tests.unit.test_cid_local_media_agent_visible_report_runtime_generator import (
+        _valid_scanner_result,
+    )
+
+    input_json = _write_json(
+        tmp_path / "scanner_result.json",
+        _valid_scanner_result(),
+    )
+    output_root = tmp_path / "out"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/local_media_agent/visible_report_runtime_cli.py",
+            "--scanner-result-json",
+            str(input_json),
+            "--output-root",
+            str(output_root),
+            "--print-output-path",
+        ],
+        cwd=Path.cwd(),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    expected_report = output_root / "05_reports" / "cid_local_media_agent_visible_report_v1.md"
+
+    assert result.returncode == 0, result.stderr
+    assert expected_report.exists()
+    assert str(expected_report) in result.stdout
+    assert "ModuleNotFoundError" not in result.stderr

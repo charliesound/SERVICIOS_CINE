@@ -52,7 +52,7 @@ Previous closed result:
 
 ## Target tag
 
-`cid-dev-stable-local-media-agent-ffprobe-controlled-file-metadata-visible-report-renderer-cli-visible-report-output-export-controlled-text-artifact-planner-to-exporter-wiring-cli-dry-run-integration-readiness-gate-qa-gate-closure-review-v1-20260629`
+`cid-dev-stable-local-media-agent-cli-dry-run-readiness-qa-closure-review-v1-20260629`
 
 ## Files in scope
 

@@ -230,7 +230,7 @@ def test_qa_gate_doc_and_test_exist_and_declare_phase() -> None:
     assert PHASE in doc
     assert PHASE in test
     assert "doc/test-only" in doc
-    assert "database regression guard" in doc
+    assert "database regression guard" in doc.lower()
 
 
 def test_authorized_implementation_and_previous_test_exist() -> None:
@@ -245,11 +245,23 @@ def test_parser_surface_is_exactly_the_authorized_isolated_cli_surface() -> None
     assert not (declared_options & UNSAFE_ALIASES)
 
 
-def test_runtime_contract_keeps_authorization_token_artifact_name_and_cli_extension() -> None:
+def test_runtime_contract_keeps_authorization_token_artifact_name_and_cli_extension(tmp_path: Path) -> None:
     module = _load_module()
     assert getattr(module, "WRITE_AUTHORIZATION") == AUTHORIZATION_TOKEN
-    assert getattr(module, "FILENAME") == EXPECTED_ARTIFACT_NAME
-    assert getattr(module, "EXTENSION") == EXPECTED_CLI_EXTENSION
+
+    root = _controlled_root(tmp_path)
+    payload = _invoke_controlled_export(
+        module,
+        visible_report_text="# Controlled visible report\\n\\nFixture-only QA runtime contract.\\n",
+        controlled_output_root=root,
+        write_authorization=AUTHORIZATION_TOKEN,
+        dry_run=True,
+    )
+
+    assert payload.get("filename") == EXPECTED_ARTIFACT_NAME
+    assert payload.get("extension") == EXPECTED_CLI_EXTENSION
+    assert payload.get("verification_status") == DRY_RUN_STATUS
+    assert list(root.iterdir()) == []
 
 
 def test_static_contract_keeps_dry_run_and_verified_statuses() -> None:

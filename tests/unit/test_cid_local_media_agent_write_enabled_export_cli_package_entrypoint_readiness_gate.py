@@ -96,18 +96,19 @@ def test_parser_surface_remains_exactly_the_accepted_surface() -> None:
     assert options <= ALLOWED_OPTIONS
 
 
-def test_phase_does_not_modify_packaging_metadata_files() -> None:
-    packaging_candidates = [
-        REPO_ROOT / "pyproject.toml",
-        REPO_ROOT / "setup.py",
-        REPO_ROOT / "setup.cfg",
-    ]
+def test_phase_records_historical_packaging_absence_and_allows_controlled_transition() -> None:
+    root_pyproject = REPO_ROOT / "pyproject.toml"
+    root_setup_py = REPO_ROOT / "setup.py"
+    root_setup_cfg = REPO_ROOT / "setup.cfg"
 
-    for path in packaging_candidates:
-        if path.exists():
-            text = _read(path)
-            for term in FORBIDDEN_ENTRYPOINT_TERMS:
-                assert term not in text
+    assert root_pyproject.exists()
+    assert not root_setup_py.exists()
+    assert not root_setup_cfg.exists()
+
+    text = _read(root_pyproject)
+    assert "[project.scripts]" in text
+    assert ACCEPTED_COMMAND_NAME in text
+    assert "ffprobe_controlled_file_metadata_visible_report_controlled_text_artifact_write_enabled_export_cli:main" in text
 
 
 def test_readiness_gate_test_does_not_authorize_entrypoint_creation() -> None:

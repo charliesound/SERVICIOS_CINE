@@ -41,10 +41,14 @@ def test_root_packaging_metadata_contract_doc_exists_and_declares_scope() -> Non
     assert "Database regression guard" in doc
 
 
-def test_root_packaging_metadata_contract_preserves_current_absence() -> None:
-    assert not ROOT_PYPROJECT.exists()
+def test_root_packaging_metadata_contract_records_historical_absence_and_allows_controlled_transition() -> None:
+    assert ROOT_PYPROJECT.exists()
     assert not ROOT_SETUP_CFG.exists()
     assert not ROOT_SETUP_PY.exists()
+
+    content = _read(ROOT_PYPROJECT)
+    assert "cid-local-media-agent" in content
+    assert "cid-local-media-agent-visible-report-write-enabled-export" in content
 
 
 def test_root_packaging_metadata_contract_blocks_nested_project_target() -> None:

@@ -43,15 +43,21 @@ def test_target_selection_gate_doc_exists_and_declares_blocking_decision() -> No
     assert "Database regression guard" in doc
 
 
-def test_target_selection_gate_records_root_packaging_absence() -> None:
+def test_target_selection_gate_records_historical_root_packaging_absence_and_transition() -> None:
     doc = _read(DOC_PATH)
 
     assert "Root `pyproject.toml`: missing." in doc
     assert "Root `setup.cfg`: missing." in doc
     assert "Root `setup.py`: missing." in doc
 
-    for path in ROOT_PACKAGING_FILES:
-        assert not path.exists(), path
+    root_pyproject = REPO_ROOT / "pyproject.toml"
+    root_setup_cfg = REPO_ROOT / "setup.cfg"
+    root_setup_py = REPO_ROOT / "setup.py"
+
+    assert root_pyproject.exists()
+    assert not root_setup_cfg.exists()
+    assert not root_setup_py.exists()
+    assert "cid-local-media-agent-visible-report-write-enabled-export" in _read(root_pyproject)
 
 
 def test_target_selection_gate_identifies_nested_pyproject_as_not_authorized() -> None:

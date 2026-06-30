@@ -43,21 +43,27 @@ def test_existence_transition_compatibility_doc_exists_and_declares_scope() -> N
     assert "Database regression guard" in doc
 
 
-def test_existence_transition_compatibility_preserves_current_absence() -> None:
-    assert not ROOT_PYPROJECT.exists()
+def test_existence_transition_compatibility_records_current_controlled_presence() -> None:
+    assert ROOT_PYPROJECT.exists()
     assert not ROOT_SETUP_CFG.exists()
     assert not ROOT_SETUP_PY.exists()
 
+    content = _read(ROOT_PYPROJECT)
+    assert "cid-local-media-agent" in content
+    assert "cid-local-media-agent-visible-report-write-enabled-export" in content
 
-def test_existence_transition_compatibility_records_prior_blocking_assertions() -> None:
+
+def test_existence_transition_compatibility_records_transition_applied_narrowly() -> None:
     readiness = _read(ROOT_READINESS_TEST_PATH)
     contract = _read(ROOT_CONTRACT_TEST_PATH)
     target_selection = _read(TARGET_SELECTION_TEST_PATH)
 
-    assert "assert not ROOT_PYPROJECT.exists()" in readiness
-    assert "assert not ROOT_PYPROJECT.exists()" in contract
-    assert "ROOT_PACKAGING_FILES" in target_selection
-    assert "assert not path.exists()" in target_selection
+    assert "records_historical_absence_and_allows_controlled_transition" in readiness
+    assert "records_historical_absence_and_allows_controlled_transition" in contract
+    assert "records_historical_root_packaging_absence_and_transition" in target_selection
+    assert "cid-local-media-agent-visible-report-write-enabled-export" in readiness
+    assert "cid-local-media-agent-visible-report-write-enabled-export" in contract
+    assert "cid-local-media-agent-visible-report-write-enabled-export" in target_selection
 
 
 def test_existence_transition_compatibility_authorizes_future_narrow_update() -> None:

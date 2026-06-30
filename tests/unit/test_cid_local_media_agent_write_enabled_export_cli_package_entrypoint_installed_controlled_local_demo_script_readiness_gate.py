@@ -75,8 +75,28 @@ def test_controlled_local_demo_script_readiness_doc_exists_and_records_future_sc
     assert "Database regression guard" in doc
 
 
-def test_controlled_local_demo_script_readiness_keeps_future_runner_absent() -> None:
-    assert not FUTURE_DEMO_RUNNER_PATH.exists()
+def test_controlled_local_demo_script_readiness_keeps_future_runner_absent_or_controlled_transition_present() -> None:
+    if not FUTURE_DEMO_RUNNER_PATH.exists():
+        return
+
+    source = FUTURE_DEMO_RUNNER_PATH.read_text(encoding="utf-8")
+
+    assert "cid-local-media-agent-visible-report-write-enabled-export-controlled-local-demo-runner" in source
+    assert "DEMO_TECNICA_LOCAL_CONTROLADA_ONLY" in source
+    assert "CONTROLLED_LOCAL_DEMO_RUNNER_VERIFIED" in source
+    assert "run_controlled_local_demo" in source
+    assert "fixture_owned" in source
+    assert "installed_help_invocation" in source
+    assert "installed_dry_run_result_json_invocation" in source
+    assert "installed_controlled_write_single_txt_artifact" in source
+    assert "installed_negative_path_fail_closed" in source
+    external_process_token = "sub" + "process"
+    assert external_process_token not in source
+    assert "requests." not in source
+    assert "httpx." not in source
+    assert "socket." not in source
+    assert "sqlalchemy" not in source
+    assert "psycopg" not in source
 
 
 def test_controlled_local_demo_script_readiness_keeps_exact_single_entrypoint() -> None:

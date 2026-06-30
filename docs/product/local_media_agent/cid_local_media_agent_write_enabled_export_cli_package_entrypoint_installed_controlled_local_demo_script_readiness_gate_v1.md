@@ -29,7 +29,7 @@ Allowed future candidate path:
 
 `scripts/local_media_agent/cid_local_media_agent_write_enabled_export_cli_installed_controlled_local_demo_runner.py`
 
-This readiness gate requires that this path does not exist yet.
+At readiness gate closure, this path must not exist yet. In a later controlled implementation transition, this same path may exist only if it remains limited to the approved controlled local technical demo runner scope.
 
 ## Future allowed demo sequence
 
@@ -127,7 +127,8 @@ This phase can close only when:
 - WSL guard passes.
 - Database regression guard passes.
 - Only this controlled local demo script readiness gate doc and test are staged.
-- The future demo runner candidate path still does not exist.
+- At readiness gate closure, the future demo runner candidate path still does not exist.
+- During a later controlled implementation transition, if the future demo runner candidate path exists, it must preserve the same controlled local technical demo boundary.
 - The target tag is absent locally and remotely before tag creation.
 
 ## Expected result

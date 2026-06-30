@@ -28,13 +28,19 @@ This phase validates that the current installed command remains the only project
 
 ## Current readiness state
 
-The root `pyproject.toml` must still expose exactly one script:
+At readiness gate closure, the root `pyproject.toml` must still expose exactly one script:
 
 `cid-local-media-agent-visible-report-write-enabled-export`
 
-The future runner command must not yet be present in `pyproject.toml`.
+At readiness gate closure, the future runner command must not yet be present in `pyproject.toml`.
 
-The future runner command must not yet be available in the active `.venv`.
+At readiness gate closure, the future runner command must not yet be available in the active `.venv`.
+
+During a later controlled implementation transition, `pyproject.toml` may expose exactly two scripts only if the second entry is:
+
+`cid-local-media-agent-controlled-local-demo-runner = scripts.local_media_agent.cid_local_media_agent_write_enabled_export_cli_installed_controlled_local_demo_runner:main`
+
+During that later transition, the future runner command may be available in the active `.venv` only if it executes the same controlled local demo runner contract.
 
 The future runner target must already be importable and callable.
 
@@ -99,8 +105,10 @@ This phase can close only when:
 - The root packaging and transition tests still pass.
 - The write-enabled export integration tests still pass.
 - Direct runner JSON execution passes.
-- The root `pyproject.toml` still has exactly one script entry.
-- The future runner command is still absent from the active `.venv`.
+- At readiness gate closure, the root `pyproject.toml` still has exactly one script entry.
+- At readiness gate closure, the future runner command is still absent from the active `.venv`.
+- During a later controlled implementation transition, the root `pyproject.toml` may have exactly two script entries: the existing write-enabled export command and the controlled local demo runner command.
+- During that later transition, the controlled local demo runner command may be present in the active `.venv` only if direct JSON execution preserves the controlled local demo runner contract.
 - WSL guard passes.
 - Database regression guard passes.
 - Only this CLI entrypoint readiness gate doc and test are staged.

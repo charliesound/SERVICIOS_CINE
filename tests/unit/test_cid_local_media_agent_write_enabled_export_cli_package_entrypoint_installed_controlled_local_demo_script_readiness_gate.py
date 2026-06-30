@@ -101,7 +101,17 @@ def test_controlled_local_demo_script_readiness_keeps_future_runner_absent_or_co
 
 def test_controlled_local_demo_script_readiness_keeps_exact_single_entrypoint() -> None:
     data = _load_pyproject()
-    assert data["project"]["scripts"] == {COMMAND_NAME: EXPECTED_TARGET}
+    scripts = data["project"]["scripts"]
+    runner_command = "cid-local-media-agent-controlled-local-demo-runner"
+    runner_target = "scripts.local_media_agent.cid_local_media_agent_write_enabled_export_cli_installed_controlled_local_demo_runner:main"
+
+    readiness_scripts = {COMMAND_NAME: EXPECTED_TARGET}
+    transition_scripts = {
+        COMMAND_NAME: EXPECTED_TARGET,
+        runner_command: runner_target,
+    }
+
+    assert scripts in [readiness_scripts, transition_scripts]
 
 
 def test_controlled_local_demo_script_readiness_command_is_installed() -> None:

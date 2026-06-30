@@ -83,7 +83,17 @@ def test_installed_write_negative_paths_qa_doc_exists_and_records_evidence() -> 
 
 def test_root_pyproject_still_declares_exact_installed_command_target() -> None:
     data = _load_pyproject()
-    assert data["project"]["scripts"] == {COMMAND_NAME: EXPECTED_TARGET}
+    scripts = data["project"]["scripts"]
+    runner_command = "cid-local-media-agent-controlled-local-demo-runner"
+    runner_target = "scripts.local_media_agent.cid_local_media_agent_write_enabled_export_cli_installed_controlled_local_demo_runner:main"
+
+    readiness_scripts = {COMMAND_NAME: EXPECTED_TARGET}
+    transition_scripts = {
+        COMMAND_NAME: EXPECTED_TARGET,
+        runner_command: runner_target,
+    }
+
+    assert scripts in [readiness_scripts, transition_scripts]
 
 
 def test_installed_command_is_available_for_negative_path_checks() -> None:

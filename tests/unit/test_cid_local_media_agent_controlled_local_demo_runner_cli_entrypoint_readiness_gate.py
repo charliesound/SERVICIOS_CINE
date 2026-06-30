@@ -83,18 +83,29 @@ def test_runner_cli_entrypoint_readiness_doc_exists_and_records_boundary() -> No
     assert EXPECTED_RESULT in doc
 
 
-def test_runner_cli_entrypoint_readiness_pyproject_still_has_exactly_one_script() -> None:
+def test_runner_cli_entrypoint_readiness_pyproject_is_readiness_or_controlled_transition_state() -> None:
     data = _load_pyproject()
+    scripts = data["project"]["scripts"]
 
-    assert data["project"]["scripts"] == {
+    readiness_scripts = {
         CURRENT_COMMAND: CURRENT_TARGET,
     }
+    transition_scripts = {
+        CURRENT_COMMAND: CURRENT_TARGET,
+        FUTURE_RUNNER_COMMAND: FUTURE_RUNNER_TARGET,
+    }
+
+    assert scripts in [readiness_scripts, transition_scripts]
 
 
-def test_runner_cli_entrypoint_readiness_future_command_not_in_pyproject() -> None:
+def test_runner_cli_entrypoint_readiness_future_command_absent_or_exact_controlled_target() -> None:
     data = _load_pyproject()
+    scripts = data["project"]["scripts"]
 
-    assert FUTURE_RUNNER_COMMAND not in data["project"]["scripts"]
+    if FUTURE_RUNNER_COMMAND not in scripts:
+        return
+
+    assert scripts[FUTURE_RUNNER_COMMAND] == FUTURE_RUNNER_TARGET
 
 
 def test_runner_cli_entrypoint_readiness_current_command_is_installed() -> None:
@@ -104,8 +115,21 @@ def test_runner_cli_entrypoint_readiness_current_command_is_installed() -> None:
     assert current_path.endswith(".venv/bin/cid-local-media-agent-visible-report-write-enabled-export")
 
 
-def test_runner_cli_entrypoint_readiness_future_command_is_not_installed_yet() -> None:
-    assert shutil.which(FUTURE_RUNNER_COMMAND) is None
+def test_runner_cli_entrypoint_readiness_future_command_absent_or_installed_as_controlled_runner() -> None:
+    command_path = shutil.which(FUTURE_RUNNER_COMMAND)
+
+    if command_path is None:
+        return
+
+    assert command_path.endswith(".venv/bin/cid-local-media-agent-controlled-local-demo-runner")
+
+    runner_module, _ = _resolve_target(FUTURE_RUNNER_TARGET)
+    summary = runner_module.run_controlled_local_demo(keep_output=False)
+
+    assert summary["status"] == EXPECTED_RUNNER_STATUS
+    assert summary["operational_boundary"] == EXPECTED_BOUNDARY
+    assert summary["output_root_removed"] is True
+    assert summary["artifact_available_after_runner"] is False
 
 
 def test_runner_cli_entrypoint_readiness_current_and_future_targets_are_callable() -> None:

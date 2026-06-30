@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 
 [project.scripts]
 cid-local-media-agent-visible-report-write-enabled-export = "scripts.local_media_agent.ffprobe_controlled_file_metadata_visible_report_controlled_text_artifact_write_enabled_export_cli:main"
+cid-local-media-agent-controlled-local-demo-runner = "scripts.local_media_agent.cid_local_media_agent_write_enabled_export_cli_installed_controlled_local_demo_runner:main"
 
 [tool.setuptools.packages.find]
 include = ["scripts*"]

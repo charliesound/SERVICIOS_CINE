@@ -37,11 +37,20 @@ def test_root_pyproject_exists_and_is_parseable() -> None:
     assert data["build-system"]["build-backend"] == "setuptools.build_meta"
 
 
-def test_root_pyproject_defines_exact_single_script_entry() -> None:
+def test_root_pyproject_defines_readiness_or_controlled_runner_transition_script_entries() -> None:
     data = _load_pyproject()
     scripts = data["project"]["scripts"]
 
-    assert scripts == {COMMAND_NAME: TARGET}
+    runner_command = "cid-local-media-agent-controlled-local-demo-runner"
+    runner_target = "scripts.local_media_agent.cid_local_media_agent_write_enabled_export_cli_installed_controlled_local_demo_runner:main"
+
+    readiness_scripts = {COMMAND_NAME: TARGET}
+    transition_scripts = {
+        COMMAND_NAME: TARGET,
+        runner_command: runner_target,
+    }
+
+    assert scripts in [readiness_scripts, transition_scripts]
 
 
 def test_root_pyproject_uses_namespace_package_discovery_for_scripts_tree() -> None:

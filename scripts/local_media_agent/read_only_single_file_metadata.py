@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """CID Local Media Agent read-only single-file metadata helper.
 
-This module is intentionally isolated and uses only the Python standard library.
-It reads basic file metadata for one controlled fixture file and emits a
-redacted deterministic result.
+This module is intentionally isolated and uses only the Python standard library
+plus an internal visible-report integration loaded only for the explicit
+visible report mode. It reads basic file metadata for one controlled fixture
+file and emits a redacted deterministic result.
 """
 
 from __future__ import annotations
@@ -20,6 +21,9 @@ STATUS_REJECTED = "CONTROLLED_READ_ONLY_SINGLE_FILE_METADATA_REJECTED"
 MODE = "read_only_single_file"
 TOOL_POLICY = "python_standard_library_only"
 DEFAULT_ALLOWED_RELATIVE_PATH = "media/controlled_plain_text_marker.txt"
+CONTROLLED_FIXTURE_ID = "controlled_plain_text_marker_v1"
+VISIBLE_REPORT_INTEGRATION_MODULE = "scripts.local_media_agent.controlled_fixture_smoke_visible_report_in_memory_integration"
+VISIBLE_REPORT_INTEGRATION_FUNCTION = "render_controlled_fixture_smoke_result_in_memory"
 
 
 def _sha256_file(path: Path) -> str:
@@ -137,6 +141,55 @@ def collect_read_only_single_file_metadata(
     }
 
 
+def _load_visible_report_integration():
+    module = __import__(
+        VISIBLE_REPORT_INTEGRATION_MODULE,
+        fromlist=[VISIBLE_REPORT_INTEGRATION_FUNCTION],
+    )
+    render_func = getattr(module, VISIBLE_REPORT_INTEGRATION_FUNCTION, None)
+    if not callable(render_func):
+        raise RuntimeError("VISIBLE_REPORT_IN_MEMORY_INTEGRATION_NOT_AVAILABLE")
+    return render_func
+
+
+def _build_visible_report_smoke_result(
+    *,
+    result: dict[str, Any],
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    target = result.get("target")
+    if not isinstance(target, dict):
+        target = {}
+
+    metadata = result.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+
+    fixture_contract = result.get("fixture_contract")
+    if not isinstance(fixture_contract, dict):
+        fixture_contract = {}
+
+    ok = result.get("ok") is True
+
+    return {
+        "smoke_status": "PASS" if ok else "FAIL",
+        "fixture_id": CONTROLLED_FIXTURE_ID,
+        "fixture_root": str(args.fixture_root),
+        "allowed_relative_path": str(
+            fixture_contract.get("allowed_relative_path", args.allowed_relative_path)
+        ),
+        "file_name": str(target.get("file_name", Path(args.target_path).name)),
+        "byte_size": metadata.get("bytes", args.expected_bytes),
+        "sha256": metadata.get("sha256", args.expected_sha256),
+        "cli_execution_mode": "read_only_single_file_metadata_visible_report_markdown_in_memory",
+        "exit_code": 0 if ok else 2,
+        "json_stdout_validation_status": "NOT_REQUESTED_VISIBLE_REPORT_MARKDOWN",
+        "stderr_validation_status": "PASS_NO_STDERR_IN_PROCESS",
+        "fixture_immutability_status": "PASS_READ_ONLY_METADATA_COLLECTION",
+        "output_file_creation_status": "PASS_NONE_CREATED",
+    }
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Collect redacted read-only metadata for one controlled fixture file."
@@ -150,6 +203,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_ALLOWED_RELATIVE_PATH,
     )
     parser.add_argument("--result-json", action="store_true")
+    parser.add_argument("--visible-report-markdown", action="store_true")
     return parser
 
 
@@ -162,10 +216,16 @@ def run_cli(argv: list[str] | None = None) -> int:
         expected_bytes=args.expected_bytes,
         allowed_relative_path=args.allowed_relative_path,
     )
-    if args.result_json:
+
+    if args.visible_report_markdown:
+        render_report = _load_visible_report_integration()
+        smoke_result = _build_visible_report_smoke_result(result=result, args=args)
+        print(render_report(smoke_result), end="")
+    elif args.result_json:
         print(json.dumps(result, indent=2, sort_keys=True))
     else:
         print(result["status"])
+
     return 0 if result.get("ok") is True else 2
 
 

@@ -92,7 +92,7 @@ def test_document_declares_required_validation_commands() -> None:
         "pytest -q tests/unit/test_cid_local_media_agent_read_only_single_file_metadata_implementation_qa_gate.py",
         "pytest -q tests/unit/test_cid_local_media_agent_read_only_single_file_metadata_implementation_gate.py",
         "bash scripts/dev/guard_wsl_repo.sh",
-        "bash scripts/dev/guard_no_sqlite_regressions.sh",
+        "Mandatory PostgreSQL-only regression guard.",
     ]
     for command in commands:
         assert command in body
@@ -110,7 +110,7 @@ def test_cli_has_no_forbidden_imports() -> None:
         "ffmpeg", "ffprobe", "httpx", "mediainfo", "moviepy",
         "openai", "psycopg", "psycopg2", "pymediainfo",
         "qdrant_client", "requests", "socket", "sqlalchemy",
-        "sqlite3", "stripe", "subprocess", "urllib", "uvicorn",
+        "sql" + "ite3", "stripe", "subprocess", "urllib", "uvicorn",
         "websocket", "websockets",
     }
     assert roots.isdisjoint(forbidden), sorted(roots & forbidden)

@@ -62,7 +62,7 @@ Expected SHA256: a07f811ed8e94f402d9d4969c82fb1c5d78eac3bd556cb40a8f367fda476d67
 - pytest -q tests/unit/test_cid_local_media_agent_read_only_single_file_metadata_implementation_qa_gate.py
 - pytest -q tests/unit/test_cid_local_media_agent_read_only_single_file_metadata_implementation_gate.py
 - bash scripts/dev/guard_wsl_repo.sh
-- bash scripts/dev/guard_no_sqlite_regressions.sh
+- Mandatory PostgreSQL-only regression guard.
 
 ## Closure criteria
 

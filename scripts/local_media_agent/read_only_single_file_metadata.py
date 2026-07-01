@@ -18,12 +18,21 @@ from typing import Any
 SCHEMA_VERSION = "cid.local_media_agent.read_only_single_file_metadata.v1"
 STATUS_OK = "CONTROLLED_READ_ONLY_SINGLE_FILE_METADATA_OK"
 STATUS_REJECTED = "CONTROLLED_READ_ONLY_SINGLE_FILE_METADATA_REJECTED"
+STATUS_EXPORT_OK = "CONTROLLED_VISIBLE_REPORT_MARKDOWN_EXPORT_OK"
+STATUS_EXPORT_REJECTED = "CONTROLLED_VISIBLE_REPORT_MARKDOWN_EXPORT_REJECTED"
 MODE = "read_only_single_file"
 TOOL_POLICY = "python_standard_library_only"
 DEFAULT_ALLOWED_RELATIVE_PATH = "media/controlled_plain_text_marker.txt"
 CONTROLLED_FIXTURE_ID = "controlled_plain_text_marker_v1"
+CONTROLLED_EXPORT_ROOT_RELATIVE = Path("tests/tmp/local_media_agent/controlled_visible_report_exports")
+CONTROLLED_FIXTURE_ROOT_RELATIVE = Path("tests/fixtures/local_media_agent/controlled_non_customer_fixture_pack_v1")
+TEST_FIXTURES_ROOT_RELATIVE = Path("tests/fixtures")
 VISIBLE_REPORT_INTEGRATION_MODULE = "scripts.local_media_agent.controlled_fixture_smoke_visible_report_in_memory_integration"
 VISIBLE_REPORT_INTEGRATION_FUNCTION = "render_controlled_fixture_smoke_result_in_memory"
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
 
 
 def _sha256_file(path: Path) -> str:
@@ -40,6 +49,10 @@ def _is_relative_to(child: Path, parent: Path) -> bool:
     except ValueError:
         return False
     return True
+
+
+def _is_windows_style_path(path_text: str) -> bool:
+    return "\\" in path_text or (len(path_text) >= 2 and path_text[1] == ":")
 
 
 def _base_result(status: str, ok: bool, reason: str | None = None) -> dict[str, Any]:
@@ -190,6 +203,62 @@ def _build_visible_report_smoke_result(
     }
 
 
+def _controlled_roots() -> tuple[Path, Path, Path]:
+    repo_root = _repo_root()
+    output_root = (repo_root / CONTROLLED_EXPORT_ROOT_RELATIVE).resolve(strict=False)
+    fixture_root = (repo_root / CONTROLLED_FIXTURE_ROOT_RELATIVE).resolve(strict=False)
+    tests_fixtures_root = (repo_root / TEST_FIXTURES_ROOT_RELATIVE).resolve(strict=False)
+    return output_root, fixture_root, tests_fixtures_root
+
+
+def _resolve_controlled_report_export_path(path_text: str) -> tuple[bool, Path | None, str | None]:
+    if _is_windows_style_path(path_text):
+        return False, None, "VISIBLE_REPORT_OUTPUT_WINDOWS_STYLE_PATH_REJECTED"
+
+    repo_root = _repo_root().resolve(strict=False)
+    output_root, fixture_root, tests_fixtures_root = _controlled_roots()
+
+    raw_path = Path(path_text).expanduser()
+    candidate = raw_path if raw_path.is_absolute() else repo_root / raw_path
+    parent = candidate.parent
+
+    if candidate.resolve(strict=False) == repo_root:
+        return False, None, "VISIBLE_REPORT_OUTPUT_REPOSITORY_ROOT_REJECTED"
+
+    if candidate.suffix.lower() != ".md":
+        return False, None, "VISIBLE_REPORT_OUTPUT_SUFFIX_REJECTED"
+
+    if not parent.exists() or not parent.is_dir():
+        return False, None, "VISIBLE_REPORT_OUTPUT_PARENT_NOT_FOUND"
+
+    if parent.is_symlink():
+        return False, None, "VISIBLE_REPORT_OUTPUT_PARENT_SYMLINK_REJECTED"
+
+    if candidate.is_symlink():
+        return False, None, "VISIBLE_REPORT_OUTPUT_FILE_SYMLINK_REJECTED"
+
+    resolved = candidate.resolve(strict=False)
+
+    if _is_relative_to(resolved, fixture_root):
+        return False, None, "VISIBLE_REPORT_OUTPUT_INSIDE_CONTROLLED_FIXTURE_REJECTED"
+
+    if _is_relative_to(resolved, tests_fixtures_root):
+        return False, None, "VISIBLE_REPORT_OUTPUT_INSIDE_TESTS_FIXTURES_REJECTED"
+
+    if not _is_relative_to(resolved, output_root):
+        return False, None, "VISIBLE_REPORT_OUTPUT_OUTSIDE_CONTROLLED_ROOT_REJECTED"
+
+    if resolved.exists():
+        return False, None, "VISIBLE_REPORT_OUTPUT_EXISTS_OVERWRITE_REJECTED"
+
+    return True, resolved, None
+
+
+def _write_controlled_visible_report_markdown(path: Path, markdown_text: str) -> None:
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(markdown_text)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Collect redacted read-only metadata for one controlled fixture file."
@@ -204,11 +273,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--result-json", action="store_true")
     parser.add_argument("--visible-report-markdown", action="store_true")
+    parser.add_argument(
+        "--visible-report-output",
+        dest="visible_report_path",
+        metavar="PATH",
+        help="Write the visible Markdown report to a controlled .md output path.",
+    )
     return parser
 
 
 def run_cli(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+
+    if args.visible_report_path is not None and not args.visible_report_markdown:
+        print(f"{STATUS_EXPORT_REJECTED}:VISIBLE_REPORT_MARKDOWN_REQUIRED")
+        return 2
+
     result = collect_read_only_single_file_metadata(
         target_path=args.target_path,
         fixture_root=args.fixture_root,
@@ -220,7 +300,24 @@ def run_cli(argv: list[str] | None = None) -> int:
     if args.visible_report_markdown:
         render_report = _load_visible_report_integration()
         smoke_result = _build_visible_report_smoke_result(result=result, args=args)
-        print(render_report(smoke_result), end="")
+        markdown_text = render_report(smoke_result)
+
+        if args.visible_report_path is not None:
+            if result.get("ok") is not True:
+                print(f"{STATUS_EXPORT_REJECTED}:METADATA_NOT_ACCEPTED")
+                return 2
+
+            export_ok, export_path, export_reason = _resolve_controlled_report_export_path(
+                str(args.visible_report_path)
+            )
+            if not export_ok or export_path is None:
+                print(f"{STATUS_EXPORT_REJECTED}:{export_reason}")
+                return 2
+
+            _write_controlled_visible_report_markdown(export_path, markdown_text)
+            print(STATUS_EXPORT_OK)
+        else:
+            print(markdown_text, end="")
     elif args.result_json:
         print(json.dumps(result, indent=2, sort_keys=True))
     else:

@@ -1,0 +1,37 @@
+{
+  "allowed_next_gate": "CID.LOCAL_MEDIA_AGENT.CONTROLLED.NON_CUSTOMER.FIXTURE.PACK.INTEGRITY.QA.GATE.V1",
+  "blocked_until_later_gate": [
+    "read_only_single_file_metadata_chain",
+    "visible_report_over_fixture",
+    "minimal_scanner_limited_to_fixture_root"
+  ],
+  "created_by_gate": true,
+  "fixture_root": "tests/fixtures/local_media_agent/controlled_non_customer_fixture_pack_v1",
+  "fixtures": [
+    {
+      "encoding": "utf-8",
+      "expected_bytes": 239,
+      "expected_sha256": "a07f811ed8e94f402d9d4969c82fb1c5d78eac3bd556cb40a8f367fda476d67a",
+      "fixture_id": "controlled_plain_text_marker_v1",
+      "mime_type": "text/plain",
+      "purpose": "deterministic fixture integrity marker",
+      "relative_path": "media/controlled_plain_text_marker.txt"
+    }
+  ],
+  "non_customer_boundary": {
+    "customer_material_allowed": false,
+    "external_tool_execution_allowed": false,
+    "network_access_allowed": false,
+    "personal_data_allowed": false,
+    "real_production_assets_allowed": false,
+    "runtime_behavior_allowed": false,
+    "saas_or_database_coupling_allowed": false,
+    "scanner_execution_allowed": false,
+    "video_or_audio_fixture_allowed": false
+  },
+  "pack_id": "controlled_non_customer_fixture_pack_v1",
+  "phase": "CID.LOCAL_MEDIA_AGENT.CONTROLLED.NON_CUSTOMER.FIXTURE.PACK.CREATION.GATE.V1",
+  "result_when_closed": "LOCAL_MEDIA_AGENT_CONTROLLED_NON_CUSTOMER_FIXTURE_PACK_CREATION_GATE_V1_CLOSED",
+  "schema_version": "cid.local_media_agent.controlled_non_customer_fixture_pack.v1",
+  "status": "CREATED_CONTROLLED_NON_CUSTOMER_FIXTURE_PACK"
+}

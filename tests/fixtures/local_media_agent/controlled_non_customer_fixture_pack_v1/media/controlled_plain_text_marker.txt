@@ -1,0 +1,4 @@
+CID Local Media Agent controlled non-customer fixture pack v1
+Fixture: controlled_plain_text_marker_v1
+Purpose: deterministic text marker for fixture integrity validation.
+Boundary: no customer media, no personal data, no audio, no video.

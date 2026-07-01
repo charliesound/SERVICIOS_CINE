@@ -39,11 +39,15 @@ def test_future_entrypoint_is_documented_but_not_registered_here():
     assert "modify `pyproject.toml`" in text
 
 
-def test_future_cli_file_is_documented_but_not_created_by_readiness_gate():
+def test_future_cli_file_is_documented_without_blocking_later_implementation_gate():
     text = _doc()
     assert "scripts/local_media_agent/read_only_single_file_metadata_cli.py" in text
     assert "must not create" in text
-    assert not FUTURE_CLI.exists()
+    implementation_doc = REPO_ROOT / "docs/product/local_media_agent/cid_local_media_agent_read_only_single_file_metadata_cli_implementation_gate_v1.md"
+    if implementation_doc.exists():
+        assert FUTURE_CLI.exists()
+    else:
+        assert not FUTURE_CLI.exists()
 
 
 def test_allowed_arguments_match_cli_contract():

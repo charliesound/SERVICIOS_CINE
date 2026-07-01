@@ -145,7 +145,7 @@ def test_manual_demo_execution_gate_lists_required_validations() -> None:
         in text
     )
     assert "bash scripts/dev/guard_wsl_repo.sh" in text
-    assert "bash scripts/dev/guard_no_sqlite_regressions.sh" in text
+    assert "PostgreSQL-only regression guard required by policy" in text
 
 
 def test_manual_demo_execution_gate_has_commit_and_tag_guidance() -> None:

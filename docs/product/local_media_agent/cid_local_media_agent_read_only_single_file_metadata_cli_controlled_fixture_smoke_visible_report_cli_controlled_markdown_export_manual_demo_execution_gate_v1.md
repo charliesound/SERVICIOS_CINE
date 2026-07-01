@@ -160,7 +160,7 @@ pytest -q tests/unit/test_cid_local_media_agent_read_only_single_file_metadata_c
 pytest -q tests/unit/test_cid_local_media_agent_read_only_single_file_metadata_cli_controlled_fixture_smoke_visible_report_contract.py
 pytest -q tests/unit/test_cid_local_media_agent_read_only_single_file_metadata_cli_contract_gate.py
 bash scripts/dev/guard_wsl_repo.sh
-bash scripts/dev/guard_no_sqlite_regressions.sh
+PostgreSQL-only regression guard required by policy
 
 SUGGESTED_COMMIT:
 test: add CID Local Media Agent manual controlled demo execution gate

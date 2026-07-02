@@ -146,7 +146,7 @@ def test_required_checks_reference_previous_gates_and_guards():
         "The previous real media preflight controlled execution gate test.",
         "The previous real media preflight readiness gate test.",
         "bash scripts/dev/guard_wsl_repo.sh",
-        "bash scripts/dev/guard_no_sqlite_regressions.sh",
+        "The PostgreSQL-only regression guard script.",
     ]
     for check in required_checks:
         assert check in text

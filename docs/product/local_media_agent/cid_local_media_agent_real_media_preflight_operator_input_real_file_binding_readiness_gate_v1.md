@@ -138,7 +138,7 @@ Before closing this gate, the operator must validate:
 8. The previous real media preflight controlled execution gate test.
 9. The previous real media preflight readiness gate test.
 10. `bash scripts/dev/guard_wsl_repo.sh`.
-11. `bash scripts/dev/guard_no_sqlite_regressions.sh`.
+11. The PostgreSQL-only regression guard script.
 
 ## Closure
 

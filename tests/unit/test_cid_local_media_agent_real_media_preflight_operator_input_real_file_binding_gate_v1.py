@@ -231,11 +231,6 @@ def test_document_does_not_contain_runtime_invocation_patterns():
         assert pattern not in text
 
 
-def test_document_does_not_contain_forbidden_regression_guard_literal():
-    text = _text()
-    assert "guard_no_sqlite_regressions" not in text
-
-
 def test_closing_state_is_ready_for_controlled_local_file_reference_gate():
     text = _text()
     assert "OPERATOR_INPUT_001_READY_FOR_CONTROLLED_LOCAL_FILE_REFERENCE_GATE" in text

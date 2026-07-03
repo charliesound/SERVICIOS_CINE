@@ -1,0 +1,239 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from scripts.local_media_agent.real_media_preflight_controlled_stat_sanitized_report_controlled_exporter import (
+    ControlledSanitizedReportExportResult,
+    FIXED_SANITIZED_SELECTION_TOKEN,
+    describe_controlled_sanitized_report_export_boundary,
+    export_controlled_sanitized_markdown_report,
+)
+from scripts.local_media_agent.real_media_preflight_controlled_stat_sanitized_report_renderer import (
+    SANITIZED_REPORT_RENDERER_RECORD_ID,
+    SANITIZED_REPORT_SCHEMA_VERSION,
+)
+
+
+ROOT = Path(__file__).resolve().parents[2]
+DOC = ROOT / "docs/product/local_media_agent/cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_controlled_export_cli_integration_readiness_gate_v1.md"
+EXPORTER = ROOT / "scripts/local_media_agent/real_media_preflight_controlled_stat_sanitized_report_controlled_exporter.py"
+RENDERER = ROOT / "scripts/local_media_agent/real_media_preflight_controlled_stat_sanitized_report_renderer.py"
+PREVIOUS_QA_DOC = ROOT / "docs/product/local_media_agent/cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_controlled_export_integration_qa_gate_v1.md"
+PREVIOUS_QA_TEST = ROOT / "tests/unit/test_cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_controlled_export_integration_qa_gate_v1.py"
+EXPORTER_IMPL_DOC = ROOT / "docs/product/local_media_agent/cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_controlled_export_integration_implementation_gate_v1.md"
+EXPORTER_IMPL_TEST = ROOT / "tests/unit/test_cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_controlled_export_integration_implementation_gate_v1.py"
+EXPORTER_READINESS_DOC = ROOT / "docs/product/local_media_agent/cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_controlled_export_integration_readiness_gate_v1.md"
+EXPORTER_READINESS_TEST = ROOT / "tests/unit/test_cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_controlled_export_integration_readiness_gate_v1.py"
+RENDERER_QA_DOC = ROOT / "docs/product/local_media_agent/cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_renderer_qa_gate_v1.md"
+RENDERER_QA_TEST = ROOT / "tests/unit/test_cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_renderer_qa_gate_v1.py"
+RENDERER_IMPL_DOC = ROOT / "docs/product/local_media_agent/cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_renderer_implementation_gate_v1.md"
+RENDERER_IMPL_TEST = ROOT / "tests/unit/test_cid_local_media_agent_real_media_preflight_controlled_stat_implementation_sanitized_report_renderer_implementation_gate_v1.py"
+SCRIPTS_DIR = ROOT / "scripts"
+
+PHASE = (
+    "CID.LOCAL_MEDIA_AGENT.REAL_MEDIA_PREFLIGHT.CONTROLLED_STAT_IMPLEMENTATION."
+    "SANITIZED_REPORT.CONTROLLED_EXPORT.CLI_INTEGRATION.READINESS.GATE.V1"
+)
+EXPECTED_RESULT = (
+    "LOCAL_MEDIA_AGENT_REAL_MEDIA_PREFLIGHT_CONTROLLED_STAT_IMPLEMENTATION_SANITIZED_REPORT_"
+    "CONTROLLED_EXPORT_CLI_INTEGRATION_READINESS_GATE_V1_CLOSED"
+)
+STARTING_HEAD = "0e37be5a82c75c56f43af1598bd7c3e8dc47e341"
+STARTING_STATE = "CONTROLLED_EXPORT_INTEGRATION_QA_GATE_CLOSED_REMOTE_VERIFIED"
+PREVIOUS_PHASE = (
+    "CID.LOCAL_MEDIA_AGENT.REAL_MEDIA_PREFLIGHT.CONTROLLED_STAT_IMPLEMENTATION."
+    "SANITIZED_REPORT.CONTROLLED_EXPORT_INTEGRATION.QA.GATE.V1"
+)
+EXCLUDED_TEST = (
+    "tests/unit/test_cid_local_media_agent_real_media_preflight_controlled_stat_"
+    "implementation_sanitized_report_renderer_implementation_readiness_gate_v1.py"
+)
+
+
+def _text(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def _assert_all_present(text: str, values: list[str]) -> None:
+    for value in values:
+        assert value in text
+
+
+def test_readiness_gate_document_exists_and_declares_identity() -> None:
+    assert DOC.exists()
+    text = _text(DOC)
+    _assert_all_present(text, [
+        PHASE,
+        EXPECTED_RESULT,
+        STARTING_HEAD,
+        STARTING_STATE,
+        PREVIOUS_PHASE,
+    ])
+
+
+def test_readiness_gate_declares_documental_scope_and_no_runtime_changes() -> None:
+    text = _text(DOC)
+    _assert_all_present(text, [
+        "This phase is documentation-only and test-only.",
+        "This phase does not implement new runtime.",
+        "This phase does not connect the exporter to a real CLI yet.",
+        "This phase does not modify the exporter.",
+        "This phase does not modify the renderer.",
+        "This phase does not modify any existing CLI.",
+    ])
+
+
+def test_readiness_gate_declares_future_cli_requirements() -> None:
+    text = _text(DOC)
+    _assert_all_present(text, [
+        "The future CLI integration must be explicit, opt-in, and controlled.",
+        "The future CLI integration must receive sanitized Markdown already generated by the validated renderer.",
+        "The future CLI integration must call the existing controlled exporter `export_controlled_sanitized_markdown_report(markdown_text, output_path, export_opt_in)`.",
+        "The future CLI integration must not duplicate write logic.",
+        "The future CLI integration must require explicit export confirmation.",
+        "The future CLI integration must validate the output path before export.",
+        f"The future CLI integration must keep the operator token always redacted as `{FIXED_SANITIZED_SELECTION_TOKEN}`.",
+        "Any future write test must be limited to `tmp_path`.",
+    ])
+
+
+def test_readiness_gate_declares_future_cli_non_authorization_boundaries() -> None:
+    text = _text(DOC)
+    _assert_all_present(text, [
+        "The future CLI integration must not read real media during export.",
+        "The future CLI integration must not execute FFmpeg, ffprobe, or external process execution.",
+        "The future CLI integration must not touch scanner runtime, backend SaaS, frontend, DB, Docker, Alembic, Stripe, AI Jobs, credits, or ledger.",
+        "This readiness gate does not authorize CLI runtime implementation.",
+        "This readiness gate does not authorize write-enabled CLI behavior.",
+        "This readiness gate does not authorize connecting the exporter to any real CLI.",
+    ])
+
+
+def test_required_audited_artifacts_exist_and_are_referenced() -> None:
+    text = _text(DOC)
+    for path in [
+        PREVIOUS_QA_DOC,
+        PREVIOUS_QA_TEST,
+        EXPORTER_IMPL_DOC,
+        EXPORTER_IMPL_TEST,
+        EXPORTER_READINESS_DOC,
+        EXPORTER_READINESS_TEST,
+        EXPORTER,
+        RENDERER,
+        RENDERER_QA_DOC,
+        RENDERER_QA_TEST,
+        RENDERER_IMPL_DOC,
+        RENDERER_IMPL_TEST,
+    ]:
+        assert path.exists(), path
+        assert str(path.relative_to(ROOT)) in text
+
+
+def test_exporter_module_exists_and_keeps_public_api() -> None:
+    assert EXPORTER.exists()
+    assert ControlledSanitizedReportExportResult.__name__ == "ControlledSanitizedReportExportResult"
+    assert export_controlled_sanitized_markdown_report.__name__ == "export_controlled_sanitized_markdown_report"
+    assert describe_controlled_sanitized_report_export_boundary.__name__ == "describe_controlled_sanitized_report_export_boundary"
+    exporter_source = _text(EXPORTER)
+    _assert_all_present(exporter_source, [
+        "class ControlledSanitizedReportExportResult",
+        "def export_controlled_sanitized_markdown_report(",
+        "def describe_controlled_sanitized_report_export_boundary()",
+    ])
+
+
+def test_exporter_boundary_still_declares_no_cli_integration() -> None:
+    boundary = describe_controlled_sanitized_report_export_boundary()
+    assert boundary["input_mode"] == "validated_sanitized_markdown_text_only"
+    assert boundary["output_mode"] == "controlled_markdown_utf8_file_only"
+    assert boundary["export_opt_in"] == "required"
+    assert boundary["cli_integration"] == "not_performed"
+    assert boundary["real_media_access"] == "not_performed"
+    assert boundary["external_process_execution"] == "not_performed"
+
+
+def test_renderer_exists_and_keeps_fixed_redacted_token() -> None:
+    assert RENDERER.exists()
+    assert SANITIZED_REPORT_RENDERER_RECORD_ID == "controlled_stat_sanitized_report_renderer_001"
+    assert SANITIZED_REPORT_SCHEMA_VERSION == "controlled_stat_sanitized_report_v1"
+    renderer_source = _text(RENDERER)
+    assert FIXED_SANITIZED_SELECTION_TOKEN in renderer_source
+
+
+def test_no_specific_cli_is_connected_to_new_controlled_exporter_yet() -> None:
+    cli_candidates = [
+        path
+        for path in SCRIPTS_DIR.rglob("*.py")
+        if path != EXPORTER and path != Path(__file__)
+    ]
+    connected = []
+    for path in cli_candidates:
+        source = _text(path)
+        has_cli_shape = "def main(" in source or "argparse" in source or "if __name__ == \"__main__\"" in source
+        if has_cli_shape and "export_controlled_sanitized_markdown_report" in source:
+            connected.append(str(path.relative_to(ROOT)))
+
+    assert connected == []
+
+
+def test_future_cli_must_call_exporter_and_not_duplicate_write_logic() -> None:
+    text = _text(DOC)
+    _assert_all_present(text, [
+        "The future CLI integration must call the existing controlled exporter `export_controlled_sanitized_markdown_report(markdown_text, output_path, export_opt_in)`.",
+        "The future CLI integration must not duplicate write logic.",
+        "The future CLI integration must require explicit export confirmation.",
+        "The future CLI integration must validate the output path before export.",
+    ])
+
+
+def test_future_cli_must_remain_opt_in_and_controlled() -> None:
+    text = _text(DOC)
+    _assert_all_present(text, [
+        "The future CLI integration must be explicit, opt-in, and controlled.",
+        "The current exporter boundary must continue to declare that CLI integration has not been performed yet.",
+        "The future CLI integration must call the existing exporter instead of copying, reimplementing, or bypassing its controlled write behavior.",
+    ])
+
+
+def test_new_doc_and_test_contain_no_windows_or_mount_paths() -> None:
+    combined = _text(DOC) + "\n" + _text(Path(__file__))
+    forbidden_fragments = [
+        "C" + ":" + "\\",
+        "\\" + "\\" + "wsl.localhost",
+        "/" + "mnt" + "/c",
+        "/" + "mnt" + "/C",
+    ]
+    for fragment in forbidden_fragments:
+        assert fragment not in combined
+
+
+def test_static_exporter_and_renderer_inspection_finds_no_forbidden_runtime_patterns() -> None:
+    combined = _text(EXPORTER) + "\n" + _text(RENDERER)
+    forbidden = [
+        "import " + "sub" + "process",
+        "from " + "sub" + "process",
+        "sub" + "process.",
+        "ffmpeg -",
+        "ffprobe -",
+        "scanner_runtime",
+        "backend_runtime",
+        "frontend_runtime",
+        "sqlite3",
+        "Dockerfile",
+        "alembic upgrade",
+        "stripe.",
+        "ai_jobs.",
+        "credits.",
+        "ledger.",
+    ]
+    for pattern in forbidden:
+        assert pattern not in combined
+
+
+def test_excluded_historical_test_is_documented_but_not_in_battery() -> None:
+    text = _text(DOC)
+    assert EXCLUDED_TEST in text
+    assert "The historical renderer implementation readiness test must not be executed in this readiness gate:" in text
+    assert "This controlled export CLI integration readiness gate test." in text
+    assert "The controlled export integration QA gate test." in text
+    assert "The sanitized report renderer implementation gate test." in text

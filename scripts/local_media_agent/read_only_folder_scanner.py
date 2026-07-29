@@ -14,10 +14,14 @@ STATUS_COMPLETED = "READ_ONLY_FOLDER_SCAN_COMPLETED"
 STATUS_COMPLETED_WITH_WARNINGS = "READ_ONLY_FOLDER_SCAN_COMPLETED_WITH_WARNINGS"
 STATUS_REJECTED = "READ_ONLY_FOLDER_SCAN_REJECTED"
 STATUS_TRUNCATED = "READ_ONLY_FOLDER_SCAN_TRUNCATED"
+ERROR_RUNTIME_LIMIT_CONFIGURATION_REJECTED = "RUNTIME_LIMIT_CONFIGURATION_REJECTED"
 
-MAX_FILES = 5000
-MAX_DEPTH = 8
-MAX_ERRORS = 100
+DEFAULT_MAX_FILES = 5000
+DEFAULT_MAX_DEPTH = 8
+DEFAULT_MAX_ERRORS = 100
+MAX_FILES = DEFAULT_MAX_FILES
+MAX_DEPTH = DEFAULT_MAX_DEPTH
+MAX_ERRORS = DEFAULT_MAX_ERRORS
 
 VIDEO_EXTENSIONS = frozenset({".mp4", ".mov", ".mxf", ".mkv", ".avi", ".mts", ".m2ts", ".webm"})
 AUDIO_EXTENSIONS = frozenset({".wav", ".bwf", ".aif", ".aiff", ".mp3", ".m4a", ".aac", ".flac", ".ogg"})
@@ -28,6 +32,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def scan_read_only_folder(input_root: str | Path) -> dict[str, Any]:
+    if not _runtime_limits_are_valid():
+        return _manifest(
+            status=STATUS_REJECTED,
+            scanner_summary=_rejected_summary(),
+            errors=[ERROR_RUNTIME_LIMIT_CONFIGURATION_REJECTED],
+            depth_summary=_safe_depth_summary(),
+        )
+
     root_result = _validate_input_root(input_root)
     if root_result[0] is None:
         return _manifest(status=STATUS_REJECTED, errors=[root_result[1] or "INPUT_VALIDATION_FAILED"])
@@ -217,7 +229,7 @@ def _manifest(
         "depth_summary": depth_summary or {
             "root_depth": 0,
             "direct_child_depth": 1,
-            "max_depth": MAX_DEPTH,
+            "max_depth": _safe_limit_value(MAX_DEPTH, DEFAULT_MAX_DEPTH),
             "max_observed_depth": 0,
         },
     }
@@ -232,11 +244,49 @@ def _empty_summary() -> dict[str, Any]:
         "symlinks_rejected": 0,
         "total_bytes": 0,
         "truncated": False,
-        "max_files": MAX_FILES,
-        "max_depth": MAX_DEPTH,
-        "max_errors": MAX_ERRORS,
+        "max_files": _safe_limit_value(MAX_FILES, DEFAULT_MAX_FILES),
+        "max_depth": _safe_limit_value(MAX_DEPTH, DEFAULT_MAX_DEPTH),
+        "max_errors": _safe_limit_value(MAX_ERRORS, DEFAULT_MAX_ERRORS),
         "max_observed_depth": 0,
     }
+
+
+def _rejected_summary() -> dict[str, Any]:
+    return {
+        "files_seen": 0,
+        "directories_seen": 0,
+        "media_candidates": 0,
+        "non_media_files": 0,
+        "symlinks_rejected": 0,
+        "total_bytes": 0,
+        "truncated": False,
+    }
+
+
+def _safe_depth_summary() -> dict[str, int]:
+    return {
+        "root_depth": 0,
+        "direct_child_depth": 1,
+        "max_observed_depth": 0,
+    }
+
+
+def _runtime_limits_are_valid() -> bool:
+    return (
+        _valid_limit(MAX_FILES, minimum=1)
+        and _valid_limit(MAX_ERRORS, minimum=1)
+        and _valid_limit(MAX_DEPTH, minimum=0)
+    )
+
+
+def _valid_limit(value: object, *, minimum: int) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= minimum
+
+
+def _safe_limit_value(value: object, fallback: int) -> int:
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    return fallback
 
 
 def _safe_stat(path: Path) -> Any | None:

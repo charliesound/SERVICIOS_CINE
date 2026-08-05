@@ -4,6 +4,8 @@ import hashlib
 import tomllib
 from pathlib import Path
 
+from _cid_historical_contract_snapshot import snapshot_pyproject
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -22,6 +24,8 @@ EXPECTED_SCRIPT_ENTRIES = {
 EXPECTED_SCANNER_RUNTIME_SHA256 = "16a4fc52f3fa57b6469bb36ed30400ec26468a9435aad244582a0892fa810a05"
 EXPECTED_SCANNER_CLI_SHA256 = "ec9f4714597cd96d2f79640bff51110844bcb4c9106a07e58359e286a99cff6d"
 
+PACKAGE_ENTRYPOINT_SOURCE_COMMIT = "46602631609558ba81eb7f00a1c0c15a435e17b2"
+
 
 def _load_pyproject() -> dict:
     return tomllib.loads(PYPROJECT_PATH.read_text(encoding="utf-8"))
@@ -32,7 +36,7 @@ def _sha256_of(path: Path) -> str:
 
 
 def test_project_scripts_section_contains_exactly_three_entries() -> None:
-    scripts = _load_pyproject()["project"]["scripts"]
+    scripts = snapshot_pyproject(PACKAGE_ENTRYPOINT_SOURCE_COMMIT)["project"]["scripts"]
 
     assert isinstance(scripts, dict)
     assert len(scripts) == EXPECTED_SCRIPT_ENTRY_COUNT
@@ -58,7 +62,7 @@ def test_new_read_only_folder_scanner_entry_mapping_is_exact() -> None:
 
 
 def test_project_scripts_entries_match_expected_exact_mapping() -> None:
-    assert _load_pyproject()["project"]["scripts"] == EXPECTED_SCRIPT_ENTRIES
+    assert snapshot_pyproject(PACKAGE_ENTRYPOINT_SOURCE_COMMIT)["project"]["scripts"] == EXPECTED_SCRIPT_ENTRIES
 
 
 def test_frozen_scanner_runtime_retains_exact_sha256() -> None:

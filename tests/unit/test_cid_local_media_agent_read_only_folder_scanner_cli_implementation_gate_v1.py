@@ -11,6 +11,8 @@ import pytest
 
 from scripts.local_media_agent import read_only_folder_scanner_cli as cli
 
+from _cid_historical_contract_snapshot import snapshot_pyproject_text
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DOC = ROOT / "docs/product/local_media_agent/cid_local_media_agent_read_only_folder_scanner_cli_implementation_gate_v1.md"
@@ -25,6 +27,8 @@ BASE_HEAD = "bc303c43bd10ce153b49514990ee2e6e0579ab62"
 PREVIOUS_TAG = "cid-dev-stable-local-media-agent-read-only-folder-scanner-cli-readiness-gate-v1-20260729"
 RUNTIME_SHA = "16a4fc52f3fa57b6469bb36ed30400ec26468a9435aad244582a0892fa810a05"
 NEXT_PHASE = "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.CLI.QA.GATE.V1"
+
+CLI_IMPLEMENTATION_SOURCE_COMMIT = "1113c81c7bd7ca60cfe06f1794000bd7c23939d7"
 
 AUTHORIZED_FILES = [
     "docs/product/local_media_agent/cid_local_media_agent_read_only_folder_scanner_cli_implementation_gate_v1.md",
@@ -78,7 +82,7 @@ def test_identity_scope_and_files_exist() -> None:
 
 def test_runtime_sha_pyproject_and_no_entrypoint_alias() -> None:
     assert _runtime_sha256() == RUNTIME_SHA
-    pyproject = _text(PYPROJECT)
+    pyproject = snapshot_pyproject_text(CLI_IMPLEMENTATION_SOURCE_COMMIT)
     assert "read_only_folder_scanner_cli" not in pyproject
     assert "cid scan" not in pyproject
     assert "cid =" not in pyproject

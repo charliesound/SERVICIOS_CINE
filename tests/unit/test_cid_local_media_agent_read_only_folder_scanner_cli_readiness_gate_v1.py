@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from _cid_historical_contract_snapshot import expected_absent_paths
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DOC = ROOT / "docs/product/local_media_agent/cid_local_media_agent_read_only_folder_scanner_cli_readiness_gate_v1.md"
@@ -15,6 +17,8 @@ PREVIOUS_TAG = "cid-dev-stable-local-media-agent-read-only-folder-scanner-qa-clo
 RUNTIME_SHA = "16a4fc52f3fa57b6469bb36ed30400ec26468a9435aad244582a0892fa810a05"
 PREVIOUS_PHASE = "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.QA.CLOSURE.REVIEW.GATE.V1"
 NEXT_PHASE = "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.CLI.IMPLEMENTATION.GATE.V1"
+
+CLI_READINESS_SOURCE_COMMIT = "bc303c43bd10ce153b49514990ee2e6e0579ab62"
 
 AUTHORIZED_FILES = [
     "docs/product/local_media_agent/cid_local_media_agent_read_only_folder_scanner_cli_readiness_gate_v1.md",
@@ -36,7 +40,10 @@ def _assert_all_present(values: list[str]) -> None:
 def test_files_exist_and_future_cli_does_not_exist() -> None:
     assert DOC.exists()
     assert TEST.exists()
-    assert not FUTURE_CLI.exists()
+    assert (
+        "scripts/local_media_agent/read_only_folder_scanner_cli.py"
+        in expected_absent_paths(CLI_READINESS_SOURCE_COMMIT)
+    )
 
 
 def test_identity_base_state_and_previous_phase_are_documented() -> None:

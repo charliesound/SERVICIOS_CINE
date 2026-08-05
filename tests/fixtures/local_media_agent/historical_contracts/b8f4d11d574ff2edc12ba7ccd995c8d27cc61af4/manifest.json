@@ -1,0 +1,14 @@
+{
+  "source_commit": "b8f4d11d574ff2edc12ba7ccd995c8d27cc61af4",
+  "source_commit_date": "2026-08-05T14:04:38+02:00",
+  "source_path": "pyproject.toml",
+  "snapshot_sha256": "5fbbe0668ce9ad6e64fa28325dd0208a9e2c739c1cd1dc43000716c9c5e301b4",
+  "expected_present_paths": [
+    "scripts/local_media_agent/read_only_folder_scanner.py",
+    "scripts/local_media_agent/read_only_folder_scanner_cli.py"
+  ],
+  "expected_absent_paths": [
+    "scripts/local_media_agent/cid_cli.py"
+  ],
+  "historical_contract": "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.COMMERCIAL_ALIAS.READINESS.GATE.V1"
+}

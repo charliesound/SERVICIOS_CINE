@@ -4,6 +4,8 @@ import hashlib
 import tomllib
 from pathlib import Path
 
+from _cid_historical_contract_snapshot import expected_absent_paths, snapshot_pyproject, snapshot_sha256
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DOC = ROOT / "docs/product/local_media_agent/cid_local_media_agent_read_only_folder_scanner_commercial_alias_readiness_gate_v1.md"
@@ -43,6 +45,8 @@ EXPECTED_SCRIPT_ENTRIES = {
 EXPECTED_PYPROJECT_SHA256 = "5fbbe0668ce9ad6e64fa28325dd0208a9e2c739c1cd1dc43000716c9c5e301b4"
 EXPECTED_SCANNER_RUNTIME_SHA256 = "16a4fc52f3fa57b6469bb36ed30400ec26468a9435aad244582a0892fa810a05"
 EXPECTED_SCANNER_CLI_SHA256 = "ec9f4714597cd96d2f79640bff51110844bcb4c9106a07e58359e286a99cff6d"
+
+ALIAS_READINESS_SOURCE_COMMIT = "b8f4d11d574ff2edc12ba7ccd995c8d27cc61af4"
 
 
 def _text() -> str:
@@ -398,31 +402,31 @@ def test_phase_does_not_authorize_implementation() -> None:
 
 
 def test_current_pyproject_scripts_has_no_cid_entry() -> None:
-    scripts = _load_pyproject()["project"]["scripts"]
+    scripts = snapshot_pyproject(ALIAS_READINESS_SOURCE_COMMIT)["project"]["scripts"]
 
     assert isinstance(scripts, dict)
     assert "cid" not in scripts
 
 
 def test_cid_cli_module_is_absent_on_disk() -> None:
-    assert not CID_CLI_PATH.exists()
+    assert "scripts/local_media_agent/cid_cli.py" in expected_absent_paths(ALIAS_READINESS_SOURCE_COMMIT)
 
 
 def test_current_pyproject_scripts_has_exactly_three_entries() -> None:
-    scripts = _load_pyproject()["project"]["scripts"]
+    scripts = snapshot_pyproject(ALIAS_READINESS_SOURCE_COMMIT)["project"]["scripts"]
 
     assert isinstance(scripts, dict)
     assert len(scripts) == EXPECTED_SCRIPT_ENTRY_COUNT
 
 
 def test_current_pyproject_scripts_mappings_are_exact() -> None:
-    scripts = _load_pyproject()["project"]["scripts"]
+    scripts = snapshot_pyproject(ALIAS_READINESS_SOURCE_COMMIT)["project"]["scripts"]
 
     assert scripts == EXPECTED_SCRIPT_ENTRIES
 
 
 def test_frozen_pyproject_hash_is_exact() -> None:
-    assert _sha256_of(PYPROJECT_PATH) == EXPECTED_PYPROJECT_SHA256
+    assert snapshot_sha256(ALIAS_READINESS_SOURCE_COMMIT) == EXPECTED_PYPROJECT_SHA256
 
 
 def test_frozen_scanner_runtime_hash_is_exact() -> None:

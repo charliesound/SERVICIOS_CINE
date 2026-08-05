@@ -1,0 +1,14 @@
+{
+  "source_commit": "bc303c43bd10ce153b49514990ee2e6e0579ab62",
+  "source_commit_date": "2026-07-29T21:07:51+02:00",
+  "source_path": null,
+  "snapshot_sha256": null,
+  "expected_present_paths": [
+    "scripts/local_media_agent/read_only_folder_scanner.py"
+  ],
+  "expected_absent_paths": [
+    "scripts/local_media_agent/read_only_folder_scanner_cli.py",
+    "scripts/local_media_agent/cid_cli.py"
+  ],
+  "historical_contract": "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.CLI.READINESS.GATE.V1"
+}

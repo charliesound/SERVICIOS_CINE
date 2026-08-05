@@ -1,0 +1,14 @@
+{
+  "source_commit": "d53da68a49c853a343b2f5ba41aa7408944bd4e7",
+  "source_commit_date": "2026-07-29T20:19:17+02:00",
+  "source_path": "pyproject.toml",
+  "snapshot_sha256": "776e1e831fa2d90706ab52da141f97c5428377abf7508934e20e3462fd01e9e1",
+  "expected_present_paths": [
+    "scripts/local_media_agent/read_only_folder_scanner.py"
+  ],
+  "expected_absent_paths": [
+    "scripts/local_media_agent/read_only_folder_scanner_cli.py",
+    "scripts/local_media_agent/cid_cli.py"
+  ],
+  "historical_contract": "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.IMPLEMENTATION.GATE.V1"
+}

@@ -9,6 +9,8 @@ import pytest
 
 from scripts.local_media_agent import read_only_folder_scanner as scanner
 
+from _cid_historical_contract_snapshot import snapshot_pyproject_text
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DOC = ROOT / "docs/product/local_media_agent/cid_local_media_agent_read_only_folder_scanner_implementation_gate_v1.md"
@@ -20,6 +22,8 @@ PHASE = "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.IMPLEMENTATION.GATE.V1"
 EXPECTED_RESULT = "LOCAL_MEDIA_AGENT_READ_ONLY_FOLDER_SCANNER_IMPLEMENTATION_GATE_V1_CLOSED"
 PREVIOUS_PHASE = "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.READINESS.GATE.V1"
 NEXT_PHASE = "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.QA.GATE.V1"
+
+IMPLEMENTATION_SOURCE_COMMIT = "d53da68a49c853a343b2f5ba41aa7408944bd4e7"
 
 AUTHORIZED_FILES = {
     "docs/product/local_media_agent/cid_local_media_agent_read_only_folder_scanner_implementation_gate_v1.md",
@@ -85,7 +89,7 @@ def test_document_records_lstat_stat_mode_and_limit_corrections() -> None:
 
 
 def test_pyproject_is_not_modified_with_read_only_folder_scanner_entrypoint() -> None:
-    text = _text(PYPROJECT)
+    text = snapshot_pyproject_text(IMPLEMENTATION_SOURCE_COMMIT)
     assert "read_only_folder_scanner" not in text
     assert "cid scan" not in text
     assert "cid_cli" not in text

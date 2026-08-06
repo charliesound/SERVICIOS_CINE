@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
-import re
 import stat
 import sys
 from pathlib import Path
 from typing import Any, TextIO
+
+from scripts.local_media_agent.host_path_adapter import (
+    ERROR_INPUT_VALIDATION_FAILED,
+    resolve_input_root,
+)
 
 
 SCHEMA_VERSION = "cid.local_media_agent.read_only_folder_scanner.v1"
@@ -31,7 +35,11 @@ MEDIA_EXTENSIONS = VIDEO_EXTENSIONS | AUDIO_EXTENSIONS | IMAGE_EXTENSIONS
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def scan_read_only_folder(input_root: str | Path) -> dict[str, Any]:
+def scan_read_only_folder(
+    input_root: str | Path,
+    *,
+    development_wsl_host_drive: str | None = None,
+) -> dict[str, Any]:
     if not _runtime_limits_are_valid():
         return _manifest(
             status=STATUS_REJECTED,
@@ -40,9 +48,12 @@ def scan_read_only_folder(input_root: str | Path) -> dict[str, Any]:
             depth_summary=_safe_depth_summary(),
         )
 
-    root_result = _validate_input_root(input_root)
+    root_result = _validate_input_root(
+        input_root,
+        development_wsl_host_drive=development_wsl_host_drive,
+    )
     if root_result[0] is None:
-        return _manifest(status=STATUS_REJECTED, errors=[root_result[1] or "INPUT_VALIDATION_FAILED"])
+        return _manifest(status=STATUS_REJECTED, errors=[root_result[1] or ERROR_INPUT_VALIDATION_FAILED])
 
     root = root_result[0]
     counters = {
@@ -157,41 +168,34 @@ def emit_manifest_json(manifest: dict[str, Any], stream: TextIO | None = None) -
     target.write(manifest_to_json(manifest) + "\n")
 
 
-def _validate_input_root(input_root: str | Path) -> tuple[Path | None, str | None]:
-    if not isinstance(input_root, (str, Path)):
-        return None, "INPUT_TYPE_REJECTED"
+def _validate_input_root(
+    input_root: str | Path,
+    *,
+    development_wsl_host_drive: str | None = None,
+) -> tuple[Path | None, str | None]:
+    candidate_path, validation_error = resolve_input_root(
+        input_root,
+        development_wsl_host_drive=development_wsl_host_drive,
+    )
+    if validation_error is not None:
+        return None, validation_error
+    if candidate_path is None:
+        return None, ERROR_INPUT_VALIDATION_FAILED
 
-    raw = str(input_root).strip()
-    if not raw:
-        return None, "INPUT_EMPTY_REJECTED"
-    if _is_url_like(raw):
-        return None, "URL_PATH_REJECTED"
-    if _is_windows_drive_path(raw):
-        return None, "WINDOWS_DRIVE_PATH_REJECTED"
-    if _is_unc_path(raw):
-        return None, "UNC_PATH_REJECTED"
-    if _is_mnt_path(raw):
-        return None, "MOUNT_PATH_REJECTED"
-    if "wsl.localhost" in raw.lower():
-        return None, "WSL_LOCALHOST_PATH_REJECTED"
-    if not raw.startswith("/"):
-        return None, "RELATIVE_PATH_REJECTED"
-
-    path = Path(raw)
     try:
-        resolved = path.resolve(strict=False)
+        resolved = candidate_path.resolve(strict=False)
     except OSError:
         return None, "INPUT_RESOLUTION_REJECTED"
 
     if _is_repo_path(resolved):
         return None, "REPOSITORY_PATH_REJECTED"
-    if path.is_symlink():
+    if candidate_path.is_symlink():
         return None, "ROOT_SYMLINK_REJECTED"
-    if not path.exists():
+    if not candidate_path.exists():
         return None, "INPUT_ROOT_NOT_FOUND"
-    if path.is_file():
+    if candidate_path.is_file():
         return None, "FILE_ROOT_REJECTED"
-    if not path.is_dir():
+    if not candidate_path.is_dir():
         return None, "INPUT_ROOT_NOT_DIRECTORY"
 
     return resolved, None
@@ -313,20 +317,3 @@ def _is_repo_path(path: Path) -> bool:
     except ValueError:
         return False
     return True
-
-
-def _is_url_like(raw: str) -> bool:
-    lowered = raw.lower()
-    return "://" in lowered or lowered.startswith(("http:", "https:", "ftp:", "s3:", "gs:"))
-
-
-def _is_windows_drive_path(raw: str) -> bool:
-    return bool(re.match(r"^[A-Za-z]:(?:[\\/].*)?$", raw))
-
-
-def _is_unc_path(raw: str) -> bool:
-    return raw.startswith("\\\\") or raw.startswith("//")
-
-
-def _is_mnt_path(raw: str) -> bool:
-    return raw == "/mnt" or raw.startswith("/mnt/")

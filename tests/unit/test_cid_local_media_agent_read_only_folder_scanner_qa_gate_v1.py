@@ -27,6 +27,7 @@ IMPLEMENTATION_PHASE = "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.IMPLEMENT
 NEXT_PHASE = "CID.LOCAL_MEDIA_AGENT.READ_ONLY_FOLDER_SCANNER.QA.CLOSURE.REVIEW.GATE.V1"
 ORIGINAL_RUNTIME_SHA256 = "9a10c9dba6d60b359ac5a4c06901b6c9313450ae727f2fb2cb3d761f707bf2fc"
 EXPECTED_RUNTIME_SHA256 = "16a4fc52f3fa57b6469bb36ed30400ec26468a9435aad244582a0892fa810a05"
+RECONCILED_RUNTIME_SHA256 = "1d0dc95cff6d69cf973780452eea3087cc86af0ff5b07a63595157d77f3722c7"
 
 QA_GATE_SOURCE_COMMIT = "fb8b82eb375370d7aca271846ac181cf9736ba9b"
 
@@ -141,7 +142,7 @@ def test_runtime_sha_constants_preserve_original_and_current_evidence() -> None:
 
 
 def test_runtime_integrity_api_stdlib_and_no_entrypoint() -> None:
-    assert _runtime_sha256() == EXPECTED_RUNTIME_SHA256
+    assert _runtime_sha256() == RECONCILED_RUNTIME_SHA256
     assert callable(scanner.scan_read_only_folder)
     assert callable(scanner.manifest_to_json)
     assert callable(scanner.emit_manifest_json)

@@ -41,6 +41,9 @@ ERROR_WSL_DEVELOPMENT_BRIDGE_UNAVAILABLE_REJECTED = (
 ERROR_WSL_HOST_DRIVE_MISMATCH_REJECTED = "WSL_HOST_DRIVE_MISMATCH_REJECTED"
 ERROR_WINDOWS_DRIVE_ROOT_REJECTED = "WINDOWS_DRIVE_ROOT_REJECTED"
 ERROR_WINDOWS_PATH_TRAVERSAL_REJECTED = "WINDOWS_PATH_TRAVERSAL_REJECTED"
+ERROR_WINDOWS_NATIVE_WSL_DEVELOPMENT_FLAG_NOT_ALLOWED = (
+    "WINDOWS_NATIVE_WSL_DEVELOPMENT_FLAG_NOT_ALLOWED"
+)
 
 _DRIVE_LETTERS = frozenset("abcdefghijklmnopqrstuvwxyz")
 
@@ -97,6 +100,9 @@ def resolve_input_root(
         return None, ERROR_WINDOWS_DRIVE_ROOT_REJECTED
     if _windows_drive_letter(raw) is not None and _contains_windows_traversal(raw):
         return None, ERROR_WINDOWS_PATH_TRAVERSAL_REJECTED
+
+    if development_wsl_host_drive is not None and os.name == "nt":
+        return None, ERROR_WINDOWS_NATIVE_WSL_DEVELOPMENT_FLAG_NOT_ALLOWED
 
     category = _classify_path(
         raw,

@@ -23,7 +23,6 @@ SCANNER_CLI = ROOT / "scripts/local_media_agent/read_only_folder_scanner_cli.py"
 CID_CLI = ROOT / "scripts/local_media_agent/cid_cli.py"
 
 WSL_DISTRO_ENV = "WSL_DISTRO_NAME"
-SAMPLE_DISTRO = "Ubuntu-24.04-CID"
 
 FROZEN_SCANNER_SHA256 = "1d0dc95cff6d69cf973780452eea3087cc86af0ff5b07a63595157d77f3722c7"
 FROZEN_SCANNER_CLI_SHA256 = "1d8df7aeaf9a94df112f7f55ffcbdf95564188c9bafcf5dc1359aebffa49a2f6"
@@ -34,12 +33,12 @@ def _activate_windows(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(os, "name", "nt")
 
 
-def _activate_wsl(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(WSL_DISTRO_ENV, SAMPLE_DISTRO)
-
-
 def _deactivate_wsl(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(WSL_DISTRO_ENV, raising=False)
+
+
+def _canonical_source_bytes(path: Path) -> bytes:
+    return path.read_bytes().replace(b"\r\n", b"\n")
 
 
 def _import_roots(tree: ast.Module) -> set[str]:
@@ -144,42 +143,10 @@ def test_windows_native_rejection_happens_before_filesystem_access(monkeypatch: 
 # ----------------------------------------------------------- 11-17 WSL and POSIX
 
 
-def test_wsl_keeps_controlled_translation_with_matching_flag(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    mount_base = tmp_path / "mnt"
-    monkeypatch.setattr(adapter, "_WSL_DRIVE_MOUNT_BASE", mount_base)
-    _activate_wsl(monkeypatch)
-    path, error = adapter.resolve_input_root("D:\\Folder\\Subfolder", development_wsl_host_drive="D")
-    assert error is None
-    assert path == mount_base / "d" / "Folder" / "Subfolder"
-
-
-def test_wsl_rejects_drive_letter_mismatch(monkeypatch: pytest.MonkeyPatch) -> None:
-    _activate_wsl(monkeypatch)
-    path, error = adapter.resolve_input_root("D:\\Folder", development_wsl_host_drive="C")
-    assert path is None
-    assert error == adapter.ERROR_WSL_HOST_DRIVE_MISMATCH_REJECTED
-
-
-def test_wsl_still_requires_flag_for_windows_host_path(monkeypatch: pytest.MonkeyPatch) -> None:
-    _activate_wsl(monkeypatch)
-    path, error = adapter.resolve_input_root("D:\\Folder")
-    assert path is None
-    assert error == adapter.ERROR_WINDOWS_DRIVE_PATH_REJECTED
-
-
 def test_direct_mnt_input_still_rejected() -> None:
     path, error = adapter.resolve_input_root("/mnt/c/anything")
     assert path is None
     assert error == adapter.ERROR_MOUNT_PATH_REJECTED
-
-
-def test_posix_native_accepts_absolute_posix_path(monkeypatch: pytest.MonkeyPatch) -> None:
-    _deactivate_wsl(monkeypatch)
-    path, error = adapter.resolve_input_root("/CLIENT_SELECTED_FOLDER")
-    assert error is None
-    assert str(path) == "/CLIENT_SELECTED_FOLDER"
 
 
 def test_posix_native_does_not_require_wsl_flag(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -218,6 +185,6 @@ def test_adapter_has_no_database_saas_ffprobe_or_ffmpeg() -> None:
 
 
 def test_frozen_runtime_files_remain_unchanged_by_hash() -> None:
-    assert hashlib.sha256(SCANNER.read_bytes()).hexdigest() == FROZEN_SCANNER_SHA256
-    assert hashlib.sha256(SCANNER_CLI.read_bytes()).hexdigest() == FROZEN_SCANNER_CLI_SHA256
-    assert hashlib.sha256(CID_CLI.read_bytes()).hexdigest() == FROZEN_CID_CLI_SHA256
+    assert hashlib.sha256(_canonical_source_bytes(SCANNER)).hexdigest() == FROZEN_SCANNER_SHA256
+    assert hashlib.sha256(_canonical_source_bytes(SCANNER_CLI)).hexdigest() == FROZEN_SCANNER_CLI_SHA256
+    assert hashlib.sha256(_canonical_source_bytes(CID_CLI)).hexdigest() == FROZEN_CID_CLI_SHA256

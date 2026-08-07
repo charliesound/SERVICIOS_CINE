@@ -8,6 +8,7 @@ from scripts.editorial_intelligence.semantic_index.semantic_index import (
     SemanticSearchQuery,
     SemanticSearchResult,
 )
+from scripts.editorial_intelligence.semantic_index.runtime import build_local_semantic_index
 
 __all__ = [
     "IndexDocument",
@@ -16,4 +17,5 @@ __all__ = [
     "SemanticIndexError",
     "SemanticSearchQuery",
     "SemanticSearchResult",
+    "build_local_semantic_index",
 ]

@@ -115,6 +115,11 @@ class Settings(BaseSettings):
     llm_timeout_seconds: int = 120
     llm_temperature: float = 0.2
     llm_enable_fallback: bool = True
+    editorial_qa_provider: str = "openai"
+    editorial_qa_openai_model: str = "gpt-5.6-luna"
+    editorial_qa_timeout_seconds: int = 60
+    editorial_qa_max_output_tokens: int = 512
+    editorial_qa_reasoning_effort: str = "none"
 
     # ── Storage ──────────────────────────────────────────────────────────
     storage_type: str = "local"

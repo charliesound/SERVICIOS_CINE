@@ -18,6 +18,9 @@ from scripts.editorial_intelligence.authoritative_provenance import (
     transcript_segments_from_provenance,
     validate_provenance_artifact,
 )
+from scripts.editorial_intelligence.authoritative_provenance.provenance_artifact import (
+    _canonicalize_segment_indexes,
+)
 
 
 IDENTITY = TranscriptIdentity("a" * 64, 1234, 2)
@@ -292,3 +295,71 @@ def test_all_three_identity_fields_are_required_for_acceptance(tmp_path):
     ):
         with pytest.raises(ProvenanceTranscriptBindingError):
             transcript_segments_from_provenance(payload(), identity, value)
+
+
+def one_based_payload() -> dict:
+    value = payload()
+    value["segments"] = [
+        {**value["segments"][0], "segment_index": 1},
+        {**value["segments"][1], "segment_index": 2},
+    ]
+    return value
+
+
+def test_one_based_indexes_are_canonicalized_without_payload_mutation(tmp_path):
+    value = one_based_payload()
+    snapshot = json.loads(json.dumps(value))
+    identity = replace(IDENTITY, transcript_segment_count=2)
+    artifact_value = create_provenance_artifact(
+        register_or_load_asset("one-based", registry_path=tmp_path / "registry.json"),
+        identity,
+        mapping(12.5),
+        value,
+        created_at="now",
+    )
+    segments = transcript_segments_from_provenance(value, identity, artifact_value)
+    assert [item["segment_index"] for item in artifact_value.segments] == [0, 1]
+    assert [segment.segment_ref.rsplit("::", 1)[-1] for segment in segments] == ["0", "1"]
+    assert value == snapshot
+
+
+@pytest.mark.parametrize(
+    "indexes",
+    [[1, 2, 4], [0, 1, 3], [1, 1, 2], [0, 2, 1], [-1, 0, 1], [2, 3, 4], ["0", 1], [0.0, 1], [True, 1]],
+)
+def test_unsupported_segment_index_layouts_fail_closed(indexes):
+    with pytest.raises(ValueError):
+        _canonicalize_segment_indexes([{"segment_index": index} for index in indexes])
+
+
+@pytest.mark.parametrize("indexes", [[0], [1]])
+def test_single_segment_supported_for_both_bases(indexes):
+    assert _canonicalize_segment_indexes([{"segment_index": indexes[0]}]) == [0]
+
+
+def test_artifact_and_binding_share_one_based_interpretation(tmp_path):
+    value = one_based_payload()
+    identity = replace(IDENTITY, transcript_segment_count=2)
+    artifact_value = create_provenance_artifact(
+        register_or_load_asset("shared-rule", registry_path=tmp_path / "registry.json"),
+        identity,
+        mapping(),
+        value,
+        created_at="now",
+    )
+    segments = transcript_segments_from_provenance(value, identity, artifact_value)
+    assert [item["segment_index"] for item in artifact_value.segments] == [segment.segment_index for segment in segments]
+
+
+def test_wrong_identity_rejects_before_one_based_binding(tmp_path):
+    value = one_based_payload()
+    identity = replace(IDENTITY, transcript_segment_count=2)
+    artifact_value = create_provenance_artifact(
+        register_or_load_asset("identity-order", registry_path=tmp_path / "registry.json"),
+        identity,
+        mapping(),
+        value,
+        created_at="now",
+    )
+    with pytest.raises(ProvenanceTranscriptBindingError):
+        transcript_segments_from_provenance(value, replace(identity, transcript_sha256="b" * 64), artifact_value)

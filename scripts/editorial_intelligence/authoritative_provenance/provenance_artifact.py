@@ -156,12 +156,13 @@ def create_provenance_artifact(
     if len(segments_raw) != transcript_identity.transcript_segment_count:
         raise ProvenanceTranscriptBindingError("transcript segment count mismatch")
     _validate_source_input(mapping)
+    canonical_indexes = _canonicalize_segment_indexes(segments_raw)
     segments: list[dict[str, Any]] = []
-    for raw in segments_raw:
-        index, start, end = _local_interval(raw)
+    for canonical_index, raw in zip(canonical_indexes, segments_raw):
+        _, start, end = _local_interval(raw)
         segments.append(
             {
-                "segment_index": index,
+                "segment_index": canonical_index,
                 "stt_start_seconds": start,
                 "stt_end_seconds": end,
                 "source_start_seconds": mapping.source_time_origin_seconds + start,
@@ -272,17 +273,18 @@ def transcript_segments_from_provenance(
     raw_segments = transcript_payload.get("segments")
     if not isinstance(raw_segments, list) or len(raw_segments) != artifact.transcript_segment_count:
         raise ProvenanceTranscriptBindingError("transcript segment count mismatch")
+    canonical_indexes = _canonicalize_segment_indexes(raw_segments)
     enriched = dict(transcript_payload)
     enriched["asset_id"] = artifact.asset_id
     enriched["source_audio_stream_index"] = artifact.segments[0].get("source_audio_stream_index")
     enriched["segments"] = []
-    for raw in raw_segments:
-        index = raw.get("segment_index")
-        mapping = segments_by_index.get(index)
+    for canonical_index, raw in zip(canonical_indexes, raw_segments):
+        mapping = segments_by_index.get(canonical_index)
         if mapping is None or raw.get("start_seconds") != mapping["stt_start_seconds"] or raw.get("end_seconds") != mapping["stt_end_seconds"]:
             raise ProvenanceTranscriptBindingError("transcript segment mapping mismatch")
         enriched["segments"].append({
             **raw,
+            "segment_index": canonical_index,
             "source_start_seconds": mapping["source_start_seconds"],
             "source_end_seconds": mapping["source_end_seconds"],
         })
@@ -401,6 +403,20 @@ def _validate_source_input(mapping: SourceProvenanceInput) -> None:
     for value in (mapping.fps_numerator, mapping.fps_denominator, mapping.timebase_numerator, mapping.timebase_denominator):
         if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value <= 0):
             raise ProvenanceInputError("rational timebase is invalid")
+
+
+def _canonicalize_segment_indexes(segments_raw: list[Any]) -> list[int]:
+    raw_indexes: list[int] = []
+    for raw in segments_raw:
+        if not isinstance(raw, dict):
+            raise ProvenanceInputError("transcript segment is invalid")
+        index = raw.get("segment_index")
+        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
+            raise ProvenanceInputError("transcript segment index is invalid")
+        raw_indexes.append(index)
+    if raw_indexes not in (list(range(len(raw_indexes))), list(range(1, len(raw_indexes) + 1))):
+        raise ProvenanceInputError("transcript segment indexes must be contiguous and zero- or one-based")
+    return list(range(len(raw_indexes)))
 
 
 def _local_interval(raw: Any) -> tuple[int, float, float]:

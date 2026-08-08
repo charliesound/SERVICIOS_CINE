@@ -33,6 +33,12 @@ class VectorHit:
     payload: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class ReadPoint:
+    point_id: str
+    payload: dict[str, Any]
+
+
 class VectorStore(Protocol):
     def replace_corpus(self, corpus_id: str, points: Sequence[VectorPoint]) -> None: ...
 
@@ -116,6 +122,75 @@ class QdrantVectorStore:
             return [VectorHit(str(item["id"]), float(item["score"]), item.get("payload") or {}) for item in result]
         except (KeyError, TypeError, ValueError) as exc:
             raise VectorStoreError("search failed") from exc
+
+    def count_points(self, *, filters: dict[str, Any]) -> int:
+        response = self._request_raw(
+            "POST",
+            f"/collections/{self.collection}/points/count",
+            json={"filter": _filter_payload(filters), "exact": True},
+        )
+        if response.status_code == 404:
+            raise VectorStoreError("collection not found")
+        if response.status_code < 200 or response.status_code >= 300:
+            raise VectorStoreError("filtered count failed")
+        try:
+            body = response.json()
+            count = body["result"]["count"]
+            if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+                raise TypeError
+            return count
+        except (KeyError, TypeError, ValueError) as exc:
+            raise VectorStoreError("filtered count failed") from exc
+
+    def scroll_points(
+        self,
+        *,
+        filters: dict[str, Any],
+        page_size: int = 256,
+        max_pages: int = 3,
+    ) -> tuple[ReadPoint, ...]:
+        if page_size <= 0 or page_size > 256:
+            raise VectorStoreError("invalid page size")
+        if max_pages <= 0 or max_pages > 3:
+            raise VectorStoreError("invalid max pages")
+
+        points: list[ReadPoint] = []
+        offset: Any | None = None
+        for page_number in range(max_pages):
+            body = {
+                "filter": _filter_payload(filters),
+                "limit": page_size,
+                "with_payload": True,
+                "with_vector": False,
+            }
+            if offset is not None:
+                body["offset"] = offset
+            response = self._request_raw(
+                "POST",
+                f"/collections/{self.collection}/points/scroll",
+                json=body,
+            )
+            if response.status_code == 404:
+                raise VectorStoreError("collection not found")
+            if response.status_code < 200 or response.status_code >= 300:
+                raise VectorStoreError("filtered read failed")
+            try:
+                result = response.json()["result"]
+                page = result["points"]
+                next_offset = result.get("next_page_offset")
+                if not isinstance(page, list):
+                    raise TypeError
+                for item in page:
+                    if not isinstance(item, dict) or "id" not in item or not isinstance(item.get("payload"), dict):
+                        raise TypeError
+                    points.append(ReadPoint(str(item["id"]), item["payload"]))
+            except (KeyError, TypeError, ValueError) as exc:
+                raise VectorStoreError("filtered read response invalid") from exc
+            if next_offset is None:
+                return tuple(points)
+            offset = next_offset
+
+        raise VectorStoreError("read verification limit exceeded")
 
     def _ensure_collection(self) -> None:
         response = self._request_raw("GET", f"/collections/{self.collection}")

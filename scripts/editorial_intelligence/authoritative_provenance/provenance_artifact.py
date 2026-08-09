@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import re
@@ -8,7 +9,7 @@ import tempfile
 import uuid
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from scripts.editorial_intelligence.transcript_provenance.transcript_segment import (
     TranscriptSegment,
@@ -23,6 +24,12 @@ DEFAULT_REGISTRY_PATH = Path(
     "/home/harliesound/cid_benchmark_input/asset_registry/cid_media_assets_v1.json"
 )
 SOURCE_RELATIVE_VERIFY_TOLERANCE_SECONDS = 1e-6
+AUTH_BINDING_PROJECTION_CONTRACT_NAME = (
+    "CID.AUTHORITATIVE_BINDING_PROJECTION.DURABLE_REPRODUCIBLE"
+)
+AUTH_BINDING_PROJECTION_CONTRACT_VERSION = (
+    "CID.AUTHORITATIVE_BINDING_PROJECTION.DURABLE_REPRODUCIBLE.V1"
+)
 _UUID_PATTERN = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 )
@@ -50,6 +57,51 @@ class ProvenanceInputError(ProvenanceArtifactError):
 
 class ProvenanceTemporalMappingError(ProvenanceArtifactError):
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class BindingProjectionRecord:
+    asset_id: str
+    canonical_index: int
+    error: dict[str, Any] | None
+    provenance_sha256: str
+    segment_ref: str
+    source_audio_stream_index: int | None
+    source_end_seconds: str
+    source_start_seconds: str
+    source_timecode_sha256: str
+    stt_end_seconds: str
+    stt_start_seconds: str
+    text_byte_length: int
+    text_sha256: str
+    warnings: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "asset_id": self.asset_id,
+            "canonical_index": self.canonical_index,
+            "error": self.error,
+            "provenance_sha256": self.provenance_sha256,
+            "segment_ref": self.segment_ref,
+            "source_audio_stream_index": self.source_audio_stream_index,
+            "source_end_seconds": self.source_end_seconds,
+            "source_start_seconds": self.source_start_seconds,
+            "source_timecode_sha256": self.source_timecode_sha256,
+            "stt_end_seconds": self.stt_end_seconds,
+            "stt_start_seconds": self.stt_start_seconds,
+            "text_byte_length": self.text_byte_length,
+            "text_sha256": self.text_sha256,
+            "warnings": list(self.warnings),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class BindingProjection:
+    contract_version: str
+    records: tuple[BindingProjectionRecord, ...]
+    canonical_bytes: bytes
+    canonical_byte_count: int
+    sha256: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -289,6 +341,153 @@ def transcript_segments_from_provenance(
             "source_end_seconds": mapping["source_end_seconds"],
         })
     return transcription_result_to_transcript_segments(enriched, extraction_anchor_seconds=artifact.source_time_origin_seconds)
+
+
+def build_binding_projection(
+    segments: Sequence[TranscriptSegment],
+) -> BindingProjection:
+    """Build a deterministic evidence projection from bound segments only."""
+    if not isinstance(segments, Sequence) or isinstance(segments, (str, bytes)):
+        raise ProvenanceInputError("projection segments are invalid")
+
+    records: list[BindingProjectionRecord] = []
+    identities: set[tuple[int, str]] = set()
+    for segment in segments:
+        if not isinstance(segment, TranscriptSegment):
+            raise ProvenanceInputError("projection segment is invalid")
+        record = _binding_projection_record(segment)
+        identity = (record.canonical_index, record.segment_ref)
+        if identity in identities:
+            raise ProvenanceInputError("projection segment identity is duplicated")
+        identities.add(identity)
+        records.append(record)
+
+    records.sort(key=lambda item: (item.canonical_index, item.segment_ref))
+    envelope = {
+        "contract_version": AUTH_BINDING_PROJECTION_CONTRACT_VERSION,
+        "records": [record.to_dict() for record in records],
+    }
+    canonical_bytes = _canonical_projection_json(envelope, final_newline=True)
+    return BindingProjection(
+        contract_version=AUTH_BINDING_PROJECTION_CONTRACT_VERSION,
+        records=tuple(records),
+        canonical_bytes=canonical_bytes,
+        canonical_byte_count=len(canonical_bytes),
+        sha256=hashlib.sha256(canonical_bytes).hexdigest(),
+    )
+
+
+def rehash_binding_projection(canonical_bytes: bytes) -> tuple[int, str]:
+    """Return byte count and SHA-256 from durable canonical bytes only."""
+    if not isinstance(canonical_bytes, bytes):
+        raise ProvenanceInputError("projection preimage must be bytes")
+    return len(canonical_bytes), hashlib.sha256(canonical_bytes).hexdigest()
+
+
+def _binding_projection_record(segment: TranscriptSegment) -> BindingProjectionRecord:
+    asset_id = segment.asset_id
+    if (
+        not isinstance(asset_id, str)
+        or not asset_id
+        or "\x00" in asset_id
+        or "/" in asset_id
+        or "\\" in asset_id
+    ):
+        raise ProvenanceInputError("projection asset identity is invalid")
+
+    index = segment.segment_index
+    if isinstance(index, bool) or not isinstance(index, int) or index < 0:
+        raise ProvenanceInputError("projection canonical index is invalid")
+
+    stream_index = segment.source_audio_stream_index
+    if stream_index is not None and (
+        isinstance(stream_index, bool) or not isinstance(stream_index, int) or stream_index < 0
+    ):
+        raise ProvenanceInputError("projection source stream index is invalid")
+    expected_ref = f"{asset_id}::{stream_index}::{index}"
+    if segment.segment_ref != expected_ref:
+        raise ProvenanceInputError("projection segment reference is invalid")
+
+    text = segment.text
+    if not isinstance(text, str):
+        raise ProvenanceInputError("projection text is invalid")
+    text_bytes = text.encode("utf-8")
+    times = (
+        _canonical_projection_time(segment.stt_start_seconds),
+        _canonical_projection_time(segment.stt_end_seconds),
+        _canonical_projection_time(segment.source_start_seconds),
+        _canonical_projection_time(segment.source_end_seconds),
+    )
+    if segment.stt_end_seconds < segment.stt_start_seconds:
+        raise ProvenanceTemporalMappingError("projection STT interval is invalid")
+    if segment.source_end_seconds < segment.source_start_seconds:
+        raise ProvenanceTemporalMappingError("projection source interval is invalid")
+    warnings = segment.warnings
+    if not isinstance(warnings, (list, tuple)) or not all(isinstance(item, str) for item in warnings):
+        raise ProvenanceInputError("projection warnings are invalid")
+    if segment.error is not None and not isinstance(segment.error, Mapping):
+        raise ProvenanceInputError("projection error is invalid")
+    provenance_bytes = _canonical_projection_json(segment.provenance)
+    timecode_bytes = _canonical_projection_json(segment.source_timecode)
+    return BindingProjectionRecord(
+        asset_id=asset_id,
+        canonical_index=index,
+        error=dict(segment.error) if segment.error is not None else None,
+        provenance_sha256=hashlib.sha256(provenance_bytes).hexdigest(),
+        segment_ref=segment.segment_ref,
+        source_audio_stream_index=stream_index,
+        source_end_seconds=times[3],
+        source_start_seconds=times[2],
+        source_timecode_sha256=hashlib.sha256(timecode_bytes).hexdigest(),
+        stt_end_seconds=times[1],
+        stt_start_seconds=times[0],
+        text_byte_length=len(text_bytes),
+        text_sha256=hashlib.sha256(text_bytes).hexdigest(),
+        warnings=tuple(warnings),
+    )
+
+
+def _canonical_projection_time(value: Any) -> str:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ProvenanceTemporalMappingError("projection time is invalid")
+    numeric = float(value)
+    if not math.isfinite(numeric) or numeric < 0:
+        raise ProvenanceTemporalMappingError("projection time is invalid")
+    if numeric == 0:
+        return "0x0.0p+0"
+    return numeric.hex()
+
+
+def _canonical_projection_json(value: Any, *, final_newline: bool = False) -> bytes:
+    _validate_projection_json_value(value)
+    serialized = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return serialized + (b"\n" if final_newline else b"")
+
+
+def _validate_projection_json_value(value: Any) -> None:
+    if value is None or isinstance(value, (str, bool, int)):
+        return
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ProvenanceInputError("projection JSON value is non-finite")
+        return
+    if isinstance(value, Mapping):
+        if not all(isinstance(key, str) for key in value):
+            raise ProvenanceInputError("projection JSON keys must be strings")
+        for item in value.values():
+            _validate_projection_json_value(item)
+        return
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _validate_projection_json_value(item)
+        return
+    raise ProvenanceInputError("projection JSON value is unsupported")
 
 
 def _load_registry(path: Path) -> dict[str, Any]:

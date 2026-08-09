@@ -8,6 +8,7 @@ import pytest
 from scripts.editorial_intelligence.authoritative_provenance import (
     AssetIdentityConflictError,
     ProvenanceArtifactCorruptError,
+    ProvenanceInputError,
     ProvenanceTemporalMappingError,
     ProvenanceTranscriptBindingError,
     SourceProvenanceInput,
@@ -19,7 +20,16 @@ from scripts.editorial_intelligence.authoritative_provenance import (
     validate_provenance_artifact,
 )
 from scripts.editorial_intelligence.authoritative_provenance.provenance_artifact import (
+    AUTH_BINDING_PROJECTION_CONTRACT_VERSION,
+    BindingProjection,
+    BindingProjectionRecord,
     _canonicalize_segment_indexes,
+    build_binding_projection,
+    rehash_binding_projection,
+)
+from scripts.editorial_intelligence.transcript_provenance.transcript_segment import (
+    PHASE,
+    TranscriptSegment,
 )
 
 
@@ -363,3 +373,127 @@ def test_wrong_identity_rejects_before_one_based_binding(tmp_path):
     )
     with pytest.raises(ProvenanceTranscriptBindingError):
         transcript_segments_from_provenance(value, replace(identity, transcript_sha256="b" * 64), artifact_value)
+
+
+def projection_segments() -> list[TranscriptSegment]:
+    source_timecode = {"available": False, "status": "unavailable"}
+    return [
+        TranscriptSegment(
+            phase=PHASE,
+            asset_id="asset-synthetic",
+            source_audio_stream_index=0,
+            segment_index=2,
+            text="Café\nfin",
+            stt_start_seconds=1.25,
+            stt_end_seconds=3.5,
+            source_start_seconds=101.25,
+            source_end_seconds=103.5,
+            source_timecode=source_timecode,
+            provenance={"asset_id": "asset-synthetic", "segment_index": 2, "source_audio_stream_index": 0},
+            error=None,
+            warnings=["synthetic-warning"],
+        ),
+        TranscriptSegment(
+            phase=PHASE,
+            asset_id="asset-synthetic",
+            source_audio_stream_index=0,
+            segment_index=1,
+            text="Árbol  ",
+            stt_start_seconds=0.0,
+            stt_end_seconds=1.0,
+            source_start_seconds=100.0,
+            source_end_seconds=101.0,
+            source_timecode=source_timecode,
+            provenance={"asset_id": "asset-synthetic", "segment_index": 1, "source_audio_stream_index": 0},
+            error=None,
+            warnings=[],
+        ),
+    ]
+
+
+def test_binding_projection_golden_vector_is_frozen():
+    result = build_binding_projection(projection_segments())
+    assert isinstance(result, BindingProjection)
+    assert result.contract_version == AUTH_BINDING_PROJECTION_CONTRACT_VERSION
+    assert result.canonical_byte_count == 1305
+    assert result.sha256 == "6c0267f89e106b1a446e542265e4d6a28d163b26b898bd4aff5a6c433353a82c"
+    assert result.canonical_bytes.endswith(b"\n")
+    assert b"Caf\xc3\xa9" not in result.canonical_bytes
+    assert b"asset-synthetic::0::1" in result.canonical_bytes
+
+
+def test_binding_projection_is_input_order_independent():
+    forward = build_binding_projection(projection_segments())
+    reverse = build_binding_projection(list(reversed(projection_segments())))
+    assert reverse.canonical_bytes == forward.canonical_bytes
+    assert reverse.sha256 == forward.sha256
+
+
+def test_binding_projection_types_are_immutable():
+    result = build_binding_projection(projection_segments())
+    assert isinstance(result.records[0], BindingProjectionRecord)
+    with pytest.raises(AttributeError):
+        result.records = ()
+    with pytest.raises(AttributeError):
+        result.records[0].asset_id = "changed"
+
+
+def test_binding_projection_rehash_requires_only_canonical_bytes(tmp_path):
+    result = build_binding_projection(projection_segments())
+    path = tmp_path / "binding_projection_durable_reproducible_v1.json"
+    path.write_bytes(result.canonical_bytes)
+    reopened = path.read_bytes()
+    assert rehash_binding_projection(reopened) == (1305, result.sha256)
+
+
+def test_binding_projection_single_byte_mutation_changes_hash():
+    result = build_binding_projection(projection_segments())
+    mutated = bytearray(result.canonical_bytes)
+    mutated[20] ^= 1
+    assert rehash_binding_projection(bytes(mutated))[1] != result.sha256
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_binding_projection_nonfinite_times_fail_closed(value):
+    with pytest.raises(ProvenanceTemporalMappingError):
+        build_binding_projection([replace(projection_segments()[0], stt_start_seconds=value)])
+
+
+def test_binding_projection_negative_zero_is_canonicalized():
+    result = build_binding_projection([replace(projection_segments()[0], stt_start_seconds=-0.0)])
+    assert result.records[0].stt_start_seconds == "0x0.0p+0"
+
+
+def test_binding_projection_preserves_integer_like_float_representation():
+    result = build_binding_projection(
+        [replace(projection_segments()[0], stt_start_seconds=0.0, stt_end_seconds=1.0)]
+    )
+    assert result.records[0].stt_end_seconds == "0x1.0000000000000p+0"
+
+
+def test_binding_projection_duplicate_identity_fails_closed():
+    segments = projection_segments()
+    duplicate = replace(segments[0], text="different")
+    with pytest.raises(ProvenanceInputError):
+        build_binding_projection([segments[0], duplicate])
+
+
+def test_binding_projection_exact_segment_reference_and_asset_are_projected():
+    result = build_binding_projection(projection_segments())
+    assert [record.segment_ref for record in result.records] == [
+        "asset-synthetic::0::1",
+        "asset-synthetic::0::2",
+    ]
+    assert all(record.asset_id == "asset-synthetic" for record in result.records)
+
+
+def test_binding_projection_rejects_invalid_segment_reference():
+    segment = replace(projection_segments()[0], asset_id="bad/name")
+    with pytest.raises(ProvenanceInputError):
+        build_binding_projection([segment])
+
+
+def test_binding_projection_preserves_text_newline_and_trailing_whitespace_in_digest():
+    base = build_binding_projection([projection_segments()[0]])
+    changed = build_binding_projection([replace(projection_segments()[0], text="Café\nfin ")])
+    assert base.sha256 != changed.sha256

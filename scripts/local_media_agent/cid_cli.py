@@ -30,11 +30,12 @@ SCAN_HELP_TEXT = (
 )
 
 EDITORIAL_QA_HELP_TEXT = (
-    "Usage: cid editorial-qa --question QUESTION --corpus-id CORPUS_ID [--top-k TOP_K]\n"
+    "Usage: cid editorial-qa --question QUESTION --corpus-id CORPUS_ID [--top-k TOP_K] [--diagnostic-output PATH]\n"
     "Options:\n"
     "  --question QUESTION\n"
     "  --corpus-id CORPUS_ID\n"
     "  --top-k TOP_K\n"
+    "  --diagnostic-output PATH\n"
     "  --help\n"
 )
 

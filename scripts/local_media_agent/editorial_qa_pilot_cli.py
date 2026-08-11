@@ -5,6 +5,7 @@ import asyncio
 import json
 import sys
 from dataclasses import asdict
+from pathlib import Path
 from typing import TextIO
 
 from scripts.editorial_intelligence.semantic_index.runtime import build_local_semantic_index
@@ -36,6 +37,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--question", required=True)
     parser.add_argument("--corpus-id", required=True)
     parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument("--diagnostic-output")
     return parser
 
 
@@ -43,10 +45,22 @@ def build_pilot_orchestrator(
     *,
     retriever=None,
     generation_provider: EditorialQAGenerationProvider | None = None,
+    diagnostic_sink=None,
 ) -> EditorialQAOrchestrator:
     selected_retriever = retriever or build_local_semantic_index()
     selected_provider = generation_provider or SeptemberPilotV3EditorialQAGenerationProvider()
-    return EditorialQAOrchestrator(selected_retriever, selected_provider)
+    return EditorialQAOrchestrator(
+        selected_retriever,
+        selected_provider,
+        diagnostic_sink=diagnostic_sink,
+    )
+
+
+def _write_diagnostics(path: str, snapshot: dict[str, object]) -> None:
+    Path(path).write_text(
+        json.dumps(snapshot, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def run_cli(
@@ -69,6 +83,11 @@ def run_cli(
         orchestrator = orchestrator_factory(
             retriever=retriever,
             generation_provider=generation_provider,
+            diagnostic_sink=(
+                lambda snapshot: _write_diagnostics(args.diagnostic_output, snapshot)
+                if args.diagnostic_output
+                else None
+            ),
         )
         result = asyncio.run(
             orchestrator.answer_question(

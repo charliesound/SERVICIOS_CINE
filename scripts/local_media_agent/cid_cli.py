@@ -29,6 +29,15 @@ SCAN_HELP_TEXT = (
     "  --help\n"
 )
 
+EDITORIAL_QA_HELP_TEXT = (
+    "Usage: cid editorial-qa --question QUESTION --corpus-id CORPUS_ID [--top-k TOP_K]\n"
+    "Options:\n"
+    "  --question QUESTION\n"
+    "  --corpus-id CORPUS_ID\n"
+    "  --top-k TOP_K\n"
+    "  --help\n"
+)
+
 
 def run_cli(
     argv: Sequence[str] | None = None,
@@ -48,6 +57,15 @@ def run_cli(
         if args == ["scan", "--help"]:
             out.write(SCAN_HELP_TEXT)
             return EXIT_SUCCESS
+
+        if args == ["editorial-qa", "--help"]:
+            out.write(EDITORIAL_QA_HELP_TEXT)
+            return EXIT_SUCCESS
+
+        if args and args[0] == "editorial-qa":
+            from scripts.local_media_agent import editorial_qa_pilot_cli
+
+            return editorial_qa_pilot_cli.run_cli(args[1:], stdout=out, stderr=err)
 
         if not args or args[0] != "scan":
             err.write(CID_CLI_ARGUMENTS_REJECTED + "\n")

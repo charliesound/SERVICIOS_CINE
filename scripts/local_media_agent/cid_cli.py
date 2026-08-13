@@ -6,6 +6,9 @@ from collections.abc import Sequence
 from typing import TextIO
 
 from scripts.local_media_agent import read_only_folder_scanner_cli
+from scripts.local_media_agent.source_moment_navigation import (
+    build_source_moment_navigation,
+)
 from scripts.local_media_agent.transcript_browse import (
     DEFAULT_BROWSE_LIMIT,
     DEFAULT_SEARCH_LIMIT,
@@ -162,7 +165,13 @@ def _run_transcript_cli(
                 {
                     "operation": operation,
                     "result_limit_maximum": maximum,
-                    "results": [result.to_dict() for result in results],
+                    "results": [
+                        {
+                            **result.to_dict(),
+                            "source_moment": build_source_moment_navigation(result),
+                        }
+                        for result in results
+                    ],
                 },
                 ensure_ascii=False,
                 sort_keys=True,

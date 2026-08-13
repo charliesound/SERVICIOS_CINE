@@ -6,6 +6,9 @@ from collections.abc import Sequence
 from typing import TextIO
 
 from scripts.local_media_agent import read_only_folder_scanner_cli
+from scripts.local_media_agent.pilot_browse_search_handoff import (
+    handoff_pilot_transcript_segments,
+)
 from scripts.local_media_agent.source_moment_navigation import (
     build_source_moment_navigation,
 )
@@ -49,6 +52,29 @@ TRANSCRIPT_HELP_TEXT = (
     "  --query QUERY (search only)\n"
     "  --help\n"
 )
+
+
+def run_pilot_transcript_cli(
+    pilot_result: object,
+    operation: str,
+    *,
+    query: str | None = None,
+    offset: int = 0,
+    limit: int | None = None,
+) -> dict[str, object]:
+    """Serialize browse/search results from an in-memory pilot result."""
+    try:
+        results = handoff_pilot_transcript_segments(
+            pilot_result,
+            operation,
+            query=query,
+            offset=offset,
+            limit=limit,
+        )
+        maximum = MAX_BROWSE_RESULTS if operation == "browse" else MAX_SEARCH_RESULTS
+        return _transcript_payload(operation, results, maximum)
+    except (TranscriptBrowseInputError, TypeError, ValueError):
+        raise TranscriptBrowseInputError("PILOT_HANDOFF_INVALID") from None
 
 SCAN_HELP_TEXT = (
     "Usage: cid scan --input-root ABSOLUTE_LOCAL_LINUX_FOLDER\n"
@@ -160,28 +186,29 @@ def _run_transcript_cli(
             limit = int(values.get("--limit", str(DEFAULT_SEARCH_LIMIT)))
             results = search_transcript(segments, query, limit=limit)
             maximum = MAX_SEARCH_RESULTS
-        stdout.write(
-            json.dumps(
-                {
-                    "operation": operation,
-                    "result_limit_maximum": maximum,
-                    "results": [
-                        {
-                            **result.to_dict(),
-                            "source_moment": build_source_moment_navigation(result),
-                        }
-                        for result in results
-                    ],
-                },
-                ensure_ascii=False,
-                sort_keys=True,
-            )
-            + "\n"
-        )
+        stdout.write(json.dumps(_transcript_payload(operation, results, maximum), ensure_ascii=False, sort_keys=True) + "\n")
         return EXIT_SUCCESS
     except (KeyError, ValueError, TranscriptBrowseInputError, OSError, TypeError):
         stderr.write(CID_CLI_ARGUMENTS_REJECTED + "\n")
         return EXIT_ARGUMENTS_REJECTED
+
+
+def _transcript_payload(
+    operation: str,
+    results: list,
+    maximum: int,
+) -> dict[str, object]:
+    return {
+        "operation": operation,
+        "result_limit_maximum": maximum,
+        "results": [
+            {
+                **result.to_dict(),
+                "source_moment": build_source_moment_navigation(result),
+            }
+            for result in results
+        ],
+    }
 
 
 def main() -> int:

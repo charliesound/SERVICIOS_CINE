@@ -8,6 +8,7 @@ provider.
 
 from __future__ import annotations
 
+import math
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,6 +21,7 @@ from scripts.editorial_intelligence.audio_extraction.audio_extraction import (
 )
 from scripts.editorial_intelligence.media_probe.media_probe import probe_media
 from scripts.editorial_intelligence.transcript_provenance.transcript_segment import (
+    PHASE as TRANSCRIPT_SEGMENT_PHASE,
     TranscriptSegment,
     transcription_result_to_transcript_segments,
 )
@@ -48,6 +50,7 @@ STATUS_METADATA_FAILED = "PILOT_FLOW_METADATA_FAILED"
 STATUS_AUDIO_FAILED = "PILOT_FLOW_AUDIO_FAILED"
 STATUS_TRANSCRIPTION_FAILED = "PILOT_FLOW_TRANSCRIPTION_FAILED"
 STATUS_PROVENANCE_FAILED = "PILOT_FLOW_PROVENANCE_FAILED"
+STATUS_OUTPUT_INTEGRITY_FAILED = "PILOT_FLOW_OUTPUT_INTEGRITY_FAILED"
 
 STAGE_PREFLIGHT = "preflight"
 STAGE_SCAN = "scan"
@@ -55,6 +58,7 @@ STAGE_METADATA = "metadata"
 STAGE_AUDIO = "audio_extraction"
 STAGE_TRANSCRIPTION = "transcription"
 STAGE_PROVENANCE = "provenance"
+STAGE_OUTPUT_PREFLIGHT = "output_preflight"
 
 _TOOL_CHECKER = Callable[[str], str | None]
 _SCANNER = Callable[[str | Path], dict[str, Any]]
@@ -111,7 +115,10 @@ def run_pilot_flow(
     if preflight_error is not None:
         return _failure(STATUS_PREFLIGHT_FAILED, STAGE_PREFLIGHT, preflight_error)
 
-    scanner_result = deps.scanner(root)
+    try:
+        scanner_result = deps.scanner(root)
+    except Exception:
+        return _failure(STATUS_SCAN_FAILED, STAGE_SCAN, "SCAN_ORCHESTRATION_FAILED")
     scan_status = scanner_result.get("status")
     if scan_status not in {STATUS_COMPLETED, STATUS_COMPLETED_WITH_WARNINGS}:
         return _failure(
@@ -121,7 +128,15 @@ def run_pilot_flow(
             scanner=scanner_result,
         )
 
-    metadata_result = deps.prober(request.asset_id, selected)
+    try:
+        metadata_result = deps.prober(request.asset_id, selected)
+    except Exception:
+        return _failure(
+            STATUS_METADATA_FAILED,
+            STAGE_METADATA,
+            "MEDIA_PROBE_ORCHESTRATION_FAILED",
+            scanner=scanner_result,
+        )
     if metadata_result.get("media_probe_state") == "PROBE_FAILED":
         return _failure(
             STATUS_METADATA_FAILED,
@@ -195,6 +210,22 @@ def run_pilot_flow(
                     transcription=_sanitize_transcription(transcription_payload),
                 )
 
+            serialized_segments = [segment.to_dict() for segment in segments]
+            output_error = _validate_transcript_segments(
+                serialized_segments,
+                asset_id=request.asset_id,
+            )
+            if output_error is not None:
+                return _failure(
+                    STATUS_OUTPUT_INTEGRITY_FAILED,
+                    STAGE_OUTPUT_PREFLIGHT,
+                    output_error,
+                    scanner=scanner_result,
+                    metadata=_sanitize_metadata(metadata_result),
+                    audio=_sanitize_audio(audio_payload),
+                    transcription=_sanitize_transcription(transcription_payload),
+                )
+
             return {
                 "schema_version": SCHEMA_VERSION,
                 "phase": PHASE,
@@ -211,7 +242,7 @@ def run_pilot_flow(
                 "metadata": _sanitize_metadata(metadata_result),
                 "audio": _sanitize_audio(audio_payload),
                 "transcription": _sanitize_transcription(transcription_payload),
-                "transcript_segments": [segment.to_dict() for segment in segments],
+                "transcript_segments": serialized_segments,
                 "language": {
                     "detected_language": transcription_payload.get("detected_language"),
                     "language_probability": transcription_payload.get("language_probability"),
@@ -330,6 +361,180 @@ def _failure(
         },
         **payload,
     }
+
+
+_TRANSCRIPT_SEGMENT_FIELDS = frozenset(
+    {
+        "phase",
+        "asset_id",
+        "source_audio_stream_index",
+        "segment_index",
+        "text",
+        "stt_start_seconds",
+        "stt_end_seconds",
+        "source_start_seconds",
+        "source_end_seconds",
+        "source_timecode",
+        "provenance",
+        "error",
+        "warnings",
+    }
+)
+
+
+def _validate_transcript_segments(value: Any, *, asset_id: str) -> str | None:
+    if not isinstance(value, list) or not value:
+        return "TRANSCRIPT_SEGMENTS_EMPTY"
+    previous_stt_start: float | None = None
+    for segment in value:
+        if not isinstance(segment, dict) or set(segment) != _TRANSCRIPT_SEGMENT_FIELDS:
+            return "TRANSCRIPT_SEGMENTS_NOT_CANONICAL"
+        if not _validate_segment_values(
+            segment,
+            asset_id,
+            previous_stt_start,
+        ):
+            return "TRANSCRIPT_SEGMENTS_NOT_CANONICAL"
+        previous_stt_start = segment["stt_start_seconds"]
+    return None
+
+
+def _validate_segment_values(
+    segment: dict[str, Any],
+    asset_id: str,
+    previous_stt_start: float | None,
+) -> bool:
+    segment_index = segment["segment_index"]
+    if segment["phase"] != TRANSCRIPT_SEGMENT_PHASE:
+        return False
+    if not isinstance(segment["asset_id"], str) or not segment["asset_id"]:
+        return False
+    if segment["asset_id"] != asset_id:
+        return False
+    if (
+        isinstance(segment["source_audio_stream_index"], bool)
+        or segment["source_audio_stream_index"] is not None
+        and (
+            not isinstance(segment["source_audio_stream_index"], int)
+            or segment["source_audio_stream_index"] < 0
+        )
+    ):
+        return False
+    if isinstance(segment_index, bool) or not isinstance(segment_index, int) or segment_index < 0:
+        return False
+    if not isinstance(segment["text"], str):
+        return False
+    timing_fields = (
+        "stt_start_seconds",
+        "stt_end_seconds",
+        "source_start_seconds",
+        "source_end_seconds",
+    )
+    if any(not _is_finite_nonnegative_number(segment[field]) for field in timing_fields):
+        return False
+    if segment["stt_end_seconds"] < segment["stt_start_seconds"]:
+        return False
+    if segment["source_end_seconds"] < segment["source_start_seconds"]:
+        return False
+    if previous_stt_start is not None and segment["stt_start_seconds"] < previous_stt_start:
+        return False
+    if not _validate_source_timecode(segment["source_timecode"]):
+        return False
+    if segment["error"] is not None or not _validate_warnings(segment["warnings"]):
+        return False
+    return _validate_provenance(segment, segment["provenance"])
+
+
+def _is_finite_nonnegative_number(value: Any) -> bool:
+    return (
+        not isinstance(value, bool)
+        and isinstance(value, (int, float))
+        and math.isfinite(value)
+        and value >= 0
+    )
+
+
+def _validate_source_timecode(value: Any) -> bool:
+    required = {
+        "available",
+        "status",
+        "reason",
+        "source_fps",
+        "source_start_timecode",
+        "source_end_timecode",
+    }
+    if not isinstance(value, dict) or set(value) != required:
+        return False
+    return (
+        value["available"] is False
+        and value["status"] in {"unavailable", "absent", "unsupported"}
+        and isinstance(value["reason"], str)
+        and bool(value["reason"])
+        and value["source_fps"] is None
+        and value["source_start_timecode"] is None
+        and value["source_end_timecode"] is None
+    )
+
+
+def _validate_warnings(value: Any) -> bool:
+    return isinstance(value, list) and all(isinstance(warning, str) for warning in value)
+
+
+def _validate_provenance(segment: dict[str, Any], value: Any) -> bool:
+    required = {
+        "asset_id",
+        "source_audio_stream_index",
+        "segment_index",
+        "stt_relative_interval",
+        "source_relative_interval",
+        "source_timecode_interval",
+        "extraction_anchor_seconds",
+        "audio_duration_seconds",
+        "source_reference_sanitized",
+        "internal_source_reference",
+    }
+    if not isinstance(value, dict) or set(value) != required:
+        return False
+    if (
+        value["asset_id"] != segment["asset_id"]
+        or value["source_audio_stream_index"] != segment["source_audio_stream_index"]
+        or value["segment_index"] != segment["segment_index"]
+        or value["source_timecode_interval"] is not None
+        or not _validate_interval(
+            value["stt_relative_interval"],
+            segment["stt_start_seconds"],
+            segment["stt_end_seconds"],
+        )
+        or not _validate_interval(
+            value["source_relative_interval"],
+            segment["source_start_seconds"],
+            segment["source_end_seconds"],
+        )
+        or not _is_finite_nonnegative_number(value["extraction_anchor_seconds"])
+    ):
+        return False
+    duration = value["audio_duration_seconds"]
+    if duration is not None and not _is_finite_nonnegative_number(duration):
+        return False
+    return all(
+        reference is None or isinstance(reference, str)
+        for reference in (
+            value["source_reference_sanitized"],
+            value["internal_source_reference"],
+        )
+    )
+
+
+def _validate_interval(value: Any, start: float, end: float) -> bool:
+    return (
+        isinstance(value, dict)
+        and set(value) == {"start_seconds", "end_seconds"}
+        and _is_finite_nonnegative_number(value["start_seconds"])
+        and _is_finite_nonnegative_number(value["end_seconds"])
+        and value["start_seconds"] == start
+        and value["end_seconds"] == end
+        and value["end_seconds"] >= value["start_seconds"]
+    )
 
 
 def _sanitize_metadata(value: dict[str, Any]) -> dict[str, Any]:

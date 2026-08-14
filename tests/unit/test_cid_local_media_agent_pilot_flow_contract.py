@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from copy import deepcopy
 import os
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from scripts.local_media_agent.pilot_flow import (
     PilotFlowDependencies,
     PilotFlowRequest,
     STATUS_COMPLETED_FLOW,
+    STATUS_OUTPUT_INTEGRITY_FAILED,
     STATUS_PREFLIGHT_FAILED,
     STATUS_TRANSCRIPTION_FAILED,
     run_pilot_flow,
@@ -193,6 +195,266 @@ def test_transcription_failure_does_not_build_provenance(tmp_path: Path) -> None
     assert result["failed_stage"] == "transcription"
     assert calls == ["scan", "probe", "audio", "transcribe"]
     assert "transcript_segments" not in result
+
+
+def test_empty_provenance_output_cannot_complete_flow(tmp_path: Path) -> None:
+    calls: list[str] = []
+    base = _dependencies(calls)
+    deps = PilotFlowDependencies(
+        scanner=base.scanner,
+        prober=base.prober,
+        audio_extractor=base.audio_extractor,
+        transcriber=base.transcriber,
+        provenance_builder=lambda payload, **kwargs: [],
+        backend_factory=base.backend_factory,
+        tool_checker=base.tool_checker,
+    )
+
+    result = run_pilot_flow(_request(tmp_path), dependencies=deps)
+
+    assert result["status"] == STATUS_OUTPUT_INTEGRITY_FAILED
+    assert result["failed_stage"] == "output_preflight"
+    assert result["error"]["error_code"] == "TRANSCRIPT_SEGMENTS_EMPTY"
+    assert "transcript_segments" not in result
+
+
+def test_unexpected_orchestration_failures_are_sanitized(tmp_path: Path) -> None:
+    calls: list[str] = []
+    base = _dependencies(calls)
+
+    def failing_scanner(root):
+        raise RuntimeError(
+            "Traceback (most recent call last): /private/repository/root "
+            "/private/source/media.mov"
+        )
+
+    deps = PilotFlowDependencies(
+        scanner=failing_scanner,
+        prober=base.prober,
+        audio_extractor=base.audio_extractor,
+        transcriber=base.transcriber,
+        provenance_builder=base.provenance_builder,
+        backend_factory=base.backend_factory,
+        tool_checker=base.tool_checker,
+    )
+
+    result = run_pilot_flow(_request(tmp_path), dependencies=deps)
+
+    assert result["status"] == "PILOT_FLOW_SCAN_FAILED"
+    assert result["error"] == {
+        "error_code": "SCAN_ORCHESTRATION_FAILED",
+        "message_sanitized": "SCAN_ORCHESTRATION_FAILED",
+    }
+    assert "Traceback (most recent call last):" not in str(result)
+    assert "/private/repository/root" not in str(result)
+    assert "/private/source/media.mov" not in str(result)
+
+
+def test_noncanonical_provenance_output_cannot_complete_flow(tmp_path: Path) -> None:
+    calls: list[str] = []
+    base = _dependencies(calls)
+
+    class MalformedSegment:
+        def to_dict(self):
+            return {
+                "phase": "unexpected",
+                "asset_id": "asset-001",
+                "segment_index": 0,
+                "text": "unrepaired text",
+            }
+
+    deps = PilotFlowDependencies(
+        scanner=base.scanner,
+        prober=base.prober,
+        audio_extractor=base.audio_extractor,
+        transcriber=base.transcriber,
+        provenance_builder=lambda payload, **kwargs: [MalformedSegment()],
+        backend_factory=base.backend_factory,
+        tool_checker=base.tool_checker,
+    )
+
+    result = run_pilot_flow(_request(tmp_path), dependencies=deps)
+
+    assert result["status"] == STATUS_OUTPUT_INTEGRITY_FAILED
+    assert result["failed_stage"] == "output_preflight"
+    assert result["error"]["error_code"] == "TRANSCRIPT_SEGMENTS_NOT_CANONICAL"
+    assert "transcript_segments" not in result
+    assert result["status"] != STATUS_COMPLETED_FLOW
+
+
+def test_full_keyset_with_invalid_canonical_values_cannot_complete_flow(
+    tmp_path: Path,
+) -> None:
+    base = _dependencies([])
+    canonical_segment = base.provenance_builder(
+        {
+            "status": "TRANSCRIPTION_COMPLETED",
+            "asset_id": "asset-001",
+            "source_audio_stream_index": 0,
+            "audio_duration_seconds": 12.0,
+            "segments": [
+                {
+                    "segment_index": 0,
+                    "start_seconds": 1.0,
+                    "end_seconds": 2.5,
+                    "source_start_seconds": 1.0,
+                    "source_end_seconds": 2.5,
+                    "text": "Original bilingual interview text",
+                }
+            ],
+        },
+        audio_extraction_payload={
+            "audio": {"extracted_audio_start_seconds": 0.0},
+        },
+        media_probe_payload={
+            "timecode": {
+                "TIMECODE_PRESENT": False,
+                "embedded_timecode_status": "absent",
+            },
+        },
+    )[0].to_dict()
+
+    invalid_cases = {
+        "asset_id": lambda value: value.update(asset_id="other-asset"),
+        "segment_identity": lambda value: value.update(segment_index="0"),
+        "negative_segment_identity": lambda value: value.update(segment_index=-1),
+        "text": lambda value: value.update(text=123),
+        "timing_type": lambda value: value.update(source_start_seconds="1.0"),
+        "timing_order": lambda value: value.update(source_end_seconds=0.5),
+        "timecode": lambda value: value["source_timecode"].update(status="invalid"),
+        "provenance": lambda value: value["provenance"].update(asset_id="other-asset"),
+    }
+
+    for case_name, mutate in invalid_cases.items():
+        segment = deepcopy(canonical_segment)
+        mutate(segment)
+
+        class InvalidSegment:
+            def to_dict(self):
+                return segment
+
+        deps = PilotFlowDependencies(
+            scanner=base.scanner,
+            prober=base.prober,
+            audio_extractor=base.audio_extractor,
+            transcriber=base.transcriber,
+            provenance_builder=lambda payload, **kwargs: [InvalidSegment()],
+            backend_factory=base.backend_factory,
+            tool_checker=base.tool_checker,
+        )
+        case_dir = tmp_path / case_name
+        case_dir.mkdir()
+        result = run_pilot_flow(
+            _request(case_dir),
+            dependencies=deps,
+        )
+
+        assert result["status"] == STATUS_OUTPUT_INTEGRITY_FAILED
+        assert result["failed_stage"] == "output_preflight"
+        assert result["error"]["error_code"] == "TRANSCRIPT_SEGMENTS_NOT_CANONICAL"
+        assert "transcript_segments" not in result
+
+
+def test_nonmonotonic_segment_indices_preserve_canonical_order(tmp_path: Path) -> None:
+    base = _dependencies([])
+    canonical_segments = base.provenance_builder(
+        {
+            "status": "TRANSCRIPTION_COMPLETED",
+            "asset_id": "asset-001",
+            "source_audio_stream_index": 0,
+            "audio_duration_seconds": 12.0,
+            "segments": [
+                {
+                    "segment_index": 7,
+                    "start_seconds": 1.0,
+                    "end_seconds": 1.5,
+                    "source_start_seconds": 1.0,
+                    "source_end_seconds": 1.5,
+                    "text": "First canonical segment",
+                },
+                {
+                    "segment_index": 2,
+                    "start_seconds": 2.0,
+                    "end_seconds": 2.5,
+                    "source_start_seconds": 2.0,
+                    "source_end_seconds": 2.5,
+                    "text": "Second canonical segment",
+                },
+            ],
+        },
+        audio_extraction_payload={"audio": {"extracted_audio_start_seconds": 0.0}},
+        media_probe_payload={
+            "timecode": {"TIMECODE_PRESENT": False, "embedded_timecode_status": "absent"}
+        },
+    )
+    deps = PilotFlowDependencies(
+        scanner=base.scanner,
+        prober=base.prober,
+        audio_extractor=base.audio_extractor,
+        transcriber=base.transcriber,
+        provenance_builder=lambda payload, **kwargs: canonical_segments,
+        backend_factory=base.backend_factory,
+        tool_checker=base.tool_checker,
+    )
+
+    result = run_pilot_flow(_request(tmp_path), dependencies=deps)
+
+    assert result["status"] == STATUS_COMPLETED_FLOW
+    assert [item["segment_index"] for item in result["transcript_segments"]] == [7, 2]
+    assert [item["source_start_seconds"] for item in result["transcript_segments"]] == [1.0, 2.0]
+
+
+def test_nonmonotonic_source_starts_preserve_canonical_values(tmp_path: Path) -> None:
+    base = _dependencies([])
+    canonical_segments = base.provenance_builder(
+        {
+            "status": "TRANSCRIPTION_COMPLETED",
+            "asset_id": "asset-001",
+            "source_audio_stream_index": 0,
+            "audio_duration_seconds": 12.0,
+            "segments": [
+                {
+                    "segment_index": 0,
+                    "start_seconds": 1.0,
+                    "end_seconds": 1.5,
+                    "source_start_seconds": 10.0,
+                    "source_end_seconds": 11.0,
+                    "text": "First canonical segment",
+                },
+                {
+                    "segment_index": 1,
+                    "start_seconds": 2.0,
+                    "end_seconds": 2.5,
+                    "source_start_seconds": 5.0,
+                    "source_end_seconds": 6.0,
+                    "text": "Second canonical segment",
+                },
+            ],
+        },
+        audio_extraction_payload={"audio": {"extracted_audio_start_seconds": 0.0}},
+        media_probe_payload={
+            "timecode": {"TIMECODE_PRESENT": False, "embedded_timecode_status": "absent"}
+        },
+    )
+    deps = PilotFlowDependencies(
+        scanner=base.scanner,
+        prober=base.prober,
+        audio_extractor=base.audio_extractor,
+        transcriber=base.transcriber,
+        provenance_builder=lambda payload, **kwargs: canonical_segments,
+        backend_factory=base.backend_factory,
+        tool_checker=base.tool_checker,
+    )
+
+    result = run_pilot_flow(_request(tmp_path), dependencies=deps)
+
+    assert result["status"] == STATUS_COMPLETED_FLOW
+    assert [item["source_start_seconds"] for item in result["transcript_segments"]] == [10.0, 5.0]
+    assert [item["source_end_seconds"] for item in result["transcript_segments"]] == [11.0, 6.0]
+    assert [item["text"] for item in result["transcript_segments"]] == [
+        "First canonical segment",
+        "Second canonical segment",
+    ]
 
 
 def test_selected_media_must_be_explicitly_inside_root(tmp_path: Path) -> None:

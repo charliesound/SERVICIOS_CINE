@@ -1,13 +1,16 @@
 """CID Local Media Agent — Windows Operator Experience.
 
-Launches the read-only folder scanner and presents a human-readable
-summary. No backend, no database, no network, no media-byte reads.
+Launches the read-only folder scanner, extracts metadata via ffprobe,
+and presents a human-readable summary. No backend, no database, no network.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import sys
+import tempfile
+import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +19,10 @@ if str(REPO_ROOT) not in sys.path:
 
 from scripts.local_media_agent.read_only_folder_scanner import (
     scan_read_only_folder,
+)
+from scripts.local_media_agent.ffprobe_metadata_extraction import (
+    extract_metadata,
+    resolve_ffprobe_path,
 )
 
 
@@ -26,6 +33,8 @@ HEADER = r"""
 """
 
 SEPARATOR = "  ------------------------------------------------------"
+
+PREVIEW_COUNT = 8
 
 
 def _category_counts(ext_summary: dict[str, int]) -> dict[str, int]:
@@ -39,7 +48,7 @@ def _category_counts(ext_summary: dict[str, int]) -> dict[str, int]:
     return {"video": video, "audio": audio, "images": images, "other": other}
 
 
-def _display_result(folder: str, result: dict) -> None:
+def _display_scan_result(folder: str, result: dict) -> None:
     status = result.get("status", "UNKNOWN")
     summary = result.get("scanner_summary", {})
     ext_summary = result.get("extension_summary", {})
@@ -73,6 +82,187 @@ def _display_result(folder: str, result: dict) -> None:
         print("  Warnings:")
         for w in warnings[:5]:
             print(f"    - {w}")
+
+
+def _display_metadata_result(meta: dict) -> None:
+    attempted = meta.get("media_attempted", 0)
+    success = meta.get("metadata_success_count", 0)
+    errors_count = meta.get("metadata_error_count", 0)
+    elapsed = meta.get("elapsed_seconds", 0)
+    tool = meta.get("ffprobe_path", "?")
+
+    print()
+    print(SEPARATOR)
+    print(f"  Metadata extraction")
+    print(SEPARATOR)
+    print(f"  ffprobe:              {tool}")
+    print(f"  Media attempted:      {attempted}")
+    print(f"  Metadata extracted:   {success}")
+    print(f"  Metadata errors:      {errors_count}")
+    print(f"  Elapsed:              {elapsed:.1f}s")
+    print(SEPARATOR)
+
+    results = meta.get("results", [])
+    if not results:
+        return
+
+    cats = {"video": 0, "audio": 0, "image": 0}
+    for r in results:
+        cat = r.get("category", "")
+        if cat in cats:
+            cats[cat] += 1
+
+    print(f"  Videos probed:        {cats['video']}")
+    print(f"  Audio probed:         {cats['audio']}")
+    print(f"  Images probed:        {cats['image']}")
+    print(SEPARATOR)
+
+    _show_codecs_summary(results)
+    _show_resolutions_summary(results)
+    _show_sample_rates_summary(results)
+    _show_timecodes_summary(results)
+    _show_creation_times_summary(results)
+
+    print()
+    print(f"  Preview (first {PREVIEW_COUNT} items):")
+    print(SEPARATOR)
+    for item in results[:PREVIEW_COUNT]:
+        _display_preview_item(item)
+    if len(results) > PREVIEW_COUNT:
+        print(f"  ... and {len(results) - PREVIEW_COUNT} more")
+    print(SEPARATOR)
+
+
+def _show_codecs_summary(results: list[dict]) -> None:
+    v_codecs = set()
+    a_codecs = set()
+    for r in results:
+        v = r.get("video", {})
+        a = r.get("audio", {})
+        if v.get("codec"):
+            v_codecs.add(v["codec"])
+        if a.get("codec"):
+            a_codecs.add(a["codec"])
+    if v_codecs:
+        print(f"  Video codecs:         {', '.join(sorted(v_codecs))}")
+    if a_codecs:
+        print(f"  Audio codecs:         {', '.join(sorted(a_codecs))}")
+
+
+def _show_resolutions_summary(results: list[dict]) -> None:
+    res = set()
+    for r in results:
+        v = r.get("video", {})
+        w, h = v.get("width"), v.get("height")
+        if w and h:
+            res.add(f"{w}x{h}")
+    if res:
+        print(f"  Resolutions:          {', '.join(sorted(res))}")
+
+
+def _show_sample_rates_summary(results: list[dict]) -> None:
+    rates = set()
+    for r in results:
+        a = r.get("audio", {})
+        sr = a.get("sample_rate")
+        if sr:
+            rates.add(str(sr))
+    if rates:
+        print(f"  Sample rates:         {', '.join(sorted(rates))} Hz")
+
+
+def _show_timecodes_summary(results: list[dict]) -> None:
+    tcs = [r.get("timecode") for r in results if r.get("timecode")]
+    if tcs:
+        print(f"  Timecodes found:      {len(tcs)}")
+
+
+def _show_creation_times_summary(results: list[dict]) -> None:
+    cts = [r.get("creation_time") for r in results if r.get("creation_time")]
+    if cts:
+        print(f"  Creation times found: {len(cts)}")
+
+
+def _display_preview_item(item: dict) -> None:
+    name = Path(item.get("relative_path", "?")).name
+    cat = item.get("category", "?")
+    dur = item.get("duration_seconds")
+    dur_str = _format_duration(dur) if dur else None
+
+    print()
+    print(f"    {name}")
+    print(f"    {cat.capitalize()}")
+
+    v = item.get("video")
+    if v:
+        w, h = v.get("width"), v.get("height")
+        if w and h:
+            print(f"    {w} x {h}")
+        fr = v.get("frame_rate", {})
+        disp = fr.get("display") if isinstance(fr, dict) else None
+        if disp:
+            print(f"    {disp} fps")
+        codec = v.get("codec")
+        if codec:
+            print(f"    {codec}")
+
+    a = item.get("audio")
+    if a:
+        parts = []
+        sr = a.get("sample_rate")
+        ch = a.get("channel_count")
+        if sr:
+            parts.append(f"{sr} Hz")
+        if ch:
+            parts.append(f"{ch} ch")
+        if parts:
+            print(f"    Audio: {' / '.join(parts)}")
+        codec = a.get("codec")
+        if codec and not v:
+            print(f"    {codec}")
+
+    if v is None and a is None:
+        w = item.get("width")
+        h = item.get("height")
+        if w and h:
+            print(f"    {w} x {h}")
+
+    if dur_str:
+        print(f"    Duration: {dur_str}")
+
+    tc = item.get("timecode")
+    if tc:
+        print(f"    Timecode: {tc}")
+
+    ct = item.get("creation_time")
+    if ct:
+        print(f"    Created:  {ct}")
+
+
+def _format_duration(seconds: float) -> str | None:
+    if seconds is None or seconds <= 0:
+        return None
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = int(seconds % 60)
+    if h > 0:
+        return f"{h:02d}:{m:02d}:{s:02d}"
+    return f"{m:02d}:{s:02d}"
+
+
+def _write_json_result(meta: dict, folder: str) -> str | None:
+    try:
+        tmp = Path(tempfile.gettempdir()) / "cid_lma_metadata"
+        tmp.mkdir(parents=True, exist_ok=True)
+        out = tmp / "metadata_result.json"
+        payload = {
+            "input_root": folder,
+            "metadata": meta,
+        }
+        out.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        return str(out)
+    except Exception:
+        return None
 
 
 def _try_folder_dialog() -> str | None:
@@ -114,7 +304,16 @@ def _run(folder: str) -> int:
 
     result = scan_read_only_folder(folder)
     print()
-    _display_result(folder, result)
+    _display_scan_result(folder, result)
+
+    meta = extract_metadata(folder, result)
+    _display_metadata_result(meta)
+
+    json_path = _write_json_result(meta, folder)
+    if json_path:
+        print()
+        print(f"  JSON result: {json_path}")
+
     print()
     return 0
 

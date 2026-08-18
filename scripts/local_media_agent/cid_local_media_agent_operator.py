@@ -1,7 +1,8 @@
 """CID Local Media Agent — Windows Operator Experience.
 
 Launches the read-only folder scanner, extracts metadata via ffprobe,
-and presents a human-readable summary. No backend, no database, no network.
+and presents a human-readable summary. Supports optional local transcription.
+No backend, no database, no network.
 """
 
 from __future__ import annotations
@@ -28,7 +29,8 @@ from scripts.local_media_agent.ffprobe_metadata_extraction import (
 
 HEADER = r"""
   ======================================================
-   CID  Local Media Agent  V0.1
+   CID  Local Media Agent  V0.2
+   Scan + Metadata + Local Transcription
   ======================================================
 """
 
@@ -250,7 +252,7 @@ def _format_duration(seconds: float) -> str | None:
     return f"{m:02d}:{s:02d}"
 
 
-def _write_json_result(meta: dict, folder: str) -> str | None:
+def _write_json_result(meta: dict, folder: str, transcription: dict | None = None) -> str | None:
     try:
         tmp = Path(tempfile.gettempdir()) / "cid_lma_metadata"
         tmp.mkdir(parents=True, exist_ok=True)
@@ -259,6 +261,8 @@ def _write_json_result(meta: dict, folder: str) -> str | None:
             "input_root": folder,
             "metadata": meta,
         }
+        if transcription:
+            payload["transcription"] = transcription
         out.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return str(out)
     except Exception:
@@ -295,7 +299,7 @@ def _prompt_folder() -> str:
     return raw
 
 
-def _run(folder: str) -> int:
+def _run(folder: str, *, do_transcribe: bool = False, model_dir: str | None = None) -> int:
     if not os.path.isdir(folder):
         print()
         print(f"  ERROR: Folder not found: {folder}")
@@ -309,7 +313,16 @@ def _run(folder: str) -> int:
     meta = extract_metadata(folder, result)
     _display_metadata_result(meta)
 
-    json_path = _write_json_result(meta, folder)
+    transcription_results = None
+    if do_transcribe:
+        if not model_dir or not Path(model_dir).is_dir():
+            print()
+            print(f"  ERROR: Transcription model directory not found: {model_dir}")
+            print()
+        else:
+            transcription_results = _run_transcription(meta, model_dir, Path(folder))
+
+    json_path = _write_json_result(meta, folder, transcription_results)
     if json_path:
         print()
         print(f"  JSON result: {json_path}")
@@ -318,17 +331,98 @@ def _run(folder: str) -> int:
     return 0
 
 
+def _run_transcription(meta: dict, model_dir: str, source_folder: Path) -> dict:
+    from scripts.local_media_agent.local_transcription import (
+        select_transcription_samples,
+        transcribe_media_file,
+    )
+
+    results = meta.get("results", [])
+
+    samples = select_transcription_samples(results, max_video=1, max_audio=2)
+    if not samples:
+        print()
+        print("  No audio/video samples found for transcription.")
+        return {"samples_attempted": 0, "samples": []}
+
+    print()
+    print(SEPARATOR)
+    print(f"  Transcription")
+    print(SEPARATOR)
+    print(f"  Model:               {model_dir}")
+    print(f"  Samples selected:    {len(samples)}")
+    print(SEPARATOR)
+
+    transcription_samples = []
+    start = time.monotonic()
+
+    for item in samples:
+        rel = item.get("relative_path", "")
+        abs_path = source_folder / rel
+        cat = item.get("category", "?")
+        dur = item.get("duration_seconds")
+        dur_str = f"{dur:.1f}s" if dur else "?"
+
+        print(f"  Transcribing: {rel} ({cat}, {dur_str})")
+
+        result = transcribe_media_file(
+            abs_path,
+            model_dir,
+            asset_id=Path(rel).stem,
+            device="cpu",
+            compute_type="float32",
+        )
+        status = result.get("status", "?")
+        lang = result.get("detected_language", "?")
+        segs = len(result.get("segments", []))
+        print(f"    Status: {status} | Language: {lang} | Segments: {segs}")
+        transcription_samples.append(result)
+
+    elapsed = time.monotonic() - start
+    success = sum(1 for s in transcription_samples if s.get("status") == "TRANSCRIPTION_COMPLETED")
+    print(SEPARATOR)
+    print(f"  Transcription completed: {success}/{len(transcription_samples)}")
+    print(f"  Elapsed: {elapsed:.1f}s")
+    print(SEPARATOR)
+
+    return {
+        "samples_attempted": len(transcription_samples),
+        "samples_success": success,
+        "elapsed_seconds": round(elapsed, 2),
+        "model_directory": model_dir,
+        "device": "cpu",
+        "compute_type": "float32",
+        "samples": transcription_samples,
+    }
+
+
 def main() -> int:
     os.system("cls" if os.name == "nt" else "clear")
     print(HEADER)
 
-    interactive = len(sys.argv) <= 1
+    args = sys.argv[1:]
+    do_transcribe = False
+    model_dir = None
+
+    if "--transcribe" in args:
+        do_transcribe = True
+        args.remove("--transcribe")
+        # Next arg after --transcribe is the model directory
+        if args and not args[0].startswith("-"):
+            model_dir = args.pop(0)
+
+    interactive = len(args) <= 1
     if interactive:
         folder = _prompt_folder()
     else:
-        folder = " ".join(sys.argv[1:])
+        folder = " ".join(args)
 
-    exit_code = _run(folder)
+    if do_transcribe and not model_dir:
+        print("  Transcription model directory required with --transcribe.")
+        print("  Usage: python cid_local_media_agent_operator.py --transcribe <model_dir> <folder>")
+        return 1
+
+    exit_code = _run(folder, do_transcribe=do_transcribe, model_dir=model_dir)
 
     if interactive:
         print("  Press Enter to exit...")

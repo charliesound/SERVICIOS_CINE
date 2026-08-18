@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -18,7 +17,6 @@ from typing import Any
 SCHEMA_VERSION = "cid.local_media_agent.ffprobe_metadata_extraction.v1"
 
 FFPROBE_ENV_VAR = "CID_FFPROBE_PATH"
-FFPROBE_DEFAULT = "ffprobe"
 FFPROBE_TIMEOUT_SECONDS = 30
 
 VIDEO_EXTENSIONS = frozenset({".mp4", ".mov", ".mxf", ".mkv", ".avi", ".mts", ".m2ts", ".webm"})
@@ -32,8 +30,10 @@ def resolve_ffprobe_path(explicit: str | None = None) -> str:
     configured = os.environ.get(FFPROBE_ENV_VAR)
     if configured:
         return configured
-    found = shutil.which("ffprobe")
-    return found or FFPROBE_DEFAULT
+    raise RuntimeError(
+        "No approved ffprobe binary found. "
+        f"Set the {FFPROBE_ENV_VAR} environment variable to the approved BtbN ffprobe path."
+    )
 
 
 def extract_metadata(
@@ -92,6 +92,8 @@ def _collect_media_files(
 
     for path in sorted(root.rglob("*")):
         if not path.is_file():
+            continue
+        if path.name.startswith("._"):
             continue
         ext = path.suffix.lower()
         if ext not in media_exts:

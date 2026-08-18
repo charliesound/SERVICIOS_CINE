@@ -1,13 +1,18 @@
 @echo off
-title CID Local Media Agent V0.1
+title CID Local Media Agent V0.2
 cls
 
 echo.
 echo  ======================================================
-echo   CID  Local Media Agent  V0.1
+echo   CID  Local Media Agent  V0.2
+echo   Scan + Metadata + Local Transcription
 echo  ======================================================
 echo.
 echo  Starting...
+echo.
+echo  Usage:
+echo    Double-click: Scan + Metadata only
+echo    CLI: python cid_local_media_agent_operator.py --transcribe MODEL_DIR FOLDER
 echo.
 
 cd /d C:\Users\Carlos\AppData\Local\Temp

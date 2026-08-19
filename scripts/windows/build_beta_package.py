@@ -25,7 +25,7 @@ import sysconfig
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "0.2.0-beta1"
+VERSION = "0.2.0-beta2"
 PACKAGE_NAME = f"CID-Local-Media-Agent-{VERSION}"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -124,13 +124,25 @@ def _copy_python_core(target_python: Path) -> None:
             "_ctypes_test.pyd", "_msi.pyd", "_testbuffer.pyd",
             "_testcapi.pyd", "_testclinic.pyd", "_testconsole.pyd",
             "_testimportmultiple.pyd", "_testinternalcapi.pyd",
-            "_testmultiphase.pyd", "_tkinter.pyd", "_wmi.pyd",
-            "tcl86t.dll", "tk86t.dll", "winsound.pyd",
+            "_testmultiphase.pyd", "_wmi.pyd", "winsound.pyd",
         }
         for entry in dlls_src.iterdir():
             if entry.is_file() and entry.name not in excluded:
                 shutil.copy2(entry, dlls_dest / entry.name)
         print(f"  DLLs/ ({len(list(dlls_dest.iterdir()))} files)")
+
+    # Tcl/Tk runtime assets for the tkinter producer GUI (offline, from the
+    # validated local Python installation).
+    tcl_src = PYTHON_DIR / "tcl"
+    if tcl_src.is_dir():
+        tcl_dest = target_python / "tcl"
+        shutil.copytree(
+            tcl_src,
+            tcl_dest,
+            dirs_exist_ok=True,
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "nmake", "*.lib"),
+        )
+        print(f"  tcl/ (Tcl/Tk runtime)")
 
 
 def _copy_site_packages(target_site_packages: Path) -> None:
@@ -195,7 +207,6 @@ def _copy_stdlib(target_lib: Path) -> None:
         "turtledemo",
         "ensurepip",
         "lib2to3",
-        "tkinter",
         "msilib",
         "curses",
     }
@@ -286,8 +297,8 @@ def _create_python_pth(target_python: Path, target_lib: Path, target_site_packag
 
 
 def _create_launcher(package_dir: Path) -> None:
-    """Create the CID Local Media Agent launcher CMD."""
-    launcher = package_dir / "CID Local Media Agent.cmd"
+    """Create the CLI support launcher CMD (for support/development only)."""
+    launcher = package_dir / "CID Local Media Agent (CLI).cmd"
     launcher_content = f"""@echo off
 title CID Local Media Agent {VERSION}
 echo.
@@ -332,7 +343,36 @@ if errorlevel 1 (
 )
 """
     launcher.write_text(launcher_content, encoding="utf-8")
-    print(f"  CID Local Media Agent.cmd")
+    print(f"  CID Local Media Agent (CLI).cmd")
+
+
+def _create_gui_launcher(package_dir: Path) -> None:
+    """Create the producer GUI launcher (no console, pythonw hidden).
+
+    Uses only standard Windows mechanisms (WSH/VBScript) and packaged
+    assets. The VBS derives its install location at runtime, so the same
+    file works from the package dir and from the install target.
+    """
+    launcher = package_dir / "CID Local Media Agent.vbs"
+    content = (
+        "Set shell = CreateObject(\"WScript.Shell\")\n"
+        "Set fso = CreateObject(\"Scripting.FileSystemObject\")\n"
+        "base = fso.GetParentFolderName(WScript.ScriptFullName)\n"
+        "appDir = base & \"\\app\"\n"
+        "pythonw = appDir & \"\\runtime\\python\\pythonw.exe\"\n"
+        "If Not fso.FileExists(pythonw) Then\n"
+        "    MsgBox \"CID Local Media Agent: runtime no encontrado.\", vbCritical, \"CID Local Media Agent\"\n"
+        "    WScript.Quit 1\n"
+        "End If\n"
+        "shell.CurrentDirectory = appDir\n"
+        "shell.Environment(\"PROCESS\")(\"PYTHONNOUSERSITE\") = \"1\"\n"
+        "shell.Environment(\"PROCESS\")(\"PYTHONPATH\") = appDir\n"
+        "shell.Environment(\"PROCESS\")(\"CID_FFMPEG_PATH\") = appDir & \"\\runtime\\ffmpeg\\bin\\ffmpeg.exe\"\n"
+        "shell.Environment(\"PROCESS\")(\"CID_FFPROBE_PATH\") = appDir & \"\\runtime\\ffmpeg\\bin\\ffprobe.exe\"\n"
+        "shell.Run \"\"\"\" & pythonw & \"\"\" -m scripts.local_media_agent.cid_gui\", 0, False\n"
+    )
+    launcher.write_text(content, encoding="utf-8")
+    print(f"  CID Local Media Agent.vbs")
 
 
 def _create_install_cmd(package_dir: Path) -> None:
@@ -380,26 +420,27 @@ if exist "%INSTALL_TARGET%\\models" rmdir /s /q "%INSTALL_TARGET%\\models"
 xcopy /s /e /q /y "%PACKAGE_DIR%\\models\\*" "%INSTALL_TARGET%\\models\\" >nul
 
 echo.
-echo   [6/6] Creating launcher...
-echo @echo off > "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo title CID Local Media Agent {VERSION} >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo. >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo set CID_PACKAGE_DIR=%INSTALL_TARGET% >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo set PYTHON=%INSTALL_TARGET%\\runtime\\python\\python.exe >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo set APP_DIR=%INSTALL_TARGET%\\app >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo set PYTHONNOUSERSITE=1 >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo set PYTHONPATH=%INSTALL_TARGET%\\app >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo set CID_FFMPEG_PATH=%INSTALL_TARGET%\\runtime\\ffmpeg\\bin\\ffmpeg.exe >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo set CID_FFPROBE_PATH=%INSTALL_TARGET%\\runtime\\ffmpeg\\bin\\ffprobe.exe >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo. >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo "%INSTALL_TARGET%\\runtime\\python\\python.exe" -m scripts.local_media_agent.cid_local_media_agent_operator %%* >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
-echo if errorlevel 1 pause >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd"
+echo   [6/6] Creating launchers...
+echo @echo off > "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo title CID Local Media Agent {VERSION} (CLI) >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo. >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo set CID_PACKAGE_DIR=%INSTALL_TARGET% >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo set PYTHON=%INSTALL_TARGET%\\runtime\\python\\python.exe >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo set APP_DIR=%INSTALL_TARGET%\\app >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo set PYTHONNOUSERSITE=1 >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo set PYTHONPATH=%INSTALL_TARGET%\\app >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo set CID_FFMPEG_PATH=%INSTALL_TARGET%\\runtime\\ffmpeg\\bin\\ffmpeg.exe >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo set CID_FFPROBE_PATH=%INSTALL_TARGET%\\runtime\\ffmpeg\\bin\\ffprobe.exe >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo. >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo "%INSTALL_TARGET%\\runtime\\python\\python.exe" -m scripts.local_media_agent.cid_local_media_agent_operator %%* >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+echo if errorlevel 1 pause >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
+copy /y "%PACKAGE_DIR%\\CID Local Media Agent.vbs" "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.vbs" >nul
 
 echo.
 echo   ======================================================
 echo   Installation complete.
 echo.
-echo   Launch:  %LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd
+echo   Launch:  %LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.vbs
 echo   Target:  %INSTALL_TARGET%
 echo   Results: %LOCALAPPDATA%\\CID\\LocalMediaAgent\\results\\
 echo   ======================================================
@@ -420,7 +461,8 @@ echo   ======================================================
 echo.
 
 set INSTALL_TARGET=%LOCALAPPDATA%\\CID\\LocalMediaAgent\\app
-set LAUNCHER=%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.cmd
+set GUI_LAUNCHER=%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.vbs
+set CLI_LAUNCHER=%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd
 
 echo   This will remove the installed CID Local Media Agent application.
 echo   User results in %%LOCALAPPDATA%%\\CID\\LocalMediaAgent\\results\\
@@ -438,8 +480,9 @@ echo.
 echo   [1/3] Removing application and runtime...
 if exist "%INSTALL_TARGET%" rmdir /s /q "%INSTALL_TARGET%"
 
-echo   [2/3] Removing launcher...
-if exist "%LAUNCHER%" del /f "%LAUNCHER%"
+echo   [2/3] Removing launchers...
+if exist "%GUI_LAUNCHER%" del /f "%GUI_LAUNCHER%"
+if exist "%CLI_LAUNCHER%" del /f "%CLI_LAUNCHER%"
 
 echo   [3/3] Removing empty directories...
 if exist "%LOCALAPPDATA%\\CID\\LocalMediaAgent" (
@@ -502,7 +545,8 @@ def _create_package_manifest(
             "app/scripts": "CID Local Media Agent source scripts",
             "install.cmd": "Installer",
             "uninstall.cmd": "Uninstaller",
-            "CID Local Media Agent.cmd": "Launcher",
+            "CID Local Media Agent.vbs": "Producer GUI launcher (no console)",
+            "CID Local Media Agent (CLI).cmd": "CLI support launcher",
             "licenses/": "Third-party license files",
         },
         "package_bytes": package_size,
@@ -646,6 +690,7 @@ def main() -> int:
 
     print("[8/9] Launcher, install, uninstall...")
     _create_launcher(package_dir)
+    _create_gui_launcher(package_dir)
     _create_install_cmd(package_dir)
     _create_uninstall_cmd(package_dir)
     print()

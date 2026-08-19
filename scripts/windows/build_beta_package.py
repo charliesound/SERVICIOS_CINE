@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -72,6 +73,7 @@ REQUIRED_PACKAGES = [
     "urllib3",
     "mpmath",
     "networkx",
+    "yaml",
 ]
 
 BtbN_DLLS = [
@@ -130,30 +132,51 @@ def _copy_python_core(target_python: Path) -> None:
         print(f"  DLLs/ ({len(list(dlls_dest.iterdir()))} files)")
 
 
-def _install_packages(target_site_packages: Path) -> None:
-    """Install required packages into target using pip --target."""
+def _copy_site_packages(target_site_packages: Path) -> None:
+    """Copy the validated packages from the system Python site-packages.
+
+    The system Python hosts the accepted, validated runtime stack
+    (custom av 16.0.0 + BtbN FFmpeg, custom ctranslate2 4.8.1, etc.).
+    Copying those exact packages guarantees the packaged product matches
+    the validated runtime without pip resolution or version drift.
+    """
     target_site_packages.mkdir(parents=True, exist_ok=True)
-    cmd = [
-        PYTHON_EXE, "-m", "pip", "install",
-        "--target", str(target_site_packages),
-        "--no-deps",
-        "--quiet",
-    ] + REQUIRED_PACKAGES
-    print(f"  Installing {len(REQUIRED_PACKAGES)} packages...")
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        # Retry with deps for packages that need them
-        cmd_full = [
-            PYTHON_EXE, "-m", "pip", "install",
-            "--target", str(target_site_packages),
-            "--quiet",
-        ] + REQUIRED_PACKAGES
-        result = subprocess.run(cmd_full, capture_output=True, text=True)
-        if result.returncode != 0:
-            print(f"  WARNING: pip install had issues: {result.stderr[:500]}")
-    # Count installed
-    pkg_count = sum(1 for _ in target_site_packages.iterdir() if _.is_dir() or _.suffix == ".dist-info")
-    print(f"  Installed {pkg_count} packages")
+    src_sp = PYTHON_DIR / "Lib" / "site-packages"
+
+    def _norm(name: str) -> str:
+        return re.sub(r"[-_.]", "", name).lower()
+
+    required = {_norm(p) for p in REQUIRED_PACKAGES}
+    version_re = re.compile(r"-\d[\w.\-+]*$")
+
+    def _copy_entry(src: Path, dest: Path) -> None:
+        if src.is_dir():
+            shutil.copytree(
+                src,
+                dest,
+                dirs_exist_ok=True,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+        else:
+            shutil.copy2(src, dest)
+
+    copied = 0
+    for entry in src_sp.iterdir():
+        name = entry.name
+        if name.endswith(".dist-info"):
+            base = name[: -len(".dist-info")]
+            m = version_re.search(base)
+            pkg = base[: m.start()] if m else base
+            if _norm(pkg) in required:
+                _copy_entry(entry, target_site_packages / name)
+                copied += 1
+        else:
+            base = name[: -3] if name.endswith(".py") else name
+            n = _norm(base)
+            if n in required or (n.endswith("libs") and n[:-4] in required):
+                _copy_entry(entry, target_site_packages / name)
+                copied += 1
+    print(f"  Copied {copied} site-packages entries")
 
 
 def _copy_stdlib(target_lib: Path) -> None:
@@ -435,8 +458,17 @@ def _create_package_manifest(
     package_dir: Path,
     package_size: int,
     zip_size: int | None,
+    site_packages: Path,
 ) -> None:
     """Create package_manifest.json."""
+    def _pkg_version(pkg_name: str) -> str:
+        for entry in site_packages.iterdir():
+            if entry.is_dir() and entry.name.endswith(".dist-info"):
+                base = entry.name[: -len(".dist-info")]
+                if base.lower().startswith(pkg_name.lower() + "-"):
+                    return base[len(pkg_name) + 1:]
+        return "unknown"
+
     manifest = {
         "package_name": PACKAGE_NAME,
         "version": VERSION,
@@ -446,10 +478,11 @@ def _create_package_manifest(
         "target_arch": "win_amd64",
         "product_commit_sha": _get_git_commit(),
         "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-        "ctranslate2_version": "4.8.1",
-        "pyav_version": "16.0.0",
+        "ctranslate2_version": _pkg_version("ctranslate2"),
+        "pyav_version": _pkg_version("av"),
         "ffmpeg_identity": "BtbN n7.1.5-12-g1fdbca85aa win64-lgpl-shared-7.1",
-        "faster_whisper_version": "1.2.1",
+        "faster_whisper_version": _pkg_version("faster_whisper"),
+        "onnxruntime_version": _pkg_version("onnxruntime"),
         "model": {
             "name": "Systran/faster-whisper-small",
             "revision": "536b0662742c02347bc0e980a01041f333bce120",
@@ -583,8 +616,8 @@ def main() -> int:
     _copy_stdlib(target_lib)
     print()
 
-    print("[3/9] Required packages...")
-    _install_packages(target_sp)
+    print("[3/9] Validated site-packages...")
+    _copy_site_packages(target_sp)
     print()
 
     print("[4/9] Python path isolation...")
@@ -612,7 +645,7 @@ def main() -> int:
     print("[9/9] Licenses and manifest...")
     _create_licenses(package_dir)
     pkg_size = _dir_size(package_dir)
-    _create_package_manifest(package_dir, pkg_size, None)
+    _create_package_manifest(package_dir, pkg_size, None, target_sp)
     print()
 
     print(f"=" * 60)
@@ -632,7 +665,7 @@ def main() -> int:
     print(f"ZIP size: {zip_size / 1024 / 1024:.1f} MB")
 
     # Update manifest with ZIP size
-    _create_package_manifest(package_dir, pkg_size, zip_size)
+    _create_package_manifest(package_dir, pkg_size, zip_size, target_sp)
 
     print(f"\n{'=' * 60}")
     print(f"BUILD COMPLETE")

@@ -114,6 +114,66 @@ def generate_srt(segments: list[dict[str, Any]], duration_seconds: float | None 
     return "\n\n".join(cues) + ("\n" if cues else "")
 
 
+def generate_transcript_txt(segments: list[dict[str, Any]]) -> str:
+    """Generate a human-readable timestamped plain-text transcript."""
+    blocks: list[str] = []
+    for seg in segments:
+        start = float(seg.get("start_seconds", seg.get("source_start_seconds", 0)))
+        text = str(seg.get("text", "")).strip()
+        if not text:
+            continue
+        blocks.append(f"{_format_srt_timestamp(start)}\n{text}")
+    return "\n\n".join(blocks) + ("\n" if blocks else "")
+
+
+def generate_davinci_manifest(
+    asset_name: str,
+    source_rel_path: str,
+    source_duration: float | None,
+    detected_language: str | None,
+    language_probability: float | None,
+    model_identifier: str | None,
+    compute_type: str,
+    segments: list[dict[str, Any]],
+    source_timecode: str | None = None,
+) -> dict[str, Any]:
+    """Build a DaVinci handoff manifest dict."""
+    first_ts = None
+    last_ts = None
+    if segments:
+        first_ts = _format_srt_timestamp(
+            float(segments[0].get("start_seconds", segments[0].get("source_start_seconds", 0)))
+        )
+        last_ts = _format_srt_timestamp(
+            float(segments[-1].get("end_seconds", segments[-1].get("source_end_seconds", 0)))
+        )
+    return {
+        "format": "CID_DAVINCI_HANDOFF",
+        "version": 1,
+        "source": {
+            "relative_path": source_rel_path,
+            "duration_seconds": source_duration,
+            "media_type": "audio",
+            "source_timecode": source_timecode,
+        },
+        "transcription": {
+            "language": detected_language,
+            "language_probability": language_probability,
+            "compute_type": compute_type,
+            "model": model_identifier,
+            "segment_count": len(segments),
+            "first_segment_timestamp": first_ts,
+            "last_segment_timestamp": last_ts,
+        },
+        "assets": {
+            "srt": f"{asset_name}.srt",
+            "transcript_json": f"{asset_name}.transcript.json",
+            "transcript_txt": f"{asset_name}.transcript.txt",
+        },
+        "subtitle_timing": "source-relative",
+    }
+
+
 def validate_srt(srt_text: str, duration_seconds: float | None = None) -> dict[str, Any]:
     """Validate SRT text programmatically. Returns validation result dict."""
     warnings: list[str] = []
@@ -253,6 +313,8 @@ def run_batch_transcription(
     total_processing = 0.0
     all_languages: list[str] = []
     srt_files_created = 0
+    txt_files_created = 0
+    davinci_handoff_files_created = 0
 
     batch_start = time.monotonic()
 
@@ -321,12 +383,41 @@ def run_batch_transcription(
 
                 srt_validation = validate_srt(srt_text, source_dur)
                 file_result["srt_validation"] = srt_validation
+
+                txt_text = generate_transcript_txt(segments)
+                txt_path = resolved_results_dir / f"{asset_name}.transcript.txt"
+                txt_path.write_text(txt_text, encoding="utf-8")
+                file_result["transcript_txt_file"] = txt_path.name
+
+                manifest = generate_davinci_manifest(
+                    asset_name=asset_name,
+                    source_rel_path=rel,
+                    source_duration=source_dur,
+                    detected_language=detected_lang,
+                    language_probability=lang_prob,
+                    model_identifier=result.get("model_identifier"),
+                    compute_type=compute_type,
+                    segments=segments,
+                    source_timecode=candidate.get("timecode"),
+                )
+                manifest_path = resolved_results_dir / f"{asset_name}.davinci_handoff.json"
+                manifest_path.write_text(
+                    json.dumps(manifest, indent=2, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                file_result["davinci_handoff_file"] = manifest_path.name
+                txt_files_created += 1
+                davinci_handoff_files_created += 1
             elif status == "TRANSCRIPTION_COMPLETED":
                 files_no_speech += 1
                 file_result["srt_file"] = None
+                file_result["transcript_txt_file"] = None
+                file_result["davinci_handoff_file"] = None
             else:
                 files_error += 1
                 file_result["srt_file"] = None
+                file_result["transcript_txt_file"] = None
+                file_result["davinci_handoff_file"] = None
 
             json_path = resolved_results_dir / f"{asset_name}.transcript.json"
             json_path.write_text(
@@ -376,6 +467,8 @@ def run_batch_transcription(
         "files_errors": files_error,
         "primary_language": primary_language,
         "srt_files_created": srt_files_created,
+        "txt_files_created": txt_files_created,
+        "davinci_handoff_files_created": davinci_handoff_files_created,
         "total_source_duration_seconds": round(total_source_duration, 2),
         "total_processing_seconds": round(batch_elapsed, 2),
         "overall_rtf": round(batch_elapsed / total_source_duration, 4) if total_source_duration > 0 else None,

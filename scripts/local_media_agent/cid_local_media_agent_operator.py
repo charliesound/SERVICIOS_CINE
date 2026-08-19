@@ -397,7 +397,7 @@ def _run_transcription(meta: dict, model_dir: str, source_folder: Path) -> dict:
 
 
 def _run_batch_transcription(folder: str, model_dir: str, *, max_files: int | None = None, filter_pattern: str | None = None, compute_type: str = "int8", language_hint: str | None = None) -> int:
-    """Run the full batch transcription flow with SRT generation."""
+    """Run the full batch transcription flow with DaVinci handoff."""
     from scripts.local_media_agent.batch_transcription import run_batch_transcription
 
     if not os.path.isdir(folder):
@@ -412,7 +412,7 @@ def _run_batch_transcription(folder: str, model_dir: str, *, max_files: int | No
 
     print()
     print(SEPARATOR)
-    print(f"  Batch Transcription")
+    print(f"  Batch Transcription + DaVinci Handoff")
     print(SEPARATOR)
     print(f"  Folder:       {folder}")
     print(f"  Model:        {Path(model_dir).name}")
@@ -435,32 +435,42 @@ def _run_batch_transcription(folder: str, model_dir: str, *, max_files: int | No
         language_hint=language_hint,
     )
 
+    dur = batch.get("total_source_duration_seconds", 0)
+    proc = batch.get("total_processing_seconds", 0)
+    rtf = batch.get("overall_rtf")
+    lang = batch.get("primary_language")
+
+    hours = int(dur // 3600)
+    minutes = int((dur % 3600) // 60)
+    seconds = int(dur % 60)
+    dur_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}" if dur else "?"
+
     print()
     print(SEPARATOR)
     print(f"  CID Local Media Agent V0.2")
     print()
-    print(f"  Batch transcription completed")
+    print(f"  Full transcription completed")
     print(SEPARATOR)
-    print(f"  Files attempted:      {batch.get('files_attempted', 0)}")
-    print(f"  Transcribed:          {batch.get('files_transcribed', 0)}")
-    print(f"  No speech:            {batch.get('files_no_speech', 0)}")
-    print(f"  Errors:               {batch.get('files_errors', 0)}")
+    print(f"  Source duration:       {dur_str}")
+    print(f"  Language:              {lang or '?'}")
+    print(f"  Segments:              {sum(len(r.get('segments', [])) for r in batch.get('results', []))}")
+    print(f"  Compute:               {compute_type}")
+    print(f"  Processing time:       {proc:.1f}s")
+    if rtf:
+        print(f"  RTF:                   {rtf:.4f}")
     print()
-    lang = batch.get("primary_language")
-    if lang:
-        print(f"  Language: {lang}")
-    print(f"  Subtitles created:    {batch.get('srt_files_created', 0)}")
+    print(f"  Transcript:            ready")
+    print(f"  SRT subtitles:         ready")
+    print(f"  DaVinci handoff:       ready")
     print()
     results_dir = batch.get("results_directory", "?")
     print(f"  Results: {results_dir}")
     print()
-    dur = batch.get("total_source_duration_seconds", 0)
-    proc = batch.get("total_processing_seconds", 0)
-    rtf = batch.get("overall_rtf")
-    print(f"  Total source duration: {dur:.1f}s")
-    print(f"  Total processing time: {proc:.1f}s")
-    if rtf:
-        print(f"  Overall RTF:           {rtf:.4f}")
+    for r in batch.get("results", []):
+        srt_name = r.get("srt_file")
+        if srt_name:
+            print(f"  DaVinci subtitle file: {srt_name}")
+            break
     print(SEPARATOR)
 
     return 0

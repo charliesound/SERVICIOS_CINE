@@ -141,6 +141,8 @@ def _copy_site_packages(target_site_packages: Path) -> None:
     the validated runtime without pip resolution or version drift.
     """
     target_site_packages.mkdir(parents=True, exist_ok=True)
+    for stale in target_site_packages.iterdir():
+        shutil.rmtree(stale) if stale.is_dir() else stale.unlink()
     src_sp = PYTHON_DIR / "Lib" / "site-packages"
 
     def _norm(name: str) -> str:
@@ -263,13 +265,18 @@ def _copy_model(target_models: Path) -> None:
 
 
 def _create_python_pth(target_python: Path, target_lib: Path, target_site_packages: Path) -> None:
-    """Create python312._pth for embedded Python path isolation."""
+    """Create python312._pth for embedded Python path isolation.
+
+    When a ._pth file exists, PYTHONPATH is ignored, so the CID app dir
+    must be listed here explicitly (relative to the runtime/python dir).
+    """
     pth_content = "\n".join([
         "python312.zip",
         ".",
         "DLLs",
         "Lib",
         "Lib/site-packages",
+        "..\\..\\app",
         "",
     ])
     pth_path = target_python / "python312._pth"

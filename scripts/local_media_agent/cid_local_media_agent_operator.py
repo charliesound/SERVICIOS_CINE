@@ -30,7 +30,7 @@ from scripts.local_media_agent.ffprobe_metadata_extraction import (
 HEADER = r"""
   ======================================================
    CID  Local Media Agent  V0.2
-   Scan + Metadata + Local Transcription
+   Scan + Metadata + Batch Transcription + Subtitles
   ======================================================
 """
 
@@ -396,24 +396,197 @@ def _run_transcription(meta: dict, model_dir: str, source_folder: Path) -> dict:
     }
 
 
+def _run_batch_transcription(folder: str, model_dir: str, *, max_files: int | None = None, filter_pattern: str | None = None, compute_type: str = "int8", language_hint: str | None = None) -> int:
+    """Run the full batch transcription flow with SRT generation."""
+    from scripts.local_media_agent.batch_transcription import run_batch_transcription
+
+    if not os.path.isdir(folder):
+        print()
+        print(f"  ERROR: Folder not found: {folder}")
+        return 1
+
+    if not model_dir or not Path(model_dir).is_dir():
+        print()
+        print(f"  ERROR: Transcription model directory not found: {model_dir}")
+        return 1
+
+    print()
+    print(SEPARATOR)
+    print(f"  Batch Transcription")
+    print(SEPARATOR)
+    print(f"  Folder:       {folder}")
+    print(f"  Model:        {Path(model_dir).name}")
+    print(f"  Compute:      {compute_type}")
+    if max_files:
+        print(f"  Max files:    {max_files}")
+    if filter_pattern:
+        print(f"  Filter:       {filter_pattern}")
+    if language_hint:
+        print(f"  Language:     {language_hint}")
+    print(SEPARATOR)
+    print()
+
+    batch = run_batch_transcription(
+        folder,
+        model_dir,
+        compute_type=compute_type,
+        max_files=max_files,
+        filter_pattern=filter_pattern,
+        language_hint=language_hint,
+    )
+
+    print()
+    print(SEPARATOR)
+    print(f"  CID Local Media Agent V0.2")
+    print()
+    print(f"  Batch transcription completed")
+    print(SEPARATOR)
+    print(f"  Files attempted:      {batch.get('files_attempted', 0)}")
+    print(f"  Transcribed:          {batch.get('files_transcribed', 0)}")
+    print(f"  No speech:            {batch.get('files_no_speech', 0)}")
+    print(f"  Errors:               {batch.get('files_errors', 0)}")
+    print()
+    lang = batch.get("primary_language")
+    if lang:
+        print(f"  Language: {lang}")
+    print(f"  Subtitles created:    {batch.get('srt_files_created', 0)}")
+    print()
+    results_dir = batch.get("results_directory", "?")
+    print(f"  Results: {results_dir}")
+    print()
+    dur = batch.get("total_source_duration_seconds", 0)
+    proc = batch.get("total_processing_seconds", 0)
+    rtf = batch.get("overall_rtf")
+    print(f"  Total source duration: {dur:.1f}s")
+    print(f"  Total processing time: {proc:.1f}s")
+    if rtf:
+        print(f"  Overall RTF:           {rtf:.4f}")
+    print(SEPARATOR)
+
+    return 0
+
+
+def _prompt_menu() -> str:
+    """Display the interactive menu and get user choice."""
+    print()
+    print(SEPARATOR)
+    print(f"  Choose operation:")
+    print()
+    print(f"    1.  Scan only")
+    print(f"    2.  Scan + metadata")
+    print(f"    3.  Batch transcribe (select count)")
+    print(f"    4.  Batch transcribe all valid candidates")
+    print()
+    print(SEPARATOR)
+    choice = input("  Choice [1-4]: ").strip()
+    return choice
+
+
+def _prompt_model_dir() -> str | None:
+    """Prompt for model directory path."""
+    default = r"C:\Users\Carlos\AppData\Local\Temp\cid_lma_models\faster-whisper-small"
+    print()
+    raw = input(f"  Model directory [{default}]: ").strip().strip('"').strip("'")
+    return raw if raw else default
+
+
+def _prompt_max_files() -> int | None:
+    """Prompt for max files to transcribe."""
+    print()
+    raw = input("  Max files to transcribe (Enter for all): ").strip()
+    if not raw:
+        return None
+    try:
+        val = int(raw)
+        return val if val > 0 else None
+    except ValueError:
+        return None
+
+
 def main() -> int:
     os.system("cls" if os.name == "nt" else "clear")
     print(HEADER)
 
     args = sys.argv[1:]
+
+    if "--batch" in args:
+        idx = args.index("--batch")
+        args.pop(idx)
+        batch_model = None
+        batch_max = None
+        batch_filter = None
+        batch_lang = None
+        batch_compute = "int8"
+        while args and args[0].startswith("--"):
+            if args[0] == "--model" and len(args) > 1:
+                batch_model = args.pop(1)
+                args.pop(0)
+            elif args[0] == "--max" and len(args) > 1:
+                batch_max = int(args.pop(1))
+                args.pop(0)
+            elif args[0] == "--filter" and len(args) > 1:
+                batch_filter = args.pop(1)
+                args.pop(0)
+            elif args[0] == "--language" and len(args) > 1:
+                batch_lang = args.pop(1)
+                args.pop(0)
+            elif args[0] == "--compute" and len(args) > 1:
+                batch_compute = args.pop(1)
+                args.pop(0)
+            else:
+                break
+        folder = " ".join(args) if args else None
+        if not folder:
+            folder = _prompt_folder()
+        if not batch_model:
+            batch_model = _prompt_model_dir()
+        return _run_batch_transcription(
+            folder, batch_model,
+            max_files=batch_max,
+            filter_pattern=batch_filter,
+            compute_type=batch_compute,
+            language_hint=batch_lang,
+        )
+
     do_transcribe = False
     model_dir = None
 
     if "--transcribe" in args:
         do_transcribe = True
         args.remove("--transcribe")
-        # Next arg after --transcribe is the model directory
         if args and not args[0].startswith("-"):
             model_dir = args.pop(0)
 
     interactive = len(args) <= 1
     if interactive:
         folder = _prompt_folder()
+        choice = _prompt_menu()
+
+        if choice == "3":
+            model_dir = _prompt_model_dir()
+            max_files = _prompt_max_files()
+            return _run_batch_transcription(folder, model_dir, max_files=max_files)
+
+        if choice == "4":
+            model_dir = _prompt_model_dir()
+            return _run_batch_transcription(folder, model_dir)
+
+        if choice == "2":
+            exit_code = _run(folder, do_transcribe=False)
+            print("  Press Enter to exit...")
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
+            return exit_code
+
+        exit_code = _run(folder, do_transcribe=False)
+        print("  Press Enter to exit...")
+        try:
+            input()
+        except (EOFError, KeyboardInterrupt):
+            pass
+        return exit_code
     else:
         folder = " ".join(args)
 

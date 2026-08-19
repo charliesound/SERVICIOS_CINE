@@ -495,7 +495,7 @@ def _prompt_menu() -> str:
 def _resolve_packaged_model() -> str | None:
     """Check for a CID-packaged model relative to this file's location."""
     here = Path(__file__).resolve().parent
-    for depth in (here, here.parent, here.parents[1] if len(here.parents) > 1 else here):
+    for depth in (here, *here.parents):
         candidate = depth / "models" / "faster-whisper-small"
         if candidate.is_dir() and (candidate / "model.bin").is_file():
             return str(candidate)

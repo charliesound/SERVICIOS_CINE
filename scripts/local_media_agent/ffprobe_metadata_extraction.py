@@ -30,10 +30,26 @@ def resolve_ffprobe_path(explicit: str | None = None) -> str:
     configured = os.environ.get(FFPROBE_ENV_VAR)
     if configured:
         return configured
+    packaged = _resolve_packaged_ffprobe()
+    if packaged:
+        return packaged
     raise RuntimeError(
         "No approved ffprobe binary found. "
         f"Set the {FFPROBE_ENV_VAR} environment variable to the approved BtbN ffprobe path."
     )
+
+
+def _resolve_packaged_ffprobe() -> str | None:
+    """Check for a CID-packaged ffprobe relative to this file's location."""
+    here = Path(__file__).resolve().parent
+    for depth in (here, here.parent, here.parents[1] if len(here.parents) > 1 else here):
+        candidate = depth / "runtime" / "ffmpeg" / "bin" / "ffprobe.exe"
+        if candidate.is_file():
+            return str(candidate)
+        candidate = depth / "runtime" / "bin" / "ffprobe.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return None
 
 
 def extract_metadata(

@@ -32,10 +32,26 @@ def _resolve_ffmpeg_path() -> str:
     configured = os.environ.get("CID_FFMPEG_PATH")
     if configured:
         return configured
+    packaged = _resolve_packaged_ffmpeg()
+    if packaged:
+        return packaged
     raise RuntimeError(
         "No approved ffmpeg binary found. "
         "Set the CID_FFMPEG_PATH environment variable to the approved BtbN ffmpeg path."
     )
+
+
+def _resolve_packaged_ffmpeg() -> str | None:
+    """Check for a CID-packaged ffmpeg relative to this file's location."""
+    here = Path(__file__).resolve().parent
+    for depth in (here, here.parent, here.parents[1] if len(here.parents) > 1 else here):
+        candidate = depth / "runtime" / "ffmpeg" / "bin" / "ffmpeg.exe"
+        if candidate.is_file():
+            return str(candidate)
+        candidate = depth / "runtime" / "bin" / "ffmpeg.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return None
 
 
 def extract_audio_to_wav(

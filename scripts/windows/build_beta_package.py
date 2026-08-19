@@ -97,6 +97,7 @@ PYTHON_CORE_FILES = [
 
 CID_SOURCE_DIRS = [
     "scripts/local_media_agent",
+    "scripts/editorial_intelligence/transcription",
 ]
 
 

@@ -54,25 +54,43 @@ def _resolve_packaged_ffmpeg() -> str | None:
     return None
 
 
+def _windows_no_console_kwargs() -> dict[str, Any]:
+    """Subprocess kwargs that suppress child console windows on Windows.
+
+    Used when spawning ffmpeg from a GUI process (pythonw) so no console
+    window flashes on screen. On non-Windows platforms returns nothing.
+    """
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    if os.name == "nt" and flags:
+        return {"creationflags": flags}
+    return {}
+
+
 def extract_audio_to_wav(
     source_path: str | Path,
     *,
     ffmpeg_path: str | None = None,
     temp_dir: str | Path | None = None,
+    output_path: str | Path | None = None,
 ) -> Path:
     """Extract audio from a media file to PCM WAV mono 16kHz s16le.
 
     Returns the path to the temporary WAV file. Caller is responsible for cleanup.
+    When ``output_path`` is provided, it is used verbatim (its parent is
+    created); otherwise a ``cid_audio_*.wav`` file is created in ``temp_dir``.
     """
     tool = ffmpeg_path or _resolve_ffmpeg_path()
     source = Path(source_path)
     if not source.is_file():
         raise FileNotFoundError(f"Source file not found: {source}")
 
-    td = Path(temp_dir) if temp_dir else Path(tempfile.gettempdir())
-    td.mkdir(parents=True, exist_ok=True)
-    out_name = f"cid_audio_{uuid.uuid4().hex[:12]}.{AUDIO_CONTAINER}"
-    output_path = td / out_name
+    if output_path is not None:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        td = Path(temp_dir) if temp_dir else Path(tempfile.gettempdir())
+        td.mkdir(parents=True, exist_ok=True)
+        output_path = td / f"cid_audio_{uuid.uuid4().hex[:12]}.{AUDIO_CONTAINER}"
 
     cmd = [
         tool,
@@ -91,6 +109,7 @@ def extract_audio_to_wav(
         capture_output=True,
         text=True,
         timeout=FFMPEG_TIMEOUT_SECONDS,
+        **_windows_no_console_kwargs(),
     )
     if proc.returncode != 0:
         raise RuntimeError(f"ffmpeg exit {proc.returncode}: {proc.stderr[:300]}")
@@ -117,6 +136,19 @@ def _get_audio_duration(wav_path: Path) -> float | None:
         return None
 
 
+def _cancelled_result(media_path: Path, asset: str) -> dict[str, Any]:
+    """Return a cooperative-cancellation payload without publishing results."""
+    return {
+        "schema_version": TRANSCRIPTION_SCHEMA_VERSION,
+        "status": "TRANSCRIPTION_CANCELLED",
+        "relative_path": str(media_path),
+        "asset_id": asset,
+        "cancelled": True,
+        "segments": [],
+        "error": None,
+    }
+
+
 def transcribe_media_file(
     media_path: str | Path,
     model_local_path: str | Path,
@@ -127,10 +159,24 @@ def transcribe_media_file(
     compute_type: str = "float32",
     ffmpeg_path: str | None = None,
     temp_dir: str | Path | None = None,
+    cancel_event: Any = None,
+    segment_callback: Any = None,
+    output_wav_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Extract audio and transcribe a single media file.
 
-    Returns a structured dict with transcription results.
+    Supports cooperative cancellation via ``cancel_event`` (a threading.Event
+    or equivalent with ``is_set()``). When set, returns TRANSCRIPTION_CANCELLED
+    without publishing completed outputs. Temporary decode derivatives are
+    always removed in ``finally`` cleanup.
+
+    ``segment_callback`` (optional) is invoked for every produced segment as
+    ``segment_callback(segment)`` with the source-mapped segment dict (has
+    ``source_end_seconds``), enabling truthful producer-facing progress.
+
+    ``output_wav_path`` (optional) forces the temporary WAV path to a
+    controller-owned location so the parent can guarantee cleanup even if this
+    process is force-terminated.
     """
     source = Path(media_path)
     if not source.is_file():
@@ -147,8 +193,17 @@ def transcribe_media_file(
     # Extract audio
     wav_path = None
     try:
-        wav_path = extract_audio_to_wav(source, ffmpeg_path=ffmpeg_path, temp_dir=temp_dir)
+        if cancel_event is not None and cancel_event.is_set():
+            return _cancelled_result(source, asset)
+        wav_path = extract_audio_to_wav(
+            source,
+            ffmpeg_path=ffmpeg_path,
+            temp_dir=temp_dir,
+            output_path=output_wav_path,
+        )
         duration = _get_audio_duration(wav_path)
+        if cancel_event is not None and cancel_event.is_set():
+            return _cancelled_result(source, asset)
 
         # Transcribe using existing CID pipeline
         from scripts.editorial_intelligence.transcription.transcription import (
@@ -171,7 +226,14 @@ def transcribe_media_file(
             device=device,
         )
 
-        result = transcribe(request, backend)
+        result = transcribe(
+            request,
+            backend,
+            segment_callback=segment_callback,
+            cancel_event=cancel_event,
+        )
+        if cancel_event is not None and cancel_event.is_set():
+            return _cancelled_result(source, asset)
         payload = result.to_dict()
         elapsed = time.monotonic() - start_time
 

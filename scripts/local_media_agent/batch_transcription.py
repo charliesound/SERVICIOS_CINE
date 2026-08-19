@@ -10,6 +10,9 @@ import json
 import math
 import os
 import re
+import subprocess
+import sys
+import tempfile
 import time
 import uuid
 from datetime import datetime, timezone
@@ -269,10 +272,32 @@ def run_batch_transcription(
     results_dir: str | Path | None = None,
     ffmpeg_path: str | None = None,
     device: str = "cpu",
+    cancel_event: Any = None,
+    progress_callback: Any = None,
+    segment_callback: Any = None,
+    worker_process: bool = False,
+    grace_period_seconds: float = 3.0,
+    worker_log_dir: str | Path | None = None,
 ) -> dict[str, Any]:
     """Run batch transcription on selected media items.
 
     Produces per-file transcript JSON, SRT files, and a batch summary JSON.
+
+    Supports cooperative cancellation: ``cancel_event`` (an object exposing
+    ``is_set()``) is checked before each item and after each transcription.
+    On cancellation the batch writes a ``BATCH_CANCELLED`` summary with actual
+    completed/cancelled/unstarted counts. ``progress_callback`` is invoked as
+    ``progress_callback(index, total, relative_path)`` before each item.
+    ``segment_callback`` (optional) is forwarded to each per-file transcription
+    and invoked as ``segment_callback(segment)`` per produced segment, enabling
+    truthful producer-facing progress.
+
+    ``worker_process=True`` runs each active media item in a dedicated owned
+    worker subprocess (``cid_transcription_worker``). On cancellation the
+    controller signals cooperatively via a sentinel file, waits
+    ``grace_period_seconds``, then force-terminates only that owned worker
+    tree. ``worker_log_dir`` (optional) stores per-worker stderr logs. The
+    summary then reports a truthful ``cancel_latency_seconds`` measurement.
     """
     from scripts.local_media_agent.local_transcription import transcribe_media_file
 
@@ -318,150 +343,220 @@ def run_batch_transcription(
 
     batch_start = time.monotonic()
 
-    for i, candidate in enumerate(candidates):
-        rel = candidate.get("relative_path", "")
-        abs_path = input_root / rel
-        cat = candidate.get("category", "")
-        dur = candidate.get("duration_seconds")
-        asset_name = _sanitize_name(rel)
+    files_cancelled = 0
+    cancelled = False
+    cancel_requested_at: float | None = None
 
-        print(f"  [{i + 1}/{len(candidates)}] {rel} ({cat}, {dur:.1f}s)" if dur else f"  [{i + 1}/{len(candidates)}] {rel} ({cat})", flush=True)
+    try:
+        for i, candidate in enumerate(candidates):
+            if cancel_event is not None and cancel_event.is_set():
+                if cancel_requested_at is None:
+                    cancel_requested_at = time.monotonic()
+                cancelled = True
+                break
 
-        try:
-            t0 = time.monotonic()
-            result = transcribe_media_file(
-                abs_path,
-                model_dir,
-                asset_id=asset_name,
-                language_hint=language_hint,
-                device=device,
-                compute_type=compute_type,
-                ffmpeg_path=ffmpeg_path,
-            )
-            elapsed = time.monotonic() - t0
+            rel = candidate.get("relative_path", "")
+            abs_path = input_root / rel
+            cat = candidate.get("category", "")
+            dur = candidate.get("duration_seconds")
+            asset_name = _sanitize_name(rel)
 
-            status = result.get("status", "UNKNOWN")
-            segments = result.get("segments", [])
-            detected_lang = result.get("detected_language")
-            lang_prob = result.get("language_probability")
-            source_dur = result.get("audio_duration_seconds") or dur
+            if progress_callback is not None:
+                progress_callback(i + 1, len(candidates), rel)
 
-            if source_dur:
-                total_source_duration += float(source_dur)
-            total_processing += elapsed
+            print(f"  [{i + 1}/{len(candidates)}] {rel} ({cat}, {dur:.1f}s)" if dur else f"  [{i + 1}/{len(candidates)}] {rel} ({cat})", flush=True)
 
-            if detected_lang:
-                all_languages.append(str(detected_lang))
+            try:
+                t0 = time.monotonic()
+                if worker_process:
+                    result, cancel_detected_at = _transcribe_item_via_worker(
+                        abs_path,
+                        model_dir,
+                        asset_id=asset_name,
+                        language_hint=language_hint,
+                        device=device,
+                        compute_type=compute_type,
+                        ffmpeg_path=ffmpeg_path,
+                        cancel_event=cancel_event,
+                        grace_period_seconds=grace_period_seconds,
+                        worker_log_dir=worker_log_dir,
+                        progress_callback=segment_callback,
+                    )
+                    if cancel_detected_at is not None:
+                        if cancel_requested_at is None:
+                            cancel_requested_at = cancel_detected_at
+                        cancelled = True
+                else:
+                    result = transcribe_media_file(
+                        abs_path,
+                        model_dir,
+                        asset_id=asset_name,
+                        language_hint=language_hint,
+                        device=device,
+                        compute_type=compute_type,
+                        ffmpeg_path=ffmpeg_path,
+                        cancel_event=cancel_event,
+                        segment_callback=segment_callback,
+                    )
+                elapsed = time.monotonic() - t0
 
-            file_result = {
-                "relative_path": rel,
-                "category": cat,
-                "source_duration_seconds": source_dur,
-                "source_timecode": candidate.get("timecode"),
-                "detected_language": detected_lang,
-                "language_probability": lang_prob,
-                "engine": "faster-whisper",
-                "model_identifier": result.get("model_identifier"),
-                "compute_type": compute_type,
-                "device": device,
-                "segments": segments,
-                "processing_seconds": round(elapsed, 2),
-                "rtf": round(elapsed / float(source_dur), 4) if source_dur and float(source_dur) > 0 else None,
-                "transcription_status": status,
-                "error": result.get("error"),
-            }
+                status = result.get("status", "UNKNOWN")
 
-            has_speech = status == "TRANSCRIPTION_COMPLETED" and len(segments) > 0
+                if status == "TRANSCRIPTION_CANCELLED":
+                    cancelled = True
+                    files_cancelled += 1
+                    cancelled_result = {
+                        "relative_path": rel,
+                        "category": cat,
+                        "source_duration_seconds": dur,
+                        "transcription_status": "TRANSCRIPTION_CANCELLED",
+                        "cancelled": True,
+                        "srt_file": None,
+                    }
+                    batch_results.append(cancelled_result)
+                    print("    CANCELLED | user requested stop", flush=True)
+                    break
 
-            if has_speech:
-                files_transcribed += 1
-                srt_text = generate_srt(segments, source_dur)
-                srt_path = resolved_results_dir / f"{asset_name}.srt"
-                srt_path.write_text(srt_text, encoding="utf-8")
-                file_result["srt_file"] = str(srt_path.name)
-                srt_files_created += 1
+                segments = result.get("segments", [])
+                detected_lang = result.get("detected_language")
+                lang_prob = result.get("language_probability")
+                source_dur = result.get("audio_duration_seconds") or dur
 
-                srt_validation = validate_srt(srt_text, source_dur)
-                file_result["srt_validation"] = srt_validation
+                if source_dur:
+                    total_source_duration += float(source_dur)
+                total_processing += elapsed
 
-                txt_text = generate_transcript_txt(segments)
-                txt_path = resolved_results_dir / f"{asset_name}.transcript.txt"
-                txt_path.write_text(txt_text, encoding="utf-8")
-                file_result["transcript_txt_file"] = txt_path.name
+                if detected_lang:
+                    all_languages.append(str(detected_lang))
 
-                manifest = generate_davinci_manifest(
-                    asset_name=asset_name,
-                    source_rel_path=rel,
-                    source_duration=source_dur,
-                    detected_language=detected_lang,
-                    language_probability=lang_prob,
-                    model_identifier=result.get("model_identifier"),
-                    compute_type=compute_type,
-                    segments=segments,
-                    source_timecode=candidate.get("timecode"),
-                )
-                manifest_path = resolved_results_dir / f"{asset_name}.davinci_handoff.json"
-                manifest_path.write_text(
-                    json.dumps(manifest, indent=2, ensure_ascii=False),
+                file_result = {
+                    "relative_path": rel,
+                    "category": cat,
+                    "source_duration_seconds": source_dur,
+                    "source_timecode": candidate.get("timecode"),
+                    "detected_language": detected_lang,
+                    "language_probability": lang_prob,
+                    "engine": "faster-whisper",
+                    "model_identifier": result.get("model_identifier"),
+                    "compute_type": compute_type,
+                    "device": device,
+                    "segments": segments,
+                    "processing_seconds": round(elapsed, 2),
+                    "rtf": round(elapsed / float(source_dur), 4) if source_dur and float(source_dur) > 0 else None,
+                    "transcription_status": status,
+                    "error": result.get("error"),
+                }
+
+                has_speech = status == "TRANSCRIPTION_COMPLETED" and len(segments) > 0
+
+                if has_speech:
+                    files_transcribed += 1
+                    srt_text = generate_srt(segments, source_dur)
+                    srt_path = resolved_results_dir / f"{asset_name}.srt"
+                    srt_path.write_text(srt_text, encoding="utf-8")
+                    file_result["srt_file"] = str(srt_path.name)
+                    srt_files_created += 1
+
+                    srt_validation = validate_srt(srt_text, source_dur)
+                    file_result["srt_validation"] = srt_validation
+
+                    txt_text = generate_transcript_txt(segments)
+                    txt_path = resolved_results_dir / f"{asset_name}.transcript.txt"
+                    txt_path.write_text(txt_text, encoding="utf-8")
+                    file_result["transcript_txt_file"] = txt_path.name
+
+                    manifest = generate_davinci_manifest(
+                        asset_name=asset_name,
+                        source_rel_path=rel,
+                        source_duration=source_dur,
+                        detected_language=detected_lang,
+                        language_probability=lang_prob,
+                        model_identifier=result.get("model_identifier"),
+                        compute_type=compute_type,
+                        segments=segments,
+                        source_timecode=candidate.get("timecode"),
+                    )
+                    manifest_path = resolved_results_dir / f"{asset_name}.davinci_handoff.json"
+                    manifest_path.write_text(
+                        json.dumps(manifest, indent=2, ensure_ascii=False),
+                        encoding="utf-8",
+                    )
+                    file_result["davinci_handoff_file"] = manifest_path.name
+                    txt_files_created += 1
+                    davinci_handoff_files_created += 1
+                elif status == "TRANSCRIPTION_COMPLETED":
+                    files_no_speech += 1
+                    file_result["srt_file"] = None
+                    file_result["transcript_txt_file"] = None
+                    file_result["davinci_handoff_file"] = None
+                else:
+                    files_error += 1
+                    file_result["srt_file"] = None
+                    file_result["transcript_txt_file"] = None
+                    file_result["davinci_handoff_file"] = None
+
+                json_path = resolved_results_dir / f"{asset_name}.transcript.json"
+                json_path.write_text(
+                    json.dumps(file_result, indent=2, ensure_ascii=False),
                     encoding="utf-8",
                 )
-                file_result["davinci_handoff_file"] = manifest_path.name
-                txt_files_created += 1
-                davinci_handoff_files_created += 1
-            elif status == "TRANSCRIPTION_COMPLETED":
-                files_no_speech += 1
-                file_result["srt_file"] = None
-                file_result["transcript_txt_file"] = None
-                file_result["davinci_handoff_file"] = None
-            else:
+                file_result["transcript_json_file"] = json_path.name
+
+                seg_count = len(segments)
+                rtf_str = f"{file_result['rtf']:.4f}" if file_result["rtf"] else "?"
+                print(f"    {status} | {detected_lang} | {seg_count} segments | RTF {rtf_str}", flush=True)
+
+                batch_results.append(file_result)
+
+            except KeyboardInterrupt:
+                cancelled = True
+                break
+
+            except Exception as exc:
+                elapsed = time.monotonic() - t0
+                total_processing += elapsed
                 files_error += 1
-                file_result["srt_file"] = None
-                file_result["transcript_txt_file"] = None
-                file_result["davinci_handoff_file"] = None
-
-            json_path = resolved_results_dir / f"{asset_name}.transcript.json"
-            json_path.write_text(
-                json.dumps(file_result, indent=2, ensure_ascii=False),
-                encoding="utf-8",
-            )
-            file_result["transcript_json_file"] = json_path.name
-
-            seg_count = len(segments)
-            rtf_str = f"{file_result['rtf']:.4f}" if file_result["rtf"] else "?"
-            print(f"    {status} | {detected_lang} | {seg_count} segments | RTF {rtf_str}", flush=True)
-
-            batch_results.append(file_result)
-
-        except Exception as exc:
-            elapsed = time.monotonic() - t0
-            total_processing += elapsed
-            files_error += 1
-            error_result = {
-                "relative_path": rel,
-                "category": cat,
-                "source_duration_seconds": dur,
-                "processing_seconds": round(elapsed, 2),
-                "transcription_status": "BATCH_ERROR",
-                "error": {"message": str(exc)[:300]},
-                "srt_file": None,
-            }
-            batch_results.append(error_result)
-            print(f"    ERROR: {str(exc)[:80]}", flush=True)
+                error_result = {
+                    "relative_path": rel,
+                    "category": cat,
+                    "source_duration_seconds": dur,
+                    "processing_seconds": round(elapsed, 2),
+                    "transcription_status": "BATCH_ERROR",
+                    "error": {"message": str(exc)[:300]},
+                    "srt_file": None,
+                }
+                batch_results.append(error_result)
+                print(f"    ERROR: {str(exc)[:80]}", flush=True)
+    except KeyboardInterrupt:
+        cancelled = True
 
     batch_elapsed = time.monotonic() - batch_start
 
     primary_language = _most_common(all_languages) if all_languages else None
 
+    unstarted_count = max(0, len(candidates) - len(batch_results))
+
+    cancel_latency_seconds: float | None = None
+    if cancelled and cancel_requested_at is not None:
+        cancel_latency_seconds = round(time.monotonic() - cancel_requested_at, 2)
+
     batch_summary = {
         "schema_version": BATCH_SUMMARY_SCHEMA_VERSION,
         "batch_id": batch_id,
-        "status": "BATCH_COMPLETED",
+        "status": "BATCH_CANCELLED" if cancelled else "BATCH_COMPLETED",
+        "cancelled_by_user": cancelled,
+        "cancel_latency_seconds": cancel_latency_seconds,
         "input_root": str(input_root),
         "compute_type": compute_type,
         "device": device,
         "model_directory": str(model_dir.name),
         "language_hint": language_hint,
         "files_attempted": len(candidates),
+        "candidate_count": len(candidates),
+        "completed_count": files_transcribed,
+        "cancelled_count": files_cancelled,
+        "error_count": files_error,
+        "unstarted_count": unstarted_count,
         "files_transcribed": files_transcribed,
         "files_no_speech": files_no_speech,
         "files_errors": files_error,
@@ -489,6 +584,196 @@ def run_batch_transcription(
     )
 
     return batch_summary
+
+
+def _worker_temp_dir() -> Path:
+    """Return a controller-owned temp dir for worker task/result files."""
+    base = Path(tempfile.gettempdir()) / "cid_lma_worker"
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
+def _consume_worker_progress(
+    progress_path: Path,
+    offset: int,
+    callback: Any,
+) -> int:
+    """Forward new JSONL progress lines to ``callback``; return new byte offset."""
+    if callback is None:
+        return offset
+    try:
+        with progress_path.open("r", encoding="utf-8") as fh:
+            fh.seek(offset)
+            lines = fh.readlines()
+        new_offset = offset + sum(len(line.encode("utf-8")) for line in lines)
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                seg = json.loads(line)
+            except ValueError:
+                continue
+            callback(seg)
+        return new_offset
+    except OSError:
+        return offset
+
+
+def _terminate_worker_tree(proc: subprocess.Popen) -> None:
+    """Force-terminate a dedicated worker and its child ffmpeg process."""
+    from scripts.local_media_agent.local_transcription import _windows_no_console_kwargs
+
+    if os.name == "nt":
+        try:
+            subprocess.run(
+                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                **_windows_no_console_kwargs(),
+            )
+        except Exception:
+            pass
+    else:
+        proc.kill()
+
+
+def _transcribe_item_via_worker(
+    media_path: Path,
+    model_dir: Path,
+    *,
+    asset_id: str,
+    language_hint: str | None,
+    device: str,
+    compute_type: str,
+    ffmpeg_path: str | None,
+    cancel_event: Any,
+    grace_period_seconds: float,
+    worker_log_dir: str | Path | None,
+    progress_callback: Any,
+) -> tuple[dict[str, Any], float | None]:
+    """Transcribe one media item in a dedicated, owned worker subprocess.
+
+    Returns ``(result_payload, cancel_detected_at_monotonic)``. On cancellation
+    the worker is signalled cooperatively through a sentinel file, given
+    ``grace_period_seconds`` to stop, then its owned process tree is
+    terminated. All controller-owned temp files (task, result, sentinel,
+    progress log, output WAV) are removed here.
+    """
+    from scripts.local_media_agent.local_transcription import _windows_no_console_kwargs
+
+    token = uuid.uuid4().hex[:12]
+    temp_dir = _worker_temp_dir()
+    task_path = temp_dir / f"cid_task_{token}.json"
+    result_path = temp_dir / f"cid_result_{token}.json"
+    sentinel_path = temp_dir / f"cid_cancel_{token}.flag"
+    progress_path = temp_dir / f"cid_progress_{token}.jsonl"
+    output_wav = temp_dir / f"cid_audio_{token}.wav"
+
+    cancel_detected_at: float | None = None
+
+    task = {
+        "media_path": str(media_path),
+        "model_dir": str(model_dir),
+        "asset_id": asset_id,
+        "language_hint": language_hint,
+        "device": device,
+        "compute_type": compute_type,
+        "ffmpeg_path": ffmpeg_path,
+        "temp_dir": str(temp_dir),
+        "output_wav": str(output_wav),
+        "result_json": str(result_path),
+        "progress_log": str(progress_path),
+        "cancel_sentinel": str(sentinel_path),
+    }
+    task_path.write_text(json.dumps(task, ensure_ascii=False), encoding="utf-8")
+
+    stderr_target: Any = subprocess.DEVNULL
+    log_fh: Any = None
+    if worker_log_dir is not None:
+        log_root = Path(worker_log_dir)
+        log_root.mkdir(parents=True, exist_ok=True)
+        log_fh = open(log_root / f"worker_{token}.log", "w", encoding="utf-8")
+        stderr_target = log_fh
+
+    try:
+        cmd = [
+            sys.executable,
+            "-m",
+            "scripts.local_media_agent.cid_transcription_worker",
+            str(task_path),
+        ]
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=stderr_target,
+            **_windows_no_console_kwargs(),
+        )
+
+        progress_offset = 0
+        while proc.poll() is None:
+            progress_offset = _consume_worker_progress(
+                progress_path, progress_offset, progress_callback
+            )
+            if cancel_event is not None and cancel_event.is_set():
+                if cancel_detected_at is None:
+                    cancel_detected_at = time.monotonic()
+                sentinel_path.write_text("cancel\n", encoding="utf-8")
+                grace_end = time.monotonic() + max(0.0, grace_period_seconds)
+                while time.monotonic() < grace_end and proc.poll() is None:
+                    progress_offset = _consume_worker_progress(
+                        progress_path, progress_offset, progress_callback
+                    )
+                    time.sleep(0.05)
+                if proc.poll() is None:
+                    _terminate_worker_tree(proc)
+                break
+            time.sleep(0.05)
+
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            _terminate_worker_tree(proc)
+            proc.wait()
+
+        progress_offset = _consume_worker_progress(
+            progress_path, progress_offset, progress_callback
+        )
+
+        if result_path.is_file():
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+        elif cancel_detected_at is not None:
+            result = {
+                "schema_version": "cid.local_media_agent.local_transcription.v1",
+                "status": "TRANSCRIPTION_CANCELLED",
+                "relative_path": str(media_path),
+                "asset_id": asset_id,
+                "cancelled": True,
+                "segments": [],
+                "error": None,
+            }
+        else:
+            result = {
+                "schema_version": "cid.local_media_agent.local_transcription.v1",
+                "status": "TRANSCRIPTION_FAILED",
+                "relative_path": str(media_path),
+                "asset_id": asset_id,
+                "segments": [],
+                "error": {"message": "worker process terminated unexpectedly"},
+            }
+        return result, cancel_detected_at
+    finally:
+        if log_fh is not None:
+            try:
+                log_fh.close()
+            except Exception:
+                pass
+        for path in (task_path, result_path, sentinel_path, progress_path, output_wav):
+            try:
+                path.unlink()
+            except OSError:
+                pass
 
 
 def _scan_for_candidates(

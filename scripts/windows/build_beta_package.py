@@ -406,18 +406,22 @@ if not exist "%INSTALL_TARGET%\\runtime" mkdir "%INSTALL_TARGET%\\runtime"
 echo   [2/5] Copying application source...
 if exist "%INSTALL_TARGET%\\app" rmdir /s /q "%INSTALL_TARGET%\\app"
 xcopy /s /e /q /y "%PACKAGE_DIR%\\app\\*" "%INSTALL_TARGET%\\app\\" >nul
+if errorlevel 1 goto :fail
 
 echo   [3/5] Copying Python runtime...
 if exist "%INSTALL_TARGET%\\runtime\\python" rmdir /s /q "%INSTALL_TARGET%\\runtime\\python"
 xcopy /s /e /q /y "%PACKAGE_DIR%\\runtime\\python\\*" "%INSTALL_TARGET%\\runtime\\python\\" >nul
+if errorlevel 1 goto :fail
 
 echo   [4/5] Copying FFmpeg...
 if not exist "%INSTALL_TARGET%\\runtime\\ffmpeg\\bin" mkdir "%INSTALL_TARGET%\\runtime\\ffmpeg\\bin"
 xcopy /s /e /q /y "%PACKAGE_DIR%\\runtime\\ffmpeg\\bin\\*" "%INSTALL_TARGET%\\runtime\\ffmpeg\\bin\\" >nul
+if errorlevel 1 goto :fail
 
 echo   [5/5] Copying model (this may take a moment)...
 if exist "%INSTALL_TARGET%\\models" rmdir /s /q "%INSTALL_TARGET%\\models"
 xcopy /s /e /q /y "%PACKAGE_DIR%\\models\\*" "%INSTALL_TARGET%\\models\\" >nul
+if errorlevel 1 goto :fail
 
 echo.
 echo   [6/6] Creating launchers...
@@ -435,6 +439,7 @@ echo. >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
 echo "%INSTALL_TARGET%\\runtime\\python\\python.exe" -m scripts.local_media_agent.cid_local_media_agent_operator %%* >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
 echo if errorlevel 1 pause >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd"
 copy /y "%PACKAGE_DIR%\\CID Local Media Agent.vbs" "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.vbs" >nul
+if errorlevel 1 goto :fail
 
 echo.
 echo   ======================================================
@@ -446,6 +451,14 @@ echo   Results: %LOCALAPPDATA%\\CID\\LocalMediaAgent\\results\\
 echo   ======================================================
 echo.
 pause
+exit /b 0
+
+:fail
+echo.
+echo   ERROR: Installation failed. Re-check the source package and retry.
+echo.
+pause
+exit /b 1
 """
     install_cmd.write_text(content, encoding="utf-8")
     print(f"  install.cmd")

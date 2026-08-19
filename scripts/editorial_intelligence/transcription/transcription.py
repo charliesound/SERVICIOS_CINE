@@ -29,6 +29,7 @@ STATE_TRANSCRIPTION_FAILED = "TRANSCRIPTION_FAILED"
 STATE_TRANSCRIPTION_MODEL_NOT_AVAILABLE = "MODEL_NOT_AVAILABLE"
 STATE_TRANSCRIPTION_ENGINE_NOT_AVAILABLE = "ENGINE_NOT_AVAILABLE"
 STATE_TRANSCRIPTION_INVALID_AUDIO_INPUT = "INVALID_AUDIO_INPUT"
+STATE_TRANSCRIPTION_CANCELLED = "TRANSCRIPTION_CANCELLED"
 
 CPU_COMPUTE_TYPE = "int8"
 CUDA_COMPUTE_TYPE = "float16"
@@ -337,7 +338,21 @@ class TranscriptionResult:
 def transcribe(
     request: TranscriptionRequest,
     backend: TranscriptionBackend,
+    *,
+    segment_callback: Any = None,
+    cancel_event: Any = None,
 ) -> TranscriptionResult:
+    """Run transcription and materialize validated segments.
+
+    ``segment_callback`` (optional) is invoked for every accepted source-mapped
+    segment as ``segment_callback(segment)`` with the normalized dict containing
+    ``source_end_seconds``. Used by the producer GUI to show truthful progress.
+
+    ``cancel_event`` (optional) exposes ``is_set()`` and is checked between
+    segments (a threading.Event in-process, or a file-backed sentinel inside a
+    dedicated worker process). When set, transcription stops early and returns
+    ``STATE_TRANSCRIPTION_CANCELLED`` without publishing completed outputs.
+    """
     payload: dict[str, Any] = {
         "phase": PHASE,
         "status": None,
@@ -409,6 +424,10 @@ def transcribe(
     previous_index: int | None = None
     previous_start: float | None = None
     for expected_index, raw in enumerate(raw_segments):
+        if cancel_event is not None and cancel_event.is_set():
+            payload["status"] = STATE_TRANSCRIPTION_CANCELLED
+            payload["segments"] = []
+            return TranscriptionResult(payload, segments=[])
         try:
             seg_index, start, end = _validate_segment(
                 raw,
@@ -453,9 +472,12 @@ def transcribe(
             "end_seconds": end,
             "text": str(raw.get("text")),
         }
-        materialized.append(
-            map_segment_to_source(normalized, request.extracted_audio_start_seconds)
+        source_segment = map_segment_to_source(
+            normalized, request.extracted_audio_start_seconds
         )
+        materialized.append(source_segment)
+        if segment_callback is not None:
+            segment_callback(source_segment)
         previous_index = seg_index
         previous_start = start
 

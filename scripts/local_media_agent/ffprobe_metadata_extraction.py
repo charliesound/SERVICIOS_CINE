@@ -133,6 +133,18 @@ def _collect_media_files(
     return files
 
 
+def _windows_no_console_kwargs() -> dict[str, Any]:
+    """Subprocess kwargs that suppress child console windows on Windows.
+
+    Used when spawning ffprobe from a GUI process (pythonw) so no console
+    window flashes on screen. On non-Windows platforms returns nothing.
+    """
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    if os.name == "nt" and flags:
+        return {"creationflags": flags}
+    return {}
+
+
 def _probe_one(tool: str, path: Path) -> dict[str, Any]:
     cmd = [
         tool,
@@ -147,6 +159,7 @@ def _probe_one(tool: str, path: Path) -> dict[str, Any]:
         capture_output=True,
         text=True,
         timeout=FFPROBE_TIMEOUT_SECONDS,
+        **_windows_no_console_kwargs(),
     )
     if proc.returncode != 0:
         raise RuntimeError(f"ffprobe exit {proc.returncode}: {proc.stderr[:200]}")

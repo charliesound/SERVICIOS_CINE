@@ -77,6 +77,78 @@ def _sanitize_name(relative_path: str) -> str:
     return sanitized or "untitled"
 
 
+def _human_folder_stem(project_name: str | None) -> str:
+    """Build a safe, human-readable folder stem from a session/source name."""
+    stem = re.sub(r"[^\w\- ]+", "_", project_name or "CID")
+    stem = re.sub(r"\s+", "_", stem).strip("_").strip()
+    stem = re.sub(r"_+", "_", stem)
+    return (stem or "CID")[:48]
+
+
+def make_run_results_dir(
+    results_root: str | Path,
+    project_name: str | None,
+    now_local: datetime | None = None,
+) -> Path:
+    """Create a collision-safe, human-named run folder inside ``results_root``.
+
+    Folder name follows the pattern ``<session/source>_CID_<local date>_<time>``
+    so producers never see raw run ids. The internal run id is kept separately
+    for provenance.
+    """
+    from datetime import datetime as _datetime
+
+    now_local = now_local or _datetime.now()
+    stamp = now_local.strftime("%Y-%m-%d_%H%M")
+    root = Path(results_root)
+    root.mkdir(parents=True, exist_ok=True)
+    base = f"{_human_folder_stem(project_name)}_CID_{stamp}"
+    folder = root / base
+    suffix = 2
+    while folder.exists():
+        folder = root / f"{base}_{suffix}"
+        suffix += 1
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+def _prefs_path() -> Path:
+    local_appdata = os.environ.get("LOCALAPPDATA", os.environ.get("HOME", "/tmp"))
+    return Path(local_appdata) / "CID" / "LocalMediaAgent" / "preferences.json"
+
+
+def load_preferences() -> dict[str, Any]:
+    """Load the small CID user preference file (never store secrets here)."""
+    try:
+        return json.loads(_prefs_path().read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def save_preference(key: str, value: Any) -> None:
+    """Persist a single CID user preference under LOCALAPPDATA."""
+    prefs = load_preferences()
+    prefs[key] = value
+    try:
+        _prefs_path().parent.mkdir(parents=True, exist_ok=True)
+        _prefs_path().write_text(
+            json.dumps(prefs, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
+def remember_result_location(results_root: str | Path) -> None:
+    """Remember the last chosen result root for reuse on next launch."""
+    save_preference("results_root", str(results_root))
+
+
+def last_result_location() -> str | None:
+    """Return the last chosen result root, if any."""
+    value = load_preferences().get("results_root")
+    return str(value) if value else None
+
+
 def _format_srt_timestamp(seconds: float) -> str:
     """Convert seconds to SRT HH:MM:SS,mmm format."""
     if seconds < 0:
@@ -278,6 +350,9 @@ def run_batch_transcription(
     worker_process: bool = False,
     grace_period_seconds: float = 3.0,
     worker_log_dir: str | Path | None = None,
+    sync_manifest: dict[str, Any] | None = None,
+    audio_intelligence_analysis_seconds: float | None = None,
+    total_candidate_audio_duration_seconds: float | None = None,
 ) -> dict[str, Any]:
     """Run batch transcription on selected media items.
 
@@ -567,6 +642,18 @@ def run_batch_transcription(
         "total_source_duration_seconds": round(total_source_duration, 2),
         "total_processing_seconds": round(batch_elapsed, 2),
         "overall_rtf": round(batch_elapsed / total_source_duration, 4) if total_source_duration > 0 else None,
+        "audio_intelligence_analysis_seconds": (
+            round(audio_intelligence_analysis_seconds, 3)
+            if audio_intelligence_analysis_seconds is not None
+            else None
+        ),
+        "total_candidate_audio_duration_seconds": (
+            round(total_candidate_audio_duration_seconds, 2)
+            if total_candidate_audio_duration_seconds is not None
+            else round(sum(float(c.get("duration_seconds") or 0.0) for c in candidates), 2)
+        ),
+        "duplicate_transcription_avoided": bool(sync_manifest),
+        "sync_manifest": bool(sync_manifest),
         "results_directory": str(resolved_results_dir),
         "results": batch_results,
         "privacy": {
@@ -582,6 +669,13 @@ def run_batch_transcription(
         json.dumps(batch_summary, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
+
+    if sync_manifest:
+        manifest_path = resolved_results_dir / "sync_manifest.json"
+        manifest_path.write_text(
+            json.dumps(sync_manifest, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
     return batch_summary
 
@@ -808,7 +902,14 @@ def _scan_for_candidates(
 
 
 def _default_results_dir() -> Path:
-    """Return the default persistent results directory."""
+    """Return the visible per-user default result root.
+
+    Producers never search AppData: the default is a human-visible folder under
+    Documents. Internal logs/config remain under LOCALAPPDATA.
+    """
+    user_profile = os.environ.get("USERPROFILE")
+    if user_profile:
+        return Path(user_profile) / "Documents" / "CID Local Media Agent" / "Resultados"
     local_appdata = os.environ.get("LOCALAPPDATA", os.environ.get("HOME", "/tmp"))
     return Path(local_appdata) / "CID" / "LocalMediaAgent" / "results"
 

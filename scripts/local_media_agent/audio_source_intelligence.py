@@ -1,0 +1,900 @@
+"""CID Local Media Agent — Audio Source Intelligence.
+
+Groups related media into recording/session clusters, performs quick audio
+content comparison, estimates synchronization, classifies content
+relationships, analyzes source quality, assigns source roles and recommends
+the smallest useful set of transcription masters.
+
+Everything is local and offline: only the already packaged FFmpeg and numpy
+are used. Analysis decodes short bounded windows at a low sample rate and
+keeps no derivatives (decode happens via piped stdout or in-memory reads).
+
+The public entry points operate on metadata results produced by
+``ffprobe_metadata_extraction`` plus the media root. Synthetic deterministic
+tests exercise the pure signal functions through generated WAV files.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import time
+import uuid
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable
+
+SYNC_MANIFEST_SCHEMA_VERSION = "cid.local_media_agent.sync_manifest.v1"
+
+WINDOW_SECONDS_DEFAULT = 20.0
+SIGNATURE_SAMPLE_RATE = 8000
+ENVELOPE_BLOCKS_PER_SECOND = 10
+FINE_REFINE_SEARCH_SECONDS = 1.0
+FINE_REFINE_WINDOW_SECONDS = 10.0
+SYNC_OFFSET_TOLERANCE_SECONDS = 0.100
+MIN_OVERLAP_ENVELOPE_SAMPLES = 50
+
+RELATIONSHIP_IDENTICAL = "IDENTICAL_OR_NEAR_DUPLICATE"
+RELATIONSHIP_SAME_EVENT = "SAME_EVENT_DIFFERENT_SOURCE"
+RELATIONSHIP_COMPLEMENTARY = "COMPLEMENTARY_SOURCE"
+RELATIONSHIP_UNRELATED = "UNRELATED"
+RELATIONSHIP_UNCERTAIN = "UNCERTAIN"
+
+SYNC_METHOD_TIMECODE = "timecode"
+SYNC_METHOD_CORRELATION = "audio_correlation"
+SYNC_STATUS_RESOLVED = "RESOLVED"
+SYNC_STATUS_UNRESOLVED = "UNRESOLVED"
+
+ROLE_CAMERA_REFERENCE = "CAMERA_REFERENCE"
+ROLE_EXTERNAL_MIX = "EXTERNAL_MIX"
+ROLE_ISOLATED_MIC = "ISOLATED_MIC"
+ROLE_DUPLICATE = "DUPLICATE"
+ROLE_UNKNOWN = "UNKNOWN"
+
+# Internal preference applied when content evidence is comparable: the clean
+# external mix is the natural transcription master, camera audio is a
+# reference only, and isolated tracks remain alternates.
+ROLE_MASTER_PREFERENCE = {
+    ROLE_EXTERNAL_MIX: 0.06,
+    ROLE_ISOLATED_MIC: 0.00,
+    ROLE_UNKNOWN: -0.05,
+    ROLE_DUPLICATE: -0.10,
+    ROLE_CAMERA_REFERENCE: -0.20,
+}
+
+QUALITY_EXCELENTE = "Excelente"
+QUALITY_BUENA = "Buena"
+QUALITY_REFERENCIA = "Referencia"
+QUALITY_DEFICIENTE = "Deficiente"
+
+# Internal tier used only to rank sources (never shown verbatim). A genuine
+# quality gap dominates the role tie-break, so a degraded mix cannot win over
+# a usable source purely because it is labelled EXTERNAL_MIX.
+QUALITY_TIER_BONUS = {
+    QUALITY_EXCELENTE: 0.15,
+    QUALITY_BUENA: 0.05,
+    QUALITY_REFERENCIA: -0.05,
+    QUALITY_DEFICIENTE: -0.15,
+}
+
+HIGH_CONFIDENCE_THRESHOLD = 0.70
+RELATED_CONFIDENCE_THRESHOLD = 0.50
+MASTER_EVENT_CONFIDENCE_THRESHOLD = 0.45
+
+EXTERNAL_MIX_TOKENS = frozenset({"mix", "main", "master"})
+ISOLATED_MIC_TOKENS = frozenset({"track", "combo", "mic", "usb", "1", "2", "3", "4", "5", "6", "7", "8", "9"})
+CAMERA_TOKENS = frozenset({"camera", "canon", "sony", "img", "tarjeta", "m4root", "clip", "c0001", "c0011", "c0012", "c0009"})
+
+
+def _windows_no_console_kwargs() -> dict[str, Any]:
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    if os.name == "nt" and flags:
+        return {"creationflags": flags}
+    return {}
+
+
+def _resolve_ffmpeg_path(ffmpeg_path: str | None) -> str | None:
+    if ffmpeg_path:
+        return str(ffmpeg_path)
+    configured = os.environ.get("CID_FFMPEG_PATH")
+    if configured:
+        return configured
+    here = Path(__file__).resolve().parent
+    for depth in (here, *here.parents):
+        candidate = depth / "runtime" / "ffmpeg" / "bin" / "ffmpeg.exe"
+        if candidate.is_file():
+            return str(candidate)
+        candidate = depth / "runtime" / "bin" / "ffmpeg.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
+def _read_wav_window(
+    media_path: str | Path,
+    start_seconds: float,
+    duration_seconds: float,
+    sample_rate: int,
+) -> tuple[float, Any] | None:
+    """Read a mono WAV window natively (no ffmpeg) when the format matches.
+
+    Returns (actual_sample_rate, mono float32 samples) or None if the file is
+    not a plain matching-rate WAV (in which case ffmpeg decoding is used).
+    """
+    import wave
+
+    try:
+        with wave.open(str(media_path), "rb") as wav:
+            channels = wav.getnchannels()
+            rate = wav.getframerate()
+            sampwidth = wav.getsampwidth()
+            if sampwidth != 2 or rate != sample_rate:
+                return None
+            total_frames = wav.getnframes()
+            start_frame = max(0, int(start_seconds * rate))
+            if start_frame > total_frames:
+                return None
+            wav.setpos(start_frame)
+            n = min(int(duration_seconds * rate), total_frames - start_frame)
+            raw = wav.readframes(n)
+    except Exception:
+        return None
+    if not raw:
+        return None
+    import numpy as np
+
+    samples = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+    if channels > 1:
+        samples = samples.reshape(-1, channels).mean(axis=1)
+    return float(rate), samples
+
+
+def decode_window(
+    media_path: str | Path,
+    *,
+    start_seconds: float,
+    duration_seconds: float,
+    sample_rate: int = SIGNATURE_SAMPLE_RATE,
+    ffmpeg_path: str | None = None,
+) -> tuple[float, Any] | None:
+    """Decode a bounded mono window from a media file.
+
+    Returns (sample_rate, float32 mono samples) or None when the window is
+    empty/unavailable. Tries a native WAV read first, then ffmpeg piping.
+    No temp derivatives are created.
+    """
+    native = _read_wav_window(media_path, start_seconds, duration_seconds, sample_rate)
+    if native is not None:
+        return native
+    tool = _resolve_ffmpeg_path(ffmpeg_path)
+    if not tool:
+        return None
+    cmd = [
+        tool,
+        "-v", "error",
+        "-ss", f"{start_seconds:.3f}",
+        "-t", f"{duration_seconds:.3f}",
+        "-i", str(media_path),
+        "-vn",
+        "-ac", "1",
+        "-ar", str(sample_rate),
+        "-f", "s16le",
+        "-",
+    ]
+    try:
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            timeout=60,
+            **_windows_no_console_kwargs(),
+        )
+    except Exception:
+        return None
+    if proc.returncode != 0 or not proc.stdout:
+        return None
+    import numpy as np
+
+    samples = np.frombuffer(proc.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+    return float(sample_rate), samples
+
+
+def envelope(
+    samples: Any,
+    sample_rate: int,
+    blocks_per_second: int = ENVELOPE_BLOCKS_PER_SECOND,
+) -> Any:
+    """Reduce mono samples to a low-rate mean-abs envelope."""
+    import numpy as np
+
+    samples = np.asarray(samples, dtype=np.float32)
+    if samples.size == 0:
+        return np.zeros(0, dtype=np.float32)
+    block = max(1, int(sample_rate / max(1, blocks_per_second)))
+    n = samples.size
+    usable = n - (n % block)
+    if usable == 0:
+        return np.zeros(0, dtype=np.float32)
+    windowed = samples[:usable].reshape(-1, block)
+    return np.abs(windowed).mean(axis=1).astype(np.float32)
+
+
+def _normalized_correlation(a: Any, b: Any) -> float:
+    import numpy as np
+
+    a = np.asarray(a, dtype=np.float64)
+    b = np.asarray(b, dtype=np.float64)
+    if a.size == 0 or b.size == 0:
+        return 0.0
+    a = a - a.mean()
+    b = b - b.mean()
+    denom = np.sqrt((a * a).sum() * (b * b).sum())
+    if denom <= 0.0:
+        return 0.0
+    coef = float(np.dot(a, b) / denom)
+    return float(max(-1.0, min(1.0, coef)))
+
+
+def find_sync_lag(
+    env_a: Any,
+    env_b: Any,
+    blocks_per_second: int,
+) -> tuple[int, float]:
+    """Estimate the envelope lag aligning ``env_b`` onto ``env_a``.
+
+    Returns (lag_samples, normalized_confidence). ``lag`` is the position of
+    ``env_b[0]`` on the ``env_a`` timeline (negative means B starts before A).
+    """
+    import numpy as np
+
+    env_a = np.asarray(env_a, dtype=np.float32)
+    env_b = np.asarray(env_b, dtype=np.float32)
+    if env_a.size < 2 or env_b.size < 2:
+        return 0, 0.0
+    corr = np.correlate(env_a, env_b, mode="full")
+    if corr.size == 0:
+        return 0, 0.0
+    idx = int(np.argmax(corr))
+    lag = idx - (env_b.size - 1)
+    overlap = _overlap_segments(env_a, env_b, lag)
+    if overlap is None:
+        return lag, 0.0
+    confidence = _normalized_correlation(overlap[0], overlap[1])
+    return lag, confidence
+
+
+def _overlap_segments(
+    env_a: Any,
+    env_b: Any,
+    lag: int,
+) -> tuple[Any, Any] | None:
+    """Return the overlapping portions of A and B for a given lag."""
+    import numpy as np
+
+    env_a = np.asarray(env_a, dtype=np.float32)
+    env_b = np.asarray(env_b, dtype=np.float32)
+    la, lb = env_a.size, env_b.size
+    if lag >= 0:
+        a0, b0 = lag, 0
+    else:
+        a0, b0 = 0, -lag
+    a_len = min(la - a0, lb - b0)
+    if a_len <= 0:
+        return None
+    return env_a[a0 : a0 + a_len], env_b[b0 : b0 + a_len]
+
+
+def refine_offset_with_samples(
+    samples_a: Any,
+    samples_b: Any,
+    sample_rate: int,
+    coarse_offset_seconds: float,
+    search_seconds: float = FINE_REFINE_SEARCH_SECONDS,
+) -> tuple[float, float]:
+    """Refine a coarse offset using raw-sample correlation around it.
+
+    ``coarse_offset_seconds`` is the offset of B relative to A. Returns the
+    refined offset and the fine correlation confidence.
+    """
+    import numpy as np
+
+    a = np.asarray(samples_a, dtype=np.float32)
+    b = np.asarray(samples_b, dtype=np.float32)
+    if a.size < 2 or b.size < 2:
+        return coarse_offset_seconds, 0.0
+    search = max(1, int(search_seconds * sample_rate))
+    corr = np.correlate(a, b, mode="full")
+    center = corr.size // 2
+    lo = max(0, center - search)
+    hi = min(corr.size, center + search + 1)
+    if hi <= lo:
+        return coarse_offset_seconds, 0.0
+    region = corr[lo:hi]
+    idx = int(np.argmax(region))
+    raw_lag = (lo + idx) - center  # positive: B delayed relative to A
+    refined = coarse_offset_seconds + raw_lag / sample_rate
+    overlap = _overlap_segments(a, b, lo + idx - center)
+    confidence = _normalized_correlation(*overlap) if overlap else 0.0
+    return float(refined), confidence
+
+
+def _window_offsets(duration_seconds: float, window_seconds: float) -> list[str]:
+    """Return the ordered analysis window keys/anchors for a recording."""
+    if duration_seconds is None or duration_seconds <= 0:
+        return ["start"]
+    if duration_seconds <= window_seconds:
+        return ["start"]
+    windows = ["start", "middle", "end"]
+    return windows
+
+
+def _window_anchor(key: str, duration_seconds: float, window_seconds: float) -> float:
+    if duration_seconds is None or duration_seconds <= 0:
+        return 0.0
+    if key == "start":
+        return 0.0
+    if key == "end":
+        return max(0.0, duration_seconds - window_seconds)
+    return max(0.0, duration_seconds / 2.0 - window_seconds / 2.0)
+
+
+def analyze_quality(samples: Any, sample_rate: int) -> dict[str, Any]:
+    """Compute lightweight objective quality indicators from sampled audio."""
+    import numpy as np
+
+    x = np.asarray(samples, dtype=np.float32)
+    result: dict[str, Any] = {
+        "window_seconds": float(x.size) / float(sample_rate) if sample_rate else 0.0,
+        "rms_db": None,
+        "peak_db": None,
+        "clipping_fraction": 0.0,
+        "silence_fraction": 0.0,
+        "dynamic_range_db": None,
+        "snr_proxy_db": None,
+    }
+    if x.size == 0:
+        return result
+    rms = float(np.sqrt(np.mean(x * x)))
+    peak = float(np.max(np.abs(x))) if x.size else 0.0
+    result["rms_db"] = 20.0 * np.log10(rms + 1e-12) if rms > 1e-9 else None
+    result["peak_db"] = 20.0 * np.log10(peak + 1e-12) if peak > 1e-9 else None
+    result["clipping_fraction"] = float(np.mean(np.abs(x) >= 0.999))
+    block = max(1, int(sample_rate // 10))
+    n = x.size
+    usable = n - (n % block)
+    if usable >= block:
+        blocks = np.abs(x[:usable]).reshape(-1, block).mean(axis=1)
+        silence_threshold = 10.0 ** (-60.0 / 20.0)
+        result["silence_fraction"] = float(np.mean(blocks < silence_threshold))
+        non_silent = blocks[blocks >= silence_threshold]
+        if non_silent.size > 0:
+            db = 20.0 * np.log10(non_silent + 1e-12)
+            result["dynamic_range_db"] = float(np.max(db) - np.min(db))
+        if non_silent.size > 4:
+            floor = float(np.percentile(blocks, 10))
+            noise_db = 20.0 * np.log10(floor + 1e-12)
+            if result["peak_db"] is not None:
+                result["snr_proxy_db"] = float(result["peak_db"] - noise_db)
+    return result
+
+
+def _label_quality(metrics: dict[str, Any]) -> str:
+    if metrics.get("clipping_fraction", 0.0) > 0.02:
+        return QUALITY_DEFICIENTE
+    if metrics.get("silence_fraction", 1.0) > 0.8:
+        return QUALITY_DEFICIENTE
+    rms_db = metrics.get("rms_db")
+    if rms_db is None:
+        return QUALITY_REFERENCIA
+    if -45.0 <= rms_db <= -12.0 and (metrics.get("dynamic_range_db") or 0.0) >= 8.0:
+        return QUALITY_EXCELENTE
+    if -55.0 <= rms_db <= -8.0:
+        return QUALITY_BUENA
+    return QUALITY_REFERENCIA
+
+
+def assign_source_role(
+    relative_path: str,
+    category: str,
+    has_video: bool,
+    metrics: dict[str, Any],
+) -> str:
+    """Assign an internal source role from metadata/name/path evidence."""
+    name = Path(relative_path).stem.lower()
+    tokens = {tok for tok in name.replace("-", " ").replace("_", " ").split() if tok}
+    if has_video:
+        return ROLE_CAMERA_REFERENCE
+    if tokens & EXTERNAL_MIX_TOKENS:
+        return ROLE_EXTERNAL_MIX
+    if tokens & ISOLATED_MIC_TOKENS:
+        return ROLE_ISOLATED_MIC
+    if any(tok in CAMERA_TOKENS for tok in name.split()):
+        return ROLE_CAMERA_REFERENCE
+    return ROLE_UNKNOWN
+
+
+@dataclass
+class SourceSignature:
+    """Compact analysis signature for one media source."""
+
+    relative_path: str
+    category: str
+    file_size_bytes: int | None = None
+    duration_seconds: float | None = None
+    sample_rate: int | None = None
+    channel_count: int | None = None
+    codec: str | None = None
+    timecode: str | None = None
+    creation_time: str | None = None
+    has_video: bool = False
+    windows: dict[str, Any] = field(default_factory=dict)
+    quality: dict[str, Any] = field(default_factory=dict)
+    role: str = ROLE_UNKNOWN
+    sha256: str | None = None
+    analysis_seconds: float = 0.0
+
+
+def _sha256_of_file(path: str | Path) -> str | None:
+    import hashlib
+
+    h = hashlib.sha256()
+    try:
+        with open(path, "rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except OSError:
+        return None
+
+
+def extract_source_signature(
+    media_path: str | Path,
+    metadata: dict[str, Any],
+    *,
+    ffmpeg_path: str | None = None,
+    window_seconds: float = WINDOW_SECONDS_DEFAULT,
+    blocks_per_second: int = ENVELOPE_BLOCKS_PER_SECOND,
+    sample_rate: int = SIGNATURE_SAMPLE_RATE,
+    include_sha256: bool = True,
+    decoder: Callable[..., tuple[float, Any] | None] | None = None,
+) -> SourceSignature:
+    """Build a compact signature for one media source.
+
+    ``decoder`` (optional) overrides window decoding for hermetic tests.
+    """
+    import numpy as np
+
+    media_path = Path(media_path)
+    rel = metadata.get("relative_path", media_path.name)
+    duration = metadata.get("duration_seconds")
+    audio_info = metadata.get("audio") or {}
+    video_info = metadata.get("video")
+
+    decode = decoder or (lambda start, dur: decode_window(
+        media_path,
+        start_seconds=start,
+        duration_seconds=dur,
+        sample_rate=sample_rate,
+        ffmpeg_path=ffmpeg_path,
+    ))
+
+    started = time.monotonic()
+    windows: dict[str, Any] = {}
+    quality: dict[str, Any] = {}
+    for key in _window_offsets(duration, window_seconds):
+        anchor = _window_anchor(key, duration, window_seconds)
+        decoded = decode(anchor, window_seconds)
+        if decoded is None:
+            continue
+        rate, samples = decoded
+        windows[key] = envelope(samples, rate, blocks_per_second)
+        quality[key] = analyze_quality(samples, rate)
+    analysis_seconds = time.monotonic() - started
+
+    sig = SourceSignature(
+        relative_path=rel,
+        category=metadata.get("category", "audio"),
+        file_size_bytes=metadata.get("file_size_bytes"),
+        duration_seconds=duration,
+        sample_rate=(audio_info or {}).get("sample_rate"),
+        channel_count=(audio_info or {}).get("channel_count"),
+        codec=(audio_info or {}).get("codec"),
+        timecode=metadata.get("timecode"),
+        creation_time=metadata.get("creation_time"),
+        has_video=bool(video_info),
+        windows=windows,
+        quality=quality,
+        role=assign_source_role(rel, metadata.get("category", ""), bool(video_info), quality),
+        analysis_seconds=analysis_seconds,
+    )
+    if include_sha256 and sig.file_size_bytes and sig.file_size_bytes <= (1 << 31):
+        sig.sha256 = _sha256_of_file(media_path)
+    return sig
+
+
+def _best_window(sig: SourceSignature, preferred: str = "start") -> tuple[str, Any] | None:
+    for key in (preferred, "middle", "end"):
+        if key in sig.windows:
+            return key, sig.windows[key]
+    return None
+
+
+def sync_sources(
+    sig_a: SourceSignature,
+    sig_b: SourceSignature,
+    *,
+    tolerance_seconds: float = SYNC_OFFSET_TOLERANCE_SECONDS,
+) -> dict[str, Any]:
+    """Estimate synchronization between two related sources.
+
+    Returns a dict with ``offset_seconds`` (B relative to A), ``confidence``,
+    ``method``, ``status``. Timecode evidence is preferred when genuinely
+    available and internally consistent; otherwise audio correlation is used.
+    """
+    result: dict[str, Any] = {
+        "offset_seconds": None,
+        "confidence": None,
+        "method": SYNC_METHOD_CORRELATION,
+        "status": SYNC_STATUS_UNRESOLVED,
+    }
+
+    if sig_a.timecode and sig_b.timecode:
+        tc_a = _timecode_to_seconds(sig_a.timecode)
+        tc_b = _timecode_to_seconds(sig_b.timecode)
+        if tc_a is not None and tc_b is not None:
+            offset = tc_b - tc_a
+            result["offset_seconds"] = round(offset, 3)
+            result["method"] = SYNC_METHOD_TIMECODE
+            result["confidence"] = 0.95
+            result["status"] = SYNC_STATUS_RESOLVED
+            return result
+
+    if not sig_a.windows or not sig_b.windows:
+        return result
+
+    best: dict[str, Any] = {"confidence": -1.0}
+    for key in ("start", "middle", "end"):
+        env_a = sig_a.windows.get(key)
+        env_b = sig_b.windows.get(key)
+        if env_a is None or env_b is None or env_a.size < 2 or env_b.size < 2:
+            continue
+        lag, confidence = find_sync_lag(env_a, env_b, ENVELOPE_BLOCKS_PER_SECOND)
+        if confidence > best["confidence"]:
+            best = {
+                "lag": lag,
+                "confidence": confidence,
+                "window": key,
+                "offset_seconds": lag / ENVELOPE_BLOCKS_PER_SECOND,
+            }
+
+    if best["confidence"] < 0.0 or best["confidence"] < RELATED_CONFIDENCE_THRESHOLD:
+        return result
+
+    result["confidence"] = round(best["confidence"], 3)
+    result["offset_seconds"] = round(best["offset_seconds"], 3)
+    result["status"] = SYNC_STATUS_RESOLVED
+    return result
+
+
+def _timecode_to_seconds(timecode: str) -> float | None:
+    parts = str(timecode).split(":")
+    if len(parts) != 3:
+        return None
+    try:
+        return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+    except ValueError:
+        return None
+
+
+def classify_relationship(
+    sig_a: SourceSignature,
+    sig_b: SourceSignature,
+    sync: dict[str, Any],
+) -> dict[str, Any]:
+    """Classify the content relationship between two sources."""
+    confidence = sync.get("confidence") or 0.0
+    if sync.get("status") != SYNC_STATUS_RESOLVED or confidence < RELATED_CONFIDENCE_THRESHOLD:
+        return {"relationship": RELATIONSHIP_UNRELATED, "confidence": round(confidence, 3)}
+
+    dur_a = sig_a.duration_seconds or 0.0
+    dur_b = sig_b.duration_seconds or 0.0
+    same_length = max(dur_a, dur_b) > 0 and abs(dur_a - dur_b) / max(dur_a, dur_b) < 0.02
+
+    duplicate_hint = False
+    if sig_a.sha256 and sig_b.sha256 and sig_a.sha256 == sig_b.sha256:
+        duplicate_hint = True
+
+    if duplicate_hint or (same_length and confidence >= 0.90):
+        return {
+            "relationship": RELATIONSHIP_IDENTICAL,
+            "confidence": round(confidence, 3),
+            "duplicate": True,
+        }
+
+    if confidence >= RELATED_CONFIDENCE_THRESHOLD:
+        complementary = _complementary_evidence(sig_a, sig_b)
+        if complementary:
+            return {
+                "relationship": RELATIONSHIP_COMPLEMENTARY,
+                "confidence": round(confidence, 3),
+                "complementary": True,
+            }
+        return {
+            "relationship": RELATIONSHIP_SAME_EVENT,
+            "confidence": round(confidence, 3),
+        }
+
+    return {"relationship": RELATIONSHIP_UNCERTAIN, "confidence": round(confidence, 3)}
+
+
+def _complementary_evidence(sig_a: SourceSignature, sig_b: SourceSignature) -> bool:
+    """Weak evidence that sources cover different portions of an event."""
+    roles = {sig_a.role, sig_b.role}
+    if sig_a.has_video != sig_b.has_video and (sig_a.role != sig_b.role):
+        return False
+    return False
+
+
+def source_quality_summary(sig: SourceSignature) -> dict[str, Any]:
+    """Aggregate per-window quality metrics into one summary + label."""
+    merged: dict[str, Any] = {}
+    counts: dict[str, int] = {}
+    for key, metrics in sig.quality.items():
+        for name, value in metrics.items():
+            if isinstance(value, (int, float)):
+                merged[name] = merged.get(name, 0.0) + float(value)
+                counts[name] = counts.get(name, 0) + 1
+    summary: dict[str, Any] = {}
+    for name in merged:
+        if counts.get(name):
+            summary[name] = round(merged[name] / counts[name], 4)
+    return {"metrics": summary, "label": _label_quality(summary)}
+
+
+def internal_rank_score(
+    quality: dict[str, Any],
+    duration_seconds: float | None,
+    event_confidence: float | None,
+) -> float:
+    """Internal 0..1 ranking used to order sources (not shown verbatim)."""
+    q = quality.get("metrics", {})
+    score = 0.5
+    score += QUALITY_TIER_BONUS.get(quality.get("label"), 0.0)
+    rms_db = q.get("rms_db")
+    if rms_db is not None:
+        if -45.0 <= rms_db <= -12.0:
+            score += 0.2
+        elif -60.0 <= rms_db <= -8.0:
+            score += 0.1
+    score -= min(0.3, (q.get("clipping_fraction") or 0.0) * 3.0)
+    score -= min(0.25, (q.get("silence_fraction") or 0.0) * 0.5)
+    if q.get("dynamic_range_db") is not None and q["dynamic_range_db"] >= 8.0:
+        score += 0.1
+    coverage = 0.0
+    if duration_seconds:
+        coverage = min(1.0, duration_seconds / 3600.0)
+    score += 0.1 * coverage
+    if event_confidence is not None:
+        score += 0.15 * event_confidence
+    return round(max(0.0, min(1.0, score)), 3)
+
+
+@dataclass
+class SourceCluster:
+    """A recording/session cluster of related sources."""
+
+    session_id: str
+    sources: list[SourceSignature] = field(default_factory=list)
+    relationships: list[dict[str, Any]] = field(default_factory=list)
+    transcription_masters: list[str] = field(default_factory=list)
+    duplicate_sources: list[str] = field(default_factory=list)
+    alternate_sources: list[str] = field(default_factory=list)
+    reference_source: str | None = None
+
+
+def _session_id_for(relative_path: str) -> str:
+    parts = Path(relative_path).parts
+    if len(parts) >= 2:
+        return parts[-2]
+    return Path(relative_path).stem or "session"
+
+
+def group_related_media(
+    metadata_results: list[dict[str, Any]],
+    *,
+    ffmpeg_path: str | None = None,
+    media_root: str | Path | None = None,
+    analyze_content: bool = True,
+    signature_builder: Callable[..., SourceSignature] | None = None,
+    max_sources_per_cluster: int = 16,
+) -> list[SourceCluster]:
+    """Group related media into recording/session clusters.
+
+    Tentative groups come from session directory context; content correlation
+    then confirms relationships and enables duplicate/master decisions. When
+    ``analyze_content`` is False no decoding is performed (metadata-only).
+    """
+    import numpy as np
+
+    candidates = [
+        r for r in metadata_results
+        if r.get("category") in ("audio", "video")
+        and (r.get("duration_seconds") or 0) > 0
+    ]
+    by_session: dict[str, list[dict[str, Any]]] = {}
+    for item in candidates:
+        sid = _session_id_for(item.get("relative_path", ""))
+        by_session.setdefault(sid, []).append(item)
+
+    build = signature_builder or (lambda path, meta, i: _default_signature_builder(
+        path, meta, ffmpeg_path=ffmpeg_path
+    ))
+
+    clusters: list[SourceCluster] = []
+    for sid, items in sorted(by_session.items()):
+        items = sorted(items, key=lambda x: x.get("file_size_bytes") or 0)
+        signatures: list[SourceSignature] = []
+        for i, item in enumerate(items):
+            if len(signatures) >= max_sources_per_cluster:
+                break
+            path = Path(item.get("abs_path") or (Path(media_root) / item.get("relative_path", "")))
+            sig = build(path, item, i)
+            if sig is None or not sig.windows:
+                continue
+            signatures.append(sig)
+        if not signatures:
+            continue
+        cluster = _finalize_cluster(signatures, sid)
+        clusters.append(cluster)
+    return clusters
+
+
+def _default_signature_builder(
+    path: str | Path,
+    metadata: dict[str, Any],
+    ffmpeg_path: str | None,
+) -> SourceSignature:
+    return extract_source_signature(path, metadata, ffmpeg_path=ffmpeg_path)
+
+
+def _finalize_cluster(
+    signatures: list[SourceSignature],
+    session_id: str,
+) -> SourceCluster:
+    cluster = SourceCluster(session_id=session_id, sources=signatures)
+
+    relations: dict[str, dict[str, Any]] = {}
+    masters: dict[str, float] = {}
+    duplicate_ids: set[str] = set()
+
+    for i, sig_b in enumerate(signatures):
+        for sig_a in signatures[:i]:
+            sync = sync_sources(sig_a, sig_b)
+            rel = classify_relationship(sig_a, sig_b, sync)
+            relation = {
+                "a": sig_a.relative_path,
+                "b": sig_b.relative_path,
+                "relationship": rel["relationship"],
+                "confidence": rel["confidence"],
+                "sync": sync,
+            }
+            cluster.relationships.append(relation)
+            if rel.get("duplicate"):
+                if sig_b.sha256 and sig_a.sha256 and sig_b.sha256 == sig_a.sha256:
+                    duplicate_ids.add(sig_b.relative_path)
+
+    for sig in signatures:
+        if sig.relative_path in duplicate_ids:
+            continue
+        event_conf = _best_event_confidence(sig, cluster.relationships)
+        q = source_quality_summary(sig)
+        score = internal_rank_score(q, sig.duration_seconds, event_conf)
+        score += ROLE_MASTER_PREFERENCE.get(sig.role, 0.0)
+        masters[sig.relative_path] = score
+
+    ordered = sorted(masters.items(), key=lambda kv: kv[1], reverse=True)
+    cluster.transcription_masters = [p for p, _ in ordered[:1]]
+    cluster.reference_source = ordered[0][0] if ordered else None
+    cluster.duplicate_sources = sorted(duplicate_ids)
+    cluster.alternate_sources = [
+        sig.relative_path
+        for sig in signatures
+        if sig.relative_path not in cluster.transcription_masters
+        and sig.relative_path not in cluster.duplicate_sources
+    ]
+    return cluster
+
+
+def _best_event_confidence(
+    sig: SourceSignature,
+    relationships: list[dict[str, Any]],
+) -> float | None:
+    confidences = [
+        rel["confidence"]
+        for rel in relationships
+        if rel["a"] == sig.relative_path or rel["b"] == sig.relative_path
+    ]
+    return max(confidences) if confidences else None
+
+
+def build_sync_manifest(
+    cluster: SourceCluster,
+    *,
+    media_root: str | Path,
+) -> dict[str, Any]:
+    """Build a producer/sync manifest for a session cluster."""
+    reference = cluster.reference_source or (cluster.transcription_masters or [None])[0]
+    sources: list[dict[str, Any]] = []
+    for rel in cluster.relationships:
+        if reference == rel["a"]:
+            other = rel["b"]
+        elif reference == rel["b"]:
+            other = rel["a"]
+        else:
+            continue
+        sources.append({
+            "source": other,
+            "relationship": rel["relationship"],
+            "sync_method": rel["sync"].get("method"),
+            "offset_seconds": rel["sync"].get("offset_seconds"),
+            "confidence": rel["sync"].get("confidence"),
+            "sync_status": rel["sync"].get("status"),
+        })
+    return {
+        "schema_version": SYNC_MANIFEST_SCHEMA_VERSION,
+        "session_id": cluster.session_id,
+        "reference": reference,
+        "transcription_masters": list(cluster.transcription_masters),
+        "duplicate_sources": list(cluster.duplicate_sources),
+        "alternate_sources": list(cluster.alternate_sources),
+        "sources": sources,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "privacy": {
+            "source_media_modified": False,
+            "network_used": False,
+            "database_used": False,
+        },
+    }
+
+
+def recommend_transcription_sources(
+    clusters: list[SourceCluster],
+) -> list[str]:
+    """Return the full transcription source set (masters only, non-duplicative)."""
+    masters: list[str] = []
+    for cluster in clusters:
+        masters.extend(cluster.transcription_masters)
+    return masters
+
+
+def all_related_source_paths(clusters: list[SourceCluster]) -> list[str]:
+    paths: list[str] = []
+    for cluster in clusters:
+        paths.extend(sig.relative_path for sig in cluster.sources)
+    return sorted(set(paths))
+
+
+def format_cluster_summary(cluster: SourceCluster) -> dict[str, Any]:
+    """Producer-facing summary of a session cluster."""
+    source_rows = []
+    for sig in cluster.sources:
+        q = source_quality_summary(sig)
+        is_master = sig.relative_path in cluster.transcription_masters
+        is_duplicate = sig.relative_path in cluster.duplicate_sources
+        source_rows.append({
+            "source": sig.relative_path,
+            "role": sig.role,
+            "quality": q["label"],
+            "transcription_master": is_master,
+            "duplicate": is_duplicate,
+            "alternate": sig.relative_path in cluster.alternate_sources,
+        })
+    return {
+        "session_id": cluster.session_id,
+        "source_count": len(cluster.sources),
+        "masters": list(cluster.transcription_masters),
+        "duplicates": list(cluster.duplicate_sources),
+        "alternates": list(cluster.alternate_sources),
+        "sources": source_rows,
+    }

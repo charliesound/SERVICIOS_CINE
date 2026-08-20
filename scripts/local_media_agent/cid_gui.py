@@ -18,13 +18,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "0.2.0-beta2"
+APP_VERSION = "0.3.0-beta1"
 APP_TITLE = "CID Local Media Agent"
 LOCAL_HINT = "CID trabaja en modo local\nLos originales no se modifican"
 RESULTS_DAVINCI_HINT = "Se genera un SRT listo para DaVinci."
 DONE_SRT_HINT_COMPLETED = "Los SRT completados están listos para DaVinci."
 DONE_SRT_HINT_NONE = "No se ha generado ningún SRT en esta ejecución."
 MIN_ETA_AUDIO_SECONDS = 25.0
+GROUPS_HIGH_CONFIDENCE = "CID ha seleccionado la mejor fuente de audio."
+GROUPS_ALTERNATIVES_TITLE = "Fuentes de esta grabación"
+DUPLICATE_AVOIDED_HINT = "Las fuentes relacionadas no se transcriben varias veces."
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -35,8 +38,15 @@ from tkinter import filedialog, messagebox, ttk
 
 from scripts.local_media_agent.read_only_folder_scanner import scan_read_only_folder
 from scripts.local_media_agent.ffprobe_metadata_extraction import extract_metadata
+from scripts.local_media_agent.audio_source_intelligence import (
+    build_sync_manifest,
+    group_related_media,
+)
 from scripts.local_media_agent.batch_transcription import (
     _default_results_dir,
+    last_result_location,
+    make_run_results_dir,
+    remember_result_location,
     run_batch_transcription,
     select_batch_candidates,
 )
@@ -70,6 +80,45 @@ def _done_srt_hint(completed_count: int, srt_files_created: int) -> str:
     if completed_count > 0 and srt_files_created > 0:
         return DONE_SRT_HINT_COMPLETED
     return DONE_SRT_HINT_NONE
+
+
+def cluster_view(cluster: Any) -> dict[str, Any]:
+    """Producer-facing view of one recording/session cluster.
+
+    Exposes the internal cluster as understandable audiovisual concepts:
+    counts, whether audio was synchronized, the selected master and the
+    sources kept as alternatives. No technical parameters are exposed.
+    """
+    sources = list(cluster.sources)
+    audio_count = sum(1 for sig in sources if not sig.has_video)
+    video_count = sum(1 for sig in sources if sig.has_video)
+    masters = list(cluster.transcription_masters)
+    master = Path(masters[0]).name if masters else "—"
+    sync_ok = any(
+        rel.get("sync", {}).get("status") == "RESOLVED"
+        for rel in getattr(cluster, "relationships", [])
+    )
+    return {
+        "session_id": cluster.session_id,
+        "title": f"Grabación {cluster.session_id}",
+        "audio_count": audio_count,
+        "video_count": video_count,
+        "source_count": len(sources),
+        "master": master,
+        "master_rel": masters[0] if masters else None,
+        "sync_ok": sync_ok,
+        "duplicate_count": len(list(cluster.duplicate_sources)),
+        "alternate_count": len(list(cluster.alternate_sources)),
+    }
+
+
+def _sources_for_cluster(cluster: Any, metadata: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return the metadata entries belonging to a cluster's transcription masters."""
+    master_rels = set(cluster.transcription_masters)
+    return [
+        item for item in metadata
+        if item.get("relative_path") in master_rels
+    ]
 
 
 def _duration_of(item: dict[str, Any]) -> float | None:
@@ -179,11 +228,16 @@ class ProducerApp:
         self.scan_result: dict[str, Any] = {}
         self.metadata: dict[str, Any] = {}
         self.candidates: list[dict[str, Any]] = []
+        self.clusters: list[Any] = []
+        self.cluster_views: list[dict[str, Any]] = []
         self.results_dir: str | None = None
+        self.results_root: str = last_result_location() or str(_default_results_dir())
         self.analysis_model_path: str | None = _resolve_packaged_model()
         self._duration_map: dict[str, float | None] = {}
         self._weight_map: dict[str, float] = {}
         self._run_state: dict[str, Any] = {}
+        self._last_srt_path: str | None = None
+        self._last_davinci_path: str | None = None
 
         self.root.title(f"{APP_TITLE} {APP_VERSION}")
         self.root.geometry("780x620")
@@ -210,6 +264,7 @@ class ProducerApp:
         self.frames: dict[str, ttk.Frame] = {}
         self._build_home()
         self._build_material()
+        self._build_groups()
         self._build_run()
         self._build_done()
 
@@ -325,7 +380,81 @@ class ProducerApp:
         )
         self.material_davinci_hint.grid(row=5, column=0, sticky="w", pady=(8, 0))
 
+        location = ttk.Frame(body)
+        location.grid(row=6, column=0, sticky="ew", pady=(10, 0))
+        ttk.Label(location, text="Guardar resultados en:").pack(side="left")
+        self.results_root_label = ttk.Label(location, text="", style="Sub.TLabel", wraplength=430)
+        self.results_root_label.pack(side="left", padx=(8, 8))
+        ttk.Button(location, text="Cambiar…", command=self._choose_results_location).pack(side="left")
+        self._refresh_results_root_label()
+
         self.tree.bind("<<TreeviewSelect>>", lambda _e: self._update_selection())
+
+    def _build_groups(self) -> None:
+        frame = self._new_frame("groups")
+        body = ttk.Frame(frame)
+        body.grid(row=0, column=0, sticky="nsew")
+        body.grid_rowconfigure(2, weight=1)
+        body.grid_columnconfigure(0, weight=1)
+
+        header = ttk.Frame(body)
+        header.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(header, text="Grabaciones", style="Header.TLabel").pack(side="left")
+        self.groups_path_label = ttk.Label(header, text="", style="Sub.TLabel")
+        self.groups_path_label.pack(side="right")
+
+        self.groups_hint = ttk.Label(
+            body,
+            text="CID agrupa las fuentes relacionadas y selecciona la mejor para transcribir.",
+            style="Info.TLabel",
+            wraplength=680,
+        )
+        self.groups_hint.grid(row=1, column=0, sticky="w", pady=(0, 10))
+
+        list_frame = ttk.Frame(body)
+        list_frame.grid(row=2, column=0, sticky="nsew")
+        list_frame.grid_rowconfigure(0, weight=1)
+        list_frame.grid_columnconfigure(0, weight=1)
+
+        self.groups_tree = ttk.Treeview(
+            list_frame,
+            columns=("title", "sources", "master"),
+            show="headings",
+            selectmode="browse",
+        )
+        self.groups_tree.heading("title", text="Grabación")
+        self.groups_tree.heading("sources", text="Fuentes")
+        self.groups_tree.heading("master", text="Recomendación CID")
+        self.groups_tree.column("title", width=260, anchor="w", stretch=True)
+        self.groups_tree.column("sources", width=120, anchor="center", stretch=False)
+        self.groups_tree.column("master", width=280, anchor="w", stretch=True)
+        self.groups_tree.grid(row=0, column=0, sticky="nsew")
+
+        groups_scroll = ttk.Scrollbar(list_frame, orient="vertical", command=self.groups_tree.yview)
+        groups_scroll.grid(row=0, column=1, sticky="ns")
+        self.groups_tree.configure(yscrollcommand=groups_scroll.set)
+
+        actions = ttk.Frame(body)
+        actions.grid(row=3, column=0, sticky="ew", pady=(10, 0))
+        self.groups_transcribe_btn = ttk.Button(
+            actions,
+            text="Transcribir entrevista",
+            style="Primary.TButton",
+            command=self._transcribe_selected_group_click,
+        )
+        self.groups_transcribe_btn.pack(side="left")
+        self.groups_sources_btn = ttk.Button(
+            actions,
+            text="Ver fuentes",
+            command=self._view_selected_group_sources,
+        )
+        self.groups_sources_btn.pack(side="left", padx=(8, 0))
+        self.groups_duplicate_hint = ttk.Label(
+            body, text=DUPLICATE_AVOIDED_HINT, style="Info.TLabel"
+        )
+        self.groups_duplicate_hint.grid(row=4, column=0, sticky="w", pady=(8, 0))
+
+        self.groups_tree.bind("<<TreeviewSelect>>", lambda _e: self._update_groups_selection())
 
     def _build_run(self) -> None:
         frame = self._new_frame("run")
@@ -386,13 +515,31 @@ class ProducerApp:
         self.done_davinci_label = ttk.Label(body, text=RESULTS_DAVINCI_HINT, style="Info.TLabel")
         self.done_davinci_label.pack(pady=(0, 18))
 
+        actions = ttk.Frame(body)
+        actions.pack(pady=(0, 14))
         self.open_results_btn = ttk.Button(
-            body,
-            text="Abrir carpeta de resultados",
+            actions,
+            text="Abrir resultados",
             style="Primary.TButton",
             command=self._open_results,
         )
-        self.open_results_btn.pack()
+        self.open_results_btn.pack(side="left", padx=(0, 6))
+        self.open_srt_btn = ttk.Button(
+            actions, text="Abrir SRT", state="disabled", command=self._open_srt
+        )
+        self.open_srt_btn.pack(side="left", padx=(6, 0))
+        self.davinci_btn = ttk.Button(
+            actions, text="Preparar para DaVinci", state="disabled", command=self._open_davinci
+        )
+        self.davinci_btn.pack(side="left", padx=(6, 0))
+
+        self.transcribe_more_btn = ttk.Button(
+            body, text="Transcribir más", command=self._transcribe_more
+        )
+        self.transcribe_more_btn.pack(pady=(0, 10))
+
+        self.done_results_path = ttk.Label(body, text="", style="Info.TLabel", justify="left")
+        self.done_results_path.pack()
 
     # ------------------------------------------------------------ helpers
 
@@ -410,6 +557,82 @@ class ProducerApp:
         self.analyze_btn.config(text="Analizar material")
         self.analyze_hint.config(text="")
         self.root.after(100, self._start_analysis)
+
+    def _refresh_results_root_label(self) -> None:
+        self.results_root_label.config(text=self.results_root or "")
+
+    def _choose_results_location(self) -> None:
+        folder = filedialog.askdirectory(
+            parent=self.root,
+            title="Seleccionar carpeta de resultados",
+            initialdir=self.results_root or None,
+        )
+        if not folder:
+            return
+        self.results_root = folder
+        remember_result_location(folder)
+        self._refresh_results_root_label()
+
+    def _selected_group_index(self) -> int | None:
+        selection = self.groups_tree.selection()
+        if not selection:
+            return None
+        iid = selection[0]
+        for index, view in enumerate(self.cluster_views):
+            if str(index) == iid:
+                return index
+        return None
+
+    def _update_groups_selection(self) -> None:
+        index = self._selected_group_index()
+        enabled = index is not None
+        self.groups_transcribe_btn.config(state="normal" if enabled else "disabled")
+        self.groups_sources_btn.config(state="normal" if enabled else "disabled")
+
+    def _view_selected_group_sources(self) -> None:
+        index = self._selected_group_index()
+        if index is None or index >= len(self.clusters):
+            return
+        cluster = self.clusters[index]
+        rows = []
+        for sig in cluster.sources:
+            status = "master" if sig.relative_path in cluster.transcription_masters else "alternativa"
+            rows.append(f"• {sig.relative_path} ({status})")
+        messagebox.showinfo(
+            APP_TITLE,
+            "\n".join(rows) or "No hay fuentes en esta grabación.",
+            parent=self.root,
+        )
+
+    def _transcribe_selected_group_click(self) -> None:
+        if self.active or not self.folder:
+            return
+        index = self._selected_group_index()
+        if index is None or index >= len(self.clusters):
+            return
+        cluster = self.clusters[index]
+        master_rels = set(cluster.transcription_masters)
+        selected = [
+            item for item in self.metadata.get("results", [])
+            if item.get("relative_path") in master_rels
+        ]
+        if not selected:
+            messagebox.showinfo(APP_TITLE, "Esta grabación no tiene una fuente clara para transcribir.", parent=self.root)
+            return
+        view = cluster_view(cluster)
+        message = (
+            f"{view['title']}\n"
+            f"Recomendación CID: {view['master']}\n\n"
+            f"{view['source_count']} fuentes relacionadas\n"
+            f"1 seleccionada para transcripción\n"
+            f"{view['duplicate_count'] + view['alternate_count']} duplicados/alternativas sin transcribir\n\n"
+            f"¿Transcribir la entrevista?"
+        )
+        choice = _confirm_dialog(self.root, "Transcribir entrevista", message, ("Continuar", "Cancelar"))
+        if choice != "Continuar":
+            return
+        manifest = build_sync_manifest(cluster, media_root=self.folder)
+        self._start_transcription(selected, project_name=cluster.session_id, sync_manifest=manifest)
 
     def _start_analysis(self) -> None:
         if not self.folder or self.active:
@@ -429,6 +652,12 @@ class ProducerApp:
             self.ui_q.put(("metadata_done", meta))
             candidates = select_batch_candidates(meta.get("results", []))
             self.ui_q.put(("candidates_done", candidates))
+            clusters = group_related_media(
+                meta.get("results", []),
+                media_root=folder,
+                analyze_content=True,
+            )
+            self.ui_q.put(("clusters_done", clusters))
         except Exception as exc:
             _write_log("analysis_error", traceback.format_exc())
             self.ui_q.put(("error", "No se pudo analizar el material.", str(exc)))
@@ -462,6 +691,25 @@ class ProducerApp:
         self.analyze_hint.config(text="")
         self._show("material")
         self._update_selection()
+
+    def _on_clusters_done(self, clusters: list[Any]) -> None:
+        self.clusters = clusters or []
+        self.cluster_views = [cluster_view(cluster) for cluster in self.clusters]
+        for item in self.groups_tree.get_children():
+            self.groups_tree.delete(item)
+        for index, view in enumerate(self.cluster_views):
+            sources_label = f"{view['source_count']} fuentes"
+            self.groups_tree.insert(
+                "", "end",
+                iid=str(index),
+                values=(view["title"], sources_label, view["master"]),
+            )
+        self.groups_path_label.config(text=self.folder or "")
+        self._update_groups_selection()
+        if self.clusters:
+            self._show("groups")
+        else:
+            self._show("material")
 
     def _selected_metadata(self) -> list[dict[str, Any]]:
         selected = set(self.tree.selection())
@@ -514,7 +762,12 @@ class ProducerApp:
             return
         self._start_transcription(selected)
 
-    def _start_transcription(self, selected: list[dict[str, Any]]) -> None:
+    def _start_transcription(
+        self,
+        selected: list[dict[str, Any]],
+        project_name: str | None = None,
+        sync_manifest: dict[str, Any] | None = None,
+    ) -> None:
         model_dir = self.analysis_model_path
         if not model_dir:
             messagebox.showerror(
@@ -524,10 +777,7 @@ class ProducerApp:
             )
             return
 
-        results_root = _default_results_dir()
-        run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        run_dir = results_root / run_id
-        run_dir.mkdir(parents=True, exist_ok=True)
+        run_dir = make_run_results_dir(self.results_root, project_name)
         self.results_dir = str(run_dir)
 
         self.cancel_event.clear()
@@ -563,12 +813,29 @@ class ProducerApp:
         }
 
         self._show("run")
-        self.root.after(150, self._begin_run_worker, str(self.folder), model_dir, selected, str(run_dir))
+        self.root.after(
+            150,
+            self._begin_run_worker,
+            str(self.folder),
+            model_dir,
+            selected,
+            str(run_dir),
+            project_name,
+            sync_manifest,
+        )
 
-    def _begin_run_worker(self, folder: str, model_dir: str, selected: list[dict[str, Any]], results_dir: str) -> None:
+    def _begin_run_worker(
+        self,
+        folder: str,
+        model_dir: str,
+        selected: list[dict[str, Any]],
+        results_dir: str,
+        project_name: str | None,
+        sync_manifest: dict[str, Any] | None,
+    ) -> None:
         self.worker = threading.Thread(
             target=self._transcription_worker,
-            args=(folder, model_dir, selected, results_dir),
+            args=(folder, model_dir, selected, results_dir, project_name, sync_manifest),
             daemon=True,
         )
         self.worker.start()
@@ -579,6 +846,8 @@ class ProducerApp:
         model_dir: str,
         selected: list[dict[str, Any]],
         results_dir: str,
+        project_name: str | None,
+        sync_manifest: dict[str, Any] | None,
     ) -> None:
         try:
             def progress(index: int, total: int, rel: str) -> None:
@@ -599,6 +868,7 @@ class ProducerApp:
                 worker_process=True,
                 grace_period_seconds=3.0,
                 worker_log_dir=str(_logs_dir()),
+                sync_manifest=sync_manifest,
             )
             self.ui_q.put(("batch_done", batch))
         except Exception as exc:
@@ -737,10 +1007,44 @@ class ProducerApp:
             row=len(rows), column=0, columnspan=2, sticky="w", pady=(10, 0)
         )
 
+        self._last_srt_path = self._first_result_file(batch, "srt_file")
+        self._last_davinci_path = self._first_result_file(batch, "davinci_handoff_file")
+        self._refresh_done_actions(results_dir)
+
         self._show("done")
 
         if self.close_after_done:
             self.root.after(200, self.root.destroy)
+
+    def _first_result_file(self, batch: dict[str, Any], key: str) -> str | None:
+        results_dir = batch.get("results_directory") or self.results_dir
+        for item in batch.get("results", []):
+            name = item.get(key)
+            if name:
+                return str(Path(results_dir) / name)
+        return None
+
+    def _refresh_done_actions(self, results_dir: str) -> None:
+        self.open_results_btn.config(text="Abrir resultados")
+        self.open_srt_btn.config(state="normal" if self._last_srt_path else "disabled")
+        self.davinci_btn.config(state="normal" if self._last_davinci_path else "disabled")
+        self.transcribe_more_btn.config(state="normal")
+        self.done_results_path.config(
+            text=f"Resultados guardados en:\n{results_dir}", style="Sub.TLabel"
+        )
+
+    def _open_srt(self) -> None:
+        if self._last_srt_path:
+            _open_folder(str(Path(self._last_srt_path).parent))
+            _open_folder(self._last_srt_path)
+
+    def _open_davinci(self) -> None:
+        if self._last_davinci_path:
+            _open_folder(str(Path(self._last_davinci_path).parent))
+            _open_folder(self._last_davinci_path)
+
+    def _transcribe_more(self) -> None:
+        self._show("groups" if self.clusters else "material")
 
     def _cancel_click(self) -> None:
         if not self.active:
@@ -797,6 +1101,8 @@ class ProducerApp:
                     self.metadata = item[1]
                 elif kind == "candidates_done":
                     self._on_candidates_done(item[1])
+                elif kind == "clusters_done":
+                    self._on_clusters_done(item[1])
                 elif kind == "progress":
                     self._on_progress(*item[1:])
                 elif kind == "segment":

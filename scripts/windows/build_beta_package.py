@@ -25,7 +25,7 @@ import sysconfig
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "0.3.0-beta1"
+VERSION = "0.3.0-beta2"
 PACKAGE_NAME = f"CID-Local-Media-Agent-{VERSION}"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -838,9 +838,9 @@ def _create_release_notes(package_dir: Path) -> None:
     """Create a concise producer-facing beta limitations note."""
     note = package_dir / "NOTAS_BETA.txt"
     note.write_text(
-        "CID Local Media Agent 0.3.0-beta1 - Notas de la versión beta\n"
-        "============================================================\n\n"
-        "Limitaciones conocidas de esta versión beta:\n\n"
+        f"CID Local Media Agent {VERSION} - Notas de la versión beta\n"
+        f"============================================================\n\n"
+        f"Limitaciones conocidas de esta versión beta:\n\n"
         "1. La transcripción local en CPU puede tardar un tiempo\n"
         "   considerable en entrevistas largas.\n"
         "2. Los nombres propios pueden requerir corrección editorial\n"
@@ -858,9 +858,9 @@ def _create_producer_readme(package_dir: Path) -> None:
     """Create a concise producer-facing first-read document."""
     readme = package_dir / "LEEME_PRIMERO.txt"
     readme.write_text(
-        "CID Local Media Agent 0.3.0-beta1\n"
-        "=================================\n\n"
-        "Bienvenido. Esta es una versión beta para Windows.\n"
+        f"CID Local Media Agent {VERSION}\n"
+        f"=================================\n\n"
+        f"Bienvenido. Esta es una versión beta para Windows.\n"
         "Todo el procesamiento es local y sin conexión.\n\n"
         "QUÉ HACE\n"
         "--------\n"

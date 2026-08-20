@@ -278,3 +278,92 @@ class TestCancellationUnaffected:
         metrics = analyze_quality(np.zeros(0, dtype=np.float32), RATE)
         assert metrics["rms_db"] is None
         assert metrics["clipping_fraction"] == 0.0
+
+
+class TestSemanticSafetyDispositions:
+    def test_unrelated_with_content_remains_candidate(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            sess = _session_dir(base, "Sesion 1")
+            dialogue_a = _event(6.0, seed=31)
+            dialogue_b = _event(6.0, seed=31)
+            other = _white_noise(6.0, seed=44)
+            path_a = sess / "entrevista_a.wav"
+            path_b = sess / "entrevista_b.wav"
+            path_c = sess / "voz_extra.wav"
+            _write_wav(path_a, dialogue_a)
+            _write_wav(path_b, dialogue_b)
+            _write_wav(path_c, other)
+            meta_a = _metadata("Sesion 1/entrevista_a.wav", 6.0)
+            meta_b = _metadata("Sesion 1/entrevista_b.wav", 6.0)
+            meta_c = _metadata("Sesion 1/voz_extra.wav", 6.0)
+            clusters = group_related_media([meta_a, meta_b, meta_c], media_root=base)
+            assert clusters
+            cluster = clusters[0]
+            assert cluster.dispositions["Sesion 1/voz_extra.wav"] == "UNIQUE_CONTENT"
+            assert cluster.dispositions["Sesion 1/entrevista_a.wav"] == "DIALOGUE"
+            assert "Sesion 1/voz_extra.wav" in cluster.transcription_masters
+            assert "Sesion 1/voz_extra.wav" not in cluster.excluded_sources
+            assert "Sesion 1/voz_extra.wav" not in cluster.uncertain_sources
+
+    def test_effectively_silent_unrelated_source_excluded_with_evidence(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            sess = _session_dir(base, "Sesion 1")
+            dialogue = _event(6.0, seed=41)
+            silence = np.zeros(int(6.0 * RATE), dtype=np.float32)
+            path_a = sess / "entrevista.wav"
+            path_b = sess / "pista_tecnica.wav"
+            _write_wav(path_a, dialogue)
+            _write_wav(path_b, silence)
+            meta_a = _metadata("Sesion 1/entrevista.wav", 6.0)
+            meta_b = _metadata("Sesion 1/pista_tecnica.wav", 6.0)
+            clusters = group_related_media([meta_a, meta_b], media_root=base)
+            assert clusters
+            cluster = clusters[0]
+            assert cluster.dispositions["Sesion 1/pista_tecnica.wav"] == "TECHNICAL_OR_EMPTY"
+            assert "Sesion 1/pista_tecnica.wav" in cluster.excluded_sources
+            assert "Sesion 1/pista_tecnica.wav" not in cluster.transcription_masters
+
+    def test_multiple_masters_preserve_independent_content(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            sess = _session_dir(base, "Sesion 1")
+            a = _event(6.0, seed=51)
+            b = _event(6.0, seed=51)
+            c = _white_noise(6.0, seed=53)
+            path_a = sess / "entrevista_a.wav"
+            path_b = sess / "entrevista_b.wav"
+            path_c = sess / "voz_extra.wav"
+            _write_wav(path_a, a)
+            _write_wav(path_b, b)
+            _write_wav(path_c, c)
+            meta_a = _metadata("Sesion 1/entrevista_a.wav", 6.0)
+            meta_b = _metadata("Sesion 1/entrevista_b.wav", 6.0)
+            meta_c = _metadata("Sesion 1/voz_extra.wav", 6.0)
+            clusters = group_related_media([meta_a, meta_b, meta_c], media_root=base)
+            assert clusters
+            cluster = clusters[0]
+            assert len(cluster.transcription_masters) >= 2
+            assert "Sesion 1/voz_extra.wav" in cluster.transcription_masters
+            assert cluster.dispositions["Sesion 1/voz_extra.wav"] == "UNIQUE_CONTENT"
+
+    def test_manifest_lists_dispositions(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            sess = _session_dir(base, "Sesion 1")
+            dialogue = _event(6.0, seed=61)
+            silence = np.zeros(int(6.0 * RATE), dtype=np.float32)
+            path_a = sess / "entrevista.wav"
+            path_b = sess / "pista_tecnica.wav"
+            _write_wav(path_a, dialogue)
+            _write_wav(path_b, silence)
+            meta_a = _metadata("Sesion 1/entrevista.wav", 6.0)
+            meta_b = _metadata("Sesion 1/pista_tecnica.wav", 6.0)
+            clusters = group_related_media([meta_a, meta_b], media_root=base)
+            manifest = build_sync_manifest(clusters[0], media_root=base)
+            assert "Sesion 1/pista_tecnica.wav" in manifest["excluded_sources"]
+            assert manifest["uncertain_sources"] == []
+            assert manifest["sources"] and manifest["sources"][0]["source"] == "Sesion 1/pista_tecnica.wav"
+            assert manifest["sources"][0]["relationship"] == "UNRELATED"
+            assert manifest["sources"][0]["quality"]

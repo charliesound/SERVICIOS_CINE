@@ -42,6 +42,13 @@ RELATIONSHIP_COMPLEMENTARY = "COMPLEMENTARY_SOURCE"
 RELATIONSHIP_UNRELATED = "UNRELATED"
 RELATIONSHIP_UNCERTAIN = "UNCERTAIN"
 
+DISPOSITION_DIALOGUE = "DIALOGUE"
+DISPOSITION_DUPLICATE = "DUPLICATE"
+DISPOSITION_ALTERNATE = "ALTERNATE"
+DISPOSITION_TECHNICAL_OR_EMPTY = "TECHNICAL_OR_EMPTY"
+DISPOSITION_UNIQUE_CONTENT = "UNIQUE_CONTENT"
+DISPOSITION_UNCERTAIN = "UNCERTAIN"
+
 SYNC_METHOD_TIMECODE = "timecode"
 SYNC_METHOD_CORRELATION = "audio_correlation"
 SYNC_STATUS_RESOLVED = "RESOLVED"
@@ -691,6 +698,10 @@ class SourceCluster:
     duplicate_sources: list[str] = field(default_factory=list)
     alternate_sources: list[str] = field(default_factory=list)
     reference_source: str | None = None
+    excluded_sources: list[str] = field(default_factory=list)
+    unique_candidate_sources: list[str] = field(default_factory=list)
+    uncertain_sources: list[str] = field(default_factory=list)
+    dispositions: dict[str, str] = field(default_factory=dict)
 
 
 def _session_id_for(relative_path: str) -> str:
@@ -764,8 +775,7 @@ def _finalize_cluster(
 ) -> SourceCluster:
     cluster = SourceCluster(session_id=session_id, sources=signatures)
 
-    relations: dict[str, dict[str, Any]] = {}
-    masters: dict[str, float] = {}
+    relations: list[dict[str, Any]] = []
     duplicate_ids: set[str] = set()
 
     for i, sig_b in enumerate(signatures):
@@ -779,31 +789,107 @@ def _finalize_cluster(
                 "confidence": rel["confidence"],
                 "sync": sync,
             }
-            cluster.relationships.append(relation)
+            relations.append(relation)
             if rel.get("duplicate"):
                 if sig_b.sha256 and sig_a.sha256 and sig_b.sha256 == sig_a.sha256:
                     duplicate_ids.add(sig_b.relative_path)
 
-    for sig in signatures:
-        if sig.relative_path in duplicate_ids:
-            continue
-        event_conf = _best_event_confidence(sig, cluster.relationships)
-        q = source_quality_summary(sig)
-        score = internal_rank_score(q, sig.duration_seconds, event_conf)
-        score += ROLE_MASTER_PREFERENCE.get(sig.role, 0.0)
-        masters[sig.relative_path] = score
+    cluster.relationships = relations
 
-    ordered = sorted(masters.items(), key=lambda kv: kv[1], reverse=True)
-    cluster.transcription_masters = [p for p, _ in ordered[:1]]
-    cluster.reference_source = ordered[0][0] if ordered else None
+    # Affirmative dialogue evidence: a source belongs to the same event when it
+    # has at least one resolved, above-threshold relationship (identical, same
+    # event, or complementary) with any other source in the session.
+    dialogue_related: set[str] = set()
+    for relation in relations:
+        if relation["sync"].get("status") != SYNC_STATUS_RESOLVED:
+            continue
+        if relation["confidence"] < RELATED_CONFIDENCE_THRESHOLD:
+            continue
+        if relation["relationship"] in (RELATIONSHIP_IDENTICAL, RELATIONSHIP_SAME_EVENT, RELATIONSHIP_COMPLEMENTARY):
+            dialogue_related.add(relation["a"])
+            dialogue_related.add(relation["b"])
+
+    dialogue_masters: dict[str, float] = {}
+    unique_masters: dict[str, float] = {}
+    dispositions: dict[str, str] = {}
+
+    for sig in signatures:
+        path = sig.relative_path
+        if path in duplicate_ids:
+            dispositions[path] = DISPOSITION_DUPLICATE
+            continue
+        q = source_quality_summary(sig)
+        if path in dialogue_related:
+            dispositions[path] = DISPOSITION_DIALOGUE
+            event_conf = _best_event_confidence(sig, relations)
+            score = internal_rank_score(q, sig.duration_seconds, event_conf)
+            score += ROLE_MASTER_PREFERENCE.get(sig.role, 0.0)
+            dialogue_masters[path] = score
+            continue
+        # Not dialogue-related. A source may be skipped only with affirmative
+        # evidence it needs no independent transcription: effectively silent or
+        # technical feed. Otherwise it must remain a candidate, never silently
+        # discarded merely for being UNRELATED/UNRESOLVED.
+        if _is_effectively_silent(sig):
+            dispositions[path] = DISPOSITION_TECHNICAL_OR_EMPTY
+            continue
+        if sig.windows and _has_content_evidence(sig):
+            dispositions[path] = DISPOSITION_UNIQUE_CONTENT
+            event_conf = _best_event_confidence(sig, relations)
+            score = internal_rank_score(q, sig.duration_seconds, event_conf)
+            score += ROLE_MASTER_PREFERENCE.get(sig.role, 0.0)
+            unique_masters[path] = score
+            continue
+        dispositions[path] = DISPOSITION_UNCERTAIN
+
+    dialogue_ordered = sorted(dialogue_masters.items(), key=lambda kv: kv[1], reverse=True)
+    unique_ordered = sorted(unique_masters.items(), key=lambda kv: kv[1], reverse=True)
+    selected = [p for p, _ in dialogue_ordered[:1]] + [p for p, _ in unique_ordered]
+    cluster.transcription_masters = selected
+    cluster.reference_source = (dialogue_ordered or unique_ordered or [("", 0.0)])[0][0] or None
     cluster.duplicate_sources = sorted(duplicate_ids)
-    cluster.alternate_sources = [
-        sig.relative_path
-        for sig in signatures
-        if sig.relative_path not in cluster.transcription_masters
-        and sig.relative_path not in cluster.duplicate_sources
-    ]
+    cluster.alternate_sources = sorted(
+        path for path, disp in dispositions.items()
+        if disp in (DISPOSITION_DIALOGUE,) and path not in cluster.transcription_masters
+    )
+    cluster.excluded_sources = sorted(
+        path for path, disp in dispositions.items()
+        if disp == DISPOSITION_TECHNICAL_OR_EMPTY
+    )
+    cluster.unique_candidate_sources = sorted(
+        path for path, disp in dispositions.items()
+        if disp == DISPOSITION_UNIQUE_CONTENT
+    )
+    cluster.uncertain_sources = sorted(
+        path for path, disp in dispositions.items()
+        if disp == DISPOSITION_UNCERTAIN
+    )
+    cluster.dispositions = dict(dispositions)
     return cluster
+
+
+def _is_effectively_silent(sig: SourceSignature) -> bool:
+    """Affirmative evidence that a source carries no meaningful dialogue."""
+    q = source_quality_summary(sig)
+    metrics = q.get("metrics", {})
+    silence = metrics.get("silence_fraction")
+    rms_db = metrics.get("rms_db")
+    if silence is not None and silence >= 0.95:
+        return True
+    if silence is not None and silence >= 0.85 and (rms_db is None or rms_db < -60.0):
+        return True
+    return False
+
+
+def _has_content_evidence(sig: SourceSignature) -> bool:
+    """Whether sampled windows contain any measurable audio activity."""
+    for key, env in sig.windows.items():
+        import numpy as np
+
+        arr = np.asarray(env, dtype=np.float32)
+        if arr.size and float(np.max(arr)) > 1e-6:
+            return True
+    return False
 
 
 def _best_event_confidence(
@@ -825,22 +911,29 @@ def build_sync_manifest(
 ) -> dict[str, Any]:
     """Build a producer/sync manifest for a session cluster."""
     reference = cluster.reference_source or (cluster.transcription_masters or [None])[0]
-    sources: list[dict[str, Any]] = []
+    rel_by_pair: dict[tuple[str, str], dict[str, Any]] = {}
     for rel in cluster.relationships:
-        if reference == rel["a"]:
-            other = rel["b"]
-        elif reference == rel["b"]:
-            other = rel["a"]
-        else:
+        rel_by_pair[(rel["a"], rel["b"])] = rel
+
+    sources: list[dict[str, Any]] = []
+    for sig in cluster.sources:
+        path = sig.relative_path
+        if path == reference:
             continue
+        pair = (reference, path) if (reference, path) in rel_by_pair else (path, reference)
+        rel = rel_by_pair.get(pair)
         sources.append({
-            "source": other,
-            "relationship": rel["relationship"],
-            "sync_method": rel["sync"].get("method"),
-            "offset_seconds": rel["sync"].get("offset_seconds"),
-            "confidence": rel["sync"].get("confidence"),
-            "sync_status": rel["sync"].get("status"),
+            "source": path,
+            "relationship": rel["relationship"] if rel else RELATIONSHIP_UNRELATED,
+            "sync_method": rel["sync"].get("method") if rel else SYNC_METHOD_CORRELATION,
+            "offset_seconds": rel["sync"].get("offset_seconds") if rel else None,
+            "confidence": rel["sync"].get("confidence") if rel else None,
+            "sync_status": rel["sync"].get("status") if rel else SYNC_STATUS_UNRESOLVED,
+            "quality": source_quality_summary(sig)["label"],
+            "role": sig.role,
+            "timecode": sig.timecode,
         })
+
     return {
         "schema_version": SYNC_MANIFEST_SCHEMA_VERSION,
         "session_id": cluster.session_id,
@@ -848,6 +941,9 @@ def build_sync_manifest(
         "transcription_masters": list(cluster.transcription_masters),
         "duplicate_sources": list(cluster.duplicate_sources),
         "alternate_sources": list(cluster.alternate_sources),
+        "excluded_sources": list(cluster.excluded_sources),
+        "unique_candidate_sources": list(cluster.unique_candidate_sources),
+        "uncertain_sources": list(cluster.uncertain_sources),
         "sources": sources,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "privacy": {
@@ -886,9 +982,15 @@ def format_cluster_summary(cluster: SourceCluster) -> dict[str, Any]:
             "source": sig.relative_path,
             "role": sig.role,
             "quality": q["label"],
+            "disposition": cluster.dispositions.get(
+                sig.relative_path,
+                "UNCERTAIN" if sig.relative_path in cluster.uncertain_sources else "DIALOGUE",
+            ),
             "transcription_master": is_master,
             "duplicate": is_duplicate,
             "alternate": sig.relative_path in cluster.alternate_sources,
+            "excluded": sig.relative_path in cluster.excluded_sources,
+            "unique_candidate": sig.relative_path in cluster.unique_candidate_sources,
         })
     return {
         "session_id": cluster.session_id,
@@ -896,5 +998,8 @@ def format_cluster_summary(cluster: SourceCluster) -> dict[str, Any]:
         "masters": list(cluster.transcription_masters),
         "duplicates": list(cluster.duplicate_sources),
         "alternates": list(cluster.alternate_sources),
+        "excluded": list(cluster.excluded_sources),
+        "unique_candidates": list(cluster.unique_candidate_sources),
+        "uncertain": list(cluster.uncertain_sources),
         "sources": source_rows,
     }

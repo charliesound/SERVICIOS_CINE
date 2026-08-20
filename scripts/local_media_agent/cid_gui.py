@@ -86,8 +86,8 @@ def cluster_view(cluster: Any) -> dict[str, Any]:
     """Producer-facing view of one recording/session cluster.
 
     Exposes the internal cluster as understandable audiovisual concepts:
-    counts, whether audio was synchronized, the selected master and the
-    sources kept as alternatives. No technical parameters are exposed.
+    counts per category, whether audio was synchronized, the selected masters
+    and the sources kept as alternatives. No technical parameters are exposed.
     """
     sources = list(cluster.sources)
     audio_count = sum(1 for sig in sources if not sig.has_video)
@@ -98,6 +98,12 @@ def cluster_view(cluster: Any) -> dict[str, Any]:
         rel.get("sync", {}).get("status") == "RESOLVED"
         for rel in getattr(cluster, "relationships", [])
     )
+    dispositions = getattr(cluster, "dispositions", {})
+    dialogue = sum(1 for p, d in dispositions.items() if d == "DIALOGUE")
+    technical = sum(1 for p, d in dispositions.items() if d == "TECHNICAL_OR_EMPTY")
+    unique = sum(1 for p, d in dispositions.items() if d == "UNIQUE_CONTENT")
+    uncertain = sum(1 for p, d in dispositions.items() if d == "UNCERTAIN")
+    duplicates = len(list(cluster.duplicate_sources))
     return {
         "session_id": cluster.session_id,
         "title": f"Grabación {cluster.session_id}",
@@ -107,8 +113,12 @@ def cluster_view(cluster: Any) -> dict[str, Any]:
         "master": master,
         "master_rel": masters[0] if masters else None,
         "sync_ok": sync_ok,
-        "duplicate_count": len(list(cluster.duplicate_sources)),
+        "duplicate_count": duplicates,
         "alternate_count": len(list(cluster.alternate_sources)),
+        "dialogue_count": dialogue,
+        "technical_count": technical,
+        "unique_count": unique,
+        "uncertain_count": uncertain,
     }
 
 
@@ -594,12 +604,24 @@ class ProducerApp:
         if index is None or index >= len(self.clusters):
             return
         cluster = self.clusters[index]
+        disp_labels = {
+            "DIALOGUE": "entrevista",
+            "DUPLICATE": "duplicada",
+            "ALTERNATE": "alternativa",
+            "TECHNICAL_OR_EMPTY": "pista auxiliar",
+            "UNIQUE_CONTENT": "independiente",
+            "UNCERTAIN": "sin clasificar",
+        }
         rows = []
         for sig in cluster.sources:
-            status = "master" if sig.relative_path in cluster.transcription_masters else "alternativa"
-            rows.append(f"• {sig.relative_path} ({status})")
+            disp = cluster.dispositions.get(sig.relative_path, "DIALOGUE")
+            if sig.relative_path in cluster.transcription_masters:
+                label = "seleccionada para transcripción"
+            else:
+                label = disp_labels.get(disp, "alternativa")
+            rows.append(f"• {sig.relative_path} ({label})")
         messagebox.showinfo(
-            APP_TITLE,
+            GROUPS_ALTERNATIVES_TITLE,
             "\n".join(rows) or "No hay fuentes en esta grabación.",
             parent=self.root,
         )
@@ -620,13 +642,25 @@ class ProducerApp:
             messagebox.showinfo(APP_TITLE, "Esta grabación no tiene una fuente clara para transcribir.", parent=self.root)
             return
         view = cluster_view(cluster)
+        category_lines = []
+        if view["dialogue_count"]:
+            category_lines.append(f"{view['dialogue_count']} fuentes de la entrevista")
+        if view["technical_count"]:
+            category_lines.append(f"{view['technical_count']} pistas auxiliares")
+        if view["unique_count"]:
+            category_lines.append(f"{view['unique_count']} fuente independiente" if view["unique_count"] == 1 else f"{view['unique_count']} fuentes independientes")
+        if view["uncertain_count"]:
+            category_lines.append(f"{view['uncertain_count']} fuente sin clasificar" if view["uncertain_count"] == 1 else f"{view['uncertain_count']} fuentes sin clasificar")
+        category_text = "\n".join(f"- {line}" for line in category_lines) or "Sin categorías."
+        master_label = view["master"]
+        if len(cluster.transcription_masters) > 1:
+            master_label = f"{len(cluster.transcription_masters)} fuentes"
         message = (
             f"{view['title']}\n"
-            f"Recomendación CID: {view['master']}\n\n"
-            f"{view['source_count']} fuentes relacionadas\n"
-            f"1 seleccionada para transcripción\n"
-            f"{view['duplicate_count'] + view['alternate_count']} duplicados/alternativas sin transcribir\n\n"
-            f"¿Transcribir la entrevista?"
+            f"{view['source_count']} fuentes encontradas\n\n"
+            f"CID ha identificado:\n{category_text}\n\n"
+            f"Recomendación CID: {master_label}\n\n"
+            f"¿Transcribir?"
         )
         choice = _confirm_dialog(self.root, "Transcribir entrevista", message, ("Continuar", "Cancelar"))
         if choice != "Continuar":
@@ -698,7 +732,16 @@ class ProducerApp:
         for item in self.groups_tree.get_children():
             self.groups_tree.delete(item)
         for index, view in enumerate(self.cluster_views):
-            sources_label = f"{view['source_count']} fuentes"
+            parts = []
+            if view["dialogue_count"]:
+                parts.append(f"{view['dialogue_count']} entrevista")
+            if view["unique_count"]:
+                parts.append(f"{view['unique_count']} independiente")
+            if view["technical_count"]:
+                parts.append(f"{view['technical_count']} auxiliar")
+            if view["uncertain_count"]:
+                parts.append(f"{view['uncertain_count']} sin clasificar")
+            sources_label = " · ".join(parts) if parts else f"{view['source_count']} fuentes"
             self.groups_tree.insert(
                 "", "end",
                 iid=str(index),

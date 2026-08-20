@@ -562,6 +562,7 @@ def _create_package_manifest(
             "CID Local Media Agent (CLI).cmd": "CLI support launcher",
             "licenses/": "Third-party license files",
             "NOTAS_BETA.txt": "Producer-facing beta limitations note",
+            "LEEME_PRIMERO.txt": "Producer-facing first-read guide",
         },
         "package_bytes": package_size,
         "zip_bytes": zip_size,
@@ -581,6 +582,30 @@ def _create_licenses(package_dir: Path) -> None:
     if py_license.is_file():
         shutil.copy2(py_license, licenses_dir / "PYTHON_LICENSE.txt")
 
+    # faster-whisper-small model MIT license
+    model_license = licenses_dir / "MODEL_LICENSE.txt"
+    model_license.write_text(
+        "MIT License\n\n"
+        "Copyright (c) 2023 SYSTRAN\n\n"
+        "Permission is hereby granted, free of charge, to any person obtaining a copy\n"
+        "of this software and associated documentation files (the \"Software\"), to deal\n"
+        "in the Software without restriction, including without limitation the rights\n"
+        "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n"
+        "copies of the Software, and to permit persons to whom the Software is\n"
+        "furnished to do so, subject to the following conditions:\n\n"
+        "The above copyright notice and this permission notice shall be included in\n"
+        "all copies or substantial portions of the Software.\n\n"
+        "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
+        "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
+        "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n"
+        "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+        "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
+        "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n"
+        "THE SOFTWARE.\n",
+        encoding="utf-8",
+    )
+    print(f"  MODEL_LICENSE.txt")
+
     # BtbN FFmpeg license (LGPL)
     sdk_root = Path(os.environ.get("LOCALAPPDATA", "")) / "Temp" / "cid_build" / "ffmpeg-btbn-shared-7.1"
     for name in ("LICENSE", "LGPL", "COPYING"):
@@ -598,8 +623,13 @@ def _create_licenses(package_dir: Path) -> None:
         f"This package includes the following third-party components:\n\n"
         f"1. Python 3.12 - PSF License\n"
         f"   See PYTHON_LICENSE.txt\n\n"
-        f"2. FFmpeg (BtbN build) - LGPL v2.1\n"
-        f"   See FFMPEG_LICENSE.txt\n\n"
+        f"2. FFmpeg (BtbN build n7.1.5) - GNU LGPL v3\n"
+        f"   See FFMPEG_LICENSE.txt\n"
+        f"   FFmpeg is dynamically linked. Corresponding source and build\n"
+        f"   configuration for this BtbN build are available from the BtbN\n"
+        f"   FFmpeg-Builds project; relinking is possible with the shared\n"
+        f"   libraries shipped in runtime/ffmpeg/bin. Written source offer:\n"
+        f"   contact the CID distributor on request.\n\n"
         f"3. CTranslate2 4.8.1 - MIT License\n"
         f"   Copyright 2020 OpenNMT. All rights reserved.\n\n"
         f"4. faster-whisper 1.2.1 - MIT License\n"
@@ -614,7 +644,15 @@ def _create_licenses(package_dir: Path) -> None:
         f"   Copyright  Hugging Face, Inc.\n\n"
         f"9. onnxruntime - MIT License\n"
         f"   Copyright Microsoft Corporation\n\n"
-        f"10. Various Python packages under BSD/MIT/Apache licenses\n",
+        f"10. oneDNN - Apache License 2.0\n"
+        f"    oneDNN (formerly DNNL) is statically linked into the CTranslate2\n"
+        f"    binary distributed in this package.\n\n"
+        f"11. Systran/faster-whisper-small model - MIT License\n"
+        f"    Copyright SYSTRAN. See MODEL_LICENSE.txt and the model README\n"
+        f"    shipped in models/faster-whisper-small.\n\n"
+        f"12. Various Python packages under BSD/MIT/Apache licenses\n"
+        f"    Individual license texts are preserved in their installed\n"
+        f"    package metadata under runtime/python/Lib/site-packages.\n",
         encoding="utf-8",
     )
     print(f"  licenses/")
@@ -638,6 +676,60 @@ def _create_release_notes(package_dir: Path) -> None:
         encoding="utf-8",
     )
     print(f"  NOTAS_BETA.txt")
+
+
+def _create_producer_readme(package_dir: Path) -> None:
+    """Create a concise producer-facing first-read document."""
+    readme = package_dir / "LEEME_PRIMERO.txt"
+    readme.write_text(
+        "CID Local Media Agent 0.3.0-beta1\n"
+        "=================================\n\n"
+        "Bienvenido. Esta es una versión beta para Windows.\n"
+        "Todo el procesamiento es local y sin conexión.\n\n"
+        "QUÉ HACE\n"
+        "--------\n"
+        "CID analiza el material de tu proyecto, identifica las grabaciones\n"
+        "y recomienda qué audio transcribir. Genera subtítulos (SRT) que\n"
+        "puedes importar en DaVinci Resolve.\n\n"
+        "PRIVACIDAD\n"
+        "----------\n"
+        "- El análisis y la transcripción ocurren en tu equipo.\n"
+        "- CID no sube ni envía tus archivos a ningún servicio.\n"
+        "- La beta no necesita conexión a internet.\n"
+        "- Tus archivos de origen no se modifican (solo lectura).\n"
+        "- Los resultados se guardan localmente.\n\n"
+        "CÓMO EMPEZAR\n"
+        "------------\n"
+        "1. Descomprime el archivo ZIP.\n"
+        "2. Ejecuta install.cmd (o el instalador incluido).\n"
+        "3. Abre \"CID Local Media Agent\" desde el menú Inicio.\n"
+        "4. Selecciona la carpeta con el material del proyecto.\n"
+        "5. Pulsa Analizar y sigue la recomendación de CID.\n"
+        "6. Los resultados se guardan en tus Documentos y puedes abrirlos\n"
+        "   desde la propia ventana de CID.\n\n"
+        "DÓNDE SE GUARDAN LOS RESULTADOS\n"
+        "-------------------------------\n"
+        "Por defecto: C:\\Users\\<usuario>\\Documents\\CID Local Media Agent\\Resultados\n"
+        "Puedes cambiar la ubicación desde CID y se recordará.\n\n"
+        "CÓMO DESINSTALAR\n"
+        "----------------\n"
+        "Ejecuta uninstall.cmd de la carpeta instalada. Tus archivos de\n"
+        "origen y tus resultados no se tocan.\n\n"
+        "LIMITACIONES DE ESTA BETA\n"
+        "--------------------------\n"
+        "Ver NOTAS_BETA.txt en esta carpeta.\n\n"
+        "SOPORTE\n"
+        "-------\n"
+        "Si algo falla, usa \"Exportar diagnóstico\" desde CID si está\n"
+        "disponible, o recopila la carpeta de diagnósticos indicada por\n"
+        "tu contacto de CID. No envíes material de tus entrevistas salvo\n"
+        "que se te pida explícitamente.\n\n"
+        "AVISO LEGAL\n"
+        "-----------\n"
+        "Los textos de licencia de terceros están en la carpeta licenses/.\n",
+        encoding="utf-8",
+    )
+    print(f"  LEEME_PRIMERO.txt")
 
 
 def _get_git_commit() -> str:
@@ -732,6 +824,7 @@ def main() -> int:
     print("[9/9] Licenses, notes and manifest...")
     _create_licenses(package_dir)
     _create_release_notes(package_dir)
+    _create_producer_readme(package_dir)
     pkg_size = _dir_size(package_dir)
     _create_package_manifest(package_dir, pkg_size, None, target_sp)
     print()

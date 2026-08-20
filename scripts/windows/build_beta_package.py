@@ -509,7 +509,7 @@ echo.
 echo   ======================================================
 echo   Uninstall complete.
 echo   Results directory preserved at:
-echo   %%LOCALAPPDATA%%\\CID\\LocalMediaAgent\\results\\
+echo   %%USERPROFILE%%\\Documents\\CID Local Media Agent\\Resultados\\
 echo   ======================================================
 echo.
 pause

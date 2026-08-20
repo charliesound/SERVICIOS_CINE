@@ -561,6 +561,7 @@ def _create_package_manifest(
             "CID Local Media Agent.vbs": "Producer GUI launcher (no console)",
             "CID Local Media Agent (CLI).cmd": "CLI support launcher",
             "licenses/": "Third-party license files",
+            "NOTAS_BETA.txt": "Producer-facing beta limitations note",
         },
         "package_bytes": package_size,
         "zip_bytes": zip_size,
@@ -617,6 +618,26 @@ def _create_licenses(package_dir: Path) -> None:
         encoding="utf-8",
     )
     print(f"  licenses/")
+
+
+def _create_release_notes(package_dir: Path) -> None:
+    """Create a concise producer-facing beta limitations note."""
+    note = package_dir / "NOTAS_BETA.txt"
+    note.write_text(
+        "CID Local Media Agent 0.3.0-beta1 - Notas de la versión beta\n"
+        "============================================================\n\n"
+        "Limitaciones conocidas de esta versión beta:\n\n"
+        "1. La transcripción local en CPU puede tardar un tiempo\n"
+        "   considerable en entrevistas largas.\n"
+        "2. Los nombres propios pueden requerir corrección editorial\n"
+        "   del transcripto.\n"
+        "3. La sincronización de audio de cámara con grabadora externa\n"
+        "   sigue pendiente de validación con una grabación real pareada.\n"
+        "4. Esta versión beta es exclusiva para Windows.\n\n"
+        "El producto funciona sin conexión y no sube ningún material.\n",
+        encoding="utf-8",
+    )
+    print(f"  NOTAS_BETA.txt")
 
 
 def _get_git_commit() -> str:
@@ -708,8 +729,9 @@ def main() -> int:
     _create_uninstall_cmd(package_dir)
     print()
 
-    print("[9/9] Licenses and manifest...")
+    print("[9/9] Licenses, notes and manifest...")
     _create_licenses(package_dir)
+    _create_release_notes(package_dir)
     pkg_size = _dir_size(package_dir)
     _create_package_manifest(package_dir, pkg_size, None, target_sp)
     print()

@@ -447,7 +447,7 @@ echo   Installation complete.
 echo.
 echo   Launch:  %LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.vbs
 echo   Target:  %INSTALL_TARGET%
-echo   Results: %LOCALAPPDATA%\\CID\\LocalMediaAgent\\results\\
+echo   Results: %USERPROFILE%\\Documents\\CID Local Media Agent\\Resultados\\
 echo   ======================================================
 echo.
 pause
@@ -478,8 +478,8 @@ set GUI_LAUNCHER=%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.vbs
 set CLI_LAUNCHER=%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd
 
 echo   This will remove the installed CID Local Media Agent application.
-echo   User results in %%LOCALAPPDATA%%\\CID\\LocalMediaAgent\\results\\
-echo   will be PRESERVED.
+echo   User results in %%USERPROFILE%%\\Documents\\CID Local Media Agent\\Resultados
+echo   (and any custom results location) will be PRESERVED.
 echo.
 
 set /p CONFIRM="  Continue? [y/N]: "

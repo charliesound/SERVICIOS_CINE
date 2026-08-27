@@ -476,6 +476,162 @@ def _run_batch_transcription(folder: str, model_dir: str, *, max_files: int | No
     return 0
 
 
+def _run_scan_and_sync(folder: str, model_dir: str) -> int:
+    """Scan a folder, extract metadata, then run read-only sync."""
+    if not os.path.isdir(folder):
+        print()
+        print(f"  ERROR: Folder not found: {folder}")
+        return 1
+
+    result = scan_read_only_folder(folder)
+    print()
+    _display_scan_result(folder, result)
+
+    meta = extract_metadata(folder, result)
+    _display_metadata_result(meta)
+
+    return _run_sync(folder, meta, model_dir)
+
+
+def _run_sync(folder: str, meta: dict, model_dir: str) -> int:
+    """Run read-only automatic synchronization (informational only).
+
+    Uses the automatic_media_sync engine on the metadata already extracted
+    by the operator. Never modifies, moves, or retimes media. Results are
+    reported as structured RESOLVED/UNRESOLVED informational output.
+    """
+    from scripts.local_media_agent.automatic_media_sync import (
+        assemble_project_sessions,
+    )
+
+    if not os.path.isdir(folder):
+        print()
+        print(f"  ERROR: Folder not found: {folder}")
+        return 1
+    if not model_dir or not Path(model_dir).is_dir():
+        print()
+        print(f"  ERROR: Transcription model directory not found: {model_dir}")
+        return 1
+
+    results = meta.get("results", [])
+    if not results:
+        print()
+        print("  No media metadata available to synchronize.")
+        return 0
+
+    source_root = Path(folder)
+    for item in results:
+        rel = item.get("relative_path")
+        if rel:
+            item["abs_path"] = str(source_root / rel)
+
+    print()
+    print(SEPARATOR)
+    print(f"  Automatic Synchronization (informational)")
+    print(SEPARATOR)
+    print(f"  Model:               {model_dir}")
+    print(f"  Media items:         {len(results)}")
+    print(SEPARATOR)
+
+    project = assemble_project_sessions(results, model_local_path=model_dir)
+
+    resolved = 0
+    unresolved = 0
+    for session in project.sessions:
+        for clip in session.synchronized_clips:
+            if clip.unresolved:
+                unresolved += 1
+            else:
+                resolved += 1
+            _display_sync_clip(clip)
+    for rel in project.unresolved_media:
+        unresolved += 1
+        print()
+        print(f"    UNRESOLVED  {Path(rel).name}")
+
+    print()
+    print(SEPARATOR)
+    print(f"  Sync summary")
+    print(SEPARATOR)
+    print(f"  Sessions:            {len(project.sessions)}")
+    print(f"  Resolved clips:      {resolved}")
+    print(f"  Unresolved clips:    {unresolved}")
+    print(f"  Since sync is informational read-only, no media was modified.")
+    print(SEPARATOR)
+
+    return _write_sync_json(folder, project)
+
+
+def _display_sync_clip(clip) -> None:
+    if clip.unresolved:
+        _display_unresolved_clip(clip)
+        return
+    status = "RESOLVED"
+    offset_s = clip.intercept_a
+    offset_ms = None
+    if offset_s is not None:
+        offset_ms = offset_s * 1000
+    speed = clip.audio_speed_percent
+    retime = clip.retime_recommended
+    print()
+    print(f"    {status}  {Path(clip.video_path).name}")
+    print(f"      audio:            {Path(clip.audio_reference).name}")
+    print(f"      confidence:       {clip.confidence}")
+    if offset_ms is not None:
+        print(f"      offset:           {offset_s:.6f} s ({offset_ms:.3f} ms)")
+    if speed is not None:
+        print(f"      audio speed:      {speed:.4f}%")
+    print(f"      retime:           {'recommended' if retime else 'not recommended'}")
+
+
+def _display_unresolved_clip(clip) -> None:
+    print()
+    print(f"    UNRESOLVED  {Path(clip.video_path).name}")
+    print(f"      audio:            {Path(clip.audio_reference).name}")
+    print(f"      confidence:       {clip.confidence}")
+    reason = _unresolved_reason(clip)
+    if reason:
+        print(f"      reason:           {reason}")
+    candidate = clip.intercept_a
+    if candidate is not None:
+        cand_ms = candidate * 1000
+        print(f"      candidate_offset: {candidate:.6f} s ({cand_ms:.3f} ms)  [diagnostic_only]")
+    print(f"      No safe synchronization was established.")
+
+
+def _unresolved_reason(clip) -> str | None:
+    evidence = getattr(clip, "evidence", None)
+    if isinstance(evidence, list):
+        for entry in evidence:
+            if isinstance(entry, dict) and entry.get("reason"):
+                return str(entry["reason"])
+            root = entry.get("root_cause") if isinstance(entry, dict) else None
+            if root:
+                return str(root)
+    return getattr(clip, "root_cause", None) or getattr(clip, "reason", None)
+
+
+def _write_sync_json(folder: str, project) -> int:
+    try:
+        tmp = Path(tempfile.gettempdir()) / "cid_lma_sync"
+        tmp.mkdir(parents=True, exist_ok=True)
+        out = tmp / "sync_result.json"
+        payload = {
+            "input_root": folder,
+            "informational_only": True,
+            "source_media_modified": False,
+            "project": project.to_dict(),
+        }
+        out.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        print()
+        print(f"  JSON result: {out}")
+        return 0
+    except Exception as exc:
+        print()
+        print(f"  WARNING: could not write JSON result: {exc}")
+        return 0
+
+
 def _prompt_menu() -> str:
     """Display the interactive menu and get user choice."""
     print()
@@ -486,9 +642,10 @@ def _prompt_menu() -> str:
     print(f"    2.  Scan + metadata")
     print(f"    3.  Batch transcribe (select count)")
     print(f"    4.  Batch transcribe all valid candidates")
+    print(f"    5.  Sync video to audio (informational, read-only)")
     print()
     print(SEPARATOR)
-    choice = input("  Choice [1-4]: ").strip()
+    choice = input("  Choice [1-5]: ").strip()
     return choice
 
 
@@ -575,6 +732,18 @@ def main() -> int:
     do_transcribe = False
     model_dir = None
 
+    if "--sync" in args:
+        args.remove("--sync")
+        if not args or args[0].startswith("-"):
+            print("  Sync requires a model directory followed by a folder.")
+            print("  Usage: python cid_local_media_agent_operator.py --sync <model_dir> <folder>")
+            return 1
+        sync_model = args.pop(0)
+        folder = " ".join(args) if args else None
+        if not folder:
+            folder = _prompt_folder()
+        return _run_scan_and_sync(folder, sync_model)
+
     if "--transcribe" in args:
         do_transcribe = True
         args.remove("--transcribe")
@@ -594,6 +763,10 @@ def main() -> int:
         if choice == "4":
             model_dir = _prompt_model_dir()
             return _run_batch_transcription(folder, model_dir)
+
+        if choice == "5":
+            model_dir = _prompt_model_dir()
+            return _run_scan_and_sync(folder, model_dir)
 
         if choice == "2":
             exit_code = _run(folder, do_transcribe=False)

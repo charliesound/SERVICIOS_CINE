@@ -183,17 +183,45 @@ class FasterWhisperTranscriptionBackend(TranscriptionBackend):
     def _segment_to_payload(segment: Any) -> dict[str, Any]:
         """Normalize an engine segment (dict or attribute object) to the contract."""
         if isinstance(segment, dict):
-            return {
+            words = segment.get("words") or []
+            payload = {
                 "segment_index": segment.get("segment_index") or segment.get("id"),
                 "start_seconds": segment.get("start_seconds", segment.get("start")),
                 "end_seconds": segment.get("end_seconds", segment.get("end")),
                 "text": str(segment.get("text") or ""),
             }
-        return {
+            if words:
+                payload["words"] = [
+                    FasterWhisperTranscriptionBackend._word_to_payload(word)
+                    for word in words
+                ]
+            return payload
+        words = getattr(segment, "words", None) or []
+        payload = {
             "segment_index": getattr(segment, "id", None),
             "start_seconds": float(segment.start),
             "end_seconds": float(segment.end),
             "text": str(getattr(segment, "text", "") or ""),
+        }
+        if words:
+            payload["words"] = [
+                FasterWhisperTranscriptionBackend._word_to_payload(word)
+                for word in words
+            ]
+        return payload
+
+    @staticmethod
+    def _word_to_payload(word: Any) -> dict[str, Any]:
+        if isinstance(word, dict):
+            return {
+                "word": str(word.get("word") or ""),
+                "start_seconds": word.get("start_seconds", word.get("start")),
+                "end_seconds": word.get("end_seconds", word.get("end")),
+            }
+        return {
+            "word": str(getattr(word, "word", "") or ""),
+            "start_seconds": float(getattr(word, "start", 0.0)),
+            "end_seconds": float(getattr(word, "end", 0.0)),
         }
 
     def _validate_local_model_reference(self) -> None:
@@ -472,6 +500,8 @@ def transcribe(
             "end_seconds": end,
             "text": str(raw.get("text")),
         }
+        if raw.get("words"):
+            normalized["words"] = list(raw["words"])
         source_segment = map_segment_to_source(
             normalized, request.extracted_audio_start_seconds
         )

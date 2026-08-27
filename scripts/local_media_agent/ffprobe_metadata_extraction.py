@@ -145,6 +145,45 @@ def _windows_no_console_kwargs() -> dict[str, Any]:
     return {}
 
 
+def _adapt_path_for_ffprobe(path: Path, tool: str) -> str:
+    """Adapt a media path for a Windows ffprobe.exe invoked from WSL.
+
+    When all conditions hold — running under WSL, the tool is a Windows
+    executable, and the path is a POSIX ``/mnt/<drive>/...`` mount — the
+    path is translated to the equivalent Windows ``<DRIVE>:\\...`` form so
+    the Windows binary can read it. This is a pure execution-time adaptation
+    for the ffprobe subprocess argument; the stored logical relative_path is
+    never changed. Linux ffprobe and non-WSL runtimes are always unchanged.
+    """
+    raw = str(path)
+    if (
+        os.name == "posix"
+        and os.environ.get("WSL_DISTRO_NAME")
+        and isinstance(tool, str)
+        and tool.lower().endswith(".exe")
+    ):
+        translated = _translate_wsl_mount_to_windows(raw)
+        if translated is not None:
+            return translated
+    return raw
+
+
+def _translate_wsl_mount_to_windows(raw: str) -> str | None:
+    """Translate ``/mnt/<drive>/rest...`` to ``<DRIVE>:\\rest...`` (single letter drive).
+
+    Returns None if the path is not a single-letter ``/mnt/<drive>/`` mount.
+    """
+    parts = raw.split("/")
+    if len(parts) < 4 or parts[0] != "" or parts[1] != "mnt":
+        return None
+    drive = parts[2]
+    if len(drive) != 1 or not drive.isalpha():
+        return None
+    drive_upper = drive.upper()
+    rest = "\\".join(part for part in parts[3:] if part)
+    return f"{drive_upper}:\\{rest}" if rest else f"{drive_upper}:\\"
+
+
 def _probe_one(tool: str, path: Path) -> dict[str, Any]:
     cmd = [
         tool,
@@ -152,7 +191,7 @@ def _probe_one(tool: str, path: Path) -> dict[str, Any]:
         "-print_format", "json",
         "-show_format",
         "-show_streams",
-        str(path),
+        _adapt_path_for_ffprobe(path, tool),
     ]
     proc = subprocess.run(
         cmd,

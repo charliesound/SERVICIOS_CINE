@@ -8,6 +8,9 @@ import pytest
 from scripts.local_media_agent import cid_cli, producer_editorial_query
 from scripts.local_media_agent.producer_editorial_query import (
     AUDIO_ONLY_STATUS,
+    EDITOR_HANDOFF_FORMAT,
+    EDITOR_HANDOFF_REASON_AUDIO_ONLY,
+    EDITOR_HANDOFF_REASON_CANDIDATE_NOT_FOUND,
     MAPPED_STATUS,
     NAVIGATION_AVAILABLE,
     NAVIGATION_REASON_AUDIO_ONLY,
@@ -17,8 +20,10 @@ from scripts.local_media_agent.producer_editorial_query import (
     STATUS_RESULTS,
     STATUS_UNSUPPORTED_CHARACTER,
     STATUS_UNSUPPORTED_TOPIC,
+    build_editor_handoff_package,
     build_evidence_navigation,
     query_producer_evidence,
+    resolve_editor_handoff_by_candidate_id,
     resolve_navigation_by_candidate_id,
 )
 
@@ -318,3 +323,151 @@ def test_cli_navigate_audio_only_returns_controlled_unavailable() -> None:
     assert payload["navigation_available"] is False
     assert payload["navigation_reason"] == NAVIGATION_REASON_AUDIO_ONLY
     assert payload["video_clip"] is None
+
+
+def test_editor_handoff_mapped_preserves_exact_v2_source_interval() -> None:
+    result = _query("relevo generacional", character="Pruden")
+    mapped = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == MAPPED_STATUS
+    ]
+    assert mapped
+    package = build_editor_handoff_package(mapped[0])
+    assert package["format"] == EDITOR_HANDOFF_FORMAT
+    assert package["editor_handoff_available"] is True
+    assert package["video_clip"] == "CLIP.MP4"
+    marker = package["markers"][0]
+    assert marker["video_clip"] == "CLIP.MP4"
+    assert marker["source_in_seconds"] == 12.25
+    assert marker["source_out_seconds"] == 12.75
+    assert marker["candidate_id"] == mapped[0].candidate_id
+    assert marker["topic"] == mapped[0].topic
+    assert marker["interview_subject"] == mapped[0].interview_subject
+    assert marker["excerpt"] == mapped[0].producer_context_excerpt
+    assert marker["speaker_attribution"] == "UNKNOWN"
+
+
+def test_editor_handoff_marker_name_is_deterministic() -> None:
+    result = _query("relevo generacional", character="Pruden")
+    mapped = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == MAPPED_STATUS
+    ][0]
+    a = build_editor_handoff_package(mapped)["markers"][0]["marker_name"]
+    b = build_editor_handoff_package(mapped)["markers"][0]["marker_name"]
+    assert a == b
+    assert a.startswith("CID | ")
+    assert mapped.interview_subject in a
+    assert mapped.candidate_id in a
+
+
+def test_editor_handoff_audio_only_never_invents_video() -> None:
+    result = _query("ovejas", character="Pruden")
+    audio_only = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == AUDIO_ONLY_STATUS
+    ]
+    assert audio_only
+    package = build_editor_handoff_package(audio_only[0])
+    assert package["editor_handoff_available"] is False
+    assert package["editor_handoff_reason"] == EDITOR_HANDOFF_REASON_AUDIO_ONLY
+    assert package["video_clip"] is None
+    assert package["markers"] == []
+
+
+def test_editor_handoff_no_media_or_timeline_mutation_flags() -> None:
+    result = _query("relevo generacional", character="Pruden")
+    mapped = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == MAPPED_STATUS
+    ][0]
+    package = build_editor_handoff_package(mapped)
+    assert package["source_media_mutation"] is False
+    assert package["davinci_project_mutation"] is False
+
+
+def test_editor_handoff_resolve_by_candidate_audio_only_controlled() -> None:
+    result = _query("ovejas", character="Pruden")
+    audio_only = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == AUDIO_ONLY_STATUS
+    ][0]
+    package = resolve_editor_handoff_by_candidate_id(
+        result, audio_only.candidate_id
+    )
+    assert package["editor_handoff_available"] is False
+    assert package["editor_handoff_reason"] == EDITOR_HANDOFF_REASON_AUDIO_ONLY
+    assert package["video_clip"] is None
+    assert package["markers"] == []
+
+
+def test_editor_handoff_candidate_not_found_controlled() -> None:
+    result = _query("problemas")
+    package = resolve_editor_handoff_by_candidate_id(result, "DOES-NOT-EXIST")
+    assert package["editor_handoff_available"] is False
+    assert package["editor_handoff_reason"] == EDITOR_HANDOFF_REASON_CANDIDATE_NOT_FOUND
+    assert package["video_clip"] is None
+    assert package["markers"] == []
+
+
+def test_cli_editor_handoff_mapped_writes_marker_package_to_file(
+    tmp_path,
+) -> None:
+    result = _query("relevo generacional", character="Pruden")
+    mapped = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == MAPPED_STATUS
+    ][0]
+    out_file = tmp_path / "handoff.json"
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    code = cid_cli.run_cli(
+        [
+            "editorial-query",
+            "--evidence-path",
+            EVIDENCE_PATH,
+            "--query",
+            "relevo generacional",
+            "--character",
+            "Pruden",
+            "--navigate",
+            mapped.candidate_id,
+            "--editor-handoff",
+            str(out_file),
+        ],
+        stdout,
+        stderr,
+    )
+    assert code == 0
+    assert out_file.exists()
+    package = json.loads(out_file.read_text(encoding="utf-8"))
+    assert package["format"] == EDITOR_HANDOFF_FORMAT
+    assert package["editor_handoff_available"] is True
+    assert package["video_clip"] == "CLIP.MP4"
+    assert package["markers"][0]["candidate_id"] == mapped.candidate_id
+
+
+def test_cli_editor_handoff_without_navigate_is_rejected() -> None:
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    code = cid_cli.run_cli(
+        [
+            "editorial-query",
+            "--evidence-path",
+            EVIDENCE_PATH,
+            "--query",
+            "problemas",
+            "--editor-handoff",
+            "/tmp/opencode/should_not_exist.json",
+        ],
+        stdout,
+        stderr,
+    )
+    assert code == 2
+    assert "ARGUMENTS_REJECTED" in stderr.getvalue()

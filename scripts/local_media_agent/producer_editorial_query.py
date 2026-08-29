@@ -319,6 +319,82 @@ def resolve_navigation_by_candidate_id(
     }
 
 
+EDITOR_HANDOFF_FORMAT = "CID_PRODUCER_EDITORIAL_MARKER_PACKAGE"
+EDITOR_HANDOFF_VERSION = 1
+
+EDITOR_HANDOFF_AVAILABLE = "EDITOR_HANDOFF_AVAILABLE"
+EDITOR_HANDOFF_UNAVAILABLE = "EDITOR_HANDOFF_UNAVAILABLE"
+EDITOR_HANDOFF_REASON_AUDIO_ONLY = "AUDIO_ONLY_VIDEO_UNMAPPED"
+EDITOR_HANDOFF_REASON_CANDIDATE_NOT_FOUND = "CANDIDATE_NOT_FOUND"
+
+
+def build_editor_handoff_package(item: ProducerEvidenceItem) -> dict[str, Any]:
+    """Build a deterministic editor-facing marker package for one evidence item.
+
+    MAPPED items produce a marker package using the exact V2 source interval.
+    AUDIO_ONLY items never invent video location and return a controlled
+    refusal. Read-only; no media or timeline mutation.
+    """
+    navigation = build_evidence_navigation(item)
+    if not navigation["navigation_available"]:
+        return {
+            "format": EDITOR_HANDOFF_FORMAT,
+            "version": EDITOR_HANDOFF_VERSION,
+            "candidate_id": navigation["candidate_id"],
+            "editor_handoff_available": False,
+            "editor_handoff_reason": navigation["navigation_reason"],
+            "video_clip": None,
+            "markers": [],
+        }
+    marker_name = (
+        f"CID | {item.topic} | {item.interview_subject} | {item.candidate_id}"
+    )
+    return {
+        "format": EDITOR_HANDOFF_FORMAT,
+        "version": EDITOR_HANDOFF_VERSION,
+        "candidate_id": item.candidate_id,
+        "editor_handoff_available": True,
+        "editor_handoff_reason": None,
+        "video_clip": navigation["video_clip"],
+        "source_media_mutation": False,
+        "davinci_project_mutation": False,
+        "markers": [
+            {
+                "candidate_id": item.candidate_id,
+                "video_clip": navigation["video_clip"],
+                "source_in_seconds": navigation["video_relative_start"],
+                "source_out_seconds": navigation["video_relative_end"],
+                "marker_name": marker_name,
+                "topic": item.topic,
+                "interview_subject": item.interview_subject,
+                "excerpt": item.producer_context_excerpt,
+                "speaker_attribution": item.speaker_attribution,
+            }
+        ],
+    }
+
+
+def resolve_editor_handoff_by_candidate_id(
+    result: ProducerEvidenceQueryResult,
+    candidate_id: str,
+) -> dict[str, Any]:
+    """Resolve an editor handoff package for one candidate_id within a result."""
+    if not isinstance(candidate_id, str) or not candidate_id.strip():
+        raise ProducerQueryError("EDITOR_HANDOFF_CANDIDATE_ID_REQUIRED")
+    for item in result.results:
+        if item.candidate_id == candidate_id:
+            return build_editor_handoff_package(item)
+    return {
+        "format": EDITOR_HANDOFF_FORMAT,
+        "version": EDITOR_HANDOFF_VERSION,
+        "candidate_id": candidate_id,
+        "editor_handoff_available": False,
+        "editor_handoff_reason": EDITOR_HANDOFF_REASON_CANDIDATE_NOT_FOUND,
+        "video_clip": None,
+        "markers": [],
+    }
+
+
 def format_clock(seconds: float) -> str:
     """Format seconds as HH:MM:SS (fractional part dropped for readability)."""
     seconds = max(0.0, float(seconds))
@@ -394,6 +470,12 @@ __all__ = [
     "STATUS_UNSUPPORTED_CHARACTER",
     "AUDIO_ONLY_STATUS",
     "MAPPED_STATUS",
+    "EDITOR_HANDOFF_FORMAT",
+    "EDITOR_HANDOFF_VERSION",
+    "EDITOR_HANDOFF_AVAILABLE",
+    "EDITOR_HANDOFF_UNAVAILABLE",
+    "EDITOR_HANDOFF_REASON_AUDIO_ONLY",
+    "EDITOR_HANDOFF_REASON_CANDIDATE_NOT_FOUND",
     "NAVIGATION_AVAILABLE",
     "NAVIGATION_UNAVAILABLE",
     "NAVIGATION_REASON_AUDIO_ONLY",
@@ -409,6 +491,8 @@ __all__ = [
     "load_evidence",
     "build_evidence_navigation",
     "resolve_navigation_by_candidate_id",
+    "build_editor_handoff_package",
+    "resolve_editor_handoff_by_candidate_id",
     "format_clock",
     "format_clock_precise",
     "render_producer_evidence",

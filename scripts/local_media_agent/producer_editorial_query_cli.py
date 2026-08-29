@@ -11,6 +11,7 @@ from scripts.local_media_agent.producer_editorial_query import (
     ProducerQueryError,
     query_producer_evidence,
     render_producer_evidence,
+    resolve_editor_handoff_by_candidate_id,
     resolve_navigation_by_candidate_id,
 )
 
@@ -37,6 +38,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--query", required=True)
     parser.add_argument("--character")
     parser.add_argument("--navigate")
+    parser.add_argument("--editor-handoff")
     parser.add_argument("--json", action="store_true", dest="as_json")
     return parser
 
@@ -59,7 +61,29 @@ def run_cli(
             character=args.character if args.character else None,
         )
         navigate = args.navigate if args.navigate else None
+        editor_handoff = args.editor_handoff if args.editor_handoff else None
+        if editor_handoff is not None and navigate is None:
+            err.write(CLI_ARGUMENTS_REJECTED + "\n")
+            return EXIT_ARGUMENTS_REJECTED
         if navigate is not None:
+            if editor_handoff is not None:
+                handoff = resolve_editor_handoff_by_candidate_id(result, navigate)
+                with open(editor_handoff, "w", encoding="utf-8") as fh:
+                    fh.write(json.dumps(handoff, ensure_ascii=False, indent=2) + "\n")
+                out.write(
+                    json.dumps(
+                        {
+                            "editor_handoff_written": editor_handoff,
+                            "candidate_id": navigate,
+                            "editor_handoff_available": handoff["editor_handoff_available"],
+                            "editor_handoff_reason": handoff["editor_handoff_reason"],
+                        },
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    )
+                    + "\n"
+                )
+                return EXIT_SUCCESS
             navigation = resolve_navigation_by_candidate_id(result, navigate)
             out.write(
                 json.dumps(navigation, ensure_ascii=False, sort_keys=True) + "\n"

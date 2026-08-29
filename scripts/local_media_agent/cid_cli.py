@@ -120,12 +120,13 @@ EDITORIAL_QA_HELP_TEXT = (
 )
 
 PRODUCER_EDITORIAL_QUERY_HELP_TEXT = (
-    "Usage: cid editorial-query --evidence-path EVIDENCE_JSON --query QUERY [--character CHARACTER] [--navigate CANDIDATE_ID] [--json]\n"
+    "Usage: cid editorial-query --evidence-path EVIDENCE_JSON --query QUERY [--character CHARACTER] [--navigate CANDIDATE_ID] [--editor-handoff OUTPUT] [--json]\n"
     "Options:\n"
     "  --evidence-path EVIDENCE_JSON\n"
     "  --query QUERY\n"
     "  --character CHARACTER\n"
     "  --navigate CANDIDATE_ID  Resolve read-only DaVinci/audio navigation for one result.\n"
+    "  --editor-handoff OUTPUT  Write an editor marker package JSON to OUTPUT (requires --navigate).\n"
     "  --json\n"
     "  --help\n"
 )

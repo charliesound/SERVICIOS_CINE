@@ -41,6 +41,7 @@ UMBRELLA_HELP_TEXT = (
     "  editorial-query  Query proven producer editorial evidence (Siruela pilot).\n"
     "  editorial-qa  Run the Editorial QA command.\n"
     "  davinci-reference  Convert an editor marker package into a DaVinci FCPXML reference.\n"
+    "  selection  EDITORIAL_SELECTION collaboration (create/list/transition).\n"
     "Options:\n"
     "  --help\n"
 )
@@ -147,6 +148,24 @@ DAVINCI_REFERENCE_HELP_TEXT = (
     "  --help\n"
 )
 
+SELECTION_HELP_TEXT = (
+    "Usage: cid selection OPERATION [OPTIONS]\n"
+    "Operations:\n"
+    "  create  Create an EDITORIAL_SELECTION from evidence authority.\n"
+    "  list    List selections (optional --status filter, optional --view).\n"
+    "  transition  Apply a legal role-authorized status transition.\n"
+    "Create:\n"
+    "  cid selection create --evidence-path EVIDENCE_JSON --candidate CANDIDATE_ID\n"
+    "    --requested-by-role PRODUCER|DIRECTOR [--note NOTE] --store STORE_DIR\n"
+    "List:\n"
+    "  cid selection list --store STORE_DIR [--status STATUS] [--view producer|director|editor]\n"
+    "Transition:\n"
+    "  cid selection transition --store STORE_DIR --selection SEL_ID --to STATUS\n"
+    "    --actor-role PRODUCER|DIRECTOR|EDITOR [--editor-note NOTE]\n"
+    "Statuses: SELECTED READY_FOR_EDITOR IN_EDIT USED REJECTED\n"
+    "  --help\n"
+)
+
 
 def run_cli(
     argv: Sequence[str] | None = None,
@@ -179,6 +198,10 @@ def run_cli(
             out.write(DAVINCI_REFERENCE_HELP_TEXT)
             return EXIT_SUCCESS
 
+        if args == ["selection", "--help"]:
+            out.write(SELECTION_HELP_TEXT)
+            return EXIT_SUCCESS
+
         if args == ["transcript", "--help"]:
             out.write(TRANSCRIPT_HELP_TEXT)
             return EXIT_SUCCESS
@@ -201,6 +224,11 @@ def run_cli(
             from scripts.local_media_agent import davinci_marker_reference_cli
 
             return davinci_marker_reference_cli.run_cli(args[1:], stdout=out, stderr=err)
+
+        if args and args[0] == "selection":
+            from scripts.local_media_agent import editorial_selection_cli
+
+            return editorial_selection_cli.run_cli(args[1:], stdout=out, stderr=err)
 
         if args and args[0] == "transcript":
             return _run_transcript_cli(args[1:], stdout=out, stderr=err)

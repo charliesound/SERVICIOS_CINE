@@ -38,6 +38,8 @@ UMBRELLA_HELP_TEXT = (
     "  scan    Scan one absolute local Linux folder in read-only mode.\n"
     "  transcript  Browse or search an explicit local transcript JSON file.\n"
     "  pilot   Run the local pilot and browse or search its transcript.\n"
+    "  editorial-query  Query proven producer editorial evidence (Siruela pilot).\n"
+    "  editorial-qa  Run the Editorial QA command.\n"
     "Options:\n"
     "  --help\n"
 )
@@ -117,6 +119,16 @@ EDITORIAL_QA_HELP_TEXT = (
     "  --help\n"
 )
 
+PRODUCER_EDITORIAL_QUERY_HELP_TEXT = (
+    "Usage: cid editorial-query --evidence-path EVIDENCE_JSON --query QUERY [--character CHARACTER] [--json]\n"
+    "Options:\n"
+    "  --evidence-path EVIDENCE_JSON\n"
+    "  --query QUERY\n"
+    "  --character CHARACTER\n"
+    "  --json\n"
+    "  --help\n"
+)
+
 
 def run_cli(
     argv: Sequence[str] | None = None,
@@ -141,6 +153,10 @@ def run_cli(
             out.write(EDITORIAL_QA_HELP_TEXT)
             return EXIT_SUCCESS
 
+        if args == ["editorial-query", "--help"]:
+            out.write(PRODUCER_EDITORIAL_QUERY_HELP_TEXT)
+            return EXIT_SUCCESS
+
         if args == ["transcript", "--help"]:
             out.write(TRANSCRIPT_HELP_TEXT)
             return EXIT_SUCCESS
@@ -153,6 +169,11 @@ def run_cli(
             from scripts.local_media_agent import editorial_qa_pilot_cli
 
             return editorial_qa_pilot_cli.run_cli(args[1:], stdout=out, stderr=err)
+
+        if args and args[0] == "editorial-query":
+            from scripts.local_media_agent import producer_editorial_query_cli
+
+            return producer_editorial_query_cli.run_cli(args[1:], stdout=out, stderr=err)
 
         if args and args[0] == "transcript":
             return _run_transcript_cli(args[1:], stdout=out, stderr=err)

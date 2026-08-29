@@ -31,6 +31,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--editor-handoff", required=True)
     parser.add_argument("--media-path", required=True)
     parser.add_argument("--frame-duration", required=True)
+    parser.add_argument("--source-timecode-start", required=True)
+    parser.add_argument("--source-duration", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--event-name", default="CID Editorial Reference")
     return parser
@@ -51,6 +53,8 @@ def run_cli(
             package,
             media_path=args.media_path,
             frame_duration=args.frame_duration,
+            source_timecode_start=args.source_timecode_start,
+            source_duration=args.source_duration,
             event_name=args.event_name,
         )
         if not reference["davinci_reference_available"]:

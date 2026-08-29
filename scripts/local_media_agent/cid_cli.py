@@ -133,11 +133,15 @@ PRODUCER_EDITORIAL_QUERY_HELP_TEXT = (
 )
 
 DAVINCI_REFERENCE_HELP_TEXT = (
-    "Usage: cid davinci-reference --editor-handoff PACKAGE_JSON --media-path MEDIA_PATH --frame-duration FRAME_DURATION --output REFERENCE.fcpxml [--event-name NAME]\n"
+    "Usage: cid davinci-reference --editor-handoff PACKAGE_JSON --media-path MEDIA_PATH "
+    "--frame-duration FRAME_DURATION --source-timecode-start HH:MM:SS:FF --source-duration SECONDS "
+    "--output REFERENCE.fcpxml [--event-name NAME]\n"
     "Options:\n"
     "  --editor-handoff PACKAGE_JSON  Path to a CID_PRODUCER_EDITORIAL_MARKER_PACKAGE JSON.\n"
     "  --media-path MEDIA_PATH         Editor-visible source media path (used only to build the file URI).\n"
     "  --frame-duration FRAME_DURATION FCPXML format frame duration (e.g. 1/25s).\n"
+    "  --source-timecode-start HH:MM:SS:FF  Authoritative NDF source-media start timecode.\n"
+    "  --source-duration SECONDS       Authoritative physical source-media duration in seconds.\n"
     "  --output REFERENCE.fcpxml      Write the minimal DaVinci FCPXML reference sidecar.\n"
     "  --event-name NAME              DaVinci event name (default CID Editorial Reference).\n"
     "  --help\n"

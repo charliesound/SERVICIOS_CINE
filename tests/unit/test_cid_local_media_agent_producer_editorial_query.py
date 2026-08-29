@@ -9,11 +9,17 @@ from scripts.local_media_agent import cid_cli, producer_editorial_query
 from scripts.local_media_agent.producer_editorial_query import (
     AUDIO_ONLY_STATUS,
     MAPPED_STATUS,
+    NAVIGATION_AVAILABLE,
+    NAVIGATION_REASON_AUDIO_ONLY,
+    NAVIGATION_REASON_CANDIDATE_NOT_FOUND,
+    NAVIGATION_UNAVAILABLE,
     STATUS_NO_RESULTS,
     STATUS_RESULTS,
     STATUS_UNSUPPORTED_CHARACTER,
     STATUS_UNSUPPORTED_TOPIC,
+    build_evidence_navigation,
     query_producer_evidence,
+    resolve_navigation_by_candidate_id,
 )
 
 EVIDENCE_PATH = "/tmp/opencode/producer_editorial_query_synthetic_v1.json"
@@ -192,3 +198,123 @@ def test_cli_json_unsupported_topic_returns_controlled_no_results() -> None:
     assert payload["status"] == STATUS_UNSUPPORTED_TOPIC
     assert payload["results"] == []
     assert payload["total"] == 0
+
+
+def test_navigation_mapped_available_preserves_exact_v2_values() -> None:
+    result = _query("relevo generacional", character="Pruden")
+    mapped = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == MAPPED_STATUS
+    ]
+    assert mapped
+    navigation = build_evidence_navigation(mapped[0])
+    assert navigation["navigation_status"] == NAVIGATION_AVAILABLE
+    assert navigation["navigation_available"] is True
+    assert navigation["navigation_reason"] is None
+    assert navigation["video_clip"] == "CLIP.MP4"
+    assert navigation["video_relative_start"] == 12.25
+    assert navigation["video_relative_end"] == 12.75
+
+
+def test_navigation_audio_only_never_invents_video() -> None:
+    result = _query("ovejas", character="Pruden")
+    audio_only = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == AUDIO_ONLY_STATUS
+    ]
+    assert audio_only
+    navigation = build_evidence_navigation(audio_only[0])
+    assert navigation["navigation_status"] == NAVIGATION_UNAVAILABLE
+    assert navigation["navigation_available"] is False
+    assert navigation["navigation_reason"] == NAVIGATION_REASON_AUDIO_ONLY
+    assert navigation["video_clip"] is None
+    assert navigation["video_relative_start"] is None
+    assert navigation["video_relative_end"] is None
+    assert navigation["navigation_descriptor"] is None
+
+
+def test_navigation_resolve_by_candidate_audio_only() -> None:
+    result = _query("ovejas", character="Pruden")
+    audio_only_items = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == AUDIO_ONLY_STATUS
+    ]
+    navigation = resolve_navigation_by_candidate_id(
+        result, audio_only_items[0].candidate_id
+    )
+    assert navigation["navigation_available"] is False
+    assert navigation["navigation_reason"] == NAVIGATION_REASON_AUDIO_ONLY
+
+
+def test_navigation_candidate_not_found_controlled() -> None:
+    result = _query("problemas")
+    navigation = resolve_navigation_by_candidate_id(result, "DOES-NOT-EXIST")
+    assert navigation["navigation_available"] is False
+    assert navigation["navigation_reason"] == NAVIGATION_REASON_CANDIDATE_NOT_FOUND
+    assert navigation["video_clip"] is None
+
+
+def test_cli_navigate_mapped_returns_navigation_json() -> None:
+    result = _query("relevo generacional", character="Pruden")
+    mapped = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == MAPPED_STATUS
+    ][0]
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    code = cid_cli.run_cli(
+        [
+            "editorial-query",
+            "--evidence-path",
+            EVIDENCE_PATH,
+            "--query",
+            "relevo generacional",
+            "--character",
+            "Pruden",
+            "--navigate",
+            mapped.candidate_id,
+        ],
+        stdout,
+        stderr,
+    )
+    assert code == 0
+    payload = json.loads(stdout.getvalue())
+    assert payload["navigation_available"] is True
+    assert payload["video_clip"] == "CLIP.MP4"
+    assert payload["video_relative_start"] == 12.25
+    assert payload["video_relative_end"] == 12.75
+
+
+def test_cli_navigate_audio_only_returns_controlled_unavailable() -> None:
+    result = _query("ovejas", character="Pruden")
+    audio_only = [
+        item
+        for item in result.results
+        if item.excerpt_video_mapping_status == AUDIO_ONLY_STATUS
+    ][0]
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    code = cid_cli.run_cli(
+        [
+            "editorial-query",
+            "--evidence-path",
+            EVIDENCE_PATH,
+            "--query",
+            "ovejas",
+            "--character",
+            "Pruden",
+            "--navigate",
+            audio_only.candidate_id,
+        ],
+        stdout,
+        stderr,
+    )
+    assert code == 0
+    payload = json.loads(stdout.getvalue())
+    assert payload["navigation_available"] is False
+    assert payload["navigation_reason"] == NAVIGATION_REASON_AUDIO_ONLY
+    assert payload["video_clip"] is None

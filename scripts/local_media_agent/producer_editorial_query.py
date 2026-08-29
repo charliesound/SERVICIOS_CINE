@@ -28,6 +28,11 @@ STATUS_UNSUPPORTED_CHARACTER = "UNSUPPORTED_CHARACTER"
 AUDIO_ONLY_STATUS = "AUDIO_ONLY_VIDEO_UNMAPPED"
 MAPPED_STATUS = "MAPPED"
 
+NAVIGATION_AVAILABLE = "NAVIGATION_AVAILABLE"
+NAVIGATION_UNAVAILABLE = "NAVIGATION_UNAVAILABLE"
+NAVIGATION_REASON_AUDIO_ONLY = "AUDIO_ONLY_VIDEO_UNMAPPED"
+NAVIGATION_REASON_CANDIDATE_NOT_FOUND = "CANDIDATE_NOT_FOUND"
+
 TOPIC_FAMILIES = (
     "pastor/pastoreo",
     "ganado/ganadería",
@@ -245,6 +250,75 @@ def _evidence_item(record: dict[str, Any]) -> ProducerEvidenceItem:
         raise ProducerQueryError("EVIDENCE_ITEM_FIELDS_INVALID") from exc
 
 
+def build_evidence_navigation(
+    item: ProducerEvidenceItem,
+) -> dict[str, Any]:
+    """Return a read-only navigation block for one producer evidence item.
+
+    MAPPED items expose the exact V2 video clip and source-relative interval.
+    AUDIO_ONLY items never invent video location and report a controlled
+    unavailable-navigation state.
+    """
+    if item.excerpt_video_mapping_status == MAPPED_STATUS:
+        if any(
+            value is None
+            for value in (
+                item.video_clip,
+                item.excerpt_video_relative_start,
+                item.excerpt_video_relative_end,
+            )
+        ):
+            raise ProducerQueryError("MAPPED_NAVIGATION_FIELDS_INVALID")
+        return {
+            "candidate_id": item.candidate_id,
+            "navigation_status": NAVIGATION_AVAILABLE,
+            "navigation_available": True,
+            "navigation_reason": None,
+            "video_clip": item.video_clip,
+            "video_relative_start": item.excerpt_video_relative_start,
+            "video_relative_end": item.excerpt_video_relative_end,
+            "navigation_descriptor": (
+                f"clip={item.video_clip}; "
+                f"interval={item.excerpt_video_relative_start}-"
+                f"{item.excerpt_video_relative_end}s"
+            ),
+        }
+    if item.excerpt_video_mapping_status == AUDIO_ONLY_STATUS:
+        return {
+            "candidate_id": item.candidate_id,
+            "navigation_status": NAVIGATION_UNAVAILABLE,
+            "navigation_available": False,
+            "navigation_reason": NAVIGATION_REASON_AUDIO_ONLY,
+            "video_clip": None,
+            "video_relative_start": None,
+            "video_relative_end": None,
+            "navigation_descriptor": None,
+        }
+    raise ProducerQueryError("EVIDENCE_ITEM_MAPPING_STATUS_UNKNOWN")
+
+
+def resolve_navigation_by_candidate_id(
+    result: ProducerEvidenceQueryResult,
+    candidate_id: str,
+) -> dict[str, Any]:
+    """Resolve a navigation block for a given candidate_id within a query result."""
+    if not isinstance(candidate_id, str) or not candidate_id.strip():
+        raise ProducerQueryError("NAVIGATION_CANDIDATE_ID_REQUIRED")
+    for item in result.results:
+        if item.candidate_id == candidate_id:
+            return build_evidence_navigation(item)
+    return {
+        "candidate_id": candidate_id,
+        "navigation_status": NAVIGATION_UNAVAILABLE,
+        "navigation_available": False,
+        "navigation_reason": NAVIGATION_REASON_CANDIDATE_NOT_FOUND,
+        "video_clip": None,
+        "video_relative_start": None,
+        "video_relative_end": None,
+        "navigation_descriptor": None,
+    }
+
+
 def format_clock(seconds: float) -> str:
     """Format seconds as HH:MM:SS (fractional part dropped for readability)."""
     seconds = max(0.0, float(seconds))
@@ -320,6 +394,10 @@ __all__ = [
     "STATUS_UNSUPPORTED_CHARACTER",
     "AUDIO_ONLY_STATUS",
     "MAPPED_STATUS",
+    "NAVIGATION_AVAILABLE",
+    "NAVIGATION_UNAVAILABLE",
+    "NAVIGATION_REASON_AUDIO_ONLY",
+    "NAVIGATION_REASON_CANDIDATE_NOT_FOUND",
     "TOPIC_FAMILIES",
     "CHARACTER_ALIASES",
     "ProducerQueryError",
@@ -329,6 +407,8 @@ __all__ = [
     "resolve_topic",
     "resolve_character",
     "load_evidence",
+    "build_evidence_navigation",
+    "resolve_navigation_by_candidate_id",
     "format_clock",
     "format_clock_precise",
     "render_producer_evidence",

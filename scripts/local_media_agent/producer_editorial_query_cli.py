@@ -11,6 +11,7 @@ from scripts.local_media_agent.producer_editorial_query import (
     ProducerQueryError,
     query_producer_evidence,
     render_producer_evidence,
+    resolve_navigation_by_candidate_id,
 )
 
 
@@ -35,6 +36,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--evidence-path", required=True)
     parser.add_argument("--query", required=True)
     parser.add_argument("--character")
+    parser.add_argument("--navigate")
     parser.add_argument("--json", action="store_true", dest="as_json")
     return parser
 
@@ -56,6 +58,13 @@ def run_cli(
             args.query,
             character=args.character if args.character else None,
         )
+        navigate = args.navigate if args.navigate else None
+        if navigate is not None:
+            navigation = resolve_navigation_by_candidate_id(result, navigate)
+            out.write(
+                json.dumps(navigation, ensure_ascii=False, sort_keys=True) + "\n"
+            )
+            return EXIT_SUCCESS
         if args.as_json:
             payload = {
                 "project": result.project,

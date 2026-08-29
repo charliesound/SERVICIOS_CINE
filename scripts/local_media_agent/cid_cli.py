@@ -40,6 +40,7 @@ UMBRELLA_HELP_TEXT = (
     "  pilot   Run the local pilot and browse or search its transcript.\n"
     "  editorial-query  Query proven producer editorial evidence (Siruela pilot).\n"
     "  editorial-qa  Run the Editorial QA command.\n"
+    "  davinci-reference  Convert an editor marker package into a DaVinci FCPXML reference.\n"
     "Options:\n"
     "  --help\n"
 )
@@ -131,6 +132,17 @@ PRODUCER_EDITORIAL_QUERY_HELP_TEXT = (
     "  --help\n"
 )
 
+DAVINCI_REFERENCE_HELP_TEXT = (
+    "Usage: cid davinci-reference --editor-handoff PACKAGE_JSON --media-path MEDIA_PATH --frame-duration FRAME_DURATION --output REFERENCE.fcpxml [--event-name NAME]\n"
+    "Options:\n"
+    "  --editor-handoff PACKAGE_JSON  Path to a CID_PRODUCER_EDITORIAL_MARKER_PACKAGE JSON.\n"
+    "  --media-path MEDIA_PATH         Editor-visible source media path (used only to build the file URI).\n"
+    "  --frame-duration FRAME_DURATION FCPXML format frame duration (e.g. 1/25s).\n"
+    "  --output REFERENCE.fcpxml      Write the minimal DaVinci FCPXML reference sidecar.\n"
+    "  --event-name NAME              DaVinci event name (default CID Editorial Reference).\n"
+    "  --help\n"
+)
+
 
 def run_cli(
     argv: Sequence[str] | None = None,
@@ -159,6 +171,10 @@ def run_cli(
             out.write(PRODUCER_EDITORIAL_QUERY_HELP_TEXT)
             return EXIT_SUCCESS
 
+        if args == ["davinci-reference", "--help"]:
+            out.write(DAVINCI_REFERENCE_HELP_TEXT)
+            return EXIT_SUCCESS
+
         if args == ["transcript", "--help"]:
             out.write(TRANSCRIPT_HELP_TEXT)
             return EXIT_SUCCESS
@@ -176,6 +192,11 @@ def run_cli(
             from scripts.local_media_agent import producer_editorial_query_cli
 
             return producer_editorial_query_cli.run_cli(args[1:], stdout=out, stderr=err)
+
+        if args and args[0] == "davinci-reference":
+            from scripts.local_media_agent import davinci_marker_reference_cli
+
+            return davinci_marker_reference_cli.run_cli(args[1:], stdout=out, stderr=err)
 
         if args and args[0] == "transcript":
             return _run_transcript_cli(args[1:], stdout=out, stderr=err)

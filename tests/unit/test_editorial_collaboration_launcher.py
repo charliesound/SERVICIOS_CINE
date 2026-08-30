@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import http.client
 import json
+import re
+import socket
 import threading
 import urllib.parse
 import urllib.request
@@ -677,6 +679,104 @@ def test_clean_server_stops_after_shutdown(producer_store, tmp_path) -> None:
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
+
+
+def test_real_launcher_stops_after_valid_shutdown_without_test_shutdown(
+    producer_store, monkeypatch
+) -> None:
+    import scripts.local_media_agent.editorial_collaboration_launcher as launcher
+
+    before = {path.name: path.read_bytes() for path in Path(producer_store).iterdir()}
+    opened: list[str] = []
+    servers = []
+    result: list[dict] = []
+    errors: list[BaseException] = []
+    real_create_server = create_server
+
+    def capture_server(*args, **kwargs):
+        server = real_create_server(*args, **kwargs)
+        servers.append(server)
+        return server
+
+    def run_launcher() -> None:
+        try:
+            result.append(
+                launch_editorial_board(
+                    producer_store,
+                    ROLE_PRODUCER,
+                    opener=lambda url: opened.append(url) or True,
+                )
+            )
+        except BaseException as exc:
+            errors.append(exc)
+
+    monkeypatch.setattr(launcher, "create_server", capture_server)
+    thread = threading.Thread(target=run_launcher, daemon=True)
+    thread.start()
+    try:
+        assert _wait_for(lambda: len(opened) == 1 and len(servers) == 1)
+        server = servers[0]
+        port = server.server_address[1]
+        assert server.server_address[0] == "127.0.0.1"
+
+        def board_ready() -> bool:
+            try:
+                with urllib.request.urlopen(opened[0], timeout=1) as response:
+                    return response.status == 200
+            except OSError:
+                return False
+
+        assert _wait_for(board_ready)
+        with urllib.request.urlopen(opened[0], timeout=5) as response:
+            board = response.read().decode("utf-8")
+        token_match = re.search(r'name="request_token" value="([^"]+)"', board)
+        assert token_match is not None
+        token = token_match.group(1)
+
+        invalid = urllib.parse.urlencode({"request_token": "wrong"})
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        conn.request(
+            "POST",
+            SHUTDOWN_PATH,
+            body=invalid,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        response = conn.getresponse()
+        assert response.status == 400
+        assert REQUEST_TOKEN_INVALID in response.read().decode("utf-8")
+        conn.close()
+        assert thread.is_alive()
+        with urllib.request.urlopen(opened[0], timeout=5) as response:
+            assert response.status == 200
+
+        valid = urllib.parse.urlencode({"request_token": token})
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        conn.request(
+            "POST",
+            SHUTDOWN_PATH,
+            body=valid,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        response = conn.getresponse()
+        assert response.status == 200
+        assert "CID Editorial closed" in response.read().decode("utf-8")
+        conn.close()
+
+        thread.join(timeout=5)
+        assert not thread.is_alive()
+        assert errors == []
+        assert result[0]["host"] == "127.0.0.1"
+        assert result[0]["port"] == port
+        with pytest.raises(OSError):
+            socket.create_connection(("127.0.0.1", port), timeout=0.5)
+        after = {path.name: path.read_bytes() for path in Path(producer_store).iterdir()}
+        assert after == before
+    finally:
+        # Failure-only leak prevention; passing behavior shuts down via POST.
+        if thread.is_alive() and servers:
+            servers[0].shutdown()
+            servers[0].server_close()
+            thread.join(timeout=5)
 
 
 def test_git_boundary_paths_not_touched(tmp_path, evidence) -> None:

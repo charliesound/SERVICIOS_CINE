@@ -169,6 +169,7 @@ def launch_editorial_board(
         # Runs on the handler thread after the shutdown response is flushed;
         # stop serve_forever from another thread so it returns cleanly.
         stop.set()
+        server.shutdown()
 
     server = create_server(
         actual_store,

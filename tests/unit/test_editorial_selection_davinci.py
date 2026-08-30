@@ -336,7 +336,7 @@ def test_normal_cli_output_redacts_internals(tmp_path, evidence, store) -> None:
     res = _prepare_cli(_prepare_args(store, ready["selection_id"], evidence, output))
     assert res["code"] == 0
     out = res["out"]
-    assert "Source: 09:14.125 → 09:20.225" in out
+    assert "Source: 09:14.125 -> 09:20.225" in out
     assert "Status: READY_FOR_EDITOR" in out
     assert "DAVINCI_REFERENCE_READY=True" in out
     assert "candidate_id" not in out
@@ -346,6 +346,32 @@ def test_normal_cli_output_redacts_internals(tmp_path, evidence, store) -> None:
     assert "media-rep" not in out
     assert "1953273" not in out
     assert "15737009" not in out
+
+
+def test_prepare_davinci_output_is_cp1252_safe(tmp_path, evidence, store) -> None:
+    ready = _build_ready(evidence, store)
+    output = str(tmp_path / "ref.fcpxml")
+    raw = io.BytesIO()
+    stdout = io.TextIOWrapper(raw, encoding="cp1252", errors="strict")
+    stderr = io.StringIO()
+
+    code = run_cli(
+        _prepare_args(store, ready["selection_id"], evidence, output),
+        stdout=stdout,
+        stderr=stderr,
+    )
+    stdout.flush()
+    rendered = raw.getvalue().decode("cp1252")
+    stdout.detach()
+
+    assert code == 0
+    assert stderr.getvalue() == ""
+    assert "Source: 09:14.125 -> 09:20.225" in rendered
+    assert "DAVINCI_REFERENCE_READY=True" in rendered
+    assert (
+        SelectionStore(store).read(ready["selection_id"])["status"]
+        == STATUS_READY_FOR_EDITOR
+    )
 
 
 def test_generation_failure_leaves_no_output(tmp_path, evidence, store, monkeypatch) -> None:

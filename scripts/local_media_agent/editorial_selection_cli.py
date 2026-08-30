@@ -230,12 +230,13 @@ def _run_prepare_davinci(args, out, err) -> int:
     source = human_range(
         result.get("source_in_seconds"), result.get("source_out_seconds")
     )
+    cli_source = source.replace(" \u2192 ", " -> ") if source is not None else source
     out.write("Subject: " + str(result.get("subject")) + "\n")
     out.write("Topic: " + str(result.get("topic")) + "\n")
     if result.get("editorial_note"):
         out.write("Editorial note: " + str(result.get("editorial_note")) + "\n")
     out.write("Video: " + str(result.get("video_clip")) + "\n")
-    out.write(f"Source: {source}\n\n")
+    out.write(f"Source: {cli_source}\n\n")
     out.write("DAVINCI_REFERENCE_READY=True\n")
     out.write("Output: " + str(result.get("davinci_reference_path")) + "\n")
     out.write("Status: " + str(result.get("status")) + "\n\n")

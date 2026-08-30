@@ -52,6 +52,7 @@ TRANSITION_REJECTED = "CID_EDITORIAL_BOARD_TRANSITION_REJECTED"
 BAD_REQUEST = "CID_EDITORIAL_BOARD_BAD_REQUEST"
 INTERNAL_FAILURE = "CID_EDITORIAL_BOARD_INTERNAL_FAILURE"
 METHOD_NOT_ALLOWED = "CID_EDITORIAL_BOARD_METHOD_NOT_ALLOWED"
+SHUTDOWN_PATH = "/shutdown"
 
 # Deterministic target-status ordering (constructive action before reject).
 _TARGET_PRIORITY = (
@@ -293,6 +294,10 @@ button.primary {{ background:var(--accent); color:#fff; border-color:var(--accen
 .empty {{ color:var(--muted); }}
 .role-tag {{ display:inline-block; padding:2px 8px; border-radius:999px;
              background:#eaf3fb; color:#245c9c; font-size:12px; }}
+.close {{ margin-top:32px; padding-top:16px; border-top:1px solid var(--line); }}
+.close form {{ margin:0 0 6px; }}
+.close-btn {{ background:#1f2430; color:#fff; border-color:#1f2430; }}
+.close-hint {{ margin:0; color:var(--muted); font-size:12px; }}
 </style>
 </head>
 <body>
@@ -308,6 +313,13 @@ button.primary {{ background:var(--accent); color:#fff; border-color:var(--accen
 <section class="cards">
 {cards}
 </section>
+<section class="close">
+  <form method="post" action="{shutdown_path}">
+    <input type="hidden" name="request_token" value="{token}">
+    <button type="submit" class="close-btn">Close CID Editorial</button>
+  </form>
+  <p class="close-hint">This stops the local operator server and lets you close this tab.</p>
+</section>
 </div>
 </body>
 </html>
@@ -316,6 +328,8 @@ button.primary {{ background:var(--accent); color:#fff; border-color:var(--accen
             summary=summary,
             dav_summary=dav_summary,
             cards=cards,
+            shutdown_path=_esc(SHUTDOWN_PATH),
+            token=_esc(token),
         )
     )
     return document
@@ -367,7 +381,12 @@ def _esc(value: Any) -> str:
     return html.escape(str(value), quote=True)
 
 
-def _make_handler(store: str | Path, role: str, token: str) -> type[BaseHTTPRequestHandler]:
+def _make_handler(
+    store: str | Path,
+    role: str,
+    token: str,
+    close: callable | None = None,
+) -> type[BaseHTTPRequestHandler]:
     class EditorialBoardHandler(BaseHTTPRequestHandler):
         server_version = "CIDEditorialBoard/1.0"
 
@@ -386,6 +405,10 @@ def _make_handler(store: str | Path, role: str, token: str) -> type[BaseHTTPRequ
             self.wfile.write(payload)
 
         def do_GET(self) -> None:
+            if self.path == SHUTDOWN_PATH:
+                # Shutdown is POST-only by contract; a GET must not stop the server.
+                self._send(405, _esc(METHOD_NOT_ALLOWED))
+                return
             if self.path != "/":
                 self._send(404, _esc("CID_EDITORIAL_BOARD_NOT_FOUND"))
                 return
@@ -399,7 +422,41 @@ def _make_handler(store: str | Path, role: str, token: str) -> type[BaseHTTPRequ
                 return
             self._send(200, board)
 
+        def _handle_shutdown(self) -> None:
+            if close is None:
+                self._send(500, _esc(INTERNAL_FAILURE))
+                return
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                self._send(400, _esc(BAD_REQUEST))
+                return
+            if length < 0 or length > 65536:
+                self._send(400, _esc(BAD_REQUEST))
+                return
+            raw = self.rfile.read(length)
+            try:
+                fields = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
+            except Exception:
+                self._send(400, _esc(BAD_REQUEST))
+                return
+            values = fields.get("request_token")
+            provided = "" if not values else values[0]
+            if not secrets.compare_digest(provided, token) or not token:
+                self._send(400, _esc(REQUEST_TOKEN_INVALID))
+                return
+            # Respond BEFORE stopping the server so the client receives the
+            # confirmation; no selection state is touched on shutdown.
+            self._send(
+                200,
+                "CID Editorial closed \u2014 safe to close this tab.",
+            )
+            close()
+
         def do_POST(self) -> None:
+            if self.path == SHUTDOWN_PATH:
+                self._handle_shutdown()
+                return
             if self.path != "/transition":
                 self._send(404, _esc("CID_EDITORIAL_BOARD_NOT_FOUND"))
                 return
@@ -481,13 +538,19 @@ def create_server(
     host: str = "127.0.0.1",
     port: int = DEFAULT_PORT,
     token: str | None = None,
+    shutdown_handler: callable | None = None,
 ) -> ThreadingHTTPServer:
-    """Build a loopback-bound stdlib HTTP server; returns the live server object."""
+    """Build a loopback-bound stdlib HTTP server; returns the live server object.
+
+    ``shutdown_handler`` is an optional callable invoked (after the shutdown
+    response has been sent) when a valid ``POST /shutdown`` is received. It is
+    the launcher's responsibility to stop and join the server thread cleanly.
+    """
     if role not in ROLES:
         raise BoardRequestError(TRANSITION_REJECTED)
     safe_host = validate_loopback_host(host)
     server_token = make_request_token() if token is None else token
-    handler = _make_handler(store, role, server_token)
+    handler = _make_handler(store, role, server_token, shutdown_handler)
     server = ThreadingHTTPServer((safe_host, port), handler)
     return server
 
@@ -502,6 +565,7 @@ __all__ = [
     "TRANSITION_REJECTED",
     "BAD_REQUEST",
     "INTERNAL_FAILURE",
+    "SHUTDOWN_PATH",
     "BoardError",
     "BoardHostError",
     "BoardRequestError",

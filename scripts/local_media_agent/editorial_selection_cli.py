@@ -37,6 +37,13 @@ from scripts.local_media_agent.editorial_collaboration_surface import (
     render_terminal_board,
     write_html_board,
 )
+from scripts.local_media_agent.editorial_collaboration_launcher import (
+    BROWSER_OPEN_FAILED,
+    DEFAULT_STORE_UNAVAILABLE,
+    DEFAULT_ROLE,
+    LaunchDefaultStoreUnavailable,
+    launch_editorial_board,
+)
 from scripts.local_media_agent.editorial_collaboration_server import (
     DEFAULT_PORT,
     BoardError,
@@ -109,6 +116,14 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--store", required=True)
     serve.add_argument("--role", required=True)
     serve.add_argument("--port", type=int, default=DEFAULT_PORT)
+
+    launch = sub.add_parser(
+        "launch",
+        help="One-click pilot launch of the local operator board (browser auto-open).",
+    )
+    launch.add_argument("--store")
+    launch.add_argument("--role", default=DEFAULT_ROLE)
+    launch.add_argument("--no-browser", action="store_true")
 
     return parser
 
@@ -282,6 +297,34 @@ def _run_serve(args, out, err) -> int:
     return EXIT_SUCCESS
 
 
+def _run_launch(args, out, err) -> int:
+    store = args.store
+    if store is not None:
+        store = str(store)
+    try:
+        result = launch_editorial_board(
+            store,
+            args.role,
+            open_browser=not args.no_browser,
+        )
+    except LaunchDefaultStoreUnavailable:
+        err.write(DEFAULT_STORE_UNAVAILABLE + "\n")
+        return EXIT_ARGUMENTS_REJECTED
+    except (BoardError, ValueError, TypeError, OSError):
+        err.write(CLI_ARGUMENTS_REJECTED + "\n")
+        return EXIT_ARGUMENTS_REJECTED
+
+    out.write("CID_EDITORIAL_BOARD_SERVING=True\n")
+    out.write(f"Role: {result['role']}\n")
+    out.write(f"Host: {result['host']}\n")
+    out.write(f"Port: {result['port']}\n")
+    out.write(f"URL: {result['url']}\n")
+    out.flush()
+    if args.no_browser:
+        out.write(f"Open: {result['url']}\n")
+    return EXIT_SUCCESS
+
+
 def run_cli(
     argv: list[str] | None = None,
     stdout: TextIO | None = None,
@@ -303,6 +346,8 @@ def run_cli(
             return _run_board(args, out, err)
         if args.command == "serve":
             return _run_serve(args, out, err)
+        if args.command == "launch":
+            return _run_launch(args, out, err)
         err.write(CLI_ARGUMENTS_REJECTED + "\n")
         return EXIT_ARGUMENTS_REJECTED
     except (SelectionError, ValueError, TypeError, OSError):

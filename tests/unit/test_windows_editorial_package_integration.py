@@ -158,6 +158,64 @@ def test_packaged_launcher_invokes_selection_cli_launch(assembled_package) -> No
     assert "scripts.local_media_agent.editorial_selection_cli launch" in text
 
 
+# ---------------- cmd paren escape defect (WINDOWS_CMD_UNESCAPED_CLOSING_PAREN) ----------------
+
+def test_released_launcher_escapes_if_set_parentheses() -> None:
+    # The refusal block lives inside `if not defined PYTHON_EXE ( ... )`. An
+    # unescaped ")" inside the block bytes prematurely closes it in cmd.exe,
+    # making the following lines unconditional. The literal must be CMD-escaped.
+    text = B._editorial_launcher_text()
+    assert "echo     CID_PYTHONW environment variable ^(if set^)" in text
+
+
+def test_released_launcher_has_no_unsafe_unclosed_paren_literal() -> None:
+    text = B._editorial_launcher_text()
+    assert "CID_PYTHONW environment variable (if set)" not in text.replace("CID_PYTHONW environment variable ^(if set^)", "")
+
+
+def test_packaged_launcher_contains_escaped_form(assembled_package) -> None:
+    text = (assembled_package / "CID Editorial.bat").read_text(encoding="utf-8")
+    assert "echo     CID_PYTHONW environment variable ^(if set^)" in text
+
+
+def test_packaged_launcher_has_no_unsafe_unclosed_paren_literal(assembled_package) -> None:
+    text = (assembled_package / "CID Editorial.bat").read_text(encoding="utf-8")
+    safe = "CID_PYTHONW environment variable ^(if set^)"
+    assert "CID_PYTHONW environment variable (if set)" not in text.replace(safe, "")
+
+
+def test_packaged_launcher_refusal_block_stays_parenthesized(assembled_package) -> None:
+    # The refusal branch must remain a single cmd `(...)` block closed by the
+    # structural `)` on its own line, guarded by `if not defined PYTHON_EXE`.
+    # The refusal must terminate (exit /b 1) before the launch command, and the
+    # escaped diagnostic must sit inside that block (before its closing `)`).
+    text = (assembled_package / "CID Editorial.bat").read_text(encoding="utf-8")
+    refusal_open = text.index("if not defined PYTHON_EXE (")
+    launch_at = text.index("scripts.local_media_agent.editorial_selection_cli launch")
+    block = text[refusal_open:launch_at]
+    assert "CID Editorial Pilot: packaged Python runtime not found." in block
+    assert "CID_PYTHONW environment variable ^(if set^)" in block
+    assert "exit /b 1" in block
+    # resolve pythonw.exe before resolving python.exe (structure is preserved)
+    assert block.index("pythonw.exe") < block.index("python.exe")
+
+
+def test_packaged_launcher_resolution_order_preserved(assembled_package) -> None:
+    text = (assembled_package / "CID Editorial.bat").read_text(encoding="utf-8")
+    pos_cid = text.index("if defined CID_PYTHONW")
+    pos_pyw = text.index("if exist \"%BASE%\\runtime\\python\\pythonw.exe\"")
+    pos_py = text.index("if exist \"%BASE%\\runtime\\python\\python.exe\"")
+    # CID_PYTHONW -> pythonw.exe -> python.exe
+    assert pos_cid < pos_pyw < pos_py
+
+
+def test_packaged_launcher_missing_runtime_refusal_kept(assembled_package) -> None:
+    text = (assembled_package / "CID Editorial.bat").read_text(encoding="utf-8")
+    assert "CID Editorial Pilot: packaged Python runtime not found." in text
+    assert "exit /b 1" in text
+    assert "Expected one of:" in text
+
+
 # ---------------- CID source modules included -----------------
 
 @pytest.mark.parametrize("module", MODULES)

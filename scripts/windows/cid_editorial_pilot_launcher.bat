@@ -39,7 +39,7 @@ if not defined PYTHON_EXE (
     echo.
     echo   CID Editorial Pilot: packaged Python runtime not found.
     echo   Expected one of:
-    echo     CID_PYTHONW environment variable (if set)
+    echo     CID_PYTHONW environment variable ^(if set^)
     echo     %BASE%\runtime\python\pythonw.exe
     echo     %BASE%\runtime\python\python.exe
     echo.

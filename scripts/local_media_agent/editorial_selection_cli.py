@@ -37,6 +37,11 @@ from scripts.local_media_agent.editorial_collaboration_surface import (
     render_terminal_board,
     write_html_board,
 )
+from scripts.local_media_agent.editorial_collaboration_server import (
+    DEFAULT_PORT,
+    BoardError,
+    create_server,
+)
 
 EXIT_SUCCESS = 0
 EXIT_INTERNAL_FAILURE = 1
@@ -96,6 +101,14 @@ def _build_parser() -> argparse.ArgumentParser:
     board.add_argument("--role", required=True)
     board.add_argument("--format", choices=FORMATS, default=FORMAT_TERMINAL)
     board.add_argument("--output")
+
+    serve = sub.add_parser(
+        "serve",
+        help="Serve the local interactive operator board (loopback only).",
+    )
+    serve.add_argument("--store", required=True)
+    serve.add_argument("--role", required=True)
+    serve.add_argument("--port", type=int, default=DEFAULT_PORT)
 
     return parser
 
@@ -247,6 +260,28 @@ def _run_board(args, out, err) -> int:
     return EXIT_SUCCESS
 
 
+def _run_serve(args, out, err) -> int:
+    try:
+        server = create_server(args.store, args.role, host="127.0.0.1", port=args.port)
+    except (BoardError, SelectionError, ValueError, TypeError, OSError):
+        err.write(CLI_ARGUMENTS_REJECTED + "\n")
+        return EXIT_ARGUMENTS_REJECTED
+
+    actual_port = server.server_address[1]
+    out.write("CID_EDITORIAL_BOARD_SERVING=True\n")
+    out.write(f"Role: {args.role}\n")
+    out.write("Host: 127.0.0.1\n")
+    out.write(f"Port: {actual_port}\n")
+    out.write("Endpoint GET / (read-only board), POST /transition (mutation)\n")
+    out.write("Press Ctrl+C to stop.\n")
+    out.flush()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        server.server_close()
+    return EXIT_SUCCESS
+
+
 def run_cli(
     argv: list[str] | None = None,
     stdout: TextIO | None = None,
@@ -266,6 +301,8 @@ def run_cli(
             return _run_prepare_davinci(args, out, err)
         if args.command == "board":
             return _run_board(args, out, err)
+        if args.command == "serve":
+            return _run_serve(args, out, err)
         err.write(CLI_ARGUMENTS_REJECTED + "\n")
         return EXIT_ARGUMENTS_REJECTED
     except (SelectionError, ValueError, TypeError, OSError):

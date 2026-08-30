@@ -26,6 +26,17 @@ from scripts.local_media_agent.editorial_selection_davinci import (
     EditorialDavinciError,
     prepare_davinci_reference_for_selection,
 )
+from scripts.local_media_agent.editorial_collaboration_surface import (
+    FORMAT_HTML,
+    FORMAT_TERMINAL,
+    FORMATS,
+    SurfaceError,
+    SurfaceInternalError,
+    build_board_model,
+    render_html_board,
+    render_terminal_board,
+    write_html_board,
+)
 
 EXIT_SUCCESS = 0
 EXIT_INTERNAL_FAILURE = 1
@@ -79,6 +90,12 @@ def _build_parser() -> argparse.ArgumentParser:
     davinci.add_argument("--source-timecode-start", required=True)
     davinci.add_argument("--source-duration", required=True)
     davinci.add_argument("--output", required=True)
+
+    board = sub.add_parser("board", help="Render the collaboration board for a role.")
+    board.add_argument("--store", required=True)
+    board.add_argument("--role", required=True)
+    board.add_argument("--format", choices=FORMATS, default=FORMAT_TERMINAL)
+    board.add_argument("--output")
 
     return parser
 
@@ -201,6 +218,35 @@ def _run_prepare_davinci(args, out, err) -> int:
     return EXIT_SUCCESS
 
 
+def _run_board(args, out, err) -> int:
+    if args.format == FORMAT_HTML and not args.output:
+        err.write(CLI_ARGUMENTS_REJECTED + "\n")
+        return EXIT_ARGUMENTS_REJECTED
+    try:
+        model = build_board_model(args.store, args.role)
+    except SurfaceError as exc:
+        err.write(f"CID_EDITORIAL_BOARD_REJECTED:{exc}\n")
+        return EXIT_ARGUMENTS_REJECTED
+
+    if args.format == FORMAT_TERMINAL:
+        out.write(render_terminal_board(model))
+        return EXIT_SUCCESS
+
+    try:
+        target = write_html_board(model, args.output)
+    except SurfaceError as exc:
+        err.write(f"CID_EDITORIAL_BOARD_REJECTED:{exc}\n")
+        return EXIT_ARGUMENTS_REJECTED
+    except SurfaceInternalError as exc:
+        err.write(f"CID_EDITORIAL_BOARD_INTERNAL_FAILURE:{exc}\n")
+        return EXIT_INTERNAL_FAILURE
+
+    out.write("CID_EDITORIAL_BOARD_WRITTEN=True\n")
+    out.write(f"Role: {args.role}\n")
+    out.write(f"Output: {target}\n")
+    return EXIT_SUCCESS
+
+
 def run_cli(
     argv: list[str] | None = None,
     stdout: TextIO | None = None,
@@ -218,6 +264,8 @@ def run_cli(
             return _run_transition(args, out, err)
         if args.command == "prepare-davinci":
             return _run_prepare_davinci(args, out, err)
+        if args.command == "board":
+            return _run_board(args, out, err)
         err.write(CLI_ARGUMENTS_REJECTED + "\n")
         return EXIT_ARGUMENTS_REJECTED
     except (SelectionError, ValueError, TypeError, OSError):

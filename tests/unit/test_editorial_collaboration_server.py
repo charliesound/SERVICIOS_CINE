@@ -598,3 +598,88 @@ def test_real_socket_controlled_error_no_traceback(tmp_path, evidence) -> None:
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
+
+
+# ---------------- first-run store remediation (server) ----------------
+
+def test_server_missing_store_is_400_not_500(tmp_path) -> None:
+    missing = str(tmp_path / "does_not_exist")
+    token = make_request_token()
+    server, thread, base = _serve(missing, ROLE_PRODUCER, token)
+    try:
+        try:
+            urllib.request.urlopen(f"{base}/", timeout=5)
+            raise AssertionError("expected HTTP error for missing store")
+        except urllib.error.HTTPError as err:
+            assert err.code == 400
+            assert BAD_REQUEST in err.read().decode("utf-8")
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_server_store_path_is_file_is_400_not_500(tmp_path) -> None:
+    target = tmp_path / "not_a_dir"
+    target.write_text("x", encoding="utf-8")
+    token = make_request_token()
+    server, thread, base = _serve(str(target), ROLE_PRODUCER, token)
+    try:
+        try:
+            urllib.request.urlopen(f"{base}/", timeout=5)
+            raise AssertionError("expected HTTP error for file path")
+        except urllib.error.HTTPError as err:
+            assert err.code == 400
+            assert BAD_REQUEST in err.read().decode("utf-8")
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_server_empty_store_serves_empty_board(tmp_path) -> None:
+    empty = str(tmp_path / "empty_dir")
+    empty_path = Path(empty)
+    empty_path.mkdir(parents=True)
+    token = make_request_token()
+    server, thread, base = _serve(empty, ROLE_PRODUCER, token)
+    try:
+        with urllib.request.urlopen(f"{base}/", timeout=5) as resp:
+            assert resp.status == 200
+            assert "No selections." in resp.read().decode("utf-8")
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_server_valid_store_regression(producer_store) -> None:
+    token = make_request_token()
+    server, thread, base = _serve(producer_store, ROLE_PRODUCER, token)
+    try:
+        with urllib.request.urlopen(f"{base}/", timeout=5) as resp:
+            assert resp.status == 200
+            body = resp.read().decode("utf-8")
+            assert "CID Editorial Board" in body
+            assert "SIRUELA-CTX-045" in body
+            assert "No selections." not in body
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_server_loopback_only_and_token_stable(producer_store) -> None:
+    token = make_request_token()
+    server, thread, base = _serve(producer_store, ROLE_PRODUCER, token)
+    try:
+        assert server.server_address[0] == "127.0.0.1"
+        with urllib.request.urlopen(f"{base}/", timeout=5) as resp:
+            body = resp.read().decode("utf-8")
+            # the mutation token is carried as a hidden field, never in a URL
+            assert 'value="%s"' % token in body
+            assert "?request_token" not in body
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)

@@ -39,9 +39,8 @@ from scripts.local_media_agent.editorial_collaboration_surface import (
 )
 from scripts.local_media_agent.editorial_collaboration_launcher import (
     BROWSER_OPEN_FAILED,
-    DEFAULT_STORE_UNAVAILABLE,
     DEFAULT_ROLE,
-    LaunchDefaultStoreUnavailable,
+    LaunchError,
     launch_editorial_board,
 )
 from scripts.local_media_agent.editorial_collaboration_server import (
@@ -307,8 +306,8 @@ def _run_launch(args, out, err) -> int:
             args.role,
             open_browser=not args.no_browser,
         )
-    except LaunchDefaultStoreUnavailable:
-        err.write(DEFAULT_STORE_UNAVAILABLE + "\n")
+    except LaunchError as exc:
+        err.write(exc.code + "\n")
         return EXIT_ARGUMENTS_REJECTED
     except (BoardError, ValueError, TypeError, OSError):
         err.write(CLI_ARGUMENTS_REJECTED + "\n")

@@ -23,6 +23,7 @@ from urllib.parse import parse_qs
 
 from scripts.local_media_agent.editorial_collaboration_surface import (
     ROLES,
+    SurfaceError,
     build_board_model,
 )
 from scripts.local_media_agent.editorial_selection import (
@@ -416,6 +417,9 @@ def _make_handler(
                 board = render_interactive_board(store, role, token)
             except BoardError as exc:
                 self._send(400, _esc(getattr(exc, "code", BAD_REQUEST)))
+                return
+            except SurfaceError:
+                self._send(400, _esc(BAD_REQUEST))
                 return
             except Exception:
                 self._send(500, _esc(INTERNAL_FAILURE))

@@ -13,12 +13,17 @@ from scripts.local_media_agent.editorial_collaboration_launcher import (
     BROWSER_OPEN_FAILED,
     DEFAULT_ROLE,
     DEFAULT_STORE_UNAVAILABLE,
+    STORE_UNAVAILABLE,
     BrowserOpenFailed,
     LaunchDefaultStoreUnavailable,
+    LaunchError,
+    LaunchStoreUnavailable,
     build_local_url,
     default_store_path,
     launch_editorial_board,
     open_local_browser,
+    prepare_default_store,
+    validate_explicit_store,
 )
 from scripts.local_media_agent.editorial_collaboration_server import (
     METHOD_NOT_ALLOWED,
@@ -680,6 +685,103 @@ def test_git_boundary_paths_not_touched(tmp_path, evidence) -> None:
     SelectionStore(store).write(create_selection(evidence, "SIRUELA-CTX-045", ROLE_PRODUCER))
     files = [p.name for p in Path(store).iterdir()]
     assert not any("sqlite" in f or f.endswith(".db") for f in files)
+
+
+# -------------------- first-run store remediation --------------------
+
+def test_default_store_first_run_creates_dir_and_serves_empty(monkeypatch, tmp_path) -> None:
+    local = str(tmp_path / "localappdata")
+    monkeypatch.setenv("LOCALAPPDATA", local)
+    store = prepare_default_store(default_store_path())
+    assert store == Path(local) / "CID" / "editorial_selections"
+    assert store.is_dir()
+    # first-run empty store -> HTTP 200 board with "No selections."
+    from scripts.local_media_agent.editorial_collaboration_server import create_server
+
+    token = "t" * 43
+    server = create_server(store, ROLE_PRODUCER, host="127.0.0.1", port=0, token=token)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+        conn.request("GET", "/")
+        resp = conn.getresponse()
+        body = resp.read().decode("utf-8")
+        assert resp.status == 200
+        assert "No selections." in body
+        conn.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_default_store_existing_dir_preserves_bytes(monkeypatch, tmp_path, evidence) -> None:
+    local = str(tmp_path / "localappdata")
+    monkeypatch.setenv("LOCALAPPDATA", local)
+    store = Path(local) / "CID" / "editorial_selections"
+    store.mkdir(parents=True)
+    SelectionStore(str(store)).write(create_selection(evidence, "SIRUELA-CTX-045", ROLE_PRODUCER))
+    before = {p.name: p.read_bytes() for p in store.iterdir()}
+    result = prepare_default_store(default_store_path())
+    assert result == store
+    after = {p.name: p.read_bytes() for p in store.iterdir()}
+    assert before == after
+
+
+def test_default_store_path_is_file_refused(monkeypatch, tmp_path) -> None:
+    local = str(tmp_path / "localappdata")
+    monkeypatch.setenv("LOCALAPPDATA", local)
+    target = Path(local) / "CID" / "editorial_selections"
+    target.parent.mkdir(parents=True)
+    target.write_text("not a directory", encoding="utf-8")
+    with pytest.raises(LaunchStoreUnavailable) as exc:
+        prepare_default_store(default_store_path())
+    assert exc.value.code == STORE_UNAVAILABLE
+
+
+def test_explicit_valid_store_path_preserved_ignores_localappdata(monkeypatch, tmp_path, evidence) -> None:
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "la_ignored"))
+    store = str(tmp_path / "explicit_preserved")
+    SelectionStore(store).write(create_selection(evidence, "SIRUELA-CTX-045", ROLE_PRODUCER))
+    result = validate_explicit_store(Path(store))
+    assert str(result) == store
+    assert store.startswith(str(tmp_path))  # caller path unchanged
+
+
+def test_explicit_missing_store_refused_and_not_created(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("LOCALAPPDATA", raising=False)
+    missing = tmp_path / "never_created"
+    with pytest.raises(LaunchStoreUnavailable) as exc:
+        validate_explicit_store(missing)
+    assert exc.value.code == STORE_UNAVAILABLE
+    assert not missing.exists()
+
+
+def test_explicit_path_is_file_refused(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("LOCALAPPDATA", raising=False)
+    target = tmp_path / "afile"
+    target.write_text("x", encoding="utf-8")
+    with pytest.raises(LaunchStoreUnavailable) as exc:
+        validate_explicit_store(target)
+    assert exc.value.code == STORE_UNAVAILABLE
+
+
+def test_cli_launcherror_controlled_mapping(monkeypatch) -> None:
+    from scripts.local_media_agent import editorial_selection_cli as cli
+    import io
+
+    def refuse(store, role, open_browser=True):
+        raise LaunchStoreUnavailable(STORE_UNAVAILABLE)
+
+    monkeypatch.setattr(cli, "launch_editorial_board", refuse)
+    out = io.StringIO()
+    err = io.StringIO()
+    code = cli._run_launch(argparse_namespace(store=None, role=ROLE_PRODUCER, no_browser=True), out, err)
+    assert code == cli.EXIT_ARGUMENTS_REJECTED
+    assert err.getvalue() == STORE_UNAVAILABLE + "\n"
+    assert cli.CLI_INTERNAL_FAILURE not in err.getvalue()
+    assert "CID_EDITORIAL_SELECTION_INTERNAL_FAILURE" not in err.getvalue()
 
 
 # -------------------- helper shims --------------------

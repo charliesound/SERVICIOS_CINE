@@ -30,6 +30,7 @@ DEFAULT_ROLE = "PRODUCER"
 HOST = "127.0.0.1"
 
 DEFAULT_STORE_UNAVAILABLE = "CID_EDITORIAL_DEFAULT_STORE_UNAVAILABLE"
+STORE_UNAVAILABLE = "CID_EDITORIAL_STORE_UNAVAILABLE"
 BROWSER_OPEN_FAILED = "CID_EDITORIAL_BROWSER_OPEN_FAILED"
 LAUNCH_ARGUMENTS_REJECTED = "CID_EDITORIAL_LAUNCH_ARGUMENTS_REJECTED"
 LAUNCH_INTERNAL_FAILURE = "CID_EDITORIAL_LAUNCH_INTERNAL_FAILURE"
@@ -51,6 +52,10 @@ class LaunchDefaultStoreUnavailable(LaunchError):
     pass
 
 
+class LaunchStoreUnavailable(LaunchError):
+    pass
+
+
 class BrowserOpenFailed(LaunchError):
     pass
 
@@ -67,6 +72,42 @@ def default_store_path() -> Path:
     if not localappdata or not localappdata.strip():
         raise LaunchDefaultStoreUnavailable(DEFAULT_STORE_UNAVAILABLE)
     return Path(localappdata) / "CID" / "editorial_selections"
+
+
+def prepare_default_store(store: str | Path) -> Path:
+    """Ensure the product default store directory exists (first-run support).
+
+    Contract: resolve/store only ``%LOCALAPPDATA%\\CID\\editorial_selections``.
+    Creates ONLY that directory tree when absent; never deletes/overwrites or
+    modifies existing selection JSON. A path that exists but is not a directory,
+    or an OS failure creating the tree, is a controlled refusal (no server).
+    """
+    store_path = Path(store)
+    if store_path.exists():
+        if not store_path.is_dir():
+            raise LaunchStoreUnavailable(STORE_UNAVAILABLE)
+        return store_path
+    try:
+        store_path.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        raise LaunchStoreUnavailable(STORE_UNAVAILABLE) from None
+    if not store_path.is_dir():
+        raise LaunchStoreUnavailable(STORE_UNAVAILABLE)
+    return store_path
+
+
+def validate_explicit_store(store: str | Path) -> Path:
+    """Validate a caller-supplied explicit store without creating it.
+
+    Explicit stores are caller-controlled and must already exist as a
+    directory. Missing or non-directory paths are a controlled refusal raised
+    BEFORE any server is created. Never created implicitly, never falls back to
+    ``LOCALAPPDATA``.
+    """
+    store_path = Path(store)
+    if not store_path.exists() or not store_path.is_dir():
+        raise LaunchStoreUnavailable(STORE_UNAVAILABLE)
+    return store_path
 
 
 def build_local_url(port: int) -> str:
@@ -113,10 +154,12 @@ def launch_editorial_board(
 
     if store is None:
         try:
-            store = default_store_path()
+            default = default_store_path()
         except LaunchDefaultStoreUnavailable as exc:
             raise exc
-    store_path = Path(store)
+        store_path = prepare_default_store(default)
+    else:
+        store_path = validate_explicit_store(Path(store))
 
     actual_store = str(store_path)
 
@@ -176,14 +219,18 @@ __all__ = [
     "DEFAULT_ROLE",
     "HOST",
     "DEFAULT_STORE_UNAVAILABLE",
+    "STORE_UNAVAILABLE",
     "BROWSER_OPEN_FAILED",
     "LAUNCH_ARGUMENTS_REJECTED",
     "LAUNCH_INTERNAL_FAILURE",
     "LaunchError",
     "LaunchArgumentError",
     "LaunchDefaultStoreUnavailable",
+    "LaunchStoreUnavailable",
     "BrowserOpenFailed",
     "default_store_path",
+    "prepare_default_store",
+    "validate_explicit_store",
     "build_local_url",
     "open_local_browser",
     "launch_editorial_board",

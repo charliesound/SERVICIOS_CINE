@@ -18,7 +18,13 @@ from scripts.local_media_agent.editorial_selection import (
     SelectionStore,
     apply_transition,
     create_selection,
+    human_range,
     render_view,
+)
+from scripts.local_media_agent.editorial_selection_davinci import (
+    ERR_NOT_READY,
+    EditorialDavinciError,
+    prepare_davinci_reference_for_selection,
 )
 
 EXIT_SUCCESS = 0
@@ -61,6 +67,18 @@ def _build_parser() -> argparse.ArgumentParser:
     transition.add_argument("--to", required=True)
     transition.add_argument("--actor-role", required=True)
     transition.add_argument("--editor-note")
+
+    davinci = sub.add_parser(
+        "prepare-davinci", help="Prepare the DaVinci FCPXML reference for a selection."
+    )
+    davinci.add_argument("--store", required=True)
+    davinci.add_argument("--selection", required=True)
+    davinci.add_argument("--evidence-path", required=True)
+    davinci.add_argument("--media-path", required=True)
+    davinci.add_argument("--frame-duration", required=True)
+    davinci.add_argument("--source-timecode-start", required=True)
+    davinci.add_argument("--source-duration", required=True)
+    davinci.add_argument("--output", required=True)
 
     return parser
 
@@ -143,6 +161,46 @@ def _run_transition(args, out, err) -> int:
     return EXIT_SUCCESS
 
 
+def _run_prepare_davinci(args, out, err) -> int:
+    try:
+        result = prepare_davinci_reference_for_selection(
+            store=args.store,
+            selection_id=args.selection,
+            evidence_path=args.evidence_path,
+            media_path=args.media_path,
+            frame_duration=args.frame_duration,
+            source_timecode_start=args.source_timecode_start,
+            source_duration=args.source_duration,
+            output_path=args.output,
+        )
+    except EditorialDavinciError as exc:
+        err.write(str(exc) + "\n")
+        return EXIT_ARGUMENTS_REJECTED
+    except SelectionError:
+        err.write(CLI_ARGUMENTS_REJECTED + "\n")
+        return EXIT_ARGUMENTS_REJECTED
+    except (OSError, ValueError, TypeError):
+        err.write(CLI_ARGUMENTS_REJECTED + "\n")
+        return EXIT_ARGUMENTS_REJECTED
+
+    source = human_range(
+        result.get("source_in_seconds"), result.get("source_out_seconds")
+    )
+    out.write("Subject: " + str(result.get("subject")) + "\n")
+    out.write("Topic: " + str(result.get("topic")) + "\n")
+    if result.get("editorial_note"):
+        out.write("Editorial note: " + str(result.get("editorial_note")) + "\n")
+    out.write("Video: " + str(result.get("video_clip")) + "\n")
+    out.write(f"Source: {source}\n\n")
+    out.write("DAVINCI_REFERENCE_READY=True\n")
+    out.write("Output: " + str(result.get("davinci_reference_path")) + "\n")
+    out.write("Status: " + str(result.get("status")) + "\n\n")
+    out.write("Next editor action:\n")
+    out.write("Import into DaVinci Resolve.\n")
+    out.write("When actual editing begins, transition selection to IN_EDIT.\n")
+    return EXIT_SUCCESS
+
+
 def run_cli(
     argv: list[str] | None = None,
     stdout: TextIO | None = None,
@@ -158,6 +216,8 @@ def run_cli(
             return _run_list(args, out, err)
         if args.command == "transition":
             return _run_transition(args, out, err)
+        if args.command == "prepare-davinci":
+            return _run_prepare_davinci(args, out, err)
         err.write(CLI_ARGUMENTS_REJECTED + "\n")
         return EXIT_ARGUMENTS_REJECTED
     except (SelectionError, ValueError, TypeError, OSError):

@@ -244,6 +244,157 @@ def _copy_cid_source(target_app: Path) -> None:
         shutil.copy2(pyproject, target_app / "pyproject.toml")
 
 
+EDITORIAL_LAUNCHER_SOURCE = REPO_ROOT / "scripts" / "windows" / "cid_editorial_pilot_launcher.bat"
+EDITORIAL_LAUNCHER_BASENAME = "CID Editorial.bat"
+EDITORIAL_LAUNCHER_MODULE = "scripts.local_media_agent.editorial_selection_cli"
+EDITORIAL_LAUNCHER_SUBCOMMAND = "launch"
+EDITORIAL_INSTALL_RUNTIME = "runtime\\python\\pythonw.exe"
+EDITORIAL_INSTALL_RUNTIME_FALLBACK = "runtime\\python\\python.exe"
+EDITORIAL_STORE_DIR = "editorial_selections"
+
+
+def _editorial_launcher_text() -> str:
+    """Return the single authoritative editorial launcher content.
+
+    Both the extracted-package launcher (PACKAGE_ROOT/CID Editorial.bat) and the
+    installed-root copy derive their bytes from the released source file. There
+    is deliberately a single source of truth, not two independent launchers.
+    """
+    return EDITORIAL_LAUNCHER_SOURCE.read_text(encoding="utf-8")
+
+
+def _copy_editorial_launcher(package_dir: Path) -> Path:
+    """Copy the released editorial launcher into the package root.
+
+    The released launcher resolves packaged Python relative to itself
+    (runtime\\python\\pythonw.exe), so placing it at PACKAGE_ROOT keeps that
+    contract valid for the extracted package.
+    """
+    target = package_dir / EDITORIAL_LAUNCHER_BASENAME
+    target.write_text(_editorial_launcher_text(), encoding="utf-8")
+    print(f"  {EDITORIAL_LAUNCHER_BASENAME}")
+    return target
+
+
+def _editorial_user_wrapper_text(installed_launcher: str) -> str:
+    """Thin user-facing wrapper in %LOCALAPPDATA%\\CID\\LocalMediaAgent.
+
+    It only delegates to the installed-root launcher (which carries the valid
+    relative runtime contract). This wrapper is what a user double-clicks after
+    install; the installed-root launcher remains the single implementation.
+    """
+    return (
+        "@echo off\r\n"
+        f'call "{installed_launcher}" %*\r\n'
+        "exit /b %ERRORLEVEL%\r\n"
+    )
+
+
+def _validate_editorial_package_contract(
+    package_dir: Path,
+    *,
+    require_live_runtime: bool = False,
+) -> dict[str, object]:
+    """Static validation of the editorial package integration contract.
+
+    Tests use this helper (with fake/minimal placeholders) instead of executing
+    Windows .bat natively. Returns a dict of named compliance flags.
+    """
+    pkg = Path(package_dir)
+    runtime_py = pkg / "runtime" / "python"
+    launcher = pkg / EDITORIAL_LAUNCHER_BASENAME
+
+    has_pythonw = (runtime_py / "pythonw.exe").is_file()
+    has_python = (runtime_py / "python.exe").is_file()
+
+    pth = runtime_py / "python312._pth"
+    pth_text = pth.read_text(encoding="utf-8") if pth.is_file() else ""
+    pth_has_app = "..\\..\\app" in pth_text or "../../app" in pth_text
+
+    launcher_text = launcher.read_text(encoding="utf-8") if launcher.is_file() else ""
+
+    app_module = pkg / "app" / "scripts" / "local_media_agent" / "editorial_selection_cli.py"
+    modules_present = {
+        "editorial_collaboration_launcher.py": (
+            pkg / "app" / "scripts" / "local_media_agent" / "editorial_collaboration_launcher.py"
+        ).is_file(),
+        "editorial_collaboration_server.py": (
+            pkg / "app" / "scripts" / "local_media_agent" / "editorial_collaboration_server.py"
+        ).is_file(),
+        "editorial_selection_cli.py": app_module.is_file(),
+        "editorial_selection.py": (
+            pkg / "app" / "scripts" / "local_media_agent" / "editorial_selection.py"
+        ).is_file(),
+        "editorial_collaboration_surface.py": (
+            pkg / "app" / "scripts" / "local_media_agent" / "editorial_collaboration_surface.py"
+        ).is_file(),
+    }
+
+    manifest_ok = False
+    manifest = pkg / "package_manifest.json"
+    if manifest.is_file():
+        import json as _json
+
+        try:
+            contents = _json.loads(manifest.read_text(encoding="utf-8")).get("contents", {})
+            manifest_ok = EDITORIAL_LAUNCHER_BASENAME in contents
+        except Exception:
+            manifest_ok = False
+
+    install_content = (
+        (pkg / "install.cmd").read_text(encoding="utf-8")
+        if (pkg / "install.cmd").is_file()
+        else ""
+    )
+    uninstall_content = (
+        (pkg / "uninstall.cmd").read_text(encoding="utf-8")
+        if (pkg / "uninstall.cmd").is_file()
+        else ""
+    )
+    readme_content = (
+        (pkg / "LEEME_PRIMERO.txt").read_text(encoding="utf-8")
+        if (pkg / "LEEME_PRIMERO.txt").is_file()
+        else ""
+    )
+
+    uninstall_recursive_deletes = re.findall(
+        r'rmdir /s /q "([^"]+)"', uninstall_content
+    )
+    # The only allowed recursive delete is the installed app/runtime root.
+    uninstall_does_not_delete_store = all(
+        "editorial_selections" not in target
+        and target.rstrip("\\").lower() != "%localappdata%\\cid"
+        for target in uninstall_recursive_deletes
+    ) and (uninstall_recursive_deletes == ["%INSTALL_TARGET%"])
+
+    runtime_authority_ok = has_pythonw or has_python
+    launcher_identical = _editorial_launcher_text().rstrip("\r\n") == launcher_text.rstrip("\r\n")
+
+    return {
+        "runtime_python_exists": has_python,
+        "runtime_pythonw_exists": has_pythonw,
+        "runtime_authority_ok": runtime_authority_ok,
+        "pth_has_app_path": pth_has_app,
+        "launcher_present": launcher.is_file(),
+        "launcher_identical_to_source": launcher_identical,
+        "launcher_prefers_pythonw": "pythonw.exe" in launcher_text,
+        "launcher_falls_back_python": "python.exe" in launcher_text,
+        "launcher_invokes_launch": (EDITORIAL_LAUNCHER_MODULE in launcher_text)
+        and (" launch" in launcher_text),
+        "editorial_modules_present": modules_present,
+        "manifest_includes_launcher": manifest_ok,
+        "install_creates_editorial": "CID Editorial.bat" in install_content and "launch" in install_content,
+        "uninstall_preserves_store": "editorial_selections" in uninstall_content
+        and ("rmdir /s /q \"%INSTALL_TARGET%\"" in uninstall_content),
+        "uninstall_removes_editorial": "CID Editorial.bat" in uninstall_content,
+        "uninstall_does_not_delete_store": uninstall_does_not_delete_store,
+        "readme_documents_editorial": "CID EDITORIAL" in readme_content.upper()
+        and "127.0.0.1" in readme_content
+        and "editorial_selections" in readme_content,
+        "readme_no_wsl_for_user_flow": "wsl" not in readme_content.lower(),
+    }
+
+
 def _copy_ffmpeg(target_ffmpeg: Path) -> None:
     """Copy BtbN FFmpeg binaries."""
     sdk_bin = Path(os.environ.get("LOCALAPPDATA", "")) / "Temp" / "cid_build" / "ffmpeg-btbn-shared-7.1" / "bin"
@@ -442,10 +593,23 @@ copy /y "%PACKAGE_DIR%\\CID Local Media Agent.vbs" "%LOCALAPPDATA%\\CID\\LocalMe
 if errorlevel 1 goto :fail
 
 echo.
+echo   [7/7] Installing CID Editorial launcher...
+rem Installed-root launcher: placed inside INSTALL_TARGET so the released
+rem relative runtime contract (runtime\\python\\pythonw.exe) stays valid.
+if exist "%INSTALL_TARGET%\\{EDITORIAL_LAUNCHER_BASENAME}" del /f "%INSTALL_TARGET%\\{EDITORIAL_LAUNCHER_BASENAME}"
+copy /y "%PACKAGE_DIR%\\{EDITORIAL_LAUNCHER_BASENAME}" "%INSTALL_TARGET%\\{EDITORIAL_LAUNCHER_BASENAME}" >nul
+if errorlevel 1 goto :fail
+rem Thin user-facing wrapper that delegates to the installed-root launcher.
+echo @echo off > "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\{EDITORIAL_LAUNCHER_BASENAME}"
+echo call "%INSTALL_TARGET%\\{EDITORIAL_LAUNCHER_BASENAME}" %%* >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\{EDITORIAL_LAUNCHER_BASENAME}"
+echo exit /b %%ERRORLEVEL%% >> "%LOCALAPPDATA%\\CID\\LocalMediaAgent\\{EDITORIAL_LAUNCHER_BASENAME}"
+
+echo.
 echo   ======================================================
 echo   Installation complete.
 echo.
 echo   Launch:  %LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.vbs
+echo   Editorial:  %LOCALAPPDATA%\\CID\\LocalMediaAgent\\{EDITORIAL_LAUNCHER_BASENAME}
 echo   Target:  %INSTALL_TARGET%
 echo   Results: %USERPROFILE%\\Documents\\CID Local Media Agent\\Resultados\\
 echo   ======================================================
@@ -476,10 +640,15 @@ echo.
 set INSTALL_TARGET=%LOCALAPPDATA%\\CID\\LocalMediaAgent\\app
 set GUI_LAUNCHER=%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent.vbs
 set CLI_LAUNCHER=%LOCALAPPDATA%\\CID\\LocalMediaAgent\\CID Local Media Agent (CLI).cmd
+set EDITORIAL_LAUNCHER=%LOCALAPPDATA%\\CID\\LocalMediaAgent\\{EDITORIAL_LAUNCHER_BASENAME}
+set EDITORIAL_LAUNCHER_INSTALLED=%INSTALL_TARGET%\\{EDITORIAL_LAUNCHER_BASENAME}
 
 echo   This will remove the installed CID Local Media Agent application.
 echo   User results in %%USERPROFILE%%\\Documents\\CID Local Media Agent\\Resultados
 echo   (and any custom results location) will be PRESERVED.
+echo.
+echo   Your editorial decisions are preserved under:
+echo   %%LOCALAPPDATA%%\\CID\\editorial_selections
 echo.
 
 set /p CONFIRM="  Continue? [y/N]: "
@@ -496,6 +665,8 @@ if exist "%INSTALL_TARGET%" rmdir /s /q "%INSTALL_TARGET%"
 echo   [2/3] Removing launchers...
 if exist "%GUI_LAUNCHER%" del /f "%GUI_LAUNCHER%"
 if exist "%CLI_LAUNCHER%" del /f "%CLI_LAUNCHER%"
+if exist "%EDITORIAL_LAUNCHER%" del /f "%EDITORIAL_LAUNCHER%"
+if exist "%EDITORIAL_LAUNCHER_INSTALLED%" del /f "%EDITORIAL_LAUNCHER_INSTALLED%"
 
 echo   [3/3] Removing empty directories...
 if exist "%LOCALAPPDATA%\\CID\\LocalMediaAgent" (
@@ -510,6 +681,9 @@ echo   ======================================================
 echo   Uninstall complete.
 echo   Results directory preserved at:
 echo   %%USERPROFILE%%\\Documents\\CID Local Media Agent\\Resultados\\
+echo.
+echo   Editorial decisions preserved at:
+echo   %%LOCALAPPDATA%%\\CID\\editorial_selections
 echo   ======================================================
 echo.
 pause
@@ -560,6 +734,7 @@ def _create_package_manifest(
             "uninstall.cmd": "Uninstaller",
             "CID Local Media Agent.vbs": "Producer GUI launcher (no console)",
             "CID Local Media Agent (CLI).cmd": "CLI support launcher",
+            EDITORIAL_LAUNCHER_BASENAME: "CID Editorial one-click local collaboration launcher",
             "licenses/": "Third-party license files",
             "NOTAS_BETA.txt": "Producer-facing beta limitations note",
             "LEEME_PRIMERO.txt": "Producer-facing first-read guide",
@@ -891,6 +1066,15 @@ def _create_producer_readme(package_dir: Path) -> None:
         "----------------\n"
         "Ejecuta uninstall.cmd de la carpeta instalada. Tus archivos de\n"
         "origen y tus resultados no se tocan.\n\n"
+        "CID EDITORIAL\n"
+        "-------------\n"
+        "1. Lanza \"CID Editorial.bat\".\n"
+        "2. Se abre tu navegador por defecto de forma local.\n"
+        "3. Solo se ejecuta en 127.0.0.1 (tu propio equipo).\n"
+        "4. No se sube nada a la nube.\n"
+        "5. Para cerrar, usa \"Close CID Editorial\" dentro de la página.\n"
+        "6. Las decisiones editoriales se guardan localmente en:\n"
+        "   %LOCALAPPDATA%\\CID\\editorial_selections\n\n"
         "LIMITACIONES DE ESTA BETA\n"
         "--------------------------\n"
         "Ver NOTAS_BETA.txt en esta carpeta.\n\n"
@@ -993,6 +1177,7 @@ def main() -> int:
     print("[8/9] Launcher, install, uninstall...")
     _create_launcher(package_dir)
     _create_gui_launcher(package_dir)
+    _copy_editorial_launcher(package_dir)
     _create_install_cmd(package_dir)
     _create_uninstall_cmd(package_dir)
     print()

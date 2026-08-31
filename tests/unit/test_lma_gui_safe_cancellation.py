@@ -625,6 +625,67 @@ class TestProjectVideoProfileGuiBoundary:
         assert "frame_duration" not in source
 
 
+class TestProjectImageProfileGuiBoundary:
+    """Project image (aspect + framing) surfaces only via explicit operator action."""
+
+    def _source(self) -> str:
+        return Path(__file__).parents[2].joinpath(
+            "scripts/local_media_agent/cid_gui.py"
+        ).read_text(encoding="utf-8")
+
+    def test_presets_surfaced_without_raw_fraction_syntax(self) -> None:
+        source = self._source()
+        for label in ("16:9", "1.66:1", "1.85 Flat", "2.00:1", "2.35:1",
+                      "2.39 Scope", "2.40:1", "Academy 1.37"):
+            assert label in source
+        assert "Otro..." in source
+
+    def test_custom_aspect_surfaces_explicit_operator_input(self) -> None:
+        source = self._source()
+        assert "Formato personalizado" in source
+        assert "2.39:1" in source
+
+    def test_no_auto_project_aspect_from_source_resolution(self, tmp_path, monkeypatch) -> None:
+        from scripts.local_media_agent import cid_gui
+        from scripts.local_media_agent.local_project import create_project
+        from scripts.local_media_agent.project_video_profile import (
+            image_configuration_missing,
+            load_project_video_profile,
+        )
+
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+        project = create_project("Proyecto")
+        app = object.__new__(cid_gui.ProducerApp)
+        app.active_project = project
+        app.analysis_project_id = project["project_id"]
+        app._refresh_project_ui = lambda: None
+        app._on_metadata_done(
+            {
+                "results": [
+                    {
+                        "category": "video",
+                        "relative_path": "anamorphic.mov",
+                        "duration_raw": "10.000000",
+                        "duration_origin": "format",
+                        "timecode": "01:00:00:00",
+                        "video": {
+                            "width": 1920,
+                            "height": 1080,
+                            "frame_rate": {
+                                "raw_avg": "25/1",
+                                "raw_frame": "25/1",
+                                "variable": False,
+                            },
+                        },
+                    }
+                ]
+            }
+        )
+        profile = load_project_video_profile(project["project_id"])
+        assert profile["confirmation_status"] == "NOT_CONFIRMED"
+        assert image_configuration_missing(profile) is True
+
+
 class TestTranscriptionSegmentCallback:
     def test_segment_callback_receives_source_mapped_segments(self) -> None:
         from scripts.editorial_intelligence.transcription.transcription import (

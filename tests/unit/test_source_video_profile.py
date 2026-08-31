@@ -8,6 +8,7 @@ from scripts.local_media_agent.local_project import create_project
 from scripts.local_media_agent.source_video_profile import (
     CID_ACTIVE_MEDIA_ROOT_REQUIRED,
     CID_SOURCE_MEDIA_PATH_INVALID,
+    CID_SOURCE_VIDEO_CATALOG_INVALID,
     CID_SOURCE_VIDEO_DURATION_UNAVAILABLE,
     CID_SOURCE_VIDEO_RATE_AMBIGUOUS,
     CID_SOURCE_VIDEO_RATE_UNAVAILABLE,
@@ -98,3 +99,45 @@ def test_active_media_root_resolution_and_escape_refusal(tmp_path: Path) -> None
     assert resolve_source_media_path(root, "roll/clip.mov") == clip.resolve()
     with pytest.raises(SourceVideoProfileError, match=CID_SOURCE_MEDIA_PATH_INVALID):
         resolve_source_media_path(root, "../outside.mov")
+
+
+def test_source_sar_dar_and_rotation_persisted_exactly(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    media = {
+        "category": "video", "relative_path": "roll/anamorphic.mov",
+        "duration_raw": "12.340000", "duration_origin": "format",
+        "timecode": "10:24:12:37",
+        "video": {
+            "width": 1920, "height": 1080,
+            "frame_rate": {"raw_avg": "50/1", "raw_frame": "50/1", "variable": False},
+            "sample_aspect_ratio": {"numerator": 2, "denominator": 1},
+            "display_aspect_ratio": {"numerator": 4, "denominator": 3},
+            "rotation": 90,
+        },
+    }
+    catalog = build_source_video_profiles(PROJECT_ID, [media])
+    entry = catalog["entries"][0]
+    assert entry["source_sample_aspect_ratio"] == {"numerator": 2, "denominator": 1}
+    assert entry["source_display_aspect_ratio"] == {"numerator": 4, "denominator": 3}
+    assert entry["source_rotation"] == 90
+    save_source_video_profiles(catalog, local_appdata=tmp_path)
+    assert load_source_video_profiles(PROJECT_ID, local_appdata=tmp_path) == catalog
+
+
+def test_missing_sar_dar_rotation_are_null_not_invented(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    catalog = build_source_video_profiles(
+        PROJECT_ID, [item("plain.mov", avg="25/1", raw="25/1")]
+    )
+    entry = catalog["entries"][0]
+    assert entry["source_sample_aspect_ratio"] is None
+    assert entry["source_display_aspect_ratio"] is None
+    assert entry["source_rotation"] is None
+
+
+def test_invalid_sar_dar_or_rotation_catalog_is_rejected(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    catalog = build_source_video_profiles(PROJECT_ID, [item("ok.mov", avg="25/1", raw="25/1")])
+    catalog["entries"][0]["source_sample_aspect_ratio"] = {"numerator": 0, "denominator": 1}
+    with pytest.raises(SourceVideoProfileError, match=CID_SOURCE_VIDEO_CATALOG_INVALID):
+        save_source_video_profiles(catalog, local_appdata=tmp_path)

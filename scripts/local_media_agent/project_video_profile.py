@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, Iterable
@@ -33,6 +35,43 @@ SUPPORTED_FRAME_RATES = (
     Fraction(30), Fraction(50), Fraction(60000, 1001), Fraction(60),
 )
 
+ASPECT_4_3 = "4:3"
+ASPECT_ACADEMY_1_37 = "Academy 1.37"
+ASPECT_1_66 = "1.66:1"
+ASPECT_16_9 = "16:9"
+ASPECT_1_85 = "1.85 Flat"
+ASPECT_2_00 = "2.00:1"
+ASPECT_2_35 = "2.35:1"
+ASPECT_2_39_SCOPE = "2.39 Scope"
+ASPECT_2_40 = "2.40:1"
+CUSTOM_ASPECT = "CUSTOM"
+
+# Exact rational authority. 2.35 and 2.39 remain distinct; "Scope" maps to 2.39.
+# Academy 1.37 uses the V1 producer-facing 137/100 convention; it is documented
+# as such and is not a claim that every historical Academy aperture is equal.
+ASPECT_PRESETS: dict[str, Fraction] = {
+    ASPECT_4_3: Fraction(4, 3),
+    ASPECT_ACADEMY_1_37: Fraction(137, 100),
+    ASPECT_1_66: Fraction(83, 50),
+    ASPECT_16_9: Fraction(16, 9),
+    ASPECT_1_85: Fraction(37, 20),
+    ASPECT_2_00: Fraction(2, 1),
+    ASPECT_2_35: Fraction(47, 20),
+    ASPECT_2_39_SCOPE: Fraction(239, 100),
+    ASPECT_2_40: Fraction(12, 5),
+}
+SUPPORTED_ASPECT_PRESETS = frozenset(ASPECT_PRESETS)
+SUPPORTED_ASPECT_PRESET_OR_CUSTOM = frozenset(ASPECT_PRESETS) | {CUSTOM_ASPECT}
+
+FRAMING_FULL_RASTER = "FULL_RASTER"
+FRAMING_MATTE_TO_ASPECT = "MATTE_TO_ASPECT"
+FRAMING_CUSTOM = "CUSTOM"
+SUPPORTED_FRAMING_POLICIES = frozenset(
+    {FRAMING_FULL_RASTER, FRAMING_MATTE_TO_ASPECT, FRAMING_CUSTOM}
+)
+
+_MAX_ASPECT_COMPONENT_BITS = 64
+
 
 class ProjectVideoProfileError(ValueError):
     def __init__(self, code: str) -> None:
@@ -59,6 +98,84 @@ def frame_duration_for_rate(value: object) -> Fraction:
 
 def fcpxml_frame_duration(value: object) -> str:
     return f"{frame_duration_for_rate(value)}s"
+
+
+def parse_display_aspect(value: object) -> Fraction:
+    """Parse an exact positive display aspect with no binary-float authority.
+
+    Accepts exact ``Fraction``, ``{numerator, denominator}``, and practical
+    string forms (``2.39``, ``2.39:1``, ``239:100``, ``239/100``), converting
+    through ``Decimal``/``Fraction``. Rejects: bool, malformed, NaN, Infinity,
+    float authority, zero, negative, denominator zero, empty, and oversized
+    inputs.
+    """
+    if isinstance(value, bool):
+        raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    if isinstance(value, float):
+        raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    if isinstance(value, Fraction):
+        ratio = value
+    elif isinstance(value, dict):
+        try:
+            numerator = _int_component(value["numerator"])
+            denominator = _int_component(value["denominator"])
+            if denominator == 0:
+                raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+            ratio = Fraction(numerator, denominator)
+        except (KeyError, TypeError, ValueError, ZeroDivisionError):
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID) from None
+    elif isinstance(value, str):
+        ratio = _aspect_fraction_from_string(value)
+        if ratio is None:
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    else:
+        raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    if ratio <= 0:
+        raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    if (
+        ratio.numerator.bit_length() > _MAX_ASPECT_COMPONENT_BITS
+        or ratio.denominator.bit_length() > _MAX_ASPECT_COMPONENT_BITS
+    ):
+        raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    return ratio
+
+
+def _aspect_fraction_from_string(text: str) -> Fraction | None:
+    stripped = text.strip()
+    if not stripped or len(stripped) > 64:
+        return None
+    if "e" in stripped or "E" in stripped:
+        return None
+    parts = re.split(r"[/:]", stripped)
+    try:
+        if len(parts) == 1:
+            return Fraction(Decimal(stripped))
+        if len(parts) == 2:
+            numerator = Decimal(parts[0])
+            denominator = _int_component(parts[1])
+            if denominator == 0:
+                return None
+            return Fraction(numerator) / denominator
+        return None
+    except (InvalidOperation, ValueError, TypeError, ZeroDivisionError):
+        return None
+
+
+def _int_component(value: object) -> int:
+    if isinstance(value, bool):
+        raise ValueError
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        return int(value.strip())
+    raise ValueError
+
+
+def aspect_preset_fraction(preset: object) -> Fraction | None:
+    """Return the exact rational for a producer preset label, or None for CUSTOM/unknown."""
+    if not isinstance(preset, str) or preset not in ASPECT_PRESETS:
+        return None
+    return ASPECT_PRESETS[preset]
 
 
 def analyze_source_video_metadata(
@@ -161,6 +278,11 @@ def create_project_video_profile(
         "timeline_frame_rate": {"numerator": None, "denominator": None},
         "frame_duration": {"numerator": None, "denominator": None},
         "resolution": {"width": None, "height": None},
+        "image": {
+            "display_aspect": {"numerator": None, "denominator": None},
+            "aspect_preset": None,
+            "framing_policy": None,
+        },
         "decision_authority": None,
         "confirmed_by_role": None,
         "confirmed_at": None,
@@ -226,6 +348,48 @@ def update_project_video_configuration(
     return profile
 
 
+def update_project_image_configuration(
+    project_id: str,
+    display_aspect: object,
+    aspect_preset: object,
+    framing_policy: object,
+    *,
+    local_appdata: str | Path | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Configure the project image section (display aspect + framing policy).
+
+    Resets confirmation following the existing lifecycle exactly like other
+    configuration changes: a change on a confirmed profile increments
+    ``profile_revision`` and invalidates confirmation.
+    """
+    profile = load_project_video_profile(project_id, local_appdata=local_appdata)
+    ratio = parse_display_aspect(display_aspect)
+    if not isinstance(aspect_preset, str) or aspect_preset not in SUPPORTED_ASPECT_PRESET_OR_CUSTOM:
+        raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    if aspect_preset in ASPECT_PRESETS and ratio != ASPECT_PRESETS[aspect_preset]:
+        raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    if framing_policy not in SUPPORTED_FRAMING_POLICIES:
+        raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    image = {
+        "display_aspect": _rational_object(ratio),
+        "aspect_preset": aspect_preset,
+        "framing_policy": framing_policy,
+    }
+    if profile.get("image") == image:
+        return profile
+    if profile["confirmation_status"] == CONFIRMED:
+        profile["profile_revision"] += 1
+    profile["image"] = image
+    profile["confirmation_status"] = NOT_CONFIRMED
+    profile["decision_authority"] = None
+    profile["confirmed_by_role"] = None
+    profile["confirmed_at"] = None
+    profile["updated_at"] = _timestamp(now)
+    save_project_video_profile(profile, local_appdata=local_appdata)
+    return profile
+
+
 def confirm_project_video_profile(
     project_id: str,
     *,
@@ -241,6 +405,11 @@ def confirm_project_video_profile(
         raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
     _profile_rate(profile)
     _resolution_values(profile["resolution"])
+    if "image" in profile:
+        if not _image_is_configured(profile["image"]):
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+        if decision_authority != USER_CONFIRMED:
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
     if decision_authority == CID_RECOMMENDED_CONFIRMED:
         recommendation = profile.get("recommendation")
         if (
@@ -323,13 +492,15 @@ def profile_frame_duration_text(profile: dict[str, Any]) -> str:
 def _validate_profile(profile: object, expected_project_id: str | None = None) -> None:
     if not isinstance(profile, dict):
         raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
-    required = {
+    base_required = {
         "format", "version", "project_id", "profile_revision", "confirmation_status",
         "timeline_frame_rate", "frame_duration", "resolution", "decision_authority",
         "confirmed_by_role", "confirmed_at", "recommendation", "source_analysis_summary",
         "created_at", "updated_at",
     }
-    if set(profile) != required or "project_name" in profile:
+    has_image = "image" in profile
+    allowed = base_required | ({"image"} if has_image else set())
+    if set(profile) != allowed or "project_name" in profile:
         raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
     if profile.get("format") != PROFILE_FORMAT or profile.get("version") != PROFILE_VERSION:
         raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
@@ -366,6 +537,8 @@ def _validate_profile(profile: object, expected_project_id: str | None = None) -
             raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
     elif profile.get("frame_duration") != {"numerator": None, "denominator": None}:
         raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    if has_image:
+        _validate_image(profile["image"], configured_required=(status == CONFIRMED))
     if status == CONFIRMED:
         if profile.get("decision_authority") not in (USER_CONFIRMED, CID_RECOMMENDED_CONFIRMED):
             raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
@@ -376,11 +549,78 @@ def _validate_profile(profile: object, expected_project_id: str | None = None) -
             or not profile.get("confirmed_at")
         ):
             raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+        if has_image and profile.get("decision_authority") == CID_RECOMMENDED_CONFIRMED:
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
     elif any(profile.get(key) is not None for key in ("decision_authority", "confirmed_by_role", "confirmed_at")):
         raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
     for key in ("created_at", "updated_at"):
         if not isinstance(profile.get(key), str) or not profile[key].endswith("Z"):
             raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+
+
+def _unconfigured_image() -> dict[str, Any]:
+    return {
+        "display_aspect": {"numerator": None, "denominator": None},
+        "aspect_preset": None,
+        "framing_policy": None,
+    }
+
+
+def _image_is_configured(image: object) -> bool:
+    if not isinstance(image, dict) or set(image) != {
+        "display_aspect", "aspect_preset", "framing_policy"
+    }:
+        return False
+    aspect = image.get("display_aspect")
+    if not isinstance(aspect, dict) or set(aspect) != {"numerator", "denominator"}:
+        return False
+    if not isinstance(image.get("aspect_preset"), str) or isinstance(
+        image.get("aspect_preset"), bool
+    ):
+        return False
+    if not isinstance(image.get("framing_policy"), str) or isinstance(
+        image.get("framing_policy"), bool
+    ):
+        return False
+    return True
+
+
+def _validate_image(image: object, *, configured_required: bool) -> None:
+    if not isinstance(image, dict) or set(image) != {
+        "display_aspect", "aspect_preset", "framing_policy"
+    }:
+        raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+    aspect = image.get("display_aspect")
+    if aspect == {"numerator": None, "denominator": None}:
+        if image.get("aspect_preset") is not None or image.get("framing_policy") is not None:
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+        configured = False
+    else:
+        if not isinstance(aspect, dict) or set(aspect) != {"numerator", "denominator"}:
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+        try:
+            ratio = Fraction(aspect["numerator"], aspect["denominator"])
+        except (KeyError, TypeError, ValueError, ZeroDivisionError) as exc:
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID) from exc
+        if ratio <= 0:
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+        preset = image.get("aspect_preset")
+        if preset not in SUPPORTED_ASPECT_PRESET_OR_CUSTOM:
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+        if image.get("framing_policy") not in SUPPORTED_FRAMING_POLICIES:
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+        if preset in ASPECT_PRESETS and ratio != ASPECT_PRESETS[preset]:
+            raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+        configured = True
+    if configured_required and not configured:
+        raise ProjectVideoProfileError(CID_PROJECT_VIDEO_PROFILE_INVALID)
+
+
+def image_configuration_missing(profile: dict[str, Any]) -> bool:
+    """True when a profile has no fully-configured project image section."""
+    if "image" not in profile:
+        return True
+    return not _image_is_configured(profile["image"])
 
 
 def _profile_rate(profile: dict[str, Any]) -> Fraction:

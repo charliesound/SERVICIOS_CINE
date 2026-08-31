@@ -11,6 +11,7 @@ import os
 import subprocess
 import time
 from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -236,6 +237,9 @@ def _parse_ffprobe(data: dict[str, Any]) -> dict[str, Any]:
             "frame_rate": _parse_frame_rate(vs.get("avg_frame_rate"), vs.get("r_frame_rate")),
             "pixel_format": vs.get("pix_fmt"),
             "bit_depth": _safe_int(vs.get("bits_per_raw_sample")),
+            "sample_aspect_ratio": _parse_rational_string(vs.get("sample_aspect_ratio")),
+            "display_aspect_ratio": _parse_rational_string(vs.get("display_aspect_ratio")),
+            "rotation": _extract_rotation(vs),
             "stream_count": len(video_streams),
         }
 
@@ -295,6 +299,63 @@ def _frac_to_float(frac: str | None) -> float | None:
         return num / den
     except (ValueError, ZeroDivisionError):
         return None
+
+
+_ABSENT_RATIONAL_VALUES = {"0:1", "n/a", "na", "0", "0/1"}
+
+
+def _parse_rational_string(value: object) -> dict[str, int] | None:
+    """Parse an ffprobe ``a:b`` rational string into exact num/den.
+
+    Returns an exact ``{"numerator":.., "denominator":..}`` reduced pair, or
+    ``None`` when the value is absent or not a trustworthy, finite, positive
+    rational (e.g. ``0:1``, ``N/A``, malformed). No value is invented.
+    """
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip().replace("/", ":")
+    if normalized.lower() in _ABSENT_RATIONAL_VALUES:
+        return None
+    parts = normalized.strip().split(":")
+    if len(parts) != 2:
+        return None
+    if any(not part.isdigit() or not part for part in parts):
+        return None
+    try:
+        pair = Fraction(int(parts[0]), int(parts[1]))
+    except (ValueError, ZeroDivisionError):
+        return None
+    if pair <= 0:
+        return None
+    return {"numerator": pair.numerator, "denominator": pair.denominator}
+
+
+def _extract_rotation(video_stream: dict[str, Any]) -> int | None:
+    """Return an explicit ffprobe rotation in normalized degrees, else None.
+
+    Only authoritative source metadata is accepted: an explicit stream
+    ``tags.rotate`` NFD-style value or a ``side_data`` rotation (0/90/180/270).
+    Rotation is never inferred from width/height.
+    """
+    tags = video_stream.get("tags") or {}
+    tag_rotation = tags.get("rotate")
+    if isinstance(tag_rotation, str) and tag_rotation.strip():
+        try:
+            degrees = int(float(tag_rotation.strip()))
+        except (ValueError, TypeError):
+            degrees = None
+        if degrees is not None:
+            return degrees % 360
+    side_data = video_stream.get("side_data_list") or video_stream.get("side_data") or []
+    if not isinstance(side_data, list):
+        side_data = []
+    for entry in side_data:
+        if not isinstance(entry, dict):
+            continue
+        rotation = entry.get("rotation")
+        if isinstance(rotation, (int, float)) and not isinstance(rotation, bool):
+            return int(rotation) % 360
+    return None
 
 
 def _human_framerate(val: float | None) -> str | None:

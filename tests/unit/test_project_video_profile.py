@@ -8,8 +8,13 @@ import pytest
 
 from scripts.local_media_agent.local_project import create_project, project_video_profile_path
 from scripts.local_media_agent.project_video_profile import (
+    ASPECT_1_85,
+    ASPECT_2_39_SCOPE,
     CID_RECOMMENDED_CONFIRMED,
     CONFIRMED,
+    CUSTOM_ASPECT,
+    FRAMING_FULL_RASTER,
+    FRAMING_MATTE_TO_ASPECT,
     NOT_CONFIRMED,
     USER_CONFIRMED,
     ProjectVideoProfileError,
@@ -17,8 +22,11 @@ from scripts.local_media_agent.project_video_profile import (
     confirm_project_video_profile,
     create_project_video_profile,
     fcpxml_frame_duration,
-    postpone_project_video_profile,
+    image_configuration_missing,
     load_project_video_profile,
+    parse_display_aspect,
+    postpone_project_video_profile,
+    update_project_image_configuration,
     update_project_video_configuration,
 )
 
@@ -55,17 +63,26 @@ def test_25_50_acquisition_mix_recommends_25_but_never_confirms(tmp_path: Path) 
     assert profile["confirmation_status"] == NOT_CONFIRMED
     assert profile["decision_authority"] is None
     assert "project_name" not in profile
+    assert image_configuration_missing(profile) is True
     configured = update_project_video_configuration(
         PROJECT_ID, "25/1", (1920, 1080), local_appdata=tmp_path
     )
+    assert configured["confirmation_status"] == NOT_CONFIRMED
+    update_project_image_configuration(
+        PROJECT_ID,
+        "239/100",
+        ASPECT_2_39_SCOPE,
+        FRAMING_FULL_RASTER,
+        local_appdata=tmp_path,
+    )
     confirmed = confirm_project_video_profile(
         PROJECT_ID,
-        decision_authority=CID_RECOMMENDED_CONFIRMED,
+        decision_authority=USER_CONFIRMED,
         confirmed_by_role="PRODUCER",
         local_appdata=tmp_path,
     )
-    assert configured["confirmation_status"] == NOT_CONFIRMED
     assert confirmed["confirmation_status"] == CONFIRMED
+    assert confirmed["decision_authority"] == USER_CONFIRMED
 
 
 @pytest.mark.parametrize(
@@ -89,6 +106,9 @@ def test_explicit_manual_confirmation_postpone_and_revision_invalidation(tmp_pat
     configured = update_project_video_configuration(
         PROJECT_ID, "25/1", (1920, 1080), local_appdata=tmp_path
     )
+    configured = update_project_image_configuration(
+        PROJECT_ID, "37/20", ASPECT_1_85, FRAMING_FULL_RASTER, local_appdata=tmp_path
+    )
     assert configured["confirmation_status"] == NOT_CONFIRMED
     confirmed = confirm_project_video_profile(
         PROJECT_ID,
@@ -103,6 +123,10 @@ def test_explicit_manual_confirmation_postpone_and_revision_invalidation(tmp_pat
     assert changed["profile_revision"] == confirmed["profile_revision"] + 1
     assert changed["confirmation_status"] == NOT_CONFIRMED
     assert changed["decision_authority"] is None
+    changed = update_project_image_configuration(
+        PROJECT_ID, "16/9", "16:9", FRAMING_MATTE_TO_ASPECT, local_appdata=tmp_path
+    )
+    assert changed["confirmation_status"] == NOT_CONFIRMED
     reconfirmed = confirm_project_video_profile(
         PROJECT_ID,
         decision_authority=USER_CONFIRMED,
@@ -125,3 +149,116 @@ def test_malformed_nested_profile_fails_with_controlled_error(tmp_path: Path) ->
     )
     with pytest.raises(ProjectVideoProfileError, match="CID_PROJECT_VIDEO_PROFILE_INVALID"):
         load_project_video_profile(PROJECT_ID, local_appdata=tmp_path)
+
+
+def test_scope_maps_to_239_and_235_stays_distinct() -> None:
+    from scripts.local_media_agent.project_video_profile import (
+        ASPECT_PRESETS,
+        ASPECT_2_35,
+        ASPECT_2_39_SCOPE,
+    )
+
+    assert ASPECT_PRESETS[ASPECT_2_39_SCOPE] == Fraction(239, 100)
+    assert ASPECT_PRESETS[ASPECT_2_35] == Fraction(47, 20)
+    assert ASPECT_PRESETS[ASPECT_2_35] != ASPECT_PRESETS[ASPECT_2_39_SCOPE]
+
+
+def test_parse_display_aspect_accepts_exact_forms() -> None:
+    assert parse_display_aspect("2.39") == Fraction(239, 100)
+    assert parse_display_aspect("2.39:1") == Fraction(239, 100)
+    assert parse_display_aspect("239:100") == Fraction(239, 100)
+    assert parse_display_aspect("239/100") == Fraction(239, 100)
+    assert parse_display_aspect("16/9") == Fraction(16, 9)
+    assert parse_display_aspect("2.35") == Fraction(47, 20)
+    assert parse_display_aspect("2.40") == Fraction(12, 5)
+    assert parse_display_aspect(Fraction(5, 2)) == Fraction(5, 2)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["", "abc", "1/0", "0", "-2", "2.39x", "1/2/3", float("nan"), float("inf"),
+     True, False, 2.39, {}, [], None, "2.39e3"],
+)
+def test_parse_display_aspect_rejects_invalid_inputs(bad: object) -> None:
+    with pytest.raises(ProjectVideoProfileError):
+        parse_display_aspect(bad)
+
+
+def test_custom_aspect_stays_custom_even_if_ratio_equals_preset(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    create_project_video_profile(
+        PROJECT_ID, analyze_source_video_metadata([item("25/1")]), local_appdata=tmp_path
+    )
+    profile = update_project_image_configuration(
+        PROJECT_ID, "239/100", CUSTOM_ASPECT, FRAMING_FULL_RASTER, local_appdata=tmp_path
+    )
+    assert profile["image"]["aspect_preset"] == CUSTOM_ASPECT
+    assert profile["image"]["display_aspect"] == {"numerator": 239, "denominator": 100}
+
+
+def test_preset_mismatch_with_value_is_rejected(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    create_project_video_profile(
+        PROJECT_ID, analyze_source_video_metadata([item("25/1")]), local_appdata=tmp_path
+    )
+    with pytest.raises(ProjectVideoProfileError):
+        update_project_image_configuration(
+            PROJECT_ID, "16/9", ASPECT_1_85, FRAMING_FULL_RASTER, local_appdata=tmp_path
+        )
+
+
+def test_image_configured_profile_cannot_use_cid_recommended_authority(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    create_project_video_profile(
+        PROJECT_ID, analyze_source_video_metadata([item("25/1")]), local_appdata=tmp_path
+    )
+    update_project_video_configuration(PROJECT_ID, "25/1", (1920, 1080), local_appdata=tmp_path)
+    update_project_image_configuration(
+        PROJECT_ID, "239/100", ASPECT_2_39_SCOPE, FRAMING_FULL_RASTER, local_appdata=tmp_path
+    )
+    with pytest.raises(ProjectVideoProfileError):
+        confirm_project_video_profile(
+            PROJECT_ID,
+            decision_authority=CID_RECOMMENDED_CONFIRMED,
+            confirmed_by_role="PRODUCER",
+            local_appdata=tmp_path,
+        )
+
+
+def test_confirm_requires_image_configured_when_section_present(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    profile = create_project_video_profile(
+        PROJECT_ID, analyze_source_video_metadata([item("25/1")]), local_appdata=tmp_path
+    )
+    assert "image" in profile
+    update_project_video_configuration(PROJECT_ID, "25/1", (1920, 1080), local_appdata=tmp_path)
+    with pytest.raises(ProjectVideoProfileError):
+        confirm_project_video_profile(
+            PROJECT_ID,
+            decision_authority=USER_CONFIRMED,
+            confirmed_by_role="PRODUCER",
+            local_appdata=tmp_path,
+        )
+
+
+def test_legacy_profile_without_image_section_stays_readable(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    profile = create_project_video_profile(
+        PROJECT_ID, analyze_source_video_metadata([item("25/1")]), local_appdata=tmp_path
+    )
+    del profile["image"]
+    project_video_profile_path(PROJECT_ID, tmp_path).write_text(
+        json.dumps(profile), encoding="utf-8"
+    )
+    loaded = load_project_video_profile(PROJECT_ID, local_appdata=tmp_path)
+    assert "image" not in loaded
+    assert image_configuration_missing(loaded) is True
+    update_project_video_configuration(PROJECT_ID, "25/1", (1920, 1080), local_appdata=tmp_path)
+    confirmed = confirm_project_video_profile(
+        PROJECT_ID,
+        decision_authority=CID_RECOMMENDED_CONFIRMED,
+        confirmed_by_role="PRODUCER",
+        local_appdata=tmp_path,
+    )
+    assert confirmed["confirmation_status"] == CONFIRMED
+    assert confirmed["decision_authority"] == CID_RECOMMENDED_CONFIRMED

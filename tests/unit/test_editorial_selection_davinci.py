@@ -39,10 +39,13 @@ from scripts.local_media_agent.local_project import (
     select_project,
 )
 from scripts.local_media_agent.project_video_profile import (
+    ASPECT_2_39_SCOPE,
+    FRAMING_FULL_RASTER,
     USER_CONFIRMED,
     analyze_source_video_metadata,
     confirm_project_video_profile,
     create_project_video_profile,
+    update_project_image_configuration,
     update_project_video_configuration,
 )
 from scripts.local_media_agent.source_video_profile import (
@@ -493,6 +496,9 @@ def _project_ready(tmp_path: Path, evidence: str, metadata: list[dict]):
     create_project_video_profile(PROJECT_ID, summary, local_appdata=local)
     update_project_video_configuration(
         PROJECT_ID, "25/1", (1920, 1080), local_appdata=local
+    )
+    update_project_image_configuration(
+        PROJECT_ID, "239/100", ASPECT_2_39_SCOPE, FRAMING_FULL_RASTER, local_appdata=local
     )
     confirm_project_video_profile(
         PROJECT_ID,

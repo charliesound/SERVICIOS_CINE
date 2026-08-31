@@ -188,6 +188,9 @@ def _project_entry(item: dict[str, Any], reference: str) -> dict[str, Any]:
         "rate_conflict": conflict,
         "source_width": _optional_positive_int(video.get("width")),
         "source_height": _optional_positive_int(video.get("height")),
+        "source_sample_aspect_ratio": _rational_pair(video.get("sample_aspect_ratio")),
+        "source_display_aspect_ratio": _rational_pair(video.get("display_aspect_ratio")),
+        "source_rotation": _valid_rotation(video.get("rotation")),
         "source_timecode_start": item.get("timecode") if isinstance(item.get("timecode"), str) else None,
         "source_duration_raw": duration_raw,
         "source_duration_origin": origin if origin in ("format", "video_stream") else None,
@@ -206,7 +209,8 @@ def _validate_catalog(catalog: object, project_id: object) -> None:
         raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
     expected = {
         "source_media_ref", "source_filename", "source_frame_rate", "variable_frame_rate",
-        "rate_conflict", "source_width", "source_height", "source_timecode_start",
+        "rate_conflict", "source_width", "source_height", "source_sample_aspect_ratio",
+        "source_display_aspect_ratio", "source_rotation", "source_timecode_start",
         "source_duration_raw", "source_duration_origin",
     }
     seen: set[str] = set()
@@ -243,6 +247,13 @@ def _validate_catalog(catalog: object, project_id: object) -> None:
         for key in ("source_width", "source_height"):
             if entry.get(key) is not None and _optional_positive_int(entry.get(key)) is None:
                 raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+        for key in ("source_sample_aspect_ratio", "source_display_aspect_ratio"):
+            if entry.get(key) is not None and _rational_pair(entry.get(key)) is None:
+                raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+        if entry.get("source_rotation") is not None and _valid_rotation(
+            entry.get("source_rotation")
+        ) is None:
+            raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
 
 
 def _valid_duration(value: object) -> str | None:
@@ -257,3 +268,46 @@ def _valid_duration(value: object) -> str | None:
 
 def _optional_positive_int(value: object) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
+
+
+def _rational_pair(value: object) -> dict[str, int] | None:
+    """Normalize an exact positive rational from a dict or ``a/b``/``a:b`` string.
+
+    Returns ``None`` for absent/invalid/non-positive values (no invention).
+    """
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        try:
+            return _pair_from_dict(value)
+        except (KeyError, TypeError, ValueError, ZeroDivisionError):
+            return None
+    if isinstance(value, str):
+        normalized = value.strip().replace("/", ":")
+        parts = normalized.split(":")
+        if len(parts) != 2 or any(not part.isdigit() or not part for part in parts):
+            return None
+        try:
+            return _pair_from_int(int(parts[0]), int(parts[1]))
+        except (ValueError, ZeroDivisionError):
+            return None
+    return None
+
+
+def _pair_from_dict(value: dict[str, int]) -> dict[str, int]:
+    return _pair_from_int(value["numerator"], value["denominator"])
+
+
+def _pair_from_int(numerator: int, denominator: int) -> dict[str, int]:
+    if isinstance(numerator, bool) or isinstance(denominator, bool):
+        raise ValueError
+    ratio = Fraction(numerator, denominator)
+    if ratio <= 0:
+        raise ValueError
+    return {"numerator": ratio.numerator, "denominator": ratio.denominator}
+
+
+def _valid_rotation(value: object) -> int | None:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0 or value > 359:
+        return None
+    return value

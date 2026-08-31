@@ -61,14 +61,29 @@ from scripts.local_media_agent.local_project import (
     select_project,
 )
 from scripts.local_media_agent.project_video_profile import (
-    CID_RECOMMENDED_CONFIRMED,
+    ASPECT_1_66,
+    ASPECT_1_85,
+    ASPECT_2_00,
+    ASPECT_2_35,
+    ASPECT_2_39_SCOPE,
+    ASPECT_2_40,
+    ASPECT_4_3,
+    ASPECT_16_9,
+    ASPECT_ACADEMY_1_37,
+    ASPECT_PRESETS,
+    CUSTOM_ASPECT,
+    FRAMING_CUSTOM,
+    FRAMING_FULL_RASTER,
+    FRAMING_MATTE_TO_ASPECT,
     USER_CONFIRMED,
     ProjectVideoProfileError,
     analyze_source_video_metadata,
     confirm_project_video_profile,
+    image_configuration_missing,
     load_project_video_profile,
     postpone_project_video_profile,
     refresh_project_video_analysis,
+    update_project_image_configuration,
     update_project_video_configuration,
 )
 from scripts.local_media_agent.source_video_profile import (
@@ -76,6 +91,25 @@ from scripts.local_media_agent.source_video_profile import (
     build_source_video_profiles,
     save_source_video_profiles,
 )
+
+ASPECT_DISPLAY_LABELS = {
+    ASPECT_4_3: "4:3",
+    ASPECT_ACADEMY_1_37: "Academy 1.37",
+    ASPECT_1_66: "1.66:1",
+    ASPECT_16_9: "16:9",
+    ASPECT_1_85: "1.85 Flat",
+    ASPECT_2_00: "2.00:1",
+    ASPECT_2_35: "2.35:1",
+    ASPECT_2_39_SCOPE: "2.39 Scope",
+    ASPECT_2_40: "2.40:1",
+    CUSTOM_ASPECT: "Otro...",
+}
+
+FRAMING_DISPLAY_LABELS = {
+    FRAMING_FULL_RASTER: "Rellenar raster",
+    FRAMING_MATTE_TO_ASPECT: "Encuadrar al formato",
+    FRAMING_CUSTOM: "Personalizado",
+}
 
 
 def _format_duration(seconds: float | None) -> str:
@@ -399,8 +433,8 @@ class ProducerApp:
         self.video_profile_label.pack(anchor="w")
         profile_actions = ttk.Frame(body)
         profile_actions.pack(fill="x", pady=(8, 0))
-        ttk.Button(profile_actions, text="Confirmar recomendación de CID", command=self._confirm_recommendation).pack(side="left")
-        ttk.Button(profile_actions, text="Elegir otra configuración compatible", command=self._choose_video_configuration).pack(side="left", padx=(8, 0))
+        ttk.Button(profile_actions, text="Usar configuración compatible de CID", command=self._choose_video_configuration).pack(side="left")
+        ttk.Button(profile_actions, text="Confirmar configuración del proyecto", command=self._confirm_configuration).pack(side="left", padx=(8, 0))
         ttk.Button(profile_actions, text="Posponer", command=self._postpone_video_configuration).pack(side="left", padx=(8, 0))
         self._refresh_project_ui()
 
@@ -727,34 +761,55 @@ class ProducerApp:
             text=(
                 f"Material detectado por CID: FPS {rates or 'desconocido'}; resoluciones {resolutions or 'desconocidas'}"
                 f"{warning}\nRecomendación CID: {rec_text}\nConfiguración del proyecto: {config_text}"
+                f"\nFormato e imagen del proyecto: {self._image_status_text(profile)}"
             )
         )
 
-    def _confirm_recommendation(self) -> None:
+    def _image_status_text(self, profile: dict[str, Any]) -> str:
+        if image_configuration_missing(profile):
+            return "pendiente"
+        image = profile["image"]
+        preset = image["aspect_preset"]
+        aspect = image["display_aspect"]
+        if preset == CUSTOM_ASPECT:
+            value = f"{aspect['numerator']}:{aspect['denominator']}"
+        else:
+            value = ASPECT_DISPLAY_LABELS.get(preset, preset)
+        framing = FRAMING_DISPLAY_LABELS.get(image["framing_policy"], image["framing_policy"])
+        return f"{value} · {framing}"
+
+    def _confirm_configuration(self) -> None:
         if not self.active_project:
             messagebox.showinfo(APP_TITLE, "Crea o selecciona un proyecto para continuar.", parent=self.root)
             return
         project_id = self.active_project["project_id"]
         try:
             profile = load_project_video_profile(project_id)
-            recommendation = profile["recommendation"]
-            rate = recommendation.get("timeline_frame_rate")
-            resolution = recommendation.get("resolution")
-            if not recommendation.get("available") or rate is None or resolution is None:
+            if image_configuration_missing(profile):
+                chosen = self._choose_project_image()
+                if chosen is None:
+                    self._refresh_project_ui()
+                    return
+                preset, display_aspect, framing_policy = chosen
+                update_project_image_configuration(
+                    project_id, display_aspect, preset, framing_policy
+                )
+            configured_rate = profile["timeline_frame_rate"]
+            if configured_rate.get("numerator") is None:
                 raise ProjectVideoProfileError("CID_PROJECT_VIDEO_PROFILE_INVALID")
-            update_project_video_configuration(
-                project_id,
-                f"{rate['numerator']}/{rate['denominator']}",
-                resolution,
-            )
+            _resolution_values = profile["resolution"]
+            if _resolution_values.get("width") is None or _resolution_values.get("height") is None:
+                raise ProjectVideoProfileError("CID_PROJECT_VIDEO_PROFILE_INVALID")
             confirm_project_video_profile(
                 project_id,
-                decision_authority=CID_RECOMMENDED_CONFIRMED,
+                decision_authority=USER_CONFIRMED,
                 confirmed_by_role="PRODUCER",
             )
             self._refresh_project_ui()
         except ProjectVideoProfileError:
-            messagebox.showinfo(APP_TITLE, "CID no dispone de una recomendación completa y segura.", parent=self.root)
+            messagebox.showinfo(
+                APP_TITLE, "La configuración del proyecto aún no está completa.", parent=self.root
+            )
 
     def _choose_video_configuration(self) -> None:
         if not self.active_project:
@@ -771,18 +826,19 @@ class ProducerApp:
         if not resolution:
             return
         try:
-            width, height = (int(value) for value in resolution.lower().split("x", 1))
+            width, height = (
+                int(value) for value in resolution.lower().split("x", 1)
+            )
             project_id = self.active_project["project_id"]
             update_project_video_configuration(project_id, rate, (width, height))
-            choice = _confirm_dialog(
-                self.root,
-                "Confirmar configuración",
-                f"Configuración del proyecto: {rate} fps, {width}x{height}.\n¿Confirmar?",
-                ("Confirmar", "Posponer"),
-            )
-            if choice != "Confirmar":
+            chosen = self._choose_project_image()
+            if chosen is None:
                 self._refresh_project_ui()
                 return
+            preset, display_aspect, framing_policy = chosen
+            update_project_image_configuration(
+                project_id, display_aspect, preset, framing_policy
+            )
             confirm_project_video_profile(
                 project_id,
                 decision_authority=USER_CONFIRMED,
@@ -790,7 +846,38 @@ class ProducerApp:
             )
             self._refresh_project_ui()
         except (ProjectVideoProfileError, ValueError):
-            messagebox.showerror(APP_TITLE, "Configuración de vídeo no válida.", parent=self.root)
+            messagebox.showerror(APP_TITLE, "Configuración del proyecto no válida.", parent=self.root)
+
+    def _choose_project_image(self) -> tuple[str, str, str] | None:
+        labels = tuple(ASPECT_DISPLAY_LABELS.values())
+        choice = _confirm_dialog(
+            self.root, "Formato del proyecto", "Elige el formato del proyecto:", labels
+        )
+        if choice is None:
+            return None
+        preset = next(key for key, val in ASPECT_DISPLAY_LABELS.items() if val == choice)
+        if preset == CUSTOM_ASPECT:
+            display_aspect = _text_input_dialog(
+                self.root,
+                "Formato del proyecto",
+                "Formato personalizado (por ejemplo 2.39, 2.39:1, 239:100 o 239/100)",
+            )
+            if not display_aspect:
+                return None
+        else:
+            display_aspect = (
+                f"{ASPECT_PRESETS[preset].numerator}/{ASPECT_PRESETS[preset].denominator}"
+            )
+        framing_labels = tuple(FRAMING_DISPLAY_LABELS.values())
+        framing_choice = _confirm_dialog(
+            self.root, "Encuadre del proyecto", "Elige el encuadre del proyecto:", framing_labels
+        )
+        if framing_choice is None:
+            return None
+        framing_policy = next(
+            key for key, val in FRAMING_DISPLAY_LABELS.items() if val == framing_choice
+        )
+        return preset, display_aspect, framing_policy
 
     def _postpone_video_configuration(self) -> None:
         if not self.active_project:

@@ -299,6 +299,16 @@ def test_uninstall_does_not_delete_editorial_selections(assembled_package) -> No
     assert "/s /q \"%LOCALAPPDATA%\\CID\"" not in uninstall
 
 
+def test_uninstall_success_exits_zero_and_preserves_editorial_state(assembled_package) -> None:
+    uninstall = (assembled_package / "uninstall.cmd").read_text(encoding="utf-8")
+    assert uninstall.rstrip().endswith("pause\nexit /b 0")
+    assert uninstall.count('rmdir /s /q "%INSTALL_TARGET%"') == 1
+    assert 'rmdir /s /q "%LOCALAPPDATA%\\CID"' not in uninstall
+    assert "editorial_selections" in uninstall
+    assert 'del /f "%EDITORIAL_LAUNCHER%"' in uninstall
+    assert 'del /f "%EDITORIAL_LAUNCHER_INSTALLED%"' in uninstall
+
+
 def test_install_reinstall_does_not_delete_editorial_selections(assembled_package) -> None:
     install = (assembled_package / "install.cmd").read_text(encoding="utf-8")
     # install never rmdir the editorial store

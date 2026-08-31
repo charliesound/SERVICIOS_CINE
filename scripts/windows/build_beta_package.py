@@ -687,6 +687,7 @@ echo   %%LOCALAPPDATA%%\\CID\\editorial_selections
 echo   ======================================================
 echo.
 pause
+exit /b 0
 """
     uninstall_cmd.write_text(content, encoding="utf-8")
     print(f"  uninstall.cmd")

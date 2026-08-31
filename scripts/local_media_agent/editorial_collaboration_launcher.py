@@ -25,6 +25,11 @@ from typing import Any, Callable
 from scripts.local_media_agent.editorial_collaboration_server import (
     create_server,
 )
+from scripts.local_media_agent.local_project import (
+    CID_ACTIVE_PROJECT_REQUIRED,
+    LocalProjectError,
+    active_project_selection_store,
+)
 
 DEFAULT_ROLE = "PRODUCER"
 HOST = "127.0.0.1"
@@ -152,16 +157,24 @@ def launch_editorial_board(
     if not isinstance(role, str) or not role.strip():
         raise LaunchArgumentError(LAUNCH_ARGUMENTS_REJECTED)
 
+    project_name = None
+    initial_error = None
     if store is None:
+        local_appdata = os.environ.get(store_env)
         try:
-            default = default_store_path()
-        except LaunchDefaultStoreUnavailable as exc:
-            raise exc
-        store_path = prepare_default_store(default)
+            project, store_path = active_project_selection_store(
+                local_appdata=local_appdata
+            )
+            project_name = project["project_name"]
+        except LocalProjectError as exc:
+            store_path = None
+            initial_error = exc.code
+            if exc.code == CID_ACTIVE_PROJECT_REQUIRED:
+                initial_error = CID_ACTIVE_PROJECT_REQUIRED
     else:
         store_path = validate_explicit_store(Path(store))
 
-    actual_store = str(store_path)
+    actual_store = str(store_path) if store_path is not None else None
 
     stop = threading.Event()
 
@@ -177,6 +190,8 @@ def launch_editorial_board(
         host=HOST,
         port=0,
         shutdown_handler=_on_shutdown,
+        project_name=project_name,
+        initial_error=initial_error,
     )
     actual_port = server.server_address[1]
     url = build_local_url(actual_port)
@@ -206,6 +221,8 @@ def launch_editorial_board(
         "host": HOST,
         "port": actual_port,
         "url": url,
+        "project_name": project_name,
+        "error_code": initial_error,
     }
 
 

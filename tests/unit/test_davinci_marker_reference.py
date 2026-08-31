@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import io
 import json
 from decimal import Decimal
 from fractions import Fraction
 from xml.etree import ElementTree as ET
 
+import pytest
+
+import scripts.local_media_agent.editorial_selection_cli as editorial_selection_cli
 from scripts.local_media_agent.davinci_marker_reference import (
     DAVINCI_REFERENCE_FORMAT,
     DAVINCI_REFERENCE_REASON_AUDIO_ONLY,
@@ -14,6 +18,7 @@ from scripts.local_media_agent.davinci_marker_reference import (
     frame_duration_to_fps,
     media_path_to_uri,
     ndf_timecode_to_seconds,
+    parse_source_frame_rate,
 )
 from services.fcpxml_validation_service import fcpxml_validation_service
 
@@ -101,6 +106,34 @@ def test_ndf_timecode_start_yields_exact_rational() -> None:
 def test_frame_duration_to_fps() -> None:
     assert frame_duration_to_fps("1/25s") == 25
     assert frame_duration_to_fps("1/50s") == 50
+
+
+def test_fractional_ndf_timecode_uses_nominal_base_without_float_math() -> None:
+    assert ndf_timecode_to_seconds(
+        "00:00:01:00", Fraction(30000, 1001)
+    ) == Fraction(1001, 1000)
+
+
+def test_ndf_accepts_ff_37_at_50_source_rate() -> None:
+    assert ndf_timecode_to_seconds("00:00:00:37", 50) == Fraction(37, 50)
+
+
+def test_ndf_rejects_semicolon_drop_frame_notation() -> None:
+    with pytest.raises(ValueError, match="invalid_ndf_timecode"):
+        ndf_timecode_to_seconds("00:00:00;12", Fraction(30000, 1001))
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("25/1", Fraction(25, 1)),
+        ("50/1", Fraction(50, 1)),
+        ("24000/1001", Fraction(24000, 1001)),
+        (Fraction(60000, 1001), Fraction(60000, 1001)),
+    ],
+)
+def test_approved_source_frame_rates_are_exact(raw, expected) -> None:
+    assert parse_source_frame_rate(raw) == expected
 
 
 # ---------------- Source domain conversions ----------------
@@ -221,6 +254,146 @@ def test_no_hardcoded_resolution_or_fps() -> None:
     assert fmt.get("height") is None
     assert fmt.get("name") is None
     assert fmt.get("frameDuration") == "1/25s"
+
+
+def test_explicit_50_source_rate_separates_project_and_source_formats() -> None:
+    ref = _ref(source_frame_rate="50/1", source_timecode_start="00:00:00:37")
+    root = ET.fromstring(ref["fcpxml"])
+    formats = root.findall("resources/format")
+    asset = root.find("resources/asset")
+    sequence = root.find(".//sequence")
+    clip = root.find(".//asset-clip")
+    marker = root.find(".//asset-clip/marker")
+
+    assert [(item.get("id"), item.get("frameDuration")) for item in formats] == [
+        ("r1", "1/25s"),
+        ("r2", "1/50s"),
+    ]
+    assert asset.get("id") == "r3"
+    assert asset.get("format") == "r2"
+    assert asset.get("start") == "37/50s"
+    assert clip.get("ref") == "r3"
+    assert sequence.get("format") == "r1"
+    assert marker.get("duration") == "1/25s"
+
+
+def test_fractional_source_rate_emits_exact_reduced_reciprocal() -> None:
+    ref = _ref(
+        frame_duration="1/25s",
+        source_frame_rate=Fraction(24000, 1001),
+        source_timecode_start="00:00:00:23",
+    )
+    root = ET.fromstring(ref["fcpxml"])
+
+    source_format = root.find("resources/format[@id='r2']")
+    assert source_format.get("frameDuration") == "1001/24000s"
+    assert root.find("resources/asset").get("start") == "23023/24000s"
+
+
+@pytest.mark.parametrize(
+    ("source_rate", "project_duration", "source_duration"),
+    [
+        ("25/1", "1/25s", "1/25s"),
+        ("25/1", "1/50s", "1/25s"),
+        ("24000/1001", "1/24s", "1001/24000s"),
+        ("30000/1001", "1/25s", "1001/30000s"),
+    ],
+)
+def test_normal_mode_keeps_source_and_project_formats_independent(
+    source_rate, project_duration, source_duration
+) -> None:
+    root = ET.fromstring(
+        _ref(
+            source_frame_rate=source_rate,
+            frame_duration=project_duration,
+            source_timecode_start="00:00:01:00",
+        )["fcpxml"]
+    )
+    assert root.find("resources/format[@id='r1']").get("frameDuration") == project_duration
+    assert root.find("resources/format[@id='r2']").get("frameDuration") == source_duration
+    assert root.find("resources/asset").get("format") == "r2"
+    assert root.find(".//sequence").get("format") == "r1"
+
+
+def test_30000_over_1001_ndf_source_start_is_exact_in_25_project() -> None:
+    root = ET.fromstring(
+        _ref(
+            source_frame_rate="30000/1001",
+            frame_duration="1/25s",
+            source_timecode_start="00:00:01:00",
+        )["fcpxml"]
+    )
+    assert root.find("resources/asset").get("start") == "1001/1000s"
+
+
+def test_legacy_omission_keeps_single_shared_format_and_ids() -> None:
+    root = ET.fromstring(_ref()["fcpxml"])
+
+    formats = root.findall("resources/format")
+    assert [(item.get("id"), item.get("frameDuration")) for item in formats] == [
+        ("r1", "1/25s"),
+    ]
+    assert root.find("resources/asset").get("id") == "r2"
+    assert root.find("resources/asset").get("format") == "r1"
+    assert root.find(".//asset-clip").get("ref") == "r2"
+
+
+@pytest.mark.parametrize(
+    ("source_in", "source_out", "source_duration"),
+    [(-1, 1, "10"), (2, 1, "10"), (1, 11, "10")],
+)
+def test_invalid_source_interval_refuses(source_in, source_out, source_duration) -> None:
+    with pytest.raises(ValueError, match="invalid_source_interval"):
+        _ref(
+            package=_mapped_package(source_in=source_in, source_out=source_out),
+            source_duration=source_duration,
+        )
+
+
+def test_cli_source_frame_rate_reaches_generator(monkeypatch) -> None:
+    generated: dict[str, bytes] = {}
+
+    def _prepare(**kwargs):
+        assert kwargs["source_frame_rate"] == "50/1"
+        generated["fcpxml"] = _ref(
+            source_frame_rate=kwargs["source_frame_rate"]
+        )["fcpxml"]
+        return {
+            "subject": "Subject",
+            "topic": "Topic",
+            "editorial_note": None,
+            "video_clip": "clip.mov",
+            "source_in_seconds": "0",
+            "source_out_seconds": "1",
+            "davinci_reference_path": kwargs["output_path"],
+            "status": "READY_FOR_EDITOR",
+        }
+
+    monkeypatch.setattr(
+        editorial_selection_cli,
+        "prepare_davinci_reference_for_selection",
+        _prepare,
+    )
+    code = editorial_selection_cli.run_cli(
+        [
+            "prepare-davinci",
+            "--store", "store",
+            "--selection", "selection",
+            "--evidence-path", "evidence.json",
+            "--media-path", MEDIA_PATH,
+            "--frame-duration", "1/25s",
+            "--source-timecode-start", SOURCE_TIMECODE_START,
+            "--source-duration", SOURCE_DURATION,
+            "--source-frame-rate", "50/1",
+            "--output", "reference.fcpxml",
+        ],
+        stdout=io.StringIO(),
+        stderr=io.StringIO(),
+    )
+
+    assert code == 0
+    root = ET.fromstring(generated["fcpxml"])
+    assert root.find("resources/format[@id='r2']").get("frameDuration") == "1/50s"
 
 
 def test_note_metadata_preserved_with_absolute_domain() -> None:

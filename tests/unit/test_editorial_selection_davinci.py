@@ -29,13 +29,32 @@ from scripts.local_media_agent.editorial_selection_davinci import (
     ERR_NOT_READY,
     ERR_OUTPUT_EXISTS,
     ERR_UNAVAILABLE,
+    EditorialDavinciError,
     prepare_davinci_reference_for_selection,
+    prepare_project_davinci_reference,
+)
+from scripts.local_media_agent.local_project import (
+    create_project,
+    project_selection_store_path,
+    select_project,
+)
+from scripts.local_media_agent.project_video_profile import (
+    USER_CONFIRMED,
+    analyze_source_video_metadata,
+    confirm_project_video_profile,
+    create_project_video_profile,
+    update_project_video_configuration,
+)
+from scripts.local_media_agent.source_video_profile import (
+    build_source_video_profiles,
+    save_source_video_profiles,
 )
 
 MEDIA_PATH = "F:/SIRUELA/Pruden/Entrevista/PRIVATE1/M4ROOT/CLIP/A7IV_SL31277.MP4"
 FRAME_DURATION = "1/25s"
 SOURCE_TC_START = "21:42:10:23"
 SOURCE_DURATION = "3209.76"
+PROJECT_ID = "PRJ-123e4567-e89b-42d3-a456-426614174000"
 
 
 def _write_evidence(tmp_path: Path, *, ctx_045=None, **overrides) -> str:
@@ -442,3 +461,154 @@ def test_success_fcpxml_exact_reference_values(tmp_path, evidence, store) -> Non
     assert marker.get("duration") == "1/25s"
     media_rep = root.find(".//media-rep")
     assert media_rep.get("src") == "file:///F:/SIRUELA/Pruden/Entrevista/PRIVATE1/M4ROOT/CLIP/A7IV_SL31277.MP4"
+
+
+def _source_metadata(
+    *,
+    rate="50/1",
+    variable=False,
+    duration="40000.000000",
+    ref="roll/A7IV_SL31277.MP4",
+    timecode="10:24:12:37",
+):
+    return {
+        "category": "video",
+        "relative_path": ref,
+        "duration_raw": duration,
+        "duration_origin": "format" if duration else None,
+        "timecode": timecode,
+        "video": {
+            "width": 3840,
+            "height": 2160,
+            "frame_rate": {"raw_avg": rate, "raw_frame": rate, "variable": variable},
+        },
+    }
+
+
+def _project_ready(tmp_path: Path, evidence: str, metadata: list[dict]):
+    local = tmp_path / "local"
+    create_project("Proyecto", local_appdata=local, project_id=PROJECT_ID)
+    select_project(PROJECT_ID, local_appdata=local)
+    summary = analyze_source_video_metadata(metadata)
+    create_project_video_profile(PROJECT_ID, summary, local_appdata=local)
+    update_project_video_configuration(
+        PROJECT_ID, "25/1", (1920, 1080), local_appdata=local
+    )
+    confirm_project_video_profile(
+        PROJECT_ID,
+        decision_authority=USER_CONFIRMED,
+        confirmed_by_role="PRODUCER",
+        local_appdata=local,
+    )
+    catalog = build_source_video_profiles(PROJECT_ID, metadata)
+    save_source_video_profiles(catalog, local_appdata=local)
+    selection_store = str(project_selection_store_path(PROJECT_ID, local))
+    ready = _build_ready(evidence, selection_store)
+    media_root = tmp_path / "media"
+    for source in metadata:
+        target = media_root / source["relative_path"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"synthetic")
+    return local, selection_store, ready, media_root
+
+
+def test_project_aware_mixed_50_source_25_project(tmp_path, evidence) -> None:
+    local, store, ready, media_root = _project_ready(
+        tmp_path, evidence, [_source_metadata()]
+    )
+    output = tmp_path / "mixed.fcpxml"
+    prepare_project_davinci_reference(
+        selection_id=ready["selection_id"],
+        evidence_path=evidence,
+        active_media_root=media_root,
+        output_path=output,
+        local_appdata=local,
+    )
+    root = ET.fromstring(output.read_text(encoding="utf-8"))
+    assert root.find("resources/format[@id='r1']").get("frameDuration") == "1/25s"
+    assert root.find("resources/format[@id='r2']").get("frameDuration") == "1/50s"
+    assert root.find("resources/asset").get("format") == "r2"
+    assert root.find(".//sequence").get("format") == "r1"
+    assert SelectionStore(store).read(ready["selection_id"])["davinci_reference_status"] == DAVINCI_GENERATED
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        [_source_metadata(variable=True)],
+        [_source_metadata(rate="0/0")],
+        [_source_metadata(duration=None)],
+        [_source_metadata(timecode="10:24:12:50")],
+        [_source_metadata(ref="a/A7IV_SL31277.MP4"), _source_metadata(ref="b/A7IV_SL31277.MP4")],
+    ],
+)
+def test_project_authority_refusals_leave_no_output_or_mutation(tmp_path, evidence, metadata) -> None:
+    local, store, ready, media_root = _project_ready(tmp_path, evidence, metadata)
+    output = tmp_path / "refused.fcpxml"
+    with pytest.raises(EditorialDavinciError):
+        prepare_project_davinci_reference(
+            selection_id=ready["selection_id"],
+            evidence_path=evidence,
+            active_media_root=media_root,
+            output_path=output,
+            local_appdata=local,
+        )
+    assert not output.exists()
+    assert SelectionStore(store).read(ready["selection_id"])["davinci_reference_status"] != DAVINCI_GENERATED
+
+
+def test_project_missing_media_root_refuses_before_mutation(tmp_path, evidence) -> None:
+    local, store, ready, _ = _project_ready(tmp_path, evidence, [_source_metadata()])
+    output = tmp_path / "missing-root.fcpxml"
+    with pytest.raises(EditorialDavinciError):
+        prepare_project_davinci_reference(
+            selection_id=ready["selection_id"],
+            evidence_path=evidence,
+            active_media_root=None,
+            output_path=output,
+            local_appdata=local,
+        )
+    assert not output.exists()
+    assert SelectionStore(store).read(ready["selection_id"])["davinci_reference_status"] != DAVINCI_GENERATED
+
+
+def test_project_aware_cli_uses_only_operator_authorities(monkeypatch) -> None:
+    from scripts.local_media_agent import editorial_selection_cli as cli
+
+    captured = {}
+
+    def prepare(**kwargs):
+        captured.update(kwargs)
+        return {
+            "subject": "S",
+            "topic": "T",
+            "editorial_note": None,
+            "video_clip": "clip.mov",
+            "source_in_seconds": "0",
+            "source_out_seconds": "1",
+            "davinci_reference_path": kwargs["output_path"],
+            "status": STATUS_READY_FOR_EDITOR,
+        }
+
+    monkeypatch.setattr(cli, "prepare_project_davinci_reference", prepare)
+    out, err = io.StringIO(), io.StringIO()
+    code = cli.run_cli(
+        [
+            "prepare-project-davinci",
+            "--selection", "SEL-X",
+            "--evidence-path", "evidence.json",
+            "--media-root", "media",
+            "--output", "reference.fcpxml",
+        ],
+        stdout=out,
+        stderr=err,
+    )
+    assert code == 0
+    assert captured == {
+        "selection_id": "SEL-X",
+        "evidence_path": "evidence.json",
+        "active_media_root": "media",
+        "output_path": "reference.fcpxml",
+    }
+    assert "frame_duration" not in captured
+    assert "DAVINCI_REFERENCE_READY=True" in out.getvalue()

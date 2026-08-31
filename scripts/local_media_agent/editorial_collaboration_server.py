@@ -228,14 +228,20 @@ def apply_board_transition(
 
 
 def render_interactive_board(
-    store: str | Path,
+    store: str | Path | None,
     role: str,
     token: str,
     *,
     actions_for=legal_actions_for,
+    project_name: str | None = None,
+    initial_error: str | None = None,
 ) -> str:
     """Render a self-contained interactive HTML board for one fixed role."""
-    model = build_board_model(store, role)
+    if initial_error is not None:
+        return _render_controlled_state(role, token, initial_error)
+    if store is None:
+        raise BoardRequestError(BAD_REQUEST)
+    model = build_board_model(store, role, project_name=project_name)
     items = _project_items(store, role)
 
     for item in items:
@@ -306,6 +312,7 @@ button.primary {{ background:var(--accent); color:#fff; border-color:var(--accen
 <header>
   <h1>CID Editorial Board</h1>
   <div class="role">Role: {role} <span class="role-tag">local read/write operator surface</span></div>
+  {project_line}
 </header>
 <section class="summary">
   <div class="badges">{summary}</div>
@@ -326,6 +333,13 @@ button.primary {{ background:var(--accent); color:#fff; border-color:var(--accen
 </html>
 """.format(
             role=_esc(role),
+            project_line=(
+                '<div class="project">Proyecto activo: '
+                + _esc(project_name)
+                + "</div>"
+                if project_name
+                else ""
+            ),
             summary=summary,
             dav_summary=dav_summary,
             cards=cards,
@@ -334,6 +348,18 @@ button.primary {{ background:var(--accent); color:#fff; border-color:var(--accen
         )
     )
     return document
+
+
+def _render_controlled_state(role: str, token: str, code: str) -> str:
+    return """<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CID Editorial</title></head><body><main>
+<h1>CID Editorial</h1><p>Crea o selecciona un proyecto para continuar.</p>
+<p>{code}</p><form method="post" action="{shutdown}">
+<input type="hidden" name="request_token" value="{token}"><button type="submit">Cerrar CID Editorial</button>
+</form></main></body></html>""".format(
+        code=_esc(code), shutdown=_esc(SHUTDOWN_PATH), token=_esc(token)
+    )
 
 
 def _render_card(item: dict[str, Any], role: str, token: str) -> str:
@@ -383,10 +409,12 @@ def _esc(value: Any) -> str:
 
 
 def _make_handler(
-    store: str | Path,
+    store: str | Path | None,
     role: str,
     token: str,
     close: callable | None = None,
+    project_name: str | None = None,
+    initial_error: str | None = None,
 ) -> type[BaseHTTPRequestHandler]:
     class EditorialBoardHandler(BaseHTTPRequestHandler):
         server_version = "CIDEditorialBoard/1.0"
@@ -414,7 +442,13 @@ def _make_handler(
                 self._send(404, _esc("CID_EDITORIAL_BOARD_NOT_FOUND"))
                 return
             try:
-                board = render_interactive_board(store, role, token)
+                board = render_interactive_board(
+                    store,
+                    role,
+                    token,
+                    project_name=project_name,
+                    initial_error=initial_error,
+                )
             except BoardError as exc:
                 self._send(400, _esc(getattr(exc, "code", BAD_REQUEST)))
                 return
@@ -463,6 +497,9 @@ def _make_handler(
                 return
             if self.path != "/transition":
                 self._send(404, _esc("CID_EDITORIAL_BOARD_NOT_FOUND"))
+                return
+            if initial_error is not None or store is None:
+                self._send(400, _esc(BAD_REQUEST))
                 return
             try:
                 length = int(self.headers.get("Content-Length") or 0)
@@ -537,12 +574,14 @@ def _make_handler(
 
 
 def create_server(
-    store: str | Path,
+    store: str | Path | None,
     role: str,
     host: str = "127.0.0.1",
     port: int = DEFAULT_PORT,
     token: str | None = None,
     shutdown_handler: callable | None = None,
+    project_name: str | None = None,
+    initial_error: str | None = None,
 ) -> ThreadingHTTPServer:
     """Build a loopback-bound stdlib HTTP server; returns the live server object.
 
@@ -554,7 +593,14 @@ def create_server(
         raise BoardRequestError(TRANSITION_REJECTED)
     safe_host = validate_loopback_host(host)
     server_token = make_request_token() if token is None else token
-    handler = _make_handler(store, role, server_token, shutdown_handler)
+    handler = _make_handler(
+        store,
+        role,
+        server_token,
+        shutdown_handler,
+        project_name,
+        initial_error,
+    )
     server = ThreadingHTTPServer((safe_host, port), handler)
     return server
 

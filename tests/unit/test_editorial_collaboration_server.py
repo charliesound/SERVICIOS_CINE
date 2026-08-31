@@ -683,3 +683,13 @@ def test_server_loopback_only_and_token_stable(producer_store) -> None:
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
+
+
+def test_interactive_board_displays_active_project_name(producer_store) -> None:
+    page = render_interactive_board(
+        producer_store,
+        ROLE_PRODUCER,
+        "token",
+        project_name="Proyecto activo",
+    )
+    assert "Proyecto activo: Proyecto activo" in page

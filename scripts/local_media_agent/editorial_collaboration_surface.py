@@ -58,7 +58,9 @@ def _validate_store_dir(store: str | Path) -> None:
         raise SurfaceError("BOARD_STORE_NOT_DIRECTORY")
 
 
-def build_board_model(store: str | Path, role: str) -> dict[str, Any]:
+def build_board_model(
+    store: str | Path, role: str, *, project_name: str | None = None
+) -> dict[str, Any]:
     """Load and project a deterministic board model for one role.
 
     The uppercase canonical role is validated; the released ``render_view``
@@ -125,6 +127,7 @@ def build_board_model(store: str | Path, role: str) -> dict[str, Any]:
 
     return {
         "role": role,
+        "project_name": project_name,
         "total": len(canonical),
         "status_counts": status_counts,
         "davinci_counts": davinci_counts,
@@ -141,6 +144,8 @@ def render_terminal_board(model: dict[str, Any]) -> str:
     lines: list[str] = []
     lines.append("CID EDITORIAL BOARD")
     lines.append("Role: " + str(role))
+    if model.get("project_name"):
+        lines.append("Proyecto activo: " + str(model["project_name"]))
     lines.append("")
     lines.append("Total: " + str(model["total"]))
     lines.append(
@@ -176,6 +181,11 @@ def render_terminal_board(model: dict[str, Any]) -> str:
 def render_html_board(model: dict[str, Any]) -> str:
     """Render the board as a self-contained static HTML5 document (no JS/network)."""
     role = model["role"]
+    project_line = (
+        '<div class="project">Proyecto activo: ' + _esc(model.get("project_name")) + "</div>"
+        if model.get("project_name")
+        else ""
+    )
     status_counts = model["status_counts"]
     davinci_counts = model["davinci_counts"]
 
@@ -244,6 +254,7 @@ header .role {{ color:var(--accent); font-weight:600; }}
 <header>
   <h1>CID Editorial Board</h1>
   <div class="role">Role: {role}</div>
+  {project_line}
 </header>
 <section class="summary">
   <div class="total">Total: {total}</div>
@@ -258,6 +269,7 @@ header .role {{ color:var(--accent); font-weight:600; }}
 </html>
 """.format(
             role=_esc(role),
+            project_line=project_line,
             total=str(model["total"]),
             badge_rows=badge_rows,
             dav_rows=dav_rows,

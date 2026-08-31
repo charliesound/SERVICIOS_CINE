@@ -229,6 +229,19 @@ def test_modules_covered_by_directory_copy_not_duplicated() -> None:
     assert "scripts/local_media_agent" in B.CID_SOURCE_DIRS
 
 
+def test_recursive_copy_includes_project_video_profile_modules(tmp_path) -> None:
+    app = tmp_path / "app"
+    app.mkdir()
+    B._copy_cid_source(app)
+    module_root = app / "scripts" / "local_media_agent"
+    for module in (
+        "local_project.py",
+        "project_video_profile.py",
+        "source_video_profile.py",
+    ):
+        assert (module_root / module).is_file()
+
+
 # ---------------- manifest -----------------
 
 def test_manifest_includes_editorial_launcher(assembled_package) -> None:
@@ -307,6 +320,8 @@ def test_uninstall_success_exits_zero_and_preserves_editorial_state(assembled_pa
     assert "editorial_selections" in uninstall
     assert 'del /f "%EDITORIAL_LAUNCHER%"' in uninstall
     assert 'del /f "%EDITORIAL_LAUNCHER_INSTALLED%"' in uninstall
+    assert 'rmdir /s /q "%LOCALAPPDATA%\\CID\\projects"' not in uninstall
+    assert 'del /f "%LOCALAPPDATA%\\CID\\active_project.json"' not in uninstall
 
 
 def test_install_reinstall_does_not_delete_editorial_selections(assembled_package) -> None:
@@ -314,6 +329,8 @@ def test_install_reinstall_does_not_delete_editorial_selections(assembled_packag
     # install never rmdir the editorial store
     assert "editorial_selections" not in install
     assert "/s /q \"%LOCALAPPDATA%\\CID\"" not in install
+    assert 'rmdir /s /q "%LOCALAPPDATA%\\CID\\projects"' not in install
+    assert 'del /f "%LOCALAPPDATA%\\CID\\active_project.json"' not in install
 
 
 def test_package_build_does_not_create_editorial_selections(assembled_package) -> None:

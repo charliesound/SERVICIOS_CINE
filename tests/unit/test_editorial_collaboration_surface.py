@@ -483,3 +483,13 @@ def test_terminal_header(evidence, tmp_path) -> None:
     term = render_terminal_board(build_board_model(store_path, ROLE_PRODUCER))
     assert term.startswith("CID EDITORIAL BOARD\n")
     assert "Role: PRODUCER" in term
+
+
+def test_project_name_is_visible_only_when_supplied(evidence, tmp_path) -> None:
+    store_path = str(tmp_path / "project-board")
+    SelectionStore(store_path).write(create_selection(evidence, "SIRUELA-CTX-400", ROLE_PRODUCER))
+    project_model = build_board_model(store_path, ROLE_PRODUCER, project_name="Proyecto Uno")
+    assert "Proyecto activo: Proyecto Uno" in render_terminal_board(project_model)
+    assert "Proyecto activo: Proyecto Uno" in render_html_board(project_model)
+    legacy = build_board_model(store_path, ROLE_PRODUCER)
+    assert "Proyecto activo:" not in render_terminal_board(legacy)

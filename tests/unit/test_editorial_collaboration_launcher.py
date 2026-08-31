@@ -35,6 +35,12 @@ from scripts.local_media_agent.editorial_collaboration_server import (
     make_request_token,
     render_interactive_board,
 )
+from scripts.local_media_agent.local_project import (
+    CID_ACTIVE_PROJECT_REQUIRED,
+    create_project,
+    project_selection_store_path,
+    select_project,
+)
 from scripts.local_media_agent.editorial_selection import (
     ROLE_DIRECTOR,
     ROLE_EDITOR,
@@ -393,11 +399,16 @@ def test_launch_resolves_default_store_from_env(monkeypatch, tmp_path) -> None:
     assert p == Path(local) / "CID" / "editorial_selections"
 
 
-def test_launch_default_store_unavailable_refused(monkeypatch) -> None:
+def test_launch_no_active_project_has_controlled_browser_state(monkeypatch) -> None:
     monkeypatch.delenv("LOCALAPPDATA", raising=False)
-    with pytest.raises(LaunchDefaultStoreUnavailable) as exc:
-        launch_editorial_board(None, ROLE_PRODUCER, open_browser=False)
-    assert exc.value.code == DEFAULT_STORE_UNAVAILABLE
+    body = render_interactive_board(
+        None,
+        ROLE_PRODUCER,
+        "token",
+        initial_error=CID_ACTIVE_PROJECT_REQUIRED,
+    )
+    assert "Crea o selecciona un proyecto para continuar." in body
+    assert CID_ACTIVE_PROJECT_REQUIRED in body
 
 
 def test_launch_explicit_store_ignores_localappdata(monkeypatch, tmp_path, evidence) -> None:
@@ -410,6 +421,45 @@ def test_launch_explicit_store_ignores_localappdata(monkeypatch, tmp_path, evide
     port = server.server_address[1]
     assert port > 0
     server.server_close()
+
+
+def test_normal_store_resolves_active_project_not_legacy(monkeypatch, tmp_path) -> None:
+    local = tmp_path / "local"
+    monkeypatch.setenv("LOCALAPPDATA", str(local))
+    project = create_project("Proyecto activo", local_appdata=local)
+    select_project(project["project_id"], local_appdata=local)
+    expected = project_selection_store_path(project["project_id"], local)
+    from scripts.local_media_agent import editorial_collaboration_launcher as launcher
+
+    captured = {}
+
+    class DummyServer:
+        server_address = ("127.0.0.1", 12345)
+
+        def __init__(self, stop):
+            self.stop = stop
+            self.called = False
+
+        def serve_forever(self, poll_interval=0.2):
+            if not self.called:
+                self.called = True
+                self.stop()
+
+        def shutdown(self):
+            return None
+
+        def server_close(self):
+            return None
+
+    def fake_create(store, role, **kwargs):
+        captured.update(store=store, project_name=kwargs.get("project_name"))
+        return DummyServer(kwargs["shutdown_handler"])
+
+    monkeypatch.setattr(launcher, "create_server", fake_create)
+    result = launcher.launch_editorial_board(None, open_browser=False)
+    assert Path(captured["store"]) == expected
+    assert captured["project_name"] == "Proyecto activo"
+    assert result["error_code"] is None
 
 
 def test_launch_no_browser_mode(tmp_path, evidence) -> None:

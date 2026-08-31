@@ -22,12 +22,13 @@ timing contract (exact Decimal/Fraction) is preserved as released.
 from __future__ import annotations
 
 import os
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
 from scripts.local_media_agent.davinci_marker_reference import (
     build_davinci_reference,
+    ndf_timecode_to_seconds_exact,
 )
 from scripts.local_media_agent.editorial_selection import (
     DAVINCI_GENERATED,
@@ -40,6 +41,22 @@ from scripts.local_media_agent.editorial_selection import (
 )
 from scripts.local_media_agent.producer_editorial_query import (
     build_editor_handoff_package,
+)
+from scripts.local_media_agent.local_project import (
+    LocalProjectError,
+    load_active_project,
+    project_selection_store_path,
+)
+from scripts.local_media_agent.project_video_profile import (
+    ProjectVideoProfileError,
+    profile_frame_duration_text,
+    require_confirmed_project_video_profile,
+)
+from scripts.local_media_agent.source_video_profile import (
+    SourceVideoProfileError,
+    load_source_video_profiles,
+    resolve_source_media_path,
+    resolve_source_video_profile,
 )
 
 ERR_NOT_READY = "CID_DAVINCI_SELECTION_NOT_READY_FOR_EDITOR"
@@ -75,6 +92,7 @@ def prepare_davinci_reference_for_selection(
     frame_duration: str,
     source_timecode_start: str,
     source_duration: str | float,
+    source_frame_rate: str | None = None,
     output_path: str | Path,
 ) -> dict[str, Any]:
     """Prepare the DaVinci FCPXML reference for one approved selection.
@@ -106,6 +124,7 @@ def prepare_davinci_reference_for_selection(
         frame_duration=frame_duration,
         source_timecode_start=source_timecode_start,
         source_duration=source_duration,
+        source_frame_rate=source_frame_rate,
     )
     if not result.get("davinci_reference_available"):
         raise EditorialDavinciInternalError(ERR_INTERNAL)
@@ -139,6 +158,53 @@ def prepare_davinci_reference_for_selection(
         "davinci_reference_status": updated["davinci_reference_status"],
         "davinci_reference_path": updated["davinci_reference_path"],
     }
+
+
+def prepare_project_davinci_reference(
+    *,
+    selection_id: str,
+    evidence_path: str | Path,
+    active_media_root: str | Path | None,
+    output_path: str | Path,
+    local_appdata: str | Path | None = None,
+) -> dict[str, Any]:
+    """Prepare through active project, confirmed timeline, and source authorities."""
+    try:
+        project = load_active_project(local_appdata=local_appdata)
+        project_id = project["project_id"]
+        profile = require_confirmed_project_video_profile(
+            project_id, local_appdata=local_appdata
+        )
+        store = project_selection_store_path(project_id, local_appdata)
+        selection = SelectionStore(store).read(selection_id)
+        catalog = load_source_video_profiles(project_id, local_appdata=local_appdata)
+        source = resolve_source_video_profile(catalog, selection.get("video_clip"))
+        media_path = resolve_source_media_path(
+            active_media_root, source["source_media_ref"]
+        )
+        project_frame_duration = profile_frame_duration_text(profile)
+        try:
+            ndf_timecode_to_seconds_exact(
+                source["source_timecode_start"], source["source_frame_rate"]
+            )
+        except ValueError as exc:
+            raise SourceVideoProfileError(
+                "CID_SOURCE_TIMECODE_RATE_UNSUPPORTED"
+            ) from exc
+    except (LocalProjectError, ProjectVideoProfileError, SourceVideoProfileError) as exc:
+        raise EditorialDavinciError(exc.code) from exc
+
+    return prepare_davinci_reference_for_selection(
+        store=store,
+        selection_id=selection_id,
+        evidence_path=evidence_path,
+        media_path=str(media_path),
+        frame_duration=project_frame_duration,
+        source_timecode_start=source["source_timecode_start"],
+        source_duration=source["source_duration_raw"],
+        source_frame_rate=source["source_frame_rate"],
+        output_path=output_path,
+    )
 
 
 def _verify_canonical_selection(

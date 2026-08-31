@@ -522,6 +522,109 @@ class TestDoneSrtHintWording:
         assert gui._done_srt_hint(0, 1) == "No se ha generado ningún SRT en esta ejecución."
 
 
+class TestProjectVideoProfileGuiBoundary:
+    def test_metadata_projection_never_auto_confirms_project(self, tmp_path, monkeypatch) -> None:
+        from scripts.local_media_agent import cid_gui
+        from scripts.local_media_agent.local_project import create_project
+        from scripts.local_media_agent.project_video_profile import load_project_video_profile
+        from scripts.local_media_agent.source_video_profile import load_source_video_profiles
+
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+        project = create_project("Proyecto")
+        app = object.__new__(cid_gui.ProducerApp)
+        app.active_project = project
+        app.analysis_project_id = project["project_id"]
+        app._refresh_project_ui = lambda: None
+        metadata = {
+            "results": [
+                {
+                    "category": "video",
+                    "relative_path": "roll/clip.mov",
+                    "duration_raw": "10.000000",
+                    "duration_origin": "format",
+                    "duration_seconds": 10.0,
+                    "timecode": "01:00:00:00",
+                    "video": {
+                        "width": 1920,
+                        "height": 1080,
+                        "frame_rate": {
+                            "raw_avg": "25/1",
+                            "raw_frame": "25/1",
+                            "variable": False,
+                        },
+                    },
+                }
+            ]
+        }
+        app._on_metadata_done(metadata)
+        profile = load_project_video_profile(project["project_id"])
+        catalog = load_source_video_profiles(project["project_id"])
+        assert profile["confirmation_status"] == "NOT_CONFIRMED"
+        assert catalog["entries"][0]["source_frame_rate"] == "25/1"
+
+    def test_scanning_without_active_project_creates_nothing(self, tmp_path, monkeypatch) -> None:
+        from scripts.local_media_agent import cid_gui
+        from scripts.local_media_agent.local_project import list_projects
+
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+        app = object.__new__(cid_gui.ProducerApp)
+        app.active_project = None
+        app.analysis_project_id = None
+        app._on_metadata_done({"results": []})
+        assert list_projects() == []
+
+    def test_metadata_stays_bound_to_project_active_when_analysis_started(
+        self, tmp_path, monkeypatch
+    ) -> None:
+        from scripts.local_media_agent import cid_gui
+        from scripts.local_media_agent.local_project import create_project
+        from scripts.local_media_agent.source_video_profile import (
+            load_source_video_profiles,
+            SourceVideoProfileError,
+        )
+
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+        first = create_project("Primero")
+        second = create_project("Segundo")
+        app = object.__new__(cid_gui.ProducerApp)
+        app.active_project = second
+        app.analysis_project_id = first["project_id"]
+        app._refresh_project_ui = lambda: None
+        app._on_metadata_done(
+            {
+                "results": [
+                    {
+                        "category": "video",
+                        "relative_path": "clip.mov",
+                        "duration_raw": "1.000",
+                        "duration_origin": "format",
+                        "timecode": "00:00:00:00",
+                        "video": {
+                            "width": 1920,
+                            "height": 1080,
+                            "frame_rate": {
+                                "raw_avg": "25/1",
+                                "raw_frame": "25/1",
+                                "variable": False,
+                            },
+                        },
+                    }
+                ]
+            }
+        )
+        assert load_source_video_profiles(first["project_id"])["entries"]
+        with pytest.raises(SourceVideoProfileError):
+            load_source_video_profiles(second["project_id"])
+
+    def test_source_and_project_labels_are_distinct(self) -> None:
+        source = Path(__file__).parents[2].joinpath(
+            "scripts/local_media_agent/cid_gui.py"
+        ).read_text(encoding="utf-8")
+        assert "Material detectado por CID" in source
+        assert "Configuración del proyecto" in source
+        assert "frame_duration" not in source
+
+
 class TestTranscriptionSegmentCallback:
     def test_segment_callback_receives_source_mapped_segments(self) -> None:
         from scripts.editorial_intelligence.transcription.transcription import (

@@ -10,6 +10,7 @@ import json
 import os
 import subprocess
 import time
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -213,11 +214,14 @@ def _parse_ffprobe(data: dict[str, Any]) -> dict[str, Any]:
 
     video_streams = [s for s in streams if s.get("codec_type") == "video"]
     audio_streams = [s for s in streams if s.get("codec_type") == "audio"]
+    duration_raw, duration_origin = _select_duration(fmt, video_streams)
 
     result: dict[str, Any] = {
         "format_name": fmt.get("format_name"),
         "format_long_name": fmt.get("format_long_name"),
         "duration_seconds": _safe_float(fmt.get("duration")),
+        "duration_raw": duration_raw,
+        "duration_origin": duration_origin,
         "creation_time": _tag_value(fmt, "creation_time"),
         "timecode": _find_timecode(streams, fmt),
     }
@@ -248,6 +252,25 @@ def _parse_ffprobe(data: dict[str, Any]) -> dict[str, Any]:
         }
 
     return result
+
+
+def _select_duration(
+    fmt: dict[str, Any], video_streams: list[dict[str, Any]]
+) -> tuple[str | None, str | None]:
+    candidates = [("format", fmt.get("duration"))]
+    if video_streams:
+        candidates.append(("video_stream", video_streams[0].get("duration")))
+
+    for origin, raw in candidates:
+        if not isinstance(raw, str) or not raw:
+            continue
+        try:
+            duration = Decimal(str(raw))
+        except (InvalidOperation, ValueError, TypeError):
+            continue
+        if duration.is_finite() and duration > 0:
+            return str(raw), origin
+    return None, None
 
 
 def _parse_frame_rate(avg: str | None, raw: str | None) -> dict[str, Any]:

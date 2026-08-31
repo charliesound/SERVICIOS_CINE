@@ -53,6 +53,29 @@ from scripts.local_media_agent.batch_transcription import (
 from scripts.local_media_agent.cid_local_media_agent_operator import (
     _resolve_packaged_model,
 )
+from scripts.local_media_agent.local_project import (
+    LocalProjectError,
+    create_project,
+    list_projects,
+    load_active_project,
+    select_project,
+)
+from scripts.local_media_agent.project_video_profile import (
+    CID_RECOMMENDED_CONFIRMED,
+    USER_CONFIRMED,
+    ProjectVideoProfileError,
+    analyze_source_video_metadata,
+    confirm_project_video_profile,
+    load_project_video_profile,
+    postpone_project_video_profile,
+    refresh_project_video_analysis,
+    update_project_video_configuration,
+)
+from scripts.local_media_agent.source_video_profile import (
+    SourceVideoProfileError,
+    build_source_video_profiles,
+    save_source_video_profiles,
+)
 
 
 def _format_duration(seconds: float | None) -> str:
@@ -223,6 +246,34 @@ def _confirm_dialog(
     return result[0]
 
 
+def _text_input_dialog(parent: tk.Misc, title: str, prompt: str) -> str | None:
+    """Request one short value without introducing a second GUI toolkit."""
+    dialog = tk.Toplevel(parent)
+    dialog.title(title)
+    dialog.transient(parent)
+    dialog.grab_set()
+    frame = ttk.Frame(dialog, padding=18)
+    frame.pack(fill="both", expand=True)
+    ttk.Label(frame, text=prompt).pack(anchor="w", pady=(0, 8))
+    entry = ttk.Entry(frame, width=42)
+    entry.pack(fill="x", pady=(0, 12))
+    result: list[str | None] = [None]
+
+    def accept() -> None:
+        value = entry.get().strip()
+        if value:
+            result[0] = value
+            dialog.destroy()
+
+    buttons = ttk.Frame(frame)
+    buttons.pack(anchor="e")
+    ttk.Button(buttons, text="Cancelar", command=dialog.destroy).pack(side="left")
+    ttk.Button(buttons, text="Aceptar", command=accept).pack(side="left", padx=(8, 0))
+    entry.focus_set()
+    parent.wait_window(dialog)
+    return result[0]
+
+
 class ProducerApp:
     """Main producer window with task-oriented views."""
 
@@ -248,6 +299,12 @@ class ProducerApp:
         self._run_state: dict[str, Any] = {}
         self._last_srt_path: str | None = None
         self._last_davinci_path: str | None = None
+        self.active_media_root: str | None = None
+        self.analysis_project_id: str | None = None
+        try:
+            self.active_project: dict[str, Any] | None = load_active_project()
+        except LocalProjectError:
+            self.active_project = None
 
         self.root.title(f"{APP_TITLE} {APP_VERSION}")
         self.root.geometry("780x620")
@@ -320,6 +377,32 @@ class ProducerApp:
 
         self.analyze_hint = ttk.Label(body, text="", style="Sub.TLabel")
         self.analyze_hint.pack(pady=(8, 0))
+
+        ttk.Separator(body, orient="horizontal").pack(fill="x", pady=(24, 14))
+        ttk.Label(body, text="PROYECTOS", style="CountName.TLabel").pack(anchor="w")
+        project_actions = ttk.Frame(body)
+        project_actions.pack(fill="x", pady=(8, 6))
+        ttk.Button(project_actions, text="Crear proyecto", command=self._create_project).pack(side="left")
+        ttk.Button(project_actions, text="Seleccionar proyecto", command=self._select_project).pack(side="left", padx=(8, 0))
+        self.active_project_label = ttk.Label(body, text="", style="Sub.TLabel")
+        self.active_project_label.pack(anchor="w")
+
+        ttk.Label(
+            body,
+            text="CONFIGURACIÓN DE VÍDEO DEL PROYECTO",
+            style="CountName.TLabel",
+        ).pack(anchor="w", pady=(16, 4))
+        self.video_profile_label = ttk.Label(
+            body, text="Material detectado por CID: pendiente\nConfiguración del proyecto: pendiente",
+            style="Info.TLabel", justify="left", wraplength=560,
+        )
+        self.video_profile_label.pack(anchor="w")
+        profile_actions = ttk.Frame(body)
+        profile_actions.pack(fill="x", pady=(8, 0))
+        ttk.Button(profile_actions, text="Confirmar recomendación de CID", command=self._confirm_recommendation).pack(side="left")
+        ttk.Button(profile_actions, text="Elegir otra configuración compatible", command=self._choose_video_configuration).pack(side="left", padx=(8, 0))
+        ttk.Button(profile_actions, text="Posponer", command=self._postpone_video_configuration).pack(side="left", padx=(8, 0))
+        self._refresh_project_ui()
 
     def _build_material(self) -> None:
         frame = self._new_frame("material")
@@ -563,6 +646,7 @@ class ProducerApp:
         if not folder:
             return
         self.folder = folder
+        self.active_media_root = folder
         self.folder_label.config(text=folder)
         self.analyze_btn.config(text="Analizar material")
         self.analyze_hint.config(text="")
@@ -570,6 +654,152 @@ class ProducerApp:
 
     def _refresh_results_root_label(self) -> None:
         self.results_root_label.config(text=self.results_root or "")
+
+    def _create_project(self) -> None:
+        name = _text_input_dialog(self.root, "Crear proyecto", "Nombre del proyecto")
+        if not name:
+            return
+        try:
+            project = create_project(name)
+            messagebox.showinfo(
+                APP_TITLE,
+                f"Proyecto creado: {project['project_name']}\nSelecciónalo para activarlo.",
+                parent=self.root,
+            )
+        except LocalProjectError as exc:
+            messagebox.showerror(APP_TITLE, exc.code, parent=self.root)
+
+    def _select_project(self) -> None:
+        try:
+            projects = list_projects()
+        except LocalProjectError as exc:
+            messagebox.showerror(APP_TITLE, exc.code, parent=self.root)
+            return
+        if not projects:
+            messagebox.showinfo(APP_TITLE, "No hay proyectos. Crea uno para continuar.", parent=self.root)
+            return
+        labels = tuple(
+            f"{project['project_name']} [{project['project_id']}]" for project in projects
+        )
+        choice = _confirm_dialog(self.root, "Seleccionar proyecto", "Elige el proyecto activo:", labels)
+        if choice is None:
+            return
+        project = next(
+            project
+            for project in projects
+            if f"{project['project_name']} [{project['project_id']}]" == choice
+        )
+        select_project(project["project_id"])
+        self.active_project = project
+        self.active_media_root = None
+        self._refresh_project_ui()
+
+    def _refresh_project_ui(self) -> None:
+        project = self.active_project
+        self.active_project_label.config(
+            text=(f"Proyecto activo: {project['project_name']}" if project else "Proyecto activo: ninguno")
+        )
+        if not project:
+            return
+        try:
+            profile = load_project_video_profile(project["project_id"])
+        except ProjectVideoProfileError:
+            self.video_profile_label.config(
+                text="Material detectado por CID: pendiente\nConfiguración del proyecto: pendiente"
+            )
+            return
+        summary = profile["source_analysis_summary"]
+        rates = summary.get("frame_rate_distribution") or {}
+        resolutions = summary.get("resolution_distribution") or {}
+        recommendation = profile.get("recommendation") or {}
+        warning = "\nAviso: se ha detectado material VFR." if summary.get("vfr_clip_count") else ""
+        rec = recommendation.get("timeline_frame_rate")
+        rec_text = (
+            f"{rec['numerator']}/{rec['denominator']} fps"
+            if recommendation.get("available") and rec else "sin recomendación segura"
+        )
+        configured = profile["timeline_frame_rate"]
+        config_text = (
+            f"{configured['numerator']}/{configured['denominator']} fps · {profile['confirmation_status']}"
+            if configured.get("numerator") is not None else profile["confirmation_status"]
+        )
+        self.video_profile_label.config(
+            text=(
+                f"Material detectado por CID: FPS {rates or 'desconocido'}; resoluciones {resolutions or 'desconocidas'}"
+                f"{warning}\nRecomendación CID: {rec_text}\nConfiguración del proyecto: {config_text}"
+            )
+        )
+
+    def _confirm_recommendation(self) -> None:
+        if not self.active_project:
+            messagebox.showinfo(APP_TITLE, "Crea o selecciona un proyecto para continuar.", parent=self.root)
+            return
+        project_id = self.active_project["project_id"]
+        try:
+            profile = load_project_video_profile(project_id)
+            recommendation = profile["recommendation"]
+            rate = recommendation.get("timeline_frame_rate")
+            resolution = recommendation.get("resolution")
+            if not recommendation.get("available") or rate is None or resolution is None:
+                raise ProjectVideoProfileError("CID_PROJECT_VIDEO_PROFILE_INVALID")
+            update_project_video_configuration(
+                project_id,
+                f"{rate['numerator']}/{rate['denominator']}",
+                resolution,
+            )
+            confirm_project_video_profile(
+                project_id,
+                decision_authority=CID_RECOMMENDED_CONFIRMED,
+                confirmed_by_role="PRODUCER",
+            )
+            self._refresh_project_ui()
+        except ProjectVideoProfileError:
+            messagebox.showinfo(APP_TITLE, "CID no dispone de una recomendación completa y segura.", parent=self.root)
+
+    def _choose_video_configuration(self) -> None:
+        if not self.active_project:
+            messagebox.showinfo(APP_TITLE, "Crea o selecciona un proyecto para continuar.", parent=self.root)
+            return
+        rate = _text_input_dialog(
+            self.root,
+            "Configuración del proyecto",
+            "FPS exactos (24000/1001, 24/1, 25/1, 30000/1001, 30/1, 50/1, 60000/1001 o 60/1)",
+        )
+        if not rate:
+            return
+        resolution = _text_input_dialog(self.root, "Configuración del proyecto", "Resolución (por ejemplo 1920x1080)")
+        if not resolution:
+            return
+        try:
+            width, height = (int(value) for value in resolution.lower().split("x", 1))
+            project_id = self.active_project["project_id"]
+            update_project_video_configuration(project_id, rate, (width, height))
+            choice = _confirm_dialog(
+                self.root,
+                "Confirmar configuración",
+                f"Configuración del proyecto: {rate} fps, {width}x{height}.\n¿Confirmar?",
+                ("Confirmar", "Posponer"),
+            )
+            if choice != "Confirmar":
+                self._refresh_project_ui()
+                return
+            confirm_project_video_profile(
+                project_id,
+                decision_authority=USER_CONFIRMED,
+                confirmed_by_role="PRODUCER",
+            )
+            self._refresh_project_ui()
+        except (ProjectVideoProfileError, ValueError):
+            messagebox.showerror(APP_TITLE, "Configuración de vídeo no válida.", parent=self.root)
+
+    def _postpone_video_configuration(self) -> None:
+        if not self.active_project:
+            return
+        try:
+            postpone_project_video_profile(self.active_project["project_id"])
+            self._refresh_project_ui()
+        except ProjectVideoProfileError:
+            pass
 
     def _choose_results_location(self) -> None:
         folder = filedialog.askdirectory(
@@ -673,6 +903,9 @@ class ProducerApp:
             return
         self.analyze_btn.config(state="disabled")
         self.analyze_hint.config(text="Analizando material…")
+        self.analysis_project_id = (
+            self.active_project["project_id"] if self.active_project else None
+        )
         self.cancel_event.clear()
         self.worker = threading.Thread(target=self._analysis_worker, daemon=True)
         self.worker.start()
@@ -725,6 +958,20 @@ class ProducerApp:
         self.analyze_hint.config(text="")
         self._show("material")
         self._update_selection()
+
+    def _on_metadata_done(self, metadata: dict[str, Any]) -> None:
+        self.metadata = metadata
+        project_id = self.analysis_project_id
+        if not project_id:
+            return
+        try:
+            catalog = build_source_video_profiles(project_id, metadata)
+            save_source_video_profiles(catalog)
+            summary = analyze_source_video_metadata(metadata)
+            refresh_project_video_analysis(project_id, summary)
+            self._refresh_project_ui()
+        except (SourceVideoProfileError, ProjectVideoProfileError, LocalProjectError) as exc:
+            _write_log("project_video_profile_error", str(exc))
 
     def _on_clusters_done(self, clusters: list[Any]) -> None:
         self.clusters = clusters or []
@@ -1141,7 +1388,7 @@ class ProducerApp:
                 if kind == "scan_done":
                     self._on_scan_done(item[1])
                 elif kind == "metadata_done":
-                    self.metadata = item[1]
+                    self._on_metadata_done(item[1])
                 elif kind == "candidates_done":
                     self._on_candidates_done(item[1])
                 elif kind == "clusters_done":

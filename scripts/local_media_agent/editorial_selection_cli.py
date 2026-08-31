@@ -25,6 +25,7 @@ from scripts.local_media_agent.editorial_selection_davinci import (
     ERR_NOT_READY,
     EditorialDavinciError,
     prepare_davinci_reference_for_selection,
+    prepare_project_davinci_reference,
 )
 from scripts.local_media_agent.editorial_collaboration_surface import (
     FORMAT_HTML,
@@ -47,6 +48,10 @@ from scripts.local_media_agent.editorial_collaboration_server import (
     DEFAULT_PORT,
     BoardError,
     create_server,
+)
+from scripts.local_media_agent.local_project import (
+    LocalProjectError,
+    active_project_selection_store,
 )
 
 EXIT_SUCCESS = 0
@@ -100,10 +105,20 @@ def _build_parser() -> argparse.ArgumentParser:
     davinci.add_argument("--frame-duration", required=True)
     davinci.add_argument("--source-timecode-start", required=True)
     davinci.add_argument("--source-duration", required=True)
+    davinci.add_argument("--source-frame-rate")
     davinci.add_argument("--output", required=True)
 
+    project_davinci = sub.add_parser(
+        "prepare-project-davinci",
+        help="Prepare DaVinci from the active project's confirmed video configuration.",
+    )
+    project_davinci.add_argument("--selection", required=True)
+    project_davinci.add_argument("--evidence-path", required=True)
+    project_davinci.add_argument("--media-root", required=True)
+    project_davinci.add_argument("--output", required=True)
+
     board = sub.add_parser("board", help="Render the collaboration board for a role.")
-    board.add_argument("--store", required=True)
+    board.add_argument("--store")
     board.add_argument("--role", required=True)
     board.add_argument("--format", choices=FORMATS, default=FORMAT_TERMINAL)
     board.add_argument("--output")
@@ -112,7 +127,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "serve",
         help="Serve the local interactive operator board (loopback only).",
     )
-    serve.add_argument("--store", required=True)
+    serve.add_argument("--store")
     serve.add_argument("--role", required=True)
     serve.add_argument("--port", type=int, default=DEFAULT_PORT)
 
@@ -215,6 +230,7 @@ def _run_prepare_davinci(args, out, err) -> int:
             frame_duration=args.frame_duration,
             source_timecode_start=args.source_timecode_start,
             source_duration=args.source_duration,
+            source_frame_rate=args.source_frame_rate,
             output_path=args.output,
         )
     except EditorialDavinciError as exc:
@@ -227,6 +243,29 @@ def _run_prepare_davinci(args, out, err) -> int:
         err.write(CLI_ARGUMENTS_REJECTED + "\n")
         return EXIT_ARGUMENTS_REJECTED
 
+    _render_davinci_success(result, out)
+    return EXIT_SUCCESS
+
+
+def _run_prepare_project_davinci(args, out, err) -> int:
+    try:
+        result = prepare_project_davinci_reference(
+            selection_id=args.selection,
+            evidence_path=args.evidence_path,
+            active_media_root=args.media_root,
+            output_path=args.output,
+        )
+    except EditorialDavinciError as exc:
+        err.write(str(exc) + "\n")
+        return EXIT_ARGUMENTS_REJECTED
+    except (SelectionError, OSError, ValueError, TypeError):
+        err.write(CLI_ARGUMENTS_REJECTED + "\n")
+        return EXIT_ARGUMENTS_REJECTED
+    _render_davinci_success(result, out)
+    return EXIT_SUCCESS
+
+
+def _render_davinci_success(result, out) -> None:
     source = human_range(
         result.get("source_in_seconds"), result.get("source_out_seconds")
     )
@@ -243,7 +282,6 @@ def _run_prepare_davinci(args, out, err) -> int:
     out.write("Next editor action:\n")
     out.write("Import into DaVinci Resolve.\n")
     out.write("When actual editing begins, transition selection to IN_EDIT.\n")
-    return EXIT_SUCCESS
 
 
 def _run_board(args, out, err) -> int:
@@ -251,7 +289,11 @@ def _run_board(args, out, err) -> int:
         err.write(CLI_ARGUMENTS_REJECTED + "\n")
         return EXIT_ARGUMENTS_REJECTED
     try:
-        model = build_board_model(args.store, args.role)
+        store, project_name = _resolve_board_store(args.store)
+        model = build_board_model(store, args.role, project_name=project_name)
+    except LocalProjectError as exc:
+        err.write(exc.code + "\n")
+        return EXIT_ARGUMENTS_REJECTED
     except SurfaceError as exc:
         err.write(f"CID_EDITORIAL_BOARD_REJECTED:{exc}\n")
         return EXIT_ARGUMENTS_REJECTED
@@ -277,7 +319,17 @@ def _run_board(args, out, err) -> int:
 
 def _run_serve(args, out, err) -> int:
     try:
-        server = create_server(args.store, args.role, host="127.0.0.1", port=args.port)
+        store, project_name = _resolve_board_store(args.store)
+        server = create_server(
+            store,
+            args.role,
+            host="127.0.0.1",
+            port=args.port,
+            project_name=project_name,
+        )
+    except LocalProjectError as exc:
+        err.write(exc.code + "\n")
+        return EXIT_ARGUMENTS_REJECTED
     except (BoardError, SelectionError, ValueError, TypeError, OSError):
         err.write(CLI_ARGUMENTS_REJECTED + "\n")
         return EXIT_ARGUMENTS_REJECTED
@@ -295,6 +347,13 @@ def _run_serve(args, out, err) -> int:
     except KeyboardInterrupt:
         server.server_close()
     return EXIT_SUCCESS
+
+
+def _resolve_board_store(store: str | None) -> tuple[str, str | None]:
+    if store is not None:
+        return str(store), None
+    project, project_store = active_project_selection_store()
+    return str(project_store), project["project_name"]
 
 
 def _run_launch(args, out, err) -> int:
@@ -342,6 +401,8 @@ def run_cli(
             return _run_transition(args, out, err)
         if args.command == "prepare-davinci":
             return _run_prepare_davinci(args, out, err)
+        if args.command == "prepare-project-davinci":
+            return _run_prepare_project_davinci(args, out, err)
         if args.command == "board":
             return _run_board(args, out, err)
         if args.command == "serve":

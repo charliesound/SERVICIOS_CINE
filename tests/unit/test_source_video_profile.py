@@ -5,6 +5,9 @@ from pathlib import Path
 import pytest
 
 from scripts.local_media_agent.local_project import create_project
+from scripts.local_media_agent.sony_sidecar_parser import (
+    SOURCE_COLOR_PROFILE_UNAVAILABLE,
+)
 from scripts.local_media_agent.source_video_profile import (
     CID_ACTIVE_MEDIA_ROOT_REQUIRED,
     CID_SOURCE_MEDIA_PATH_INVALID,
@@ -139,5 +142,55 @@ def test_invalid_sar_dar_or_rotation_catalog_is_rejected(tmp_path: Path) -> None
     create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
     catalog = build_source_video_profiles(PROJECT_ID, [item("ok.mov", avg="25/1", raw="25/1")])
     catalog["entries"][0]["source_sample_aspect_ratio"] = {"numerator": 0, "denominator": 1}
+    with pytest.raises(SourceVideoProfileError, match=CID_SOURCE_VIDEO_CATALOG_INVALID):
+        save_source_video_profiles(catalog, local_appdata=tmp_path)
+
+
+COLOR_PROFILE_CONFIRMED = {
+    "capture_gamma_raw": "s-log3-cine",
+    "capture_color_primaries_raw": "s-gamut3-cine",
+    "coding_equations_raw": "rec709",
+    "capture_gamma_display": "S-Log3",
+    "capture_gamut_display": "S-Gamut3.Cine",
+    "monitoring_lut_status": "NOT_RECORDED",
+    "monitoring_lut_identity": None,
+    "metadata_source": "SONY_XML_SIDECAR",
+    "metadata_confidence": "CONFIRMED",
+    "sidecar_path": "CARD/A7IV_SL31404M01.XML",
+}
+
+
+def test_source_color_profile_persisted_roundtrip(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    media = item("CARD/A7IV_SL31404.MP4")
+    media["source_color_profile"] = dict(COLOR_PROFILE_CONFIRMED)
+    catalog = build_source_video_profiles(PROJECT_ID, [media])
+    entry = catalog["entries"][0]
+    assert entry["source_color_profile"] == COLOR_PROFILE_CONFIRMED
+    save_source_video_profiles(catalog, local_appdata=tmp_path)
+    assert load_source_video_profiles(PROJECT_ID, local_appdata=tmp_path) == catalog
+
+
+def test_media_without_sidecar_gets_stable_unavailable_color_profile(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    catalog = build_source_video_profiles(PROJECT_ID, [item("roll/clip.mov")])
+    assert catalog["entries"][0]["source_color_profile"] == SOURCE_COLOR_PROFILE_UNAVAILABLE
+    save_source_video_profiles(catalog, local_appdata=tmp_path)
+    assert load_source_video_profiles(PROJECT_ID, local_appdata=tmp_path) == catalog
+
+
+def test_legacy_catalog_without_color_profile_still_validates(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    catalog = build_source_video_profiles(PROJECT_ID, [item("roll/legacy.mov")])
+    for entry in catalog["entries"]:
+        del entry["source_color_profile"]
+    save_source_video_profiles(catalog, local_appdata=tmp_path)
+    assert load_source_video_profiles(PROJECT_ID, local_appdata=tmp_path) == catalog
+
+
+def test_invalid_source_color_profile_catalog_is_rejected(tmp_path: Path) -> None:
+    create_project("P", local_appdata=tmp_path, project_id=PROJECT_ID)
+    catalog = build_source_video_profiles(PROJECT_ID, [item("ok.mov")])
+    catalog["entries"][0]["source_color_profile"] = {"capture_gamma_raw": "s-log3-cine"}
     with pytest.raises(SourceVideoProfileError, match=CID_SOURCE_VIDEO_CATALOG_INVALID):
         save_source_video_profiles(catalog, local_appdata=tmp_path)

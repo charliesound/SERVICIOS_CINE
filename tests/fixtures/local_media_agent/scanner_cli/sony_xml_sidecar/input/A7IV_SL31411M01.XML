@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SonyXmlSidecar>
+  <ClipName>A7IV_SL31411</ClipName>
+  <ConfigItem Name="CaptureGammaEquation">
+    <Value>s-log3-cine</Value>
+  </ConfigItem>
+  <ConfigItem Name="CaptureColorPrimaries">
+    <Value>s-gamut3-cine</Value>
+  </ConfigItem>
+</SonyXmlSidecar>

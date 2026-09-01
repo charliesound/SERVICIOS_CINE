@@ -15,6 +15,11 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+from scripts.local_media_agent.sony_sidecar_parser import (
+    build_source_color_profile,
+    resolve_sony_sidecar,
+)
+
 
 SCHEMA_VERSION = "cid.local_media_agent.ffprobe_metadata_extraction.v1"
 
@@ -69,20 +74,27 @@ def extract_metadata(
     start = time.monotonic()
 
     for item in media_files:
+        source_color_profile = _resolve_sidecar_color_profile(Path(input_root), item)
         try:
             meta = _probe_one(tool, Path(item["abs_path"]))
-            results.append({
+            entry: dict[str, Any] = {
                 "relative_path": item["relative_path"],
                 "category": item["category"],
                 "file_size_bytes": item["file_size"],
                 **meta,
-            })
+            }
+            if source_color_profile is not None:
+                entry["source_color_profile"] = source_color_profile
+            results.append(entry)
         except Exception as exc:
-            errors.append({
+            error: dict[str, Any] = {
                 "relative_path": item["relative_path"],
                 "category": item["category"],
                 "error": str(exc)[:200],
-            })
+            }
+            if source_color_profile is not None:
+                error["source_color_profile"] = source_color_profile
+            errors.append(error)
 
     elapsed = time.monotonic() - start
 
@@ -98,6 +110,28 @@ def extract_metadata(
         "results": results,
         "errors": errors,
     }
+
+
+def _resolve_sidecar_color_profile(
+    input_root: Path, item: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Resolve and parse the sibling Sony M01.XML for a video (.mp4) item.
+
+    Returns a parsed SOURCE_COLOR_PROFILE dict, or None when the item is not
+    a Sony-video candidate (non-video, non-.mp4, or no sibling sidecar).
+    XML files are never passed to ffprobe and never counted as media.
+    """
+    if item.get("category") != "video":
+        return None
+    sidecar = resolve_sony_sidecar(Path(item["abs_path"]))
+    if sidecar is None:
+        return None
+    relative_sidecar_path: str | None = None
+    try:
+        relative_sidecar_path = sidecar.relative_to(input_root).as_posix()
+    except ValueError:
+        relative_sidecar_path = sidecar.name
+    return build_source_color_profile(sidecar, relative_sidecar_path=relative_sidecar_path)
 
 
 def _collect_media_files(

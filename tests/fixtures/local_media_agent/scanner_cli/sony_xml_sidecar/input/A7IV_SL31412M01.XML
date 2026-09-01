@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SonyXmlSidecar>
+  <ClipName>A7IV_SL31412</ClipName>
+  <ConfigItem Name="CaptureGammaEquation">
+    <Value>s-log3-cine</Value>
+  </ConfigItem>
+  <ConfigItem Name="CaptureColorPrimaries">
+    <Value>s-gamut3-cine</Value>
+  </ConfigItem>
+  <ConfigItem Name="CodingEquations">
+    <Value>rec709</Value>
+  </ConfigItem>
+  <ConfigItem Name="Look">
+    <Value>S-Cinetone Monitor [synthetic]</Value>
+  </ConfigItem>
+</SonyXmlSidecar>

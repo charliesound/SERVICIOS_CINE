@@ -16,6 +16,17 @@ from scripts.local_media_agent.local_project import (
     validate_project_id,
 )
 from scripts.local_media_agent.project_video_profile import SUPPORTED_FRAME_RATES
+from scripts.local_media_agent.sony_sidecar_parser import (
+    CONFIDENCE_CONFIRMED,
+    CONFIDENCE_PARTIAL,
+    CONFIDENCE_UNAVAILABLE,
+    MONITORING_LUT_NOT_RECORDED,
+    MONITORING_LUT_RECORDED,
+    SOURCE_COLOR_PROFILE_FIELDS,
+    SOURCE_COLOR_PROFILE_UNAVAILABLE,
+    SOURCE_COLOR_PROFILE_SOURCE,
+    SOURCE_COLOR_PROFILE_SOURCE_UNKNOWN,
+)
 
 CATALOG_FORMAT = "CID_SOURCE_VIDEO_PROFILES"
 CATALOG_VERSION = 1
@@ -194,6 +205,7 @@ def _project_entry(item: dict[str, Any], reference: str) -> dict[str, Any]:
         "source_timecode_start": item.get("timecode") if isinstance(item.get("timecode"), str) else None,
         "source_duration_raw": duration_raw,
         "source_duration_origin": origin if origin in ("format", "video_stream") else None,
+        "source_color_profile": _normalize_color_profile(item.get("source_color_profile")),
     }
 
 
@@ -211,11 +223,17 @@ def _validate_catalog(catalog: object, project_id: object) -> None:
         "source_media_ref", "source_filename", "source_frame_rate", "variable_frame_rate",
         "rate_conflict", "source_width", "source_height", "source_sample_aspect_ratio",
         "source_display_aspect_ratio", "source_rotation", "source_timecode_start",
-        "source_duration_raw", "source_duration_origin",
+        "source_duration_raw", "source_duration_origin", "source_color_profile",
     }
+    expected_legacy = expected - {"source_color_profile"}
     seen: set[str] = set()
     for entry in catalog["entries"]:
-        if not isinstance(entry, dict) or set(entry) != expected:
+        entry_keys = set(entry) if isinstance(entry, dict) else set()
+        if entry_keys not in (expected, expected_legacy):
+            raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+        if "source_color_profile" in entry_keys and not _valid_color_profile(
+            entry.get("source_color_profile")
+        ):
             raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
         reference = normalize_source_media_ref(entry.get("source_media_ref"))
         if reference in seen or entry.get("source_filename") != PurePosixPath(reference).name:
@@ -311,3 +329,51 @@ def _valid_rotation(value: object) -> int | None:
     if not isinstance(value, int) or isinstance(value, bool) or value < 0 or value > 359:
         return None
     return value
+
+
+def _normalize_color_profile(value: object) -> dict[str, Any]:
+    """Return a color profile dict, or the stable UNAVAILABLE representation.
+
+    Only a structurally valid profile is preserved; anything else defaults
+    to the stable UNAVAILABLE/UNKNOWN representation so media without a Sony
+    sidecar is never fabricated.
+    """
+    if not isinstance(value, dict):
+        return dict(SOURCE_COLOR_PROFILE_UNAVAILABLE)
+    if set(value) != SOURCE_COLOR_PROFILE_FIELDS:
+        return dict(SOURCE_COLOR_PROFILE_UNAVAILABLE)
+    return dict(value)
+
+
+def _valid_color_profile(value: object) -> bool:
+    if not isinstance(value, dict) or set(value) != SOURCE_COLOR_PROFILE_FIELDS:
+        return False
+    confidence = value.get("metadata_confidence")
+    if confidence not in (CONFIDENCE_CONFIRMED, CONFIDENCE_PARTIAL, CONFIDENCE_UNAVAILABLE):
+        return False
+    lut_status = value.get("monitoring_lut_status")
+    if lut_status not in (MONITORING_LUT_NOT_RECORDED, MONITORING_LUT_RECORDED):
+        return False
+    if lut_status == MONITORING_LUT_NOT_RECORDED and value.get("monitoring_lut_identity") is not None:
+        return False
+    for key in (
+        "capture_gamma_raw",
+        "capture_color_primaries_raw",
+        "coding_equations_raw",
+        "capture_gamma_display",
+        "capture_gamut_display",
+    ):
+        if value.get(key) is not None and not isinstance(value.get(key), str):
+            return False
+    meta_source = value.get("metadata_source")
+    if meta_source not in (SOURCE_COLOR_PROFILE_SOURCE, SOURCE_COLOR_PROFILE_SOURCE_UNKNOWN):
+        return False
+    identity = value.get("monitoring_lut_identity")
+    if identity is not None and not isinstance(identity, str):
+        return False
+    sidecar_path = value.get("sidecar_path")
+    if sidecar_path is not None and (
+        not isinstance(sidecar_path, str) or sidecar_path.startswith(("/", "\\"))
+    ):
+        return False
+    return True

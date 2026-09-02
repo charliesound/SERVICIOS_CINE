@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<SonyXmlSidecar>
+<NonRealTimeMeta xmlns="urn:schemas-professionalDisc:nonRealTimeMeta:ver.2.20">
   <ClipName>A7IV_SL31409</ClipName>
-  <ConfigItem Name="CaptureGammaEquation">
-    <Value>s-log3-cine</Value>
-</SonyXmlSidecar>
+  <Item name="CaptureGammaEquation" value="s-log3-cine"/>
+</NonRealTimeMeta>

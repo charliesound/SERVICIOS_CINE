@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<SonyXmlSidecar>
+<NonRealTimeMeta xmlns="urn:schemas-professionalDisc:nonRealTimeMeta:ver.2.20">
   <ClipName>A7IV_SL31408</ClipName>
-  <ConfigItem Name="FirmwareVersion">
-    <Value>1.00</Value>
-  </ConfigItem>
-</SonyXmlSidecar>
+  <Item name="FirmwareVersion" value="1.00"/>
+</NonRealTimeMeta>

@@ -186,21 +186,54 @@ def build_source_color_profile(
 
 
 def _collect_named_items(root: ET.Element) -> dict[str, str]:
-    """Return the first text value for every Item with an explicit ``name``.
+    """Return name -> value for every ``Item`` element with an explicit name.
 
-    Only explicit Item/@name values are collected. The value is the first
-    non-empty text found under the item element (deterministic order over
-    the tree in document order); absent values stay absent.
+    Only elements whose local-name is exactly ``Item`` are considered, so
+    other elements that happen to carry a ``name`` attribute can never
+    contaminate metadata. The value is taken in precedence:
+
+    * explicit ``value`` attribute (real Sony structure), then
+    * ``Value`` attribute (legacy), then
+    * the first non-empty text node under the item (legacy text-node).
+
+    Raw values are preserved exactly: no case folding, no trimming of the
+    returned string, no substitution, no canonicalization. Display
+    normalization stays a separate, later step.
     """
     result: dict[str, str] = {}
     for _element in root.iter():
+        if _local_name(_element.tag) != "Item":
+            continue
         name = _element.attrib.get("name") or _element.attrib.get("Name")
         if not isinstance(name, str) or not name.strip():
             continue
-        value = _first_text(_element)
+        value = _first_item_value(_element)
         if value is not None:
             result[name] = value
     return result
+
+
+def _local_name(tag: Any) -> str:
+    """Return the XML local-name of an ElementTree tag, namespace-safe."""
+    if not isinstance(tag, str):
+        return ""
+    if tag.startswith("{"):
+        return tag.split("}", 1)[1]
+    return tag
+
+
+def _first_item_value(element: ET.Element) -> str | None:
+    """Return an Item value: ``value``/``Value`` attribute then text fallback.
+
+    The attribute is used only when non-empty; the raw attribute string is
+    returned untouched. When no attribute carries the value, fall back to the
+    first non-empty text node for legacy text-node compatibility.
+    """
+    for attr in ("value", "Value"):
+        raw = element.attrib.get(attr)
+        if isinstance(raw, str) and raw.strip():
+            return raw
+    return _first_text(element)
 
 
 def _first_text(element: ET.Element) -> str | None:

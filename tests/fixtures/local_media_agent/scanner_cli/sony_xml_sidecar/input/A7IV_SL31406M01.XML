@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<SonyXmlSidecar>
+<NonRealTimeMeta xmlns="urn:schemas-professionalDisc:nonRealTimeMeta:ver.2.20">
   <ClipName>A7IV_SL31406</ClipName>
-  <ConfigItem Name="CaptureGammaEquation">
-    <Value>s-cinetone</Value>
-  </ConfigItem>
-  <ConfigItem Name="CaptureColorPrimaries">
-    <Value>rec709</Value>
-  </ConfigItem>
-  <ConfigItem Name="CodingEquations">
-    <Value>rec709</Value>
-  </ConfigItem>
-</SonyXmlSidecar>
+  <Item name="CaptureGammaEquation" value="s-cinetone"/>
+  <Item name="CaptureColorPrimaries" value="rec709"/>
+  <Item name="CodingEquations" value="rec709"/>
+</NonRealTimeMeta>

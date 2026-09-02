@@ -14,6 +14,7 @@ import sys
 import threading
 import time
 import traceback
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,43 @@ if str(REPO_ROOT) not in sys.path:
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
+_NO_PROJECT_CATALOG_ID = "PRJ-00000000-0000-4000-8000-000000000000"
+
+
+def _source_root_id_for(folder: str | None) -> str:
+    """Stable source-root identity derived from the resolved path.
+
+    Deliberately not the drive letter alone (forward-compatible with Slice D
+    multi-root/relink). Two analyses of the same folder share the same id.
+    """
+    resolved = str(Path(folder or "").resolve()).replace("\\", "/")
+    digest = hashlib.sha1(resolved.encode("utf-8")).hexdigest()[:16]
+    return f"ROOT-{digest}"
+
+
+_FFPROBE_SNAPSHOT_FIELDS = frozenset(
+    {
+        "format_name",
+        "format_long_name",
+        "duration_seconds",
+        "duration_raw",
+        "duration_origin",
+        "creation_time",
+        "timecode",
+        "video",
+        "audio",
+    }
+)
+
+
+def _ffprobe_snapshot(entry: dict[str, Any]) -> dict[str, Any]:
+    return {k: v for k, v in entry.items() if k in _FFPROBE_SNAPSHOT_FIELDS}
+
+
+def _media_kind_for(category: Any) -> str:
+    return category if category in ("video", "audio", "image") else "video"
+
+
 from scripts.local_media_agent.read_only_folder_scanner import scan_read_only_folder
 from scripts.local_media_agent.ffprobe_metadata_extraction import extract_metadata
 from scripts.local_media_agent.audio_source_intelligence import (
@@ -52,6 +90,25 @@ from scripts.local_media_agent.batch_transcription import (
 )
 from scripts.local_media_agent.cid_local_media_agent_operator import (
     _resolve_packaged_model,
+)
+from scripts.local_media_agent.catalog_compare import (
+    CLASSIFICATION_MODIFIED,
+    CLASSIFICATION_NEW,
+    compare_catalogs,
+)
+from scripts.local_media_agent.media_catalog import (
+    ANALYSIS_STATUS_OK,
+    ANALYSIS_STATUS_PENDING,
+    CATALOG_STATUS_PRESENT,
+    ERROR_CATEGORY_METADATA,
+    MediaCatalogError,
+    add_source_root,
+    catalog_path_for_project,
+    load_catalog,
+    media_item_key,
+    new_catalog,
+    save_catalog,
+    set_media_item,
 )
 from scripts.local_media_agent.local_project import (
     LocalProjectError,
@@ -317,6 +374,7 @@ class ProducerApp:
         self.cancel_event = threading.Event()
         self.worker: threading.Thread | None = None
         self.active = False
+        self.analysis_active = False
         self.close_after_done = False
 
         self.folder: str | None = None
@@ -671,7 +729,7 @@ class ProducerApp:
     # ------------------------------------------------------------ helpers
 
     def _pick_folder(self) -> None:
-        if self.active:
+        if self.active or self.analysis_active:
             return
         folder = filedialog.askdirectory(
             parent=self.root,
@@ -986,9 +1044,12 @@ class ProducerApp:
         self._start_transcription(selected, project_name=cluster.session_id, sync_manifest=manifest)
 
     def _start_analysis(self) -> None:
-        if not self.folder or self.active:
+        if not self.folder or self.active or self.analysis_active:
             return
-        self.analyze_btn.config(state="disabled")
+        self.analysis_active = True
+        self.analyze_btn.config(
+            state="normal", text="Cancelar análisis", command=self._cancel_analysis_click
+        )
         self.analyze_hint.config(text="Analizando material…")
         self.analysis_project_id = (
             self.active_project["project_id"] if self.active_project else None
@@ -997,24 +1058,227 @@ class ProducerApp:
         self.worker = threading.Thread(target=self._analysis_worker, daemon=True)
         self.worker.start()
 
+    def _cancel_analysis_click(self) -> None:
+        if not self.analysis_active:
+            return
+        self.cancel_event.set()
+        self.analyze_btn.config(state="disabled")
+        self.analyze_hint.config(text="Deteniendo análisis…")
+
     def _analysis_worker(self) -> None:
         folder = self.folder
+        project_id = self.analysis_project_id
+        source_root_id = _source_root_id_for(folder)
         try:
+            catalog = self._load_or_create_catalog(project_id, source_root_id, folder)
+
             scan = scan_read_only_folder(folder)
             self.ui_q.put(("scan_done", scan))
-            meta = extract_metadata(folder, scan)
+            if self.cancel_event.is_set():
+                self._finish_cancelled(catalog, project_id)
+                return
+
+            snapshot = self._build_snapshot(source_root_id, folder, scan)
+            comparison = compare_catalogs(catalog, snapshot)
+            new_and_modified = set(comparison["classification"][CLASSIFICATION_NEW])
+            new_and_modified |= set(comparison["classification"][CLASSIFICATION_MODIFIED])
+            only_paths: set[str] | None = new_and_modified or None
+            reuse_metadata = self._reuse_map_from_catalog(catalog, snapshot)
+
+            self.ui_q.put(("grouping_started", None))
+            meta = extract_metadata(
+                folder,
+                scan,
+                progress_callback=lambda event: self.ui_q.put(("analysis_progress", event)),
+                cancel_event=self.cancel_event,
+                reuse_metadata=reuse_metadata,
+                only_paths=only_paths,
+            )
             self.ui_q.put(("metadata_done", meta))
+
+            catalog = self._apply_metadata_to_catalog(
+                catalog, meta, source_root_id, folder, snapshot
+            )
+            if project_id:
+                try:
+                    save_catalog(catalog, project_id=project_id)
+                except MediaCatalogError:
+                    _write_log("catalog_save_error", "")
+
+            if self.cancel_event.is_set():
+                self._finish_cancelled(catalog, project_id)
+                return
+
             candidates = select_batch_candidates(meta.get("results", []))
             self.ui_q.put(("candidates_done", candidates))
+
             clusters = group_related_media(
                 meta.get("results", []),
                 media_root=folder,
                 analyze_content=True,
             )
             self.ui_q.put(("clusters_done", clusters))
+            self.ui_q.put(("analysis_finished", "completed"))
         except Exception as exc:
             _write_log("analysis_error", traceback.format_exc())
             self.ui_q.put(("error", "No se pudo analizar el material.", str(exc)))
+            self.ui_q.put(("analysis_finished", "error"))
+
+    def _load_or_create_catalog(
+        self, project_id: str | None, source_root_id: str, folder: str
+    ) -> dict[str, Any]:
+        if project_id:
+            try:
+                return load_catalog(project_id=project_id)
+            except MediaCatalogError:
+                pass
+        return new_catalog(project_id or _NO_PROJECT_CATALOG_ID)
+
+    def _build_snapshot(
+        self, source_root_id: str, folder: str, scan: dict[str, Any]
+    ) -> dict[str, Any]:
+        from scripts.local_media_agent.ffprobe_metadata_extraction import (
+            _collect_media_files,
+        )
+
+        files = _collect_media_files(folder, scan.get("extension_summary", {}))
+        return {
+            "online_root_ids": [source_root_id],
+            "files": [
+                {
+                    "source_root_id": source_root_id,
+                    "relative_path": f["relative_path"],
+                    "size": f["file_size"],
+                    "mtime_ns": f["mtime_ns"],
+                }
+                for f in files
+            ],
+        }
+
+    def _reuse_map_from_catalog(
+        self, catalog: dict[str, Any], snapshot: dict[str, Any]
+    ) -> dict[str, dict[str, Any]]:
+        current = {
+            f"{f['source_root_id']}::{f['relative_path']}": f
+            for f in snapshot.get("files", [])
+        }
+        reuse: dict[str, dict[str, Any]] = {}
+        for key, item in catalog.get("media_items", {}).items():
+            if item.get("analysis_status") != ANALYSIS_STATUS_OK:
+                continue
+            if not isinstance(item.get("ffprobe_metadata"), dict):
+                continue
+            if key not in current:
+                continue
+            rel = item.get("relative_path")
+            if not isinstance(rel, str):
+                continue
+            reuse[rel] = {
+                "ffprobe_metadata": item.get("ffprobe_metadata"),
+                "source_color_profile": item.get("source_color_profile"),
+            }
+        return reuse
+
+    def _apply_metadata_to_catalog(
+        self,
+        catalog: dict[str, Any],
+        meta: dict[str, Any],
+        source_root_id: str,
+        folder: str,
+        snapshot: dict[str, Any],
+    ) -> dict[str, Any]:
+        add_source_root(catalog, source_root_id, folder)
+        by_rel = {f["relative_path"]: f for f in snapshot.get("files", [])}
+        analyzed_at = datetime.now(timezone.utc).isoformat()
+
+        for entry in meta.get("results", []):
+            rel = entry.get("relative_path")
+            if not isinstance(rel, str):
+                continue
+            f = by_rel.get(rel, {})
+            item = {
+                "source_root_id": source_root_id,
+                "relative_path": rel,
+                "media_kind": _media_kind_for(entry.get("category")),
+                "size": f.get("size"),
+                "mtime_ns": f.get("mtime_ns"),
+                "catalog_status": CATALOG_STATUS_PRESENT,
+                "analysis_status": ANALYSIS_STATUS_OK,
+                "last_analyzed_at": analyzed_at,
+                "ffprobe_metadata": _ffprobe_snapshot(entry),
+            }
+            color = entry.get("source_color_profile")
+            if color is not None:
+                item["source_color_profile"] = color
+            set_media_item(catalog, item)
+
+        for err in meta.get("errors", []):
+            rel = err.get("relative_path")
+            if not isinstance(rel, str):
+                continue
+            f = by_rel.get(rel, {})
+            item = {
+                "source_root_id": source_root_id,
+                "relative_path": rel,
+                "media_kind": _media_kind_for(err.get("category")),
+                "size": f.get("size"),
+                "mtime_ns": f.get("mtime_ns"),
+                "catalog_status": CATALOG_STATUS_PRESENT,
+                "analysis_status": ANALYSIS_STATUS_ERROR,
+                "last_analyzed_at": analyzed_at,
+                "technical_errors": [
+                    {
+                        "category": err.get("error_category", ERROR_CATEGORY_METADATA),
+                        "code": None,
+                        "message": (err.get("error") or "")[:200],
+                        "relative_path": rel,
+                    }
+                ],
+            }
+            color = err.get("source_color_profile")
+            if color is not None:
+                item["source_color_profile"] = color
+            set_media_item(catalog, item)
+
+        return catalog
+
+    def _finish_cancelled(self, catalog: dict[str, Any], project_id: str | None) -> None:
+        if project_id:
+            try:
+                save_catalog(catalog, project_id=project_id)
+            except MediaCatalogError:
+                _write_log("catalog_save_error", "")
+        self.ui_q.put(("analysis_finished", "cancelled"))
+
+    def _on_analysis_progress(self, event: dict[str, Any]) -> None:
+        if event.get("phase") != "metadata":
+            return
+        status = event.get("status", "")
+        processed = event.get("processed", 0)
+        total = event.get("total", 0)
+        current = event.get("current_item") or ""
+        count_text = f"metadata {processed}/{total}"
+        if status == "cancelled":
+            self.analyze_hint.config(text="Análisis cancelado.")
+        elif status in ("completed", "phase_completed"):
+            self.analyze_hint.config(text="Analizando material…")
+        elif status == "reused":
+            self.analyze_hint.config(text=f"Reutilizando {count_text}…")
+        elif status == "error":
+            self.analyze_hint.config(text=f"{count_text} · {current} (error)")
+        else:
+            if current:
+                self.analyze_hint.config(text=f"Analizando {count_text} · {current}")
+            else:
+                self.analyze_hint.config(text=f"Analizando {count_text}…")
+
+    def _on_analysis_finished(self, status: str) -> None:
+        self.analysis_active = False
+        self.analyze_btn.config(state="normal", text="Seleccionar carpeta", command=self._pick_folder)
+        if status == "cancelled":
+            self.analyze_hint.config(text="Análisis cancelado.")
+        elif status == "error":
+            self.analyze_hint.config(text="")
 
     def _on_scan_done(self, scan: dict[str, Any]) -> None:
         ext = scan.get("extension_summary", {})
@@ -1118,7 +1382,7 @@ class ProducerApp:
     # ------------------------------------------------------------ transcription
 
     def _start_transcription_click(self) -> None:
-        if self.active or not self.folder:
+        if self.active or self.analysis_active or not self.folder:
             return
         selected = self._selected_metadata()
         if not selected:
@@ -1480,6 +1744,12 @@ class ProducerApp:
                     self._on_candidates_done(item[1])
                 elif kind == "clusters_done":
                     self._on_clusters_done(item[1])
+                elif kind == "grouping_started":
+                    self.analyze_hint.config(text="Evaluando grabaciones…")
+                elif kind == "analysis_progress":
+                    self._on_analysis_progress(item[1])
+                elif kind == "analysis_finished":
+                    self._on_analysis_finished(item[1])
                 elif kind == "progress":
                     self._on_progress(*item[1:])
                 elif kind == "segment":

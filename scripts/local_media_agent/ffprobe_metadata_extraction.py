@@ -9,11 +9,12 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import threading
 import time
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from scripts.local_media_agent.sony_sidecar_parser import (
     build_source_color_profile,
@@ -25,6 +26,10 @@ SCHEMA_VERSION = "cid.local_media_agent.ffprobe_metadata_extraction.v1"
 
 FFPROBE_ENV_VAR = "CID_FFPROBE_PATH"
 FFPROBE_TIMEOUT_SECONDS = 30
+
+# error category for technical/probe failures (see media_catalog)
+ERROR_CATEGORY_METADATA = "METADATA_ERROR"
+ERROR_CATEGORY_SIDECAR = "SIDECAR_ERROR"
 
 VIDEO_EXTENSIONS = frozenset({".mp4", ".mov", ".mxf", ".mkv", ".avi", ".mts", ".m2ts", ".webm"})
 AUDIO_EXTENSIONS = frozenset({".wav", ".bwf", ".aif", ".aiff", ".mp3", ".m4a", ".aac", ".flac", ".ogg"})
@@ -64,7 +69,36 @@ def extract_metadata(
     scanner_result: dict[str, Any],
     *,
     ffprobe_path: str | None = None,
+    progress_callback: Callable[[dict[str, Any]], None] | None = None,
+    cancel_event: "threading.Event | None" = None,
+    reuse_metadata: dict[str, dict[str, Any]] | None = None,
+    only_paths: "set[str] | None" = None,
 ) -> dict[str, Any]:
+    """Extract per-media technical metadata with optional incremental support.
+
+    The legacy call (only ``input_root`` + ``scanner_result``) behaves exactly
+    as before: every media item is probed and no progress is emitted.
+
+    Optional incremental arguments (backward compatible, non-breaking):
+    - ``progress_callback``: receives structured phase/item events (see
+      ``_emit``). ``phase``, ``processed``, ``total``, ``current_item`` and
+      ``status`` are always present.
+    - ``cancel_event``: cooperative ``threading.Event``. Cancellation is
+      checked before each item, after each item, and before phase transitions.
+      An in-flight ffprobe for the current item is allowed to finish or hit its
+      timeout; the loop stops before the next item. This is "safe stop between
+      analysis units", never an arbitrary process kill.
+    - ``reuse_metadata``: mapping ``relative_path -> previous item dict`` that
+      carries ``ffprobe_metadata`` (and optionally ``source_color_profile``)
+      from a prior run.
+    - ``only_paths``: set of relative paths that MUST be (re)probed. Any item
+      NOT in ``only_paths`` that has valid ``reuse_metadata`` is reused without
+      probing (ffprobe skip), counting as ``reused``.
+
+    A media item that fails ffprobe is retained in ``errors`` with
+    ``error_category=METADATA_ERROR``; its Sony ``source_color_profile`` (an
+    independent channel) is preserved on that error entry.
+    """
     tool = resolve_ffprobe_path(ffprobe_path)
     ext_summary = scanner_result.get("extension_summary", {})
     media_files = _collect_media_files(input_root, ext_summary)
@@ -72,13 +106,104 @@ def extract_metadata(
     results: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
     start = time.monotonic()
+    total = len(media_files)
+    counters: dict[str, int] = {
+        "analyzed": 0,
+        "reused": 0,
+        "new": 0,
+        "modified": 0,
+        "unchanged": 0,
+        "missing": 0,
+        "offline": 0,
+        "errors": 0,
+    }
+    cancelled = False
+    probe_set: set[str] | None = set(only_paths) if only_paths is not None else None
+    reuse_map: dict[str, dict[str, Any]] = reuse_metadata or {}
 
-    for item in media_files:
+    _emit(
+        progress_callback,
+        {
+            "phase": "metadata",
+            "phase_event": "phase_started",
+            "processed": 0,
+            "total": total,
+            "current_item": None,
+            "status": "running",
+        },
+    )
+
+    if cancel_event is not None and cancel_event.is_set():
+        cancelled = True
+        _emit(
+            progress_callback,
+            {
+                "phase": "metadata",
+                "phase_event": "cancelled",
+                "processed": 0,
+                "total": total,
+                "current_item": None,
+                "status": "cancelled",
+            },
+        )
+        return _metadata_manifest(
+            tool, media_files, results, errors, start, counters, cancelled
+        )
+
+    for index, item in enumerate(media_files):
+        if cancel_event is not None and cancel_event.is_set():
+            cancelled = True
+            break
+
+        rel = item["relative_path"]
+        _emit(
+            progress_callback,
+            {
+                "phase": "metadata",
+                "phase_event": "item_started",
+                "processed": index,
+                "total": total,
+                "current_item": rel,
+                "status": "running",
+            },
+        )
+
+        prev = reuse_map.get(rel)
+        can_reuse = (
+            prev is not None
+            and isinstance(prev, dict)
+            and isinstance(prev.get("ffprobe_metadata"), dict)
+            and probe_set is not None
+            and rel not in probe_set
+        )
+
+        if can_reuse:
+            reused = _build_reused_entry(item, prev)
+            counters["reused"] += 1
+            counters["unchanged"] += 1
+            results.append(reused)
+            _emit(
+                progress_callback,
+                {
+                    "phase": "metadata",
+                    "phase_event": "item_completed",
+                    "processed": index + 1,
+                    "total": total,
+                    "current_item": rel,
+                    "status": "reused",
+                },
+            )
+            if cancel_event is not None and cancel_event.is_set():
+                cancelled = True
+                break
+            continue
+
         source_color_profile = _resolve_sidecar_color_profile(Path(input_root), item)
         try:
             meta = _probe_one(tool, Path(item["abs_path"]))
+            counters["analyzed"] += 1
             entry: dict[str, Any] = {
-                "relative_path": item["relative_path"],
+                "relative_path": rel,
                 "category": item["category"],
                 "file_size_bytes": item["file_size"],
                 **meta,
@@ -86,18 +211,79 @@ def extract_metadata(
             if source_color_profile is not None:
                 entry["source_color_profile"] = source_color_profile
             results.append(entry)
+            status = "completed"
         except Exception as exc:
+            counters["errors"] += 1
             error: dict[str, Any] = {
-                "relative_path": item["relative_path"],
+                "relative_path": rel,
                 "category": item["category"],
+                "error_category": ERROR_CATEGORY_METADATA,
                 "error": str(exc)[:200],
             }
             if source_color_profile is not None:
                 error["source_color_profile"] = source_color_profile
             errors.append(error)
+            status = "error"
 
+        _emit(
+            progress_callback,
+            {
+                "phase": "metadata",
+                "phase_event": "item_error" if status == "error" else "item_completed",
+                "processed": index + 1,
+                "total": total,
+                "current_item": rel,
+                "status": status,
+            },
+        )
+
+        if cancel_event is not None and cancel_event.is_set():
+            cancelled = True
+            break
+
+    if cancel_event is not None and cancel_event.is_set():
+        cancelled = True
+
+    _emit(
+        progress_callback,
+        {
+            "phase": "metadata",
+            "phase_event": "cancelled" if cancelled else "phase_completed",
+            "processed": len(results) + len(errors),
+            "total": total,
+            "current_item": None,
+            "status": "cancelled" if cancelled else "completed",
+        },
+    )
+
+    return _metadata_manifest(tool, media_files, results, errors, start, counters, cancelled)
+
+
+def _build_reused_entry(item: dict[str, Any], prev: dict[str, Any]) -> dict[str, Any]:
+    entry: dict[str, Any] = {
+        "relative_path": item["relative_path"],
+        "category": item["category"],
+        "file_size_bytes": item["file_size"],
+    }
+    previous_meta = prev.get("ffprobe_metadata")
+    if isinstance(previous_meta, dict):
+        entry.update(previous_meta)
+    color = prev.get("source_color_profile")
+    if color is not None:
+        entry["source_color_profile"] = color
+    return entry
+
+
+def _metadata_manifest(
+    tool: str,
+    media_files: list[dict[str, Any]],
+    results: list[dict[str, Any]],
+    errors: list[dict[str, Any]],
+    start: float,
+    counters: dict[str, int],
+    cancelled: bool,
+) -> dict[str, Any]:
     elapsed = time.monotonic() - start
-
     return {
         "schema_version": SCHEMA_VERSION,
         "input_root_label": "SANITIZED_LOCAL_FOLDER_INPUT",
@@ -107,9 +293,19 @@ def extract_metadata(
         "metadata_success_count": len(results),
         "metadata_error_count": len(errors),
         "elapsed_seconds": round(elapsed, 2),
+        "cancelled": cancelled,
+        "incremental": counters,
         "results": results,
         "errors": errors,
     }
+
+
+def _emit(
+    progress_callback: Callable[[dict[str, Any]], None] | None,
+    event: dict[str, Any],
+) -> None:
+    if progress_callback is not None:
+        progress_callback(event)
 
 
 def _resolve_sidecar_color_profile(
@@ -155,9 +351,12 @@ def _collect_media_files(
         except ValueError:
             continue
         try:
-            size = path.stat().st_size
+            stat_result = path.stat()
+            size = stat_result.st_size
+            mtime_ns = stat_result.st_mtime_ns
         except OSError:
             size = 0
+            mtime_ns = 0
         cat = "video" if ext in VIDEO_EXTENSIONS else ("audio" if ext in AUDIO_EXTENSIONS else "image")
         files.append({
             "abs_path": str(path),
@@ -165,6 +364,7 @@ def _collect_media_files(
             "category": cat,
             "extension": ext,
             "file_size": size,
+            "mtime_ns": mtime_ns,
         })
     return files
 

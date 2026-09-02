@@ -731,3 +731,63 @@ class TestTranscriptionSegmentCallback:
         )
         result = transcribe(request, backend)
         assert result.state == "TRANSCRIPTION_COMPLETED"
+
+
+class _FakeTkWidget:
+    def __init__(self) -> None:
+        self.state = None
+        self.text = None
+        self.command = None
+
+    def config(self, **kwargs) -> None:
+        self.state = kwargs.get("state", self.state)
+        self.text = kwargs.get("text", self.text)
+        self.command = kwargs.get("command", self.command)
+
+
+class TestAnalysisLifecycleGuiBoundary:
+    def _make_app(self):
+        from scripts.local_media_agent import cid_gui
+
+        app = object.__new__(cid_gui.ProducerApp)
+        app.analysis_active = False
+        app.active = False
+        app.folder = "/tmp"
+        app.active_project = None
+        app.cancel_event = threading.Event()
+        app.analyze_btn = _FakeTkWidget()
+        app.analyze_hint = _FakeTkWidget()
+        return app
+
+    def test_cancel_sets_cooperative_event_and_keeps_state(self) -> None:
+        app = self._make_app()
+        app.analysis_active = True
+        assert not app.cancel_event.is_set()
+        app._cancel_analysis_click()
+        assert app.cancel_event.is_set()
+        # does not mark completion: still active until the finisher runs
+        assert app.analysis_active is True
+
+    def test_analysis_state_resets_after_finish(self) -> None:
+        app = self._make_app()
+        app.analysis_active = True
+        app._pick_folder = lambda: None
+        app._on_analysis_finished("completed")
+        assert app.analysis_active is False
+        assert app.analyze_btn.text == "Seleccionar carpeta"
+        assert app.analyze_btn.state == "normal"
+
+    def test_cancel_finish_also_resets_state(self) -> None:
+        app = self._make_app()
+        app.analysis_active = True
+        app._pick_folder = lambda: None
+        app._on_analysis_finished("cancelled")
+        assert app.analysis_active is False
+        assert app.analyze_hint.text == "Análisis cancelado."
+
+    def test_transcription_start_guarded_while_analysis_active(self) -> None:
+        app = self._make_app()
+        app.analysis_active = True
+        app._start_transcription_click()
+        # returns early without clobbering the shared cooperative cancel event
+        assert not app.cancel_event.is_set()

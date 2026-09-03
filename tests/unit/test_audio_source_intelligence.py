@@ -367,3 +367,62 @@ class TestSemanticSafetyDispositions:
             assert manifest["sources"] and manifest["sources"][0]["source"] == "Sesion 1/pista_tecnica.wav"
             assert manifest["sources"][0]["relationship"] == "UNRELATED"
             assert manifest["sources"][0]["quality"]
+
+
+class TestGroupingPartialCollisionRegression:
+    """B1 regressions: coarse session identity must not merge unrelated trees
+    merely because terminal card/container folder names collide, while still
+    keeping same-logical-session sources in one bucketing context."""
+
+    def test_false_collision_unrelated_trees_same_card_layout(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            path_a = base / "A" / "Campo" / "Tarjeta 1" / "M4ROOT" / "CLIP"
+            path_b = base / "B" / "Campo" / "Tarjeta 1" / "M4ROOT" / "CLIP"
+            path_a.mkdir(parents=True, exist_ok=True)
+            path_b.mkdir(parents=True, exist_ok=True)
+            _write_wav(path_a / "a.wav", _event(5.0, seed=71))
+            _write_wav(path_b / "b.wav", _event(5.0, seed=72))
+            meta_a = _metadata("A/Campo/Tarjeta 1/M4ROOT/CLIP/a.wav", 5.0)
+            meta_b = _metadata("B/Campo/Tarjeta 1/M4ROOT/CLIP/b.wav", 5.0)
+            clusters = group_related_media([meta_a, meta_b], media_root=base)
+            assert len(clusters) == 2
+            session_ids = {c.session_id for c in clusters}
+            assert session_ids == {"A/Campo", "B/Campo"}
+
+    def test_same_logical_session_different_card_stays_one_bucket(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            path1 = base / "A" / "Campo" / "Tarjeta 1" / "M4ROOT" / "CLIP"
+            path2 = base / "A" / "Campo" / "Tarjeta 2" / "M4ROOT" / "CLIP"
+            path1.mkdir(parents=True, exist_ok=True)
+            path2.mkdir(parents=True, exist_ok=True)
+            _write_wav(path1 / "a.wav", _event(5.0, seed=73))
+            _write_wav(path2 / "b.wav", _event(5.0, seed=74))
+            meta_a = _metadata("A/Campo/Tarjeta 1/M4ROOT/CLIP/a.wav", 5.0)
+            meta_b = _metadata("A/Campo/Tarjeta 2/M4ROOT/CLIP/b.wav", 5.0)
+            clusters = group_related_media([meta_a, meta_b], media_root=base)
+            assert len(clusters) == 1
+            assert clusters[0].session_id == "A/Campo"
+
+    def test_camera_and_external_audio_share_upper_session(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            video_dir = base / "A" / "Interview" / "M4ROOT" / "CLIP"
+            audio_dir = base / "A" / "Interview" / "Audio"
+            video_dir.mkdir(parents=True, exist_ok=True)
+            audio_dir.mkdir(parents=True, exist_ok=True)
+            signal = _event(5.0, seed=75)
+            _write_wav(video_dir / "cam.wav", signal)
+            offset = 0.4
+            _write_wav(audio_dir / "rec.wav", signal[int(offset * RATE):])
+            meta_cam = _metadata("A/Interview/M4ROOT/CLIP/cam.wav", 5.0)
+            meta_rec = _metadata("A/Interview/Audio/rec.wav", 5.0 - offset)
+            clusters = group_related_media([meta_cam, meta_rec], media_root=base)
+            assert len(clusters) == 1
+            assert clusters[0].session_id == "A/Interview"
+            rel_paths = {sig.relative_path for sig in clusters[0].sources}
+            assert rel_paths == {
+                "A/Interview/M4ROOT/CLIP/cam.wav",
+                "A/Interview/Audio/rec.wav",
+            }

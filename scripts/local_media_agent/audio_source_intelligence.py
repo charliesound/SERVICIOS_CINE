@@ -26,6 +26,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+from scripts.local_media_agent.session_boundary import coarse_session_id
+
 SYNC_MANIFEST_SCHEMA_VERSION = "cid.local_media_agent.sync_manifest.v1"
 
 WINDOW_SECONDS_DEFAULT = 20.0
@@ -705,10 +707,15 @@ class SourceCluster:
 
 
 def _session_id_for(relative_path: str) -> str:
-    parts = Path(relative_path).parts
-    if len(parts) >= 2:
-        return parts[-2]
-    return Path(relative_path).stem or "session"
+    """Return the coarse recording/session bucket identity for a relative path.
+
+    Delegates to :func:`session_boundary.coarse_session_id`, which derives a
+    deterministic, portable identity from the meaningful upper lineage of the
+    path and deliberately ignores generic card/container components (``CLIP``,
+    ``M4ROOT``, ``Tarjeta 1``, ...). This replaces the former immediate-parent
+    key that allowed unrelated trees to collide on generic folder names.
+    """
+    return coarse_session_id(relative_path)
 
 
 def group_related_media(

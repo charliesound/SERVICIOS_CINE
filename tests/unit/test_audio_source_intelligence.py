@@ -26,6 +26,9 @@ from scripts.local_media_agent.audio_source_intelligence import (
     RELATIONSHIP_IDENTICAL,
     RELATIONSHIP_SAME_EVENT,
     RELATIONSHIP_UNRELATED,
+    GroupingError,
+    SourceSignature,
+    _finalize_cluster,
     analyze_quality,
     assign_source_role,
     build_sync_manifest,
@@ -35,11 +38,13 @@ from scripts.local_media_agent.audio_source_intelligence import (
     find_sync_lag,
     group_related_media,
     internal_rank_score,
+    member_identity,
     source_quality_summary,
     sync_sources,
     _label_quality,
     _timecode_to_seconds,
 )
+from scripts.local_media_agent.media_catalog import media_item_key
 
 RATE = 8000
 
@@ -426,3 +431,335 @@ class TestGroupingPartialCollisionRegression:
                 "A/Interview/M4ROOT/CLIP/cam.wav",
                 "A/Interview/Audio/rec.wav",
             }
+
+# ---------------------------------------------------------------------------
+# MS2C1 — grouping source-aware member identity
+# ---------------------------------------------------------------------------
+
+SRC_A = "SRC-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+SRC_B = "SRC-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+ROOT_LEGACY = "ROOT-abc123"
+SHARED_REL = "Interview/M4ROOT/CLIP/A001.MP4"
+
+
+def _sig(rel: str, *, source_id=None, media_ref=None, ref=None):
+    base = SourceSignature(
+        relative_path=rel,
+        category="audio",
+        file_size_bytes=1000,
+        duration_seconds=5.0,
+    )
+    if ref is not None:
+        base.windows[ref] = np.zeros(40, dtype=np.float32)
+    base.source_id = source_id
+    base.media_ref = media_ref
+    return base
+
+
+class TestSourceSignatureIdentity:
+    def test_existing_constructor_still_valid(self):
+        sig = SourceSignature(relative_path="x.wav", category="audio")
+        assert sig.relative_path == "x.wav"
+        assert sig.source_id is None
+        assert sig.media_ref is None
+
+    def test_legacy_signature_identity_none(self):
+        sig = _sig("x.wav")
+        assert sig.source_id is None
+        assert sig.media_ref is None
+
+    def test_optional_fields_appended_at_end(self):
+        sig = SourceSignature(relative_path="x.wav", category="audio", source_id=SRC_A, media_ref="m")
+        assert sig.source_id == SRC_A
+        assert sig.media_ref == "m"
+
+
+class TestExtractSourceSignatureIdentity:
+    def _meta(self, rel, source_id=None, source_root_id=None):
+        meta = {
+            "relative_path": rel,
+            "category": "audio",
+            "file_size_bytes": 1000,
+            "duration_seconds": 1.0,
+            "audio": {"codec": "pcm_s16le", "sample_rate": RATE, "channel_count": 1},
+            "windows": {"start": np.zeros(40, dtype=np.float32)},
+        }
+        if source_id is not None:
+            meta["source_id"] = source_id
+        if source_root_id is not None:
+            meta["source_root_id"] = source_root_id
+        return meta
+
+    def _extract(self, meta, sourceless=False):
+        decoder = (lambda *a, **k: (RATE, np.zeros(int(1.0 * RATE), dtype=np.float32)))
+        return extract_source_signature("unused", meta, window_seconds=1.0, decoder=decoder, include_sha256=False)
+
+    def test_source_id_metadata_creates_source_aware_signature(self):
+        sig = self._extract(self._meta("a.wav", source_id=SRC_A))
+        assert sig.source_id == SRC_A
+        assert sig.media_ref == media_item_key(SRC_A, "a.wav")
+
+    def test_source_root_id_metadata_creates_source_aware_signature(self):
+        sig = self._extract(self._meta("a.wav", source_root_id=ROOT_LEGACY))
+        assert sig.source_id == ROOT_LEGACY
+        assert sig.media_ref == media_item_key(ROOT_LEGACY, "a.wav")
+
+    def test_root_identity_accepted(self):
+        sig = self._extract(self._meta("a.wav", source_id=ROOT_LEGACY))
+        assert sig.source_id == ROOT_LEGACY
+        assert sig.media_ref == f"{ROOT_LEGACY}::a.wav"
+
+    def test_src_identity_accepted(self):
+        sig = self._extract(self._meta("a.wav", source_id=SRC_A))
+        assert sig.media_ref == f"{SRC_A}::a.wav"
+
+    def test_equal_source_id_and_root_accepted(self):
+        sig = self._extract(self._meta("a.wav", source_id=SRC_A, source_root_id=SRC_A))
+        assert sig.source_id == SRC_A
+
+    def test_conflicting_source_id_and_root_fails_closed(self):
+        with pytest.raises(GroupingError):
+            self._extract(self._meta("a.wav", source_id=SRC_A, source_root_id=ROOT_LEGACY))
+
+    def test_media_ref_uses_canonical_encoder(self):
+        sig = self._extract(self._meta("a.wav", source_id=SRC_B))
+        assert sig.media_ref == media_item_key(SRC_B, "a.wav")
+
+    def test_relative_path_unchanged(self):
+        sig = self._extract(self._meta("deep/Clip.wav", source_id=SRC_A))
+        assert sig.relative_path == "deep/Clip.wav"
+
+    def test_no_identity_derived_from_path_or_abs(self):
+        meta = self._meta("a.wav", source_id=SRC_A)
+        meta["abs_path"] = "/some/other/root/a.wav"
+        sig = self._extract(meta)
+        assert sig.source_id == SRC_A
+        assert sig.media_ref == media_item_key(SRC_A, "a.wav")
+        assert sig.media_ref != media_item_key(SRC_A, "/some/other/root/a.wav")
+
+
+class TestMemberIdentity:
+    def test_legacy_member_identity_relative_path(self):
+        sig = _sig("x.wav")
+        assert member_identity(sig) == "x.wav"
+
+    def test_source_aware_member_identity_media_ref(self):
+        sig = _sig("x.wav", source_id=SRC_A, media_ref=f"{SRC_A}::x.wav")
+        assert member_identity(sig) == f"{SRC_A}::x.wav"
+
+    def test_same_rel_src_a_src_b_distinct_media_ref(self):
+        ref_a = media_item_key(SRC_A, SHARED_REL)
+        ref_b = media_item_key(SRC_B, SHARED_REL)
+        assert ref_a != ref_b
+        assert member_identity(_sig(SHARED_REL, source_id=SRC_A, media_ref=ref_a)) == ref_a
+        assert member_identity(_sig(SHARED_REL, source_id=SRC_B, media_ref=ref_b)) == ref_b
+
+
+class TestPathlessFinalizeCluster:
+    def _related_pair(self):
+        samples = _event(5.0, seed=123)
+        env = np.abs(samples).reshape(-1, RATE // ENVELOPE_BLOCKS_PER_SECOND).mean(axis=1).astype(np.float32)
+        sig_a = _sig(SHARED_REL, source_id=SRC_A, media_ref=media_item_key(SRC_A, SHARED_REL), ref="start")
+        sig_b = _sig(SHARED_REL, source_id=SRC_B, media_ref=media_item_key(SRC_B, SHARED_REL), ref="start")
+        sig_a.windows["start"] = env
+        sig_b.windows["start"] = env
+        return sig_a, sig_b
+
+    def test_same_rel_src_a_src_b_supported_without_overwrite(self):
+        sig_a, sig_b = self._related_pair()
+        cluster = _finalize_cluster([sig_a, sig_b], "Interview")
+        keys = {member_identity(sig_a), member_identity(sig_b)}
+        assert len(keys) == 2
+        assert len(cluster.sources) == 2
+
+    def test_relationship_source_aware_identity_unambiguous(self):
+        sig_a, sig_b = self._related_pair()
+        cluster = _finalize_cluster([sig_a, sig_b], "Interview")
+        rel = cluster.relationships[0]
+        assert rel["a"] == SHARED_REL
+        assert rel["b"] == SHARED_REL
+        assert rel["a_media_ref"] == media_item_key(SRC_A, SHARED_REL)
+        assert rel["b_media_ref"] == media_item_key(SRC_B, SHARED_REL)
+        assert rel["a_media_ref"] != rel["b_media_ref"]
+
+    def test_cluster_members_use_media_ref_in_source_aware_mode(self):
+        sig_a, sig_b = self._related_pair()
+        cluster = _finalize_cluster([sig_a, sig_b], "Interview")
+        for key in cluster.transcription_masters + cluster.uncertain_sources + cluster.unique_candidate_sources:
+            assert "::" in key or key == ""
+        assert cluster.reference_source is None or "::" in cluster.reference_source
+
+    def test_mixed_legacy_and_source_aware_fails_closed(self):
+        sig_a = _sig(SHARED_REL, source_id=SRC_A, media_ref=media_item_key(SRC_A, SHARED_REL), ref="start")
+        sig_legacy = _sig("other.wav")
+        with pytest.raises(GroupingError):
+            _finalize_cluster([sig_a, sig_legacy], "Interview")
+
+    def test_legacy_finalize_members_remain_relative_path(self):
+        samples = _event(5.0, seed=7)
+        env = np.abs(samples).reshape(-1, RATE // ENVELOPE_BLOCKS_PER_SECOND).mean(axis=1).astype(np.float32)
+        a = _sig("A/Interview/cam.wav", ref="start"); a.windows["start"] = env
+        b = _sig("A/Interview/mix.wav", ref="start"); b.windows["start"] = env
+        cluster = _finalize_cluster([a, b], "A/Interview")
+        rel = cluster.relationships[0]
+        assert "a_media_ref" not in rel and "b_media_ref" not in rel
+        assert cluster.uncertain_sources == [] or all("::" not in x for x in cluster.uncertain_sources)
+
+
+class TestGroupRelatedMediaModeGuards:
+    def _legacy_meta(self, rel, cat="audio"):
+        return {
+            "relative_path": rel, "category": cat, "file_size_bytes": 1000,
+            "duration_seconds": 1.0,
+            "audio": {"codec": "pcm_s16le", "sample_rate": RATE, "channel_count": 1},
+            "windows": {"start": np.zeros(40, dtype=np.float32)},
+        }
+
+    def _aware_meta(self, rel, source_id, cat="audio"):
+        m = self._legacy_meta(rel, cat)
+        m["source_id"] = source_id
+        return m
+
+    def test_multi_source_default_builder_fails_before_path_use(self):
+        items = [self._aware_meta(SHARED_REL, SRC_A), self._aware_meta(SHARED_REL, SRC_B)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root="/nonexistent")
+        assert exc.value.code == "MULTI_SOURCE_REQUIRES_SOURCE_ROOT_MAP"
+
+    def test_multi_source_injected_builder_fails_closed(self):
+        called = []
+        def builder(path, meta, i):
+            called.append(str(path))
+            return _sig(meta["relative_path"], source_id=meta.get("source_id"), ref="start")
+        items = [self._aware_meta(SHARED_REL, SRC_A), self._aware_meta(SHARED_REL, SRC_B)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root="/nonexistent", signature_builder=builder)
+        assert exc.value.code == "MULTI_SOURCE_REQUIRES_SOURCE_ROOT_MAP"
+        assert called == []
+
+    def test_multi_source_abs_path_fails_closed(self):
+        items = [
+            {**self._aware_meta("a.wav", SRC_A), "abs_path": "/rootA/a.wav"},
+            {**self._aware_meta("b.wav", SRC_B), "abs_path": "/rootB/b.wav"},
+        ]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root="/nonexistent")
+        assert exc.value.code == "MULTI_SOURCE_REQUIRES_SOURCE_ROOT_MAP"
+
+    def test_mixed_legacy_source_aware_candidates_fail_closed(self):
+        items = [self._legacy_meta("a.wav"), self._aware_meta("b.wav", SRC_A)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root="/nonexistent")
+        assert exc.value.code == "MIXED_SOURCE_IDENTITY"
+
+    def test_single_source_source_aware_with_media_root_allowed(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            sess = base / "Sesion 1"
+            sess.mkdir()
+            samples = _event(5.0, seed=3)
+            path = sess / "cam.wav"
+            _write_wav(path, samples)
+            meta = {**self._legacy_meta("Sesion 1/cam.wav"), "source_id": SRC_A}
+            clusters = group_related_media([meta], media_root=base)
+            assert clusters
+            assert clusters[0].sources[0].source_id == SRC_A
+
+    def test_conflicting_per_item_identity_fails_closed(self):
+        item = {**self._legacy_meta("a.wav"), "source_id": SRC_A, "source_root_id": ROOT_LEGACY}
+        with pytest.raises(GroupingError):
+            group_related_media([item], media_root="/nonexistent")
+
+    def test_equal_per_item_identity_accepted(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            sess = base / "Sesion 1"
+            sess.mkdir()
+            samples = _event(5.0, seed=4)
+            path = sess / "cam.wav"
+            _write_wav(path, samples)
+            item = {**self._legacy_meta("Sesion 1/cam.wav"), "source_id": SRC_A, "source_root_id": SRC_A}
+            clusters = group_related_media([item], media_root=base)
+            assert clusters and clusters[0].sources[0].source_id == SRC_A
+
+
+class TestBuilderIdentityAuthority:
+    """Injected signature_builder is never the identity authority (direct path tests).
+
+    Exercises the public grouping path so that canonicalization runs after the
+    injected builder returns, proving metadata identity is authoritative.
+    """
+
+    @staticmethod
+    def _meta(rel, source_id=None):
+        meta = {
+            "relative_path": rel, "category": "audio", "file_size_bytes": 1000,
+            "duration_seconds": 1.0,
+            "audio": {"codec": "pcm_s16le", "sample_rate": RATE, "channel_count": 1},
+            "windows": {"start": np.zeros(40, dtype=np.float32)},
+        }
+        if source_id is not None:
+            meta["source_id"] = source_id
+        return meta
+
+    def test_builder_missing_identity_gets_metadata_canonical_identity(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            item = self._meta("Interview/A001.wav", source_id=SRC_A)
+
+            def builder(path, meta, i):
+                sig = _sig(meta["relative_path"], ref="start")
+                sig.windows["start"] = np.zeros(40, dtype=np.float32)
+                return sig
+
+            clusters = group_related_media([item], media_root=base, signature_builder=builder)
+            sig = clusters[0].sources[0]
+            assert sig.source_id == SRC_A
+            assert sig.media_ref == media_item_key(SRC_A, "Interview/A001.wav")
+
+    def test_builder_conflicting_source_id_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            item = self._meta("Interview/A001.wav", source_id=SRC_A)
+
+            def builder(path, meta, i):
+                sig = _sig(meta["relative_path"], ref="start")
+                sig.windows["start"] = np.zeros(40, dtype=np.float32)
+                sig.source_id = SRC_B
+                return sig
+
+            with pytest.raises(GroupingError) as exc:
+                group_related_media([item], media_root=base, signature_builder=builder)
+            assert exc.value.code == "SOURCE_IDENTITY_CONFLICT"
+
+    def test_builder_conflicting_media_ref_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            item = self._meta("Interview/A001.wav", source_id=SRC_A)
+
+            def builder(path, meta, i):
+                sig = _sig(meta["relative_path"], ref="start")
+                sig.windows["start"] = np.zeros(40, dtype=np.float32)
+                sig.source_id = SRC_A
+                sig.media_ref = media_item_key(SRC_A, "Interview/DIFFERENT.wav")
+                return sig
+
+            with pytest.raises(GroupingError) as exc:
+                group_related_media([item], media_root=base, signature_builder=builder)
+            assert exc.value.code == "SOURCE_IDENTITY_CONFLICT"
+
+    def test_legacy_builder_fabricated_provenance_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            item = self._meta("Interview/A001.wav")
+
+            def builder(path, meta, i):
+                sig = _sig(meta["relative_path"], ref="start")
+                sig.windows["start"] = np.zeros(40, dtype=np.float32)
+                sig.source_id = SRC_A
+                sig.media_ref = media_item_key(SRC_A, "Interview/A001.wav")
+                return sig
+
+            with pytest.raises(GroupingError) as exc:
+                group_related_media([item], media_root=base, signature_builder=builder)
+            assert exc.value.code == "SOURCE_IDENTITY_CONFLICT"

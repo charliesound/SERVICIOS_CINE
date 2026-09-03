@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+from scripts.local_media_agent.media_catalog import media_item_key
 from scripts.local_media_agent.session_boundary import coarse_session_id
 
 SYNC_MANIFEST_SCHEMA_VERSION = "cid.local_media_agent.sync_manifest.v1"
@@ -102,6 +103,14 @@ def _windows_no_console_kwargs() -> dict[str, Any]:
     if os.name == "nt" and flags:
         return {"creationflags": flags}
     return {}
+
+
+class GroupingError(ValueError):
+    """Controlled grouping refusal (ambiguous identity, multi-source before MS2C2)."""
+
+    def __init__(self, code: str, message: str = "") -> None:
+        self.code = code
+        super().__init__(message or code)
 
 
 def _resolve_ffmpeg_path(ffmpeg_path: str | None) -> str | None:
@@ -442,6 +451,40 @@ class SourceSignature:
     role: str = ROLE_UNKNOWN
     sha256: str | None = None
     analysis_seconds: float = 0.0
+    source_id: str | None = None
+    media_ref: str | None = None
+
+
+def _resolve_source_identity(item: dict[str, Any]) -> str | None:
+    """Resolve the single canonical source identity from a metadata item.
+
+    Accepts transitional ``ROOT-*`` and stable ``SRC-*`` identities. Never
+    derives identity from a media root, absolute path, current location, drive
+    or filename. If both ``source_id`` and ``source_root_id`` are present and
+    differ, that is an ambiguous dual authority and fails closed.
+    """
+    source_id = item.get("source_id")
+    source_root_id = item.get("source_root_id")
+    if source_id is None and source_root_id is None:
+        return None
+    if source_id is not None and source_root_id is None:
+        return str(source_id)
+    if source_root_id is not None and source_id is None:
+        return str(source_root_id)
+    if str(source_id) == str(source_root_id):
+        return str(source_id)
+    raise GroupingError("SOURCE_IDENTITY_CONFLICT")
+
+
+def member_identity(sig: SourceSignature) -> str:
+    """Canonical collision-free member key.
+
+    Source-aware signatures use ``media_ref``; legacy signatures (no source
+    identity) keep the prior ``relative_path`` semantics.
+    """
+    if sig.media_ref is not None:
+        return sig.media_ref
+    return sig.relative_path
 
 
 def _sha256_of_file(path: str | Path) -> str | None:
@@ -476,6 +519,8 @@ def extract_source_signature(
 
     media_path = Path(media_path)
     rel = metadata.get("relative_path", media_path.name)
+    source_id = _resolve_source_identity(metadata)
+    media_ref = media_item_key(source_id, rel) if source_id is not None else None
     duration = metadata.get("duration_seconds")
     audio_info = metadata.get("audio") or {}
     video_info = metadata.get("video")
@@ -516,6 +561,8 @@ def extract_source_signature(
         quality=quality,
         role=assign_source_role(rel, metadata.get("category", ""), bool(video_info), quality),
         analysis_seconds=analysis_seconds,
+        source_id=source_id,
+        media_ref=media_ref,
     )
     if include_sha256 and sig.file_size_bytes and sig.file_size_bytes <= (1 << 31):
         sig.sha256 = _sha256_of_file(media_path)
@@ -718,6 +765,30 @@ def _session_id_for(relative_path: str) -> str:
     return coarse_session_id(relative_path)
 
 
+def _classify_source_mode(candidates: list[dict[str, Any]]) -> list[str]:
+    """Classify the candidate provenance mode.
+
+    Returns a mode label and splits candidates into pre-guard identity
+    evaluation before any physical path resolution. Never derives identity
+    from a media root, absolute path or filename.
+    """
+    identities: set[str] = set()
+    sees_legacy = False
+    for item in candidates:
+        source_id = _resolve_source_identity(item)
+        if source_id is None:
+            sees_legacy = True
+        else:
+            identities.add(source_id)
+    if sees_legacy and identities:
+        return ["MIXED"]
+    if not identities:
+        return ["LEGACY"]
+    if len(identities) == 1:
+        return ["SOURCE_AWARE_SINGLE_SOURCE"]
+    return ["SOURCE_AWARE_MULTI_SOURCE"]
+
+
 def group_related_media(
     metadata_results: list[dict[str, Any]],
     *,
@@ -740,6 +811,18 @@ def group_related_media(
         if r.get("category") in ("audio", "video")
         and (r.get("duration_seconds") or 0) > 0
     ]
+    [mode] = _classify_source_mode(candidates)
+    if mode == "SOURCE_AWARE_MULTI_SOURCE":
+        raise GroupingError(
+            "MULTI_SOURCE_REQUIRES_SOURCE_ROOT_MAP",
+            "multiple source identities require media_root_by_source_id (MS2C2)",
+        )
+    if mode == "MIXED":
+        raise GroupingError(
+            "MIXED_SOURCE_IDENTITY",
+            "cannot mix legacy and source-aware candidates in one grouping call",
+        )
+
     by_session: dict[str, list[dict[str, Any]]] = {}
     for item in candidates:
         sid = _session_id_for(item.get("relative_path", ""))
@@ -758,6 +841,7 @@ def group_related_media(
                 break
             path = Path(item.get("abs_path") or (Path(media_root) / item.get("relative_path", "")))
             sig = build(path, item, i)
+            sig = _canonicalize_signature_identity(sig, item)
             if sig is None or not sig.windows:
                 continue
             signatures.append(sig)
@@ -766,6 +850,40 @@ def group_related_media(
         cluster = _finalize_cluster(signatures, sid)
         clusters.append(cluster)
     return clusters
+
+
+def _canonicalize_signature_identity(
+    sig: SourceSignature, item: dict[str, Any]
+) -> SourceSignature:
+    """Enforce metadata as the single identity authority over a built signature.
+
+    For source-aware items the canonical ``source_id``/``media_ref`` are copied
+    in when absent, accepted when equal, and any conflict fails closed. An
+    injected signature builder is never an identity authority.
+    """
+    source_id = _resolve_source_identity(item)
+    if source_id is None:
+        if sig.source_id is not None or sig.media_ref is not None:
+            raise GroupingError(
+                "SOURCE_IDENTITY_CONFLICT",
+                "legacy metadata must not fabricate a source identity",
+            )
+        return sig
+    expected_media_ref = media_item_key(source_id, item.get("relative_path", ""))
+    if sig.media_ref is not None:
+        if sig.media_ref != expected_media_ref:
+            raise GroupingError(
+                "SOURCE_IDENTITY_CONFLICT",
+                "built signature media_ref conflicts with metadata authority",
+            )
+    else:
+        sig.media_ref = expected_media_ref
+    if sig.source_id is not None:
+        if sig.source_id != source_id:
+            raise GroupingError("SOURCE_IDENTITY_CONFLICT")
+    else:
+        sig.source_id = source_id
+    return sig
 
 
 def _default_signature_builder(
@@ -780,6 +898,10 @@ def _finalize_cluster(
     signatures: list[SourceSignature],
     session_id: str,
 ) -> SourceCluster:
+    if not signatures:
+        raise GroupingError("EMPTY_CLUSTER")
+    _assert_consistent_mode(signatures)
+    legacy = signatures[0].source_id is None
     cluster = SourceCluster(session_id=session_id, sources=signatures)
 
     relations: list[dict[str, Any]] = []
@@ -796,16 +918,21 @@ def _finalize_cluster(
                 "confidence": rel["confidence"],
                 "sync": sync,
             }
+            if not legacy:
+                relation["a_media_ref"] = member_identity(sig_a)
+                relation["b_media_ref"] = member_identity(sig_b)
             relations.append(relation)
             if rel.get("duplicate"):
                 if sig_b.sha256 and sig_a.sha256 and sig_b.sha256 == sig_a.sha256:
-                    duplicate_ids.add(sig_b.relative_path)
+                    duplicate_ids.add(member_identity(sig_b))
 
     cluster.relationships = relations
 
     # Affirmative dialogue evidence: a source belongs to the same event when it
     # has at least one resolved, above-threshold relationship (identical, same
     # event, or complementary) with any other source in the session.
+    with_a = "a_media_ref" if not legacy else "a"
+    with_b = "b_media_ref" if not legacy else "b"
     dialogue_related: set[str] = set()
     for relation in relations:
         if relation["sync"].get("status") != SYNC_STATUS_RESOLVED:
@@ -813,41 +940,41 @@ def _finalize_cluster(
         if relation["confidence"] < RELATED_CONFIDENCE_THRESHOLD:
             continue
         if relation["relationship"] in (RELATIONSHIP_IDENTICAL, RELATIONSHIP_SAME_EVENT, RELATIONSHIP_COMPLEMENTARY):
-            dialogue_related.add(relation["a"])
-            dialogue_related.add(relation["b"])
+            dialogue_related.add(relation[with_a])
+            dialogue_related.add(relation[with_b])
 
     dialogue_masters: dict[str, float] = {}
     unique_masters: dict[str, float] = {}
     dispositions: dict[str, str] = {}
 
     for sig in signatures:
-        path = sig.relative_path
-        if path in duplicate_ids:
-            dispositions[path] = DISPOSITION_DUPLICATE
+        key = member_identity(sig)
+        if key in duplicate_ids:
+            dispositions[key] = DISPOSITION_DUPLICATE
             continue
         q = source_quality_summary(sig)
-        if path in dialogue_related:
-            dispositions[path] = DISPOSITION_DIALOGUE
+        if key in dialogue_related:
+            dispositions[key] = DISPOSITION_DIALOGUE
             event_conf = _best_event_confidence(sig, relations)
             score = internal_rank_score(q, sig.duration_seconds, event_conf)
             score += ROLE_MASTER_PREFERENCE.get(sig.role, 0.0)
-            dialogue_masters[path] = score
+            dialogue_masters[key] = score
             continue
         # Not dialogue-related. A source may be skipped only with affirmative
         # evidence it needs no independent transcription: effectively silent or
         # technical feed. Otherwise it must remain a candidate, never silently
         # discarded merely for being UNRELATED/UNRESOLVED.
         if _is_effectively_silent(sig):
-            dispositions[path] = DISPOSITION_TECHNICAL_OR_EMPTY
+            dispositions[key] = DISPOSITION_TECHNICAL_OR_EMPTY
             continue
         if sig.windows and _has_content_evidence(sig):
-            dispositions[path] = DISPOSITION_UNIQUE_CONTENT
+            dispositions[key] = DISPOSITION_UNIQUE_CONTENT
             event_conf = _best_event_confidence(sig, relations)
             score = internal_rank_score(q, sig.duration_seconds, event_conf)
             score += ROLE_MASTER_PREFERENCE.get(sig.role, 0.0)
-            unique_masters[path] = score
+            unique_masters[key] = score
             continue
-        dispositions[path] = DISPOSITION_UNCERTAIN
+        dispositions[key] = DISPOSITION_UNCERTAIN
 
     dialogue_ordered = sorted(dialogue_masters.items(), key=lambda kv: kv[1], reverse=True)
     unique_ordered = sorted(unique_masters.items(), key=lambda kv: kv[1], reverse=True)
@@ -856,23 +983,34 @@ def _finalize_cluster(
     cluster.reference_source = (dialogue_ordered or unique_ordered or [("", 0.0)])[0][0] or None
     cluster.duplicate_sources = sorted(duplicate_ids)
     cluster.alternate_sources = sorted(
-        path for path, disp in dispositions.items()
-        if disp in (DISPOSITION_DIALOGUE,) and path not in cluster.transcription_masters
+        key for key, disp in dispositions.items()
+        if disp in (DISPOSITION_DIALOGUE,) and key not in cluster.transcription_masters
     )
     cluster.excluded_sources = sorted(
-        path for path, disp in dispositions.items()
+        key for key, disp in dispositions.items()
         if disp == DISPOSITION_TECHNICAL_OR_EMPTY
     )
     cluster.unique_candidate_sources = sorted(
-        path for path, disp in dispositions.items()
+        key for key, disp in dispositions.items()
         if disp == DISPOSITION_UNIQUE_CONTENT
     )
     cluster.uncertain_sources = sorted(
-        path for path, disp in dispositions.items()
+        key for key, disp in dispositions.items()
         if disp == DISPOSITION_UNCERTAIN
     )
     cluster.dispositions = dict(dispositions)
     return cluster
+
+
+def _assert_consistent_mode(signatures: list[SourceSignature]) -> None:
+    """Mixed legacy/source-aware members inside one cluster fail closed."""
+    legacy_any = any(sig.source_id is None for sig in signatures)
+    aware_any = any(sig.source_id is not None for sig in signatures)
+    if legacy_any and aware_any:
+        raise GroupingError(
+            "MIXED_SOURCE_IDENTITY",
+            "cannot mix legacy and source-aware signatures in one cluster",
+        )
 
 
 def _is_effectively_silent(sig: SourceSignature) -> bool:
@@ -903,10 +1041,14 @@ def _best_event_confidence(
     sig: SourceSignature,
     relationships: list[dict[str, Any]],
 ) -> float | None:
+    key = member_identity(sig)
+    legacy = sig.source_id is None
+    left = "a_media_ref" if not legacy else "a"
+    right = "b_media_ref" if not legacy else "b"
     confidences = [
         rel["confidence"]
         for rel in relationships
-        if rel["a"] == sig.relative_path or rel["b"] == sig.relative_path
+        if rel[left] == key or rel[right] == key
     ]
     return max(confidences) if confidences else None
 

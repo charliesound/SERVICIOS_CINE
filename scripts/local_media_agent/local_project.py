@@ -85,6 +85,12 @@ def project_selection_store_path(
     return project_path(project_id, local_appdata) / "editorial_selections"
 
 
+def project_sources_path(
+    project_id: str, local_appdata: str | Path | None = None
+) -> Path:
+    return project_path(project_id, local_appdata) / "project_sources.json"
+
+
 def create_project(
     project_name: str,
     *,

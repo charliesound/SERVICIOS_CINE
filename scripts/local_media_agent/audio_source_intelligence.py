@@ -24,7 +24,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from scripts.local_media_agent.media_catalog import media_item_key
 from scripts.local_media_agent.session_boundary import coarse_session_id
@@ -789,6 +789,72 @@ def _classify_source_mode(candidates: list[dict[str, Any]]) -> list[str]:
     return ["SOURCE_AWARE_MULTI_SOURCE"]
 
 
+def _candidate_source_identities(candidates: list[dict[str, Any]]) -> set[str]:
+    """Distinct canonical source identities present across the candidate set."""
+    identities: set[str] = set()
+    for item in candidates:
+        ident = _resolve_source_identity(item)
+        if ident is not None:
+            identities.add(ident)
+    return identities
+
+
+def _normalize_source_root_map(
+    media_root_by_source_id: Mapping[str, str | Path] | None,
+) -> dict[str, Path] | None:
+    """Validate and copy the transient source-root mapping.
+
+    Structural validation is deterministic and filesystem-free: keys must be
+    non-empty strings and values must be non-empty ``str`` or ``Path``. The
+    caller mapping is never mutated; a normalized copy is returned.
+    """
+    if media_root_by_source_id is None:
+        return None
+    if not isinstance(media_root_by_source_id, Mapping):
+        raise GroupingError(
+            "INVALID_SOURCE_ROOT_MAP",
+            "media_root_by_source_id must be a mapping",
+        )
+    normalized: dict[str, Path] = {}
+    for key, value in media_root_by_source_id.items():
+        if not isinstance(key, str) or not key.strip():
+            raise GroupingError(
+                "INVALID_SOURCE_ROOT_MAP",
+                "source root map keys must be non-empty strings",
+            )
+        if isinstance(value, Path):
+            root = value
+        elif isinstance(value, str) and value.strip():
+            root = Path(value)
+        else:
+            raise GroupingError(
+                "INVALID_SOURCE_ROOT_MAP",
+                "source root map values must be non-empty str or Path",
+            )
+        normalized[key] = root
+    return normalized
+
+
+def _resolve_grouping_media_path(
+    item: dict[str, Any],
+    *,
+    source_identity: str | None,
+    media_root: str | Path | None,
+    media_root_by_source_id: dict[str, Path] | None,
+    mode: str,
+) -> Path:
+    """Resolve the transient physical Path for a candidate item.
+
+    In source-aware mapped mode the explicit source-root mapping is the strict
+    physical authority and ``item["abs_path"]`` never overrides it. Legacy mode
+    (and source-aware single-source without a map) preserve their existing
+    ``abs_path``-preferred behavior.
+    """
+    if mode != "LEGACY" and media_root_by_source_id is not None:
+        return media_root_by_source_id[source_identity] / item.get("relative_path", "")
+    return Path(item.get("abs_path") or (Path(media_root) / item.get("relative_path", "")))
+
+
 def group_related_media(
     metadata_results: list[dict[str, Any]],
     *,
@@ -797,6 +863,7 @@ def group_related_media(
     analyze_content: bool = True,
     signature_builder: Callable[..., SourceSignature] | None = None,
     max_sources_per_cluster: int = 16,
+    media_root_by_source_id: Mapping[str, str | Path] | None = None,
 ) -> list[SourceCluster]:
     """Group related media into recording/session clusters.
 
@@ -812,15 +879,29 @@ def group_related_media(
         and (r.get("duration_seconds") or 0) > 0
     ]
     [mode] = _classify_source_mode(candidates)
-    if mode == "SOURCE_AWARE_MULTI_SOURCE":
-        raise GroupingError(
-            "MULTI_SOURCE_REQUIRES_SOURCE_ROOT_MAP",
-            "multiple source identities require media_root_by_source_id (MS2C2)",
-        )
     if mode == "MIXED":
         raise GroupingError(
             "MIXED_SOURCE_IDENTITY",
             "cannot mix legacy and source-aware candidates in one grouping call",
+        )
+    root_map = _normalize_source_root_map(media_root_by_source_id)
+    if mode == "LEGACY":
+        if root_map is not None:
+            raise GroupingError(
+                "LEGACY_MODE_WITH_SOURCE_ROOT_MAP",
+                "legacy candidates carry no source identity to select a root map entry",
+            )
+    elif root_map is not None:
+        missing = sorted(_candidate_source_identities(candidates) - set(root_map))
+        if missing:
+            raise GroupingError(
+                "MISSING_SOURCE_ROOT_MAP",
+                "root map missing source identities: " + ", ".join(missing),
+            )
+    elif mode == "SOURCE_AWARE_MULTI_SOURCE":
+        raise GroupingError(
+            "MULTI_SOURCE_REQUIRES_SOURCE_ROOT_MAP",
+            "multiple source identities require media_root_by_source_id (MS2C2)",
         )
 
     by_session: dict[str, list[dict[str, Any]]] = {}
@@ -839,7 +920,14 @@ def group_related_media(
         for i, item in enumerate(items):
             if len(signatures) >= max_sources_per_cluster:
                 break
-            path = Path(item.get("abs_path") or (Path(media_root) / item.get("relative_path", "")))
+            source_identity = _resolve_source_identity(item) if mode != "LEGACY" else None
+            path = _resolve_grouping_media_path(
+                item,
+                source_identity=source_identity,
+                media_root=media_root,
+                media_root_by_source_id=root_map,
+                mode=mode,
+            )
             sig = build(path, item, i)
             sig = _canonicalize_signature_identity(sig, item)
             if sig is None or not sig.windows:

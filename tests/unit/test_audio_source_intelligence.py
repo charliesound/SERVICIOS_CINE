@@ -763,3 +763,302 @@ class TestBuilderIdentityAuthority:
             with pytest.raises(GroupingError) as exc:
                 group_related_media([item], media_root=base, signature_builder=builder)
             assert exc.value.code == "SOURCE_IDENTITY_CONFLICT"
+
+
+class TestGroupRelatedMediaMultiRoot:
+    """MS2C2 — transient multi-root physical path resolution.
+
+    Uses injected builders (path-observing) and synthetic metadata so no media
+    files are required for path-routing assertions. The single default-builder
+    synthetic test uses two tmp roots with generated WAVs to prove real routing.
+    """
+
+    def _legacy_meta(self, rel, cat="audio"):
+        return {
+            "relative_path": rel, "category": cat, "file_size_bytes": 1000,
+            "duration_seconds": 1.0,
+            "audio": {"codec": "pcm_s16le", "sample_rate": RATE, "channel_count": 1},
+            "windows": {"start": np.zeros(40, dtype=np.float32)},
+        }
+
+    def _aware_meta(self, rel, source_id, cat="audio"):
+        m = self._legacy_meta(rel, cat)
+        m["source_id"] = source_id
+        return m
+
+    def _recording_builder(self, calls):
+        def builder(path, meta, i):
+            calls.append((str(path), meta.get("source_id"), meta.get("source_root_id")))
+            return _sig(meta["relative_path"], source_id=meta.get("source_id"), ref="start")
+        return builder
+
+    def test_legacy_single_root_no_map_unchanged(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            item = self._legacy_meta("a.wav")
+            clusters = group_related_media([item], media_root=base, signature_builder=self._recording_builder([]))
+            assert clusters
+            assert clusters[0].sources[0].source_id is None
+
+    def test_legacy_abs_path_behavior_unchanged(self):
+        base = "/base/irrelevant"
+        calls = []
+        item = {**self._legacy_meta("a.wav"), "abs_path": "/actual/root/a.wav"}
+        group_related_media([item], media_root=base, signature_builder=self._recording_builder(calls))
+        assert calls and calls[0][0] == "/actual/root/a.wav"
+
+    def test_legacy_with_root_map_fails_closed(self):
+        item = self._legacy_meta("a.wav")
+        with pytest.raises(GroupingError) as exc:
+            group_related_media([item], media_root="/x", media_root_by_source_id={SRC_A: "/root/a"})
+        assert exc.value.code == "LEGACY_MODE_WITH_SOURCE_ROOT_MAP"
+
+    def test_single_source_valid_map_no_media_root_works(self):
+        calls = []
+        item = self._aware_meta("Interview/A001.wav", SRC_A)
+        clusters = group_related_media(
+            [item], media_root_by_source_id={SRC_A: "/root/a"}, signature_builder=self._recording_builder(calls)
+        )
+        assert clusters
+        assert calls and calls[0][0] == "/root/a/Interview/A001.wav"
+
+    def test_single_source_map_wins_over_media_root(self):
+        calls = []
+        item = self._aware_meta("Interview/A001.wav", SRC_A)
+        clusters = group_related_media(
+            [item],
+            media_root="/base/ignored",
+            media_root_by_source_id={SRC_A: "/root/a"},
+            signature_builder=self._recording_builder(calls),
+        )
+        assert clusters
+        assert calls and calls[0][0] == "/root/a/Interview/A001.wav"
+
+    def test_single_source_map_missing_source_fails_closed_even_with_media_root(self):
+        item = self._aware_meta("Interview/A001.wav", SRC_A)
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(
+                [item], media_root="/base", media_root_by_source_id={SRC_B: "/root/b"}
+            )
+        assert exc.value.code == "MISSING_SOURCE_ROOT_MAP"
+
+    def test_multi_source_valid_complete_map_works(self):
+        calls = []
+        items = [self._aware_meta("Interview/A001.wav", SRC_A), self._aware_meta("Interview/A001.wav", SRC_B)]
+        clusters = group_related_media(
+            items,
+            media_root_by_source_id={SRC_A: "/root/a", SRC_B: "/root/b"},
+            signature_builder=self._recording_builder(calls),
+        )
+        assert clusters
+        paths = [c[0] for c in calls]
+        assert "/root/a/Interview/A001.wav" in paths
+        assert "/root/b/Interview/A001.wav" in paths
+        assert len(paths) == 2
+
+    def test_multi_source_no_map_fails_closed(self):
+        items = [self._aware_meta("a.wav", SRC_A), self._aware_meta("b.wav", SRC_B)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root="/x")
+        assert exc.value.code == "MULTI_SOURCE_REQUIRES_SOURCE_ROOT_MAP"
+
+    def test_multi_source_empty_map_fails_closed(self):
+        items = [self._aware_meta("a.wav", SRC_A), self._aware_meta("b.wav", SRC_B)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root_by_source_id={})
+        assert exc.value.code == "MISSING_SOURCE_ROOT_MAP"
+
+    def test_multi_source_map_missing_a_fails(self):
+        items = [self._aware_meta("a.wav", SRC_A), self._aware_meta("b.wav", SRC_B)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root_by_source_id={SRC_B: "/root/b"})
+        assert exc.value.code == "MISSING_SOURCE_ROOT_MAP"
+
+    def test_multi_source_map_missing_b_fails(self):
+        items = [self._aware_meta("a.wav", SRC_A), self._aware_meta("b.wav", SRC_B)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root_by_source_id={SRC_A: "/root/a"})
+        assert exc.value.code == "MISSING_SOURCE_ROOT_MAP"
+
+    def test_extra_unused_map_entry_allowed(self):
+        items = [self._aware_meta("a.wav", SRC_A), self._aware_meta("b.wav", SRC_B)]
+        clusters = group_related_media(
+            items,
+            media_root_by_source_id={SRC_A: "/root/a", SRC_B: "/root/b", "SRC-c": "/root/c"},
+            signature_builder=self._recording_builder([]),
+        )
+        assert clusters
+
+    def test_same_rel_multi_root_distinct_physical_paths(self):
+        calls = []
+        items = [self._aware_meta(SHARED_REL, SRC_A), self._aware_meta(SHARED_REL, SRC_B)]
+        group_related_media(
+            items,
+            media_root_by_source_id={SRC_A: "/tmp/A", SRC_B: "/tmp/B"},
+            signature_builder=self._recording_builder(calls),
+        )
+        paths = set(c[0] for c in calls)
+        assert paths == {"/tmp/A/Interview/M4ROOT/CLIP/A001.MP4", "/tmp/B/Interview/M4ROOT/CLIP/A001.MP4"}
+
+    def test_same_rel_multi_root_distinct_media_ref(self):
+        items = [self._aware_meta(SHARED_REL, SRC_A), self._aware_meta(SHARED_REL, SRC_B)]
+        clusters = group_related_media(
+            items,
+            media_root_by_source_id={SRC_A: "/tmp/A", SRC_B: "/tmp/B"},
+            signature_builder=self._recording_builder([]),
+        )
+        refs = sorted(member_identity(s) for s in clusters[0].sources)
+        assert refs == sorted([
+            media_item_key(SRC_A, SHARED_REL),
+            media_item_key(SRC_B, SHARED_REL),
+        ])
+        assert refs[0] != refs[1]
+
+    def test_multi_source_injected_builder_allowed_with_valid_map(self):
+        items = [self._aware_meta(SHARED_REL, SRC_A), self._aware_meta(SHARED_REL, SRC_B)]
+        clusters = group_related_media(
+            items,
+            media_root_by_source_id={SRC_A: "/root/a", SRC_B: "/root/b"},
+            signature_builder=self._recording_builder([]),
+        )
+        assert clusters and len(clusters[0].sources) == 2
+
+    def test_abs_path_does_not_override_mapped_root(self):
+        calls = []
+        items = [
+            {**self._aware_meta("a.wav", SRC_A), "abs_path": "/wrong/a.wav"},
+            {**self._aware_meta("b.wav", SRC_B), "abs_path": "/wrong/b.wav"},
+        ]
+        group_related_media(
+            items,
+            media_root_by_source_id={SRC_A: "/root/a", SRC_B: "/root/b"},
+            signature_builder=self._recording_builder(calls),
+        )
+        paths = [c[0] for c in calls]
+        assert "/root/a/a.wav" in paths and "/root/b/b.wav" in paths
+        assert "/wrong/a.wav" not in paths and "/wrong/b.wav" not in paths
+
+    def test_root_legacy_map_key_works(self):
+        calls = []
+        item = {**self._aware_meta("a.wav", SRC_A), "source_id": None, "source_root_id": ROOT_LEGACY}
+        clusters = group_related_media(
+            [item], media_root_by_source_id={ROOT_LEGACY: "/root/legacy"}, signature_builder=self._recording_builder(calls)
+        )
+        assert clusters
+        assert calls and calls[0][0] == "/root/legacy/a.wav"
+
+    def test_src_map_key_works(self):
+        item = self._aware_meta("b.wav", SRC_B)
+        clusters = group_related_media(
+            [item], media_root_by_source_id={SRC_B: "/root/b"}, signature_builder=self._recording_builder([])
+        )
+        assert clusters
+
+    def test_conflicting_source_id_root_still_fails(self):
+        item = {**self._legacy_meta("a.wav"), "source_id": SRC_A, "source_root_id": ROOT_LEGACY}
+        with pytest.raises(GroupingError) as exc:
+            group_related_media([item], media_root_by_source_id={SRC_A: "/root/a"})
+        assert exc.value.code == "SOURCE_IDENTITY_CONFLICT"
+
+    def test_mixed_legacy_source_aware_still_fails_with_map(self):
+        items = [self._legacy_meta("a.wav"), self._aware_meta("b.wav", SRC_A)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root_by_source_id={SRC_A: "/root/a"})
+        assert exc.value.code == "MIXED_SOURCE_IDENTITY"
+
+    def test_invalid_map_type_fails(self):
+        items = [self._aware_meta("a.wav", SRC_A), self._aware_meta("b.wav", SRC_B)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root_by_source_id=["/root/a", "/root/b"])
+        assert exc.value.code == "INVALID_SOURCE_ROOT_MAP"
+
+    def test_invalid_root_value_fails(self):
+        items = [self._aware_meta("a.wav", SRC_A), self._aware_meta("b.wav", SRC_B)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root_by_source_id={SRC_A: "/root/a", SRC_B: 123})
+        assert exc.value.code == "INVALID_SOURCE_ROOT_MAP"
+
+    def test_empty_root_value_fails(self):
+        items = [self._aware_meta("a.wav", SRC_A), self._aware_meta("b.wav", SRC_B)]
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(items, media_root_by_source_id={SRC_A: "/root/a", SRC_B: ""})
+        assert exc.value.code == "INVALID_SOURCE_ROOT_MAP"
+
+    def test_caller_map_unmodified(self):
+        original = {SRC_A: "/root/a", SRC_B: "/root/b"}
+        items = [self._aware_meta("a.wav", SRC_A), self._aware_meta("b.wav", SRC_B)]
+        group_related_media(items, media_root_by_source_id=original, signature_builder=self._recording_builder([]))
+        assert original == {SRC_A: "/root/a", SRC_B: "/root/b"}
+
+    def test_relative_path_unchanged(self):
+        calls = []
+        item = self._aware_meta("Interview/A001.wav", SRC_A)
+        clusters = group_related_media(
+            [item], media_root_by_source_id={SRC_A: "/root/a"}, signature_builder=self._recording_builder(calls)
+        )
+        assert calls and calls[0][1] == SRC_A
+        assert clusters[0].sources[0].relative_path == "Interview/A001.wav"
+
+    def test_no_abs_path_in_signature(self):
+        calls = []
+        item = {**self._aware_meta("a.wav", SRC_A), "abs_path": "/root/a/a.wav"}
+        clusters = group_related_media(
+            [item], media_root_by_source_id={SRC_A: "/root/a"}, signature_builder=self._recording_builder(calls)
+        )
+        sig = clusters[0].sources[0]
+        assert not hasattr(sig, "abs_path")
+        assert sig.relative_path == "a.wav"
+
+    def test_no_abs_path_in_cluster_results(self):
+        item = self._aware_meta("b.wav", SRC_B)
+        clusters = group_related_media(
+            [item], media_root_by_source_id={SRC_B: "/root/b"}, signature_builder=self._recording_builder([])
+        )
+        assert not hasattr(clusters[0].sources[0], "abs_path")
+
+    def test_media_ref_canonical(self):
+        item = self._aware_meta("Interview/A001.wav", SRC_A)
+        clusters = group_related_media(
+            [item], media_root_by_source_id={SRC_A: "/root/a"}, signature_builder=self._recording_builder([])
+        )
+        assert clusters[0].sources[0].media_ref == media_item_key(SRC_A, "Interview/A001.wav")
+
+    def test_deterministic_root_resolution(self):
+        maps = [{SRC_A: "/root/a", SRC_B: "/root/b"}, {SRC_A: "/root/a", SRC_B: "/root/b"}]
+        results = []
+        for m in maps:
+            calls = []
+            items = [self._aware_meta("a.wav", SRC_A), self._aware_meta("b.wav", SRC_B)]
+            group_related_media(items, media_root_by_source_id=m, signature_builder=self._recording_builder(calls))
+            results.append([c[0] for c in calls])
+        assert results[0] == results[1]
+
+    def test_default_builder_synthetic_two_roots(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            root_a = base / "rootA"
+            root_b = base / "rootB"
+            sess_a = root_a / "Sesion 1"
+            sess_b = root_b / "Sesion 1"
+            sess_a.mkdir(parents=True)
+            sess_b.mkdir(parents=True)
+            samples_a = _event(5.0, seed=20)
+            samples_b = _event(5.0, seed=21)
+            _write_wav(sess_a / "cam.wav", samples_a)
+            _write_wav(sess_b / "cam.wav", samples_b)
+            items = [
+                self._aware_meta("Sesion 1/cam.wav", SRC_A),
+                self._aware_meta("Sesion 1/cam.wav", SRC_B),
+            ]
+            clusters = group_related_media(
+                items,
+                media_root_by_source_id={SRC_A: str(root_a), SRC_B: str(root_b)},
+            )
+            assert clusters
+            sources = clusters[0].sources
+            assert len(sources) == 2
+            refs = sorted(member_identity(s) for s in sources)
+            assert refs == sorted([
+                media_item_key(SRC_A, "Sesion 1/cam.wav"),
+                media_item_key(SRC_B, "Sesion 1/cam.wav"),
+            ])

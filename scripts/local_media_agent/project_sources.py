@@ -58,6 +58,10 @@ CID_SOURCE_CROSS_PROJECT_CONFLICT = "CID_SOURCE_CROSS_PROJECT_CONFLICT"
 CID_SOURCE_NOT_FOUND = "CID_SOURCE_NOT_FOUND"
 CID_SOURCE_RECONNECT_CONFIRMATION_REQUIRED = "CID_SOURCE_RECONNECT_CONFIRMATION_REQUIRED"
 CID_SOURCE_TIMESTAMP_INVALID = "CID_SOURCE_TIMESTAMP_INVALID"
+CID_SOURCE_LEGACY_ALIAS_INVALID = "CID_SOURCE_LEGACY_ALIAS_INVALID"
+CID_SOURCE_LEGACY_ALIAS_CONFLICT = "CID_SOURCE_LEGACY_ALIAS_CONFLICT"
+CID_SOURCE_MIGRATION_BINDING_INVALID = "CID_SOURCE_MIGRATION_BINDING_INVALID"
+CID_SOURCE_MIGRATION_TARGET_CONFLICT = "CID_SOURCE_MIGRATION_TARGET_CONFLICT"
 
 # Mirrors local_project's project-id shape; used only to recognize project
 # directories when scanning other projects for shared-location detection.
@@ -279,6 +283,7 @@ def _validate_registry(registry: Any, project_id: str) -> None:
         raise SourceRegistryError(CID_SOURCE_REGISTRY_INVALID)
 
     seen_ids: set[str] = set()
+    seen_aliases: set[str] = set()
     for source in registry["sources"]:
         if not isinstance(source, dict):
             raise SourceRegistryError(CID_SOURCE_REGISTRY_INVALID)
@@ -305,6 +310,10 @@ def _validate_registry(registry: Any, project_id: str) -> None:
             not isinstance(legacy, str) or not legacy.strip()
         ):
             raise SourceRegistryError(CID_SOURCE_REGISTRY_INVALID)
+        if legacy is not None:
+            if legacy in seen_aliases:
+                raise SourceRegistryError(CID_SOURCE_LEGACY_ALIAS_CONFLICT)
+            seen_aliases.add(legacy)
 
 
 def save_project_sources(
@@ -569,6 +578,165 @@ def _same_project_conflict(
     return (None, None)
 
 
+# ---------------------------------------------------------------------------
+# MS2A — legacy source binding (stable identity + legacy alias)
+#
+# These helpers operate on persisted data / explicit arguments only. They
+# never stat the filesystem, resolve drives, scan folders, probe media, or
+# test whether a disk is connected. The legacy alias authority lives solely in
+# project_sources.json: no second alias structure exists anywhere.
+# ---------------------------------------------------------------------------
+
+def validate_legacy_alias(value: object) -> str:
+    """Validate a legacy ``source_root_id`` alias: non-empty, NUL-free string."""
+    if not isinstance(value, str) or not value.strip():
+        raise SourceRegistryError(CID_SOURCE_LEGACY_ALIAS_INVALID)
+    if "\x00" in value:
+        raise SourceRegistryError(CID_SOURCE_LEGACY_ALIAS_INVALID)
+    return value
+
+
+def resolve_legacy_source_id(
+    project_id: str,
+    legacy_root_id: str,
+    *,
+    local_appdata: str | Path | None = None,
+) -> dict[str, Any] | None:
+    """Resolve a legacy root id to its stable binding, if any.
+
+    Looks up ``project_sources.json`` for a source whose
+    ``legacy_source_root_id_alias == legacy_root_id``.
+
+    - If exactly one source holds that alias: return it (idempotent reuse).
+    - If no source holds it: return None.
+    - If more than one source holds the same alias (structurally impossible
+      after registry validation, but guarded anyway): FAIL CLOSED.
+
+    No filesystem / media access is performed.
+    """
+    identifier = validate_project_id(project_id)
+    legacy_root_id = validate_legacy_alias(legacy_root_id)
+    registry = load_project_sources(identifier, local_appdata=local_appdata)
+    matches = resolve_legacy_source_id_from_registry(registry, legacy_root_id)
+    if len(matches) == 1:
+        return dict(matches[0])
+    if len(matches) > 1:
+        raise SourceRegistryError(CID_SOURCE_LEGACY_ALIAS_CONFLICT)
+    return None
+
+
+def resolve_legacy_source_id_from_registry(
+    registry: dict[str, Any], legacy_root_id: str
+) -> list[dict[str, Any]]:
+    """Pure lookup of sources whose alias equals ``legacy_root_id``.
+
+    Returns all matching records (0..1 in practice). Raises
+    ``CID_SOURCE_LEGACY_ALIAS_CONFLICT`` if more than one record maps to the
+    requested alias.
+    """
+    legacy_root_id = validate_legacy_alias(legacy_root_id)
+    matches = [
+        dict(source)
+        for source in registry.get("sources", [])
+        if isinstance(source, dict)
+        and source.get("legacy_source_root_id_alias") == legacy_root_id
+    ]
+    if len(matches) > 1:
+        raise SourceRegistryError(CID_SOURCE_LEGACY_ALIAS_CONFLICT)
+    return matches
+
+
+def add_legacy_project_source(
+    project_id: str,
+    legacy_root_id: str,
+    current_location: str,
+    display_label: str,
+    *,
+    local_appdata: str | Path | None = None,
+    state: str | None = None,
+    allow_shared_location: bool = False,
+    source_id: str | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Create/ensure a legacy migration binding for a project and return it.
+
+    This is the idempotent legacy-binding entry point for MS2A:
+
+    - If the registry already holds exactly one source whose
+      ``legacy_source_root_id_alias == legacy_root_id``, that stable source is
+      returned (no new SRC-<uuid4> is generated).
+    - Otherwise a new stable ``SRC-<uuid4>`` binding is created with the given
+      explicit alias, and atomically persisted.
+
+    Guard rails:
+    - Alias must be a non-empty, NUL-free string.
+    - Alias must be unique within the project: a second source may not claim
+      the same legacy alias, so the helper never silently reuses a different
+      source.
+    - Conflicting alias registries fail closed.
+    - ``project_sources.json`` schema remains v1.
+    - Default state is OFFLINE for automatic/administrative legacy migration
+      (``OFFLINE_IS_NOT_MISSING=True``); an explicit validated allowed state
+      may be supplied by the caller. No filesystem check is performed.
+    """
+    identifier = validate_project_id(project_id)
+    legacy_root_id = validate_legacy_alias(legacy_root_id)
+    location = _validate_location(current_location)
+    label = _validate_label(display_label)
+    if state is None:
+        state = STATE_OFFLINE
+    if state not in _SOURCE_STATES:
+        raise SourceRegistryError(CID_SOURCE_STATE_INVALID)
+    if source_id is not None:
+        validate_source_id(source_id)
+    timestamp = _timestamp(now)
+
+    registry = load_project_sources(identifier, local_appdata=local_appdata)
+
+    existing = resolve_legacy_source_id_from_registry(registry, legacy_root_id)
+    if len(existing) > 1:
+        raise SourceRegistryError(CID_SOURCE_LEGACY_ALIAS_CONFLICT)
+    if len(existing) == 1:
+        return dict(existing[0])
+
+    for source in registry.get("sources", []):
+        if not isinstance(source, dict):
+            continue
+        other_alias = source.get("legacy_source_root_id_alias")
+        if other_alias is not None and other_alias == legacy_root_id:
+            raise SourceRegistryError(CID_SOURCE_LEGACY_ALIAS_CONFLICT)
+
+    conflict, _ = _same_project_conflict(registry, location)
+    if conflict is not None:
+        if conflict == "DUPLICATE_LOCATION":
+            raise SourceRegistryError(CID_SOURCE_DUPLICATE_LOCATION)
+        raise SourceRegistryError(CID_SOURCE_OVERLAPPING_LOCATION)
+
+    cross_use = detect_cross_project_location_use(
+        location, local_appdata=local_appdata, exclude_project_id=identifier
+    )
+    if cross_use and not allow_shared_location:
+        raise SourceRegistryError(CID_SOURCE_CROSS_PROJECT_CONFLICT)
+
+    new_id = validate_source_id(source_id) if source_id is not None else _new_source_id()
+    for source in registry.get("sources", []):
+        if source["source_id"] == new_id:
+            raise SourceRegistryError(CID_SOURCE_DUPLICATE_ID)
+
+    record: dict[str, Any] = {
+        "source_id": new_id,
+        "display_label": label,
+        "current_location": location,
+        "state": state,
+        "added_at": timestamp,
+        "updated_at": timestamp,
+        "legacy_source_root_id_alias": legacy_root_id,
+    }
+    registry["sources"].append(record)
+    save_project_sources(registry, local_appdata=local_appdata)
+    return dict(record)
+
+
 __all__ = [
     "PROJECT_SOURCES_FORMAT",
     "PROJECT_SOURCES_SCHEMA_VERSION",
@@ -591,4 +759,8 @@ __all__ = [
     "reconnect_source",
     "detect_project_location_conflicts",
     "detect_cross_project_location_use",
+    "validate_legacy_alias",
+    "resolve_legacy_source_id",
+    "resolve_legacy_source_id_from_registry",
+    "add_legacy_project_source",
 ]

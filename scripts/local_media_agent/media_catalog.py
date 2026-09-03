@@ -52,6 +52,20 @@ ERROR_CATEGORY_ANALYSIS = "ANALYSIS_ERROR"
 ROOT_STATUS_ONLINE = "ONLINE"
 ROOT_STATUS_OFFLINE = "OFFLINE"
 
+# legacy -> stable identity migration classifications (MS2A)
+LEGACY_MIGRATION_AUTO_MIGRATABLE = "AUTO_MIGRATABLE"
+LEGACY_MIGRATION_USER_CONFIRMATION_REQUIRED = "USER_CONFIRMATION_REQUIRED"
+LEGACY_MIGRATION_BLOCKED = "BLOCKED"
+
+# legacy migration error codes
+LEGACY_MIGRATION_ERROR = "LEGACY_MIGRATION_ERROR"
+LEGACY_MIGRATION_DESTINATION_COLLISION = "LEGACY_MIGRATION_DESTINATION_COLLISION"
+LEGACY_MIGRATION_ROOT_COLLISION = "LEGACY_MIGRATION_ROOT_COLLISION"
+LEGACY_MIGRATION_AMBIGUOUS = "LEGACY_MIGRATION_AMBIGUOUS"
+
+# canonical stable source id prefix (matches project_sources SRC-<uuid4>)
+_CANONICAL_SOURCE_PREFIX = "SRC-"
+
 _PROJECT_ID_RE = re.compile(
     r"^PRJ-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 )
@@ -322,3 +336,284 @@ def _require_catalog(catalog: object) -> None:
 
 def _touch(catalog: dict[str, Any]) -> None:
     catalog["updated_at"] = _now_iso()
+
+
+# ---------------------------------------------------------------------------
+# MS2A — legacy -> stable source identity migration (pure, read-only where
+# noted). Migration is an administrative data transformation only: it never
+# imports ffprobe/ffmpeg/Sony sidecar parsing, never stats media, and never
+# opens source media. It operates on persisted catalog dictionaries.
+# ---------------------------------------------------------------------------
+
+def _distinct_item_roots(catalog: dict[str, Any]) -> set[str]:
+    """Return the set of ``source_root_id`` values referenced by media items."""
+    roots: set[str] = set()
+    for item in catalog.get("media_items", {}).values():
+        if isinstance(item, dict):
+            rid = item.get("source_root_id")
+            if isinstance(rid, str) and rid.strip():
+                roots.add(rid)
+    return roots
+
+
+def _source_root_record(catalog: dict[str, Any], source_root_id: str) -> dict[str, Any] | None:
+    for record in catalog.get("source_roots", []):
+        if isinstance(record, dict) and record.get("source_root_id") == source_root_id:
+            return record
+    return None
+
+
+def classify_legacy_catalog_migration(
+    catalog: dict[str, Any],
+    legacy_root_id: str,
+    *,
+    source_id: str | None = None,
+) -> tuple[str, str]:
+    """Determine whether a catalog is safe for automatic single-source identity
+    migration of ``legacy_root_id`` -> ``source_id``.
+
+    Returns ``(classification, reason)`` where classification is one of:
+
+    - ``AUTO_MIGRATABLE``: unambiguous, safe to migrate automatically.
+    - ``USER_CONFIRMATION_REQUIRED``: ambiguous / multiple roots; do not guess.
+    - ``BLOCKED``: fail closed (malformed, missing record, collision).
+
+    This is a pure read-only inspection; the physical location is never
+    accessed.
+    """
+    if not _is_valid_catalog(catalog):
+        return (LEGACY_MIGRATION_BLOCKED, "CATALOG_INVALID_V1")
+    if not isinstance(legacy_root_id, str) or not legacy_root_id.strip():
+        return (LEGACY_MIGRATION_BLOCKED, "LEGACY_ROOT_ID_INVALID")
+    if source_id is not None and (not isinstance(source_id, str) or not source_id.strip()):
+        return (LEGACY_MIGRATION_BLOCKED, "SOURCE_ID_INVALID")
+    if source_id is not None and source_id == legacy_root_id:
+        return (LEGACY_MIGRATION_BLOCKED, "SOURCE_ID_EQUALS_LEGACY_ROOT")
+
+    item_roots = _distinct_item_roots(catalog)
+    if not item_roots:
+        return (LEGACY_MIGRATION_AUTO_MIGRATABLE, "NO_MEDIA_ITEMS_MIGRATE_VACUOUSLY")
+
+    root_record = _source_root_record(catalog, legacy_root_id)
+    if root_record is None:
+        return (LEGACY_MIGRATION_BLOCKED, "SOURCE_ROOT_RECORD_MISSING")
+    stored_path = root_record.get("path")
+    if not isinstance(stored_path, str) or not stored_path.strip():
+        return (LEGACY_MIGRATION_BLOCKED, "SOURCE_ROOT_PATH_EMPTY")
+
+    for item in catalog.get("media_items", {}).values():
+        if not isinstance(item, dict):
+            return (LEGACY_MIGRATION_BLOCKED, "MEDIA_ITEM_MALFORMED")
+        rid = item.get("source_root_id")
+        if not isinstance(rid, str) or not rid.strip():
+            return (LEGACY_MIGRATION_BLOCKED, "MEDIA_ITEM_SOURCE_ROOT_ID_INVALID")
+        if rid != legacy_root_id:
+            return (LEGACY_MIGRATION_USER_CONFIRMATION_REQUIRED, "MULTIPLE_DISTINCT_ROOTS")
+
+    conflicting = _find_conflicting_canonical(catalog, legacy_root_id, source_id)
+    if conflicting is not None:
+        return (LEGACY_MIGRATION_BLOCKED, conflicting)
+
+    return (LEGACY_MIGRATION_AUTO_MIGRATABLE, "SINGLE_LEGACY_ROOT_UNAMBIGUOUS")
+
+
+def _find_conflicting_canonical(
+    catalog: dict[str, Any], legacy_root_id: str, source_id: str | None
+) -> str | None:
+    """Return a conflict reason string, or None if no destination collision.
+
+    Only relevant when a canonical ``source_id`` (or a pre-existing canonical
+    root) is already present and its record/payload differ from the legacy one
+    under identity substitution. Equivalent records are not treated as a
+    conflict (they converge); materially different records fail closed.
+    """
+    if source_id is None:
+        canonical_roots = {
+            _source_root_record(catalog, rid)
+            for rid in _distinct_item_roots(catalog)
+            if rid.startswith(_CANONICAL_SOURCE_PREFIX)
+        }
+        if len(canonical_roots) > 1:
+            return "CANONICAL_ROOT_AMBIGUOUS"
+        if canonical_roots:
+            return "CANONICAL_IDENTITY_ALREADY_PRESENT"
+        return None
+
+    existing_root = _source_root_record(catalog, source_id)
+    if existing_root is not None:
+        legacy_root = _source_root_record(catalog, legacy_root_id)
+        if legacy_root is not None and not _equivalent_source_root(legacy_root, existing_root):
+            return "SOURCE_ROOT_COLLISION"
+        return None
+
+    for item in _items_for_root(catalog, legacy_root_id):
+        existing = catalog.get("media_items", {}).get(media_item_key(source_id, item["relative_path"]))
+        if existing is None:
+            continue
+        if not _equivalent_media_item(item, existing, legacy_root_id, source_id):
+            return "DESTINATION_COLLISION"
+    return None
+
+
+def _items_for_root(catalog: dict[str, Any], source_root_id: str) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for item in catalog.get("media_items", {}).values():
+        if isinstance(item, dict) and item.get("source_root_id") == source_root_id:
+            items.append(item)
+    return items
+
+
+def _equivalent_media_item(
+    legacy_item: dict[str, Any],
+    canonical_item: dict[str, Any],
+    legacy_root_id: str,
+    source_id: str,
+) -> bool:
+    """Normalized equality after substituting the legacy identity for the
+    canonical SOURCE_ID.
+
+    ``relative_path`` must match; every other material payload field must be
+    semantically identical. ``source_root_id`` is permitted to differ (it is
+    the identity being migrated).
+    """
+    if canonical_item.get("relative_path") != legacy_item.get("relative_path"):
+        return False
+    for key, value in legacy_item.items():
+        if key == "source_root_id":
+            expected = source_id
+            if canonical_item.get(key) != expected:
+                return False
+            continue
+        if key not in canonical_item:
+            return False
+        if canonical_item[key] != value:
+            return False
+    for key in canonical_item:
+        if key == "source_root_id":
+            continue
+        if key not in legacy_item:
+            return False
+        if legacy_item[key] != canonical_item[key]:
+            return False
+    return True
+
+
+def _equivalent_source_root(
+    legacy_record: dict[str, Any], canonical_record: dict[str, Any]
+) -> bool:
+    """Source-root records are equivalent when all fields except the identity
+    ``source_root_id`` are semantically identical and the identity maps
+    legacy -> canonical."""
+    for key, value in legacy_record.items():
+        if key == "source_root_id":
+            continue
+        if key not in canonical_record:
+            return False
+        if canonical_record[key] != value:
+            return False
+    for key in canonical_record:
+        if key == "source_root_id":
+            continue
+        if key not in legacy_record:
+            return False
+        if legacy_record[key] != canonical_record[key]:
+            return False
+    return True
+
+
+def migrate_legacy_source_root(
+    catalog: dict[str, Any],
+    legacy_root_id: str,
+    source_id: str,
+) -> dict[str, Any]:
+    """Deterministic re-key of a catalog's source identity in place semantics.
+
+    Returns a NEW catalog dictionary; the input ``catalog`` is not mutated.
+    Migrates ``legacy_root_id`` -> ``source_id`` for the matching source-root
+    record and every media item that references it, preserving all unrelated
+    payload fields verbatim:
+
+    - media item key ``legacy_root_id::<rel>`` -> ``source_id::<rel>``
+    - item ``source_root_id`` -> ``source_id``
+    - ffprobe_metadata, source_color_profile, size, mtime_ns, fingerprints,
+      analysis/error state, warnings, and all unrelated fields preserved.
+
+    Identity-only migration; no reprobe, no media access, no Sony reparse.
+
+    Collision rules:
+    - Equivalent legacy+canonical duplicate records collapse to the single
+      canonical record (idempotent rerun safe).
+    - Materially different destination media / source-root records FAIL CLOSED
+      (no overwrite, no silent data loss).
+
+    Leaves unrelated roots (and canonical entries) untouched.
+    """
+    _require_catalog(catalog)
+    if not isinstance(legacy_root_id, str) or not legacy_root_id.strip():
+        raise MediaCatalogError("LEGACY_ROOT_ID_INVALID")
+    if not isinstance(source_id, str) or not source_id.strip():
+        raise MediaCatalogError("SOURCE_ID_INVALID")
+    if source_id == legacy_root_id:
+        raise MediaCatalogError("SOURCE_ID_EQUALS_LEGACY_ROOT")
+
+    legacy_root = _source_root_record(catalog, legacy_root_id)
+    if legacy_root is None:
+        if any(
+            isinstance(item, dict) and item.get("source_root_id") == legacy_root_id
+            for item in catalog.get("media_items", {}).values()
+        ):
+            raise MediaCatalogError(LEGACY_MIGRATION_ERROR + ":SOURCE_ROOT_RECORD_MISSING")
+        return dict(catalog)
+
+    new_catalog_structure: dict[str, Any] = {
+        "format": CATALOG_FORMAT,
+        "schema_version": SCHEMA_VERSION,
+        "project_id": catalog["project_id"],
+        "updated_at": catalog["updated_at"],
+        "source_roots": [],
+        "media_items": {},
+        "analysis_state": catalog["analysis_state"],
+    }
+
+    existing_canonical_root = _source_root_record(catalog, source_id)
+    if existing_canonical_root is not None:
+        if not _equivalent_source_root(legacy_root, existing_canonical_root):
+            raise MediaCatalogError(LEGACY_MIGRATION_ROOT_COLLISION)
+        new_catalog_structure["source_roots"].append(dict(existing_canonical_root))
+    else:
+        migrated_root = dict(legacy_root)
+        migrated_root["source_root_id"] = source_id
+        new_catalog_structure["source_roots"].append(migrated_root)
+
+    for record in catalog.get("source_roots", []):
+        if not isinstance(record, dict):
+            continue
+        rid = record.get("source_root_id")
+        if rid == legacy_root_id or rid == source_id:
+            continue
+        new_catalog_structure["source_roots"].append(dict(record))
+
+    for item in catalog.get("media_items", {}).values():
+        if not isinstance(item, dict):
+            continue
+        rid = item.get("source_root_id")
+        if rid == legacy_root_id:
+            migrated = dict(item)
+            migrated["source_root_id"] = source_id
+            new_key = media_item_key(source_id, migrated["relative_path"])
+            orig_canonical = catalog.get("media_items", {}).get(new_key)
+            if orig_canonical is not None:
+                if not _equivalent_media_item(migrated, orig_canonical, legacy_root_id, source_id):
+                    raise MediaCatalogError(LEGACY_MIGRATION_DESTINATION_COLLISION)
+                continue
+            new_catalog_structure["media_items"][new_key] = migrated
+        elif rid == source_id:
+            key = media_item_key(source_id, item["relative_path"])
+            if key not in new_catalog_structure["media_items"]:
+                new_catalog_structure["media_items"][key] = dict(item)
+        else:
+            key = media_item_key(rid, item["relative_path"])
+            new_catalog_structure["media_items"][key] = dict(item)
+
+    _require_catalog(new_catalog_structure)
+    return new_catalog_structure

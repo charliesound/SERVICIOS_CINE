@@ -23,6 +23,8 @@ from scripts.local_media_agent.project_sources import (
     CID_SOURCE_CROSS_PROJECT_CONFLICT,
     CID_SOURCE_DUPLICATE_ID,
     CID_SOURCE_DUPLICATE_LOCATION,
+    CID_SOURCE_LEGACY_ALIAS_CONFLICT,
+    CID_SOURCE_LEGACY_ALIAS_INVALID,
     CID_SOURCE_NOT_FOUND,
     CID_SOURCE_OVERLAPPING_LOCATION,
     CID_SOURCE_PROJECT_MISMATCH,
@@ -34,6 +36,7 @@ from scripts.local_media_agent.project_sources import (
     STATE_OFFLINE,
     STATE_ONLINE,
     SourceRegistryError,
+    add_legacy_project_source,
     add_project_source,
     detect_cross_project_location_use,
     detect_project_location_conflicts,
@@ -45,8 +48,11 @@ from scripts.local_media_agent.project_sources import (
     load_project_sources,
     locations_equal,
     reconnect_source,
+    resolve_legacy_source_id,
+    resolve_legacy_source_id_from_registry,
     save_project_sources,
     update_source_state,
+    validate_legacy_alias,
     validate_source_id,
 )
 
@@ -389,3 +395,138 @@ def test_local_project_manifest_unchanged(tmp_path: Path) -> None:
     assert "sources" not in loaded
     assert "source_ids" not in loaded
     assert "locations" not in loaded
+
+
+# ---------------------------------------------------------------------------
+# MS2A — legacy migration binding (cases 31-42)
+# ---------------------------------------------------------------------------
+
+# 31. explicit legacy alias accepted
+def test_legacy_alias_accepted(tmp_path: Path) -> None:
+    record = add_legacy_project_source(
+        P1, "ROOT-abc123", "F:\\SIRUELA", "Legacy Cam", local_appdata=tmp_path, now=NOW
+    )
+    assert SRC_ID_RE.fullmatch(record["source_id"])
+    assert record["legacy_source_root_id_alias"] == "ROOT-abc123"
+
+
+# 32. legacy alias persists/reloads via binding API
+def test_legacy_binding_persists_reloads(tmp_path: Path) -> None:
+    record = add_legacy_project_source(
+        P1, "ROOT-abc123", "F:\\SIRUELA", "Legacy Cam", local_appdata=tmp_path, now=NOW
+    )
+    loaded = load_project_sources(P1, local_appdata=tmp_path)
+    assert loaded["sources"][0]["legacy_source_root_id_alias"] == "ROOT-abc123"
+    assert loaded["sources"][0]["source_id"] == record["source_id"]
+
+
+# 33. legacy alias maps to stable SRC source
+def test_legacy_alias_maps_to_stable_src(tmp_path: Path) -> None:
+    record = add_legacy_project_source(
+        P1, "ROOT-abc123", "F:\\SIRUELA", "Legacy Cam", local_appdata=tmp_path, now=NOW
+    )
+    resolved = resolve_legacy_source_id(P1, "ROOT-abc123", local_appdata=tmp_path)
+    assert resolved is not None
+    assert resolved["source_id"] == record["source_id"]
+    assert resolved["legacy_source_root_id_alias"] == "ROOT-abc123"
+
+
+# 34. rerun/request same alias reuses same source_id (idempotent)
+def test_legacy_alias_idempotent_reuse(tmp_path: Path) -> None:
+    first = add_legacy_project_source(
+        P1, "ROOT-abc123", "F:\\SIRUELA", "Legacy Cam", local_appdata=tmp_path, now=NOW
+    )
+    second = add_legacy_project_source(
+        P1, "ROOT-abc123", "F:\\SIRUELA", "Legacy Cam", local_appdata=tmp_path, now=NOW
+    )
+    assert second["source_id"] == first["source_id"]
+    assert len(list_project_sources(P1, local_appdata=tmp_path)) == 1
+
+
+# 35. same alias cannot map to two sources in one project
+def test_legacy_alias_unique_per_project(tmp_path: Path) -> None:
+    add_legacy_project_source(
+        P1, "ROOT-abc123", "F:\\SIRUELA", "Legacy Cam", local_appdata=tmp_path, now=NOW
+    )
+    add_project_source(P1, "F:\\OTHER_FILM", "Cam2", local_appdata=tmp_path, now=NOW)
+    registry = load_project_sources(P1, local_appdata=tmp_path)
+    registry["sources"][1]["legacy_source_root_id_alias"] = "ROOT-abc123"
+    _write_raw_registry(P1, registry, tmp_path)
+    with pytest.raises(SourceRegistryError) as ei:
+        load_project_sources(P1, local_appdata=tmp_path)
+    assert ei.value.code == CID_SOURCE_LEGACY_ALIAS_CONFLICT
+
+
+# 36. conflicting alias registry fail-closed (pure resolution)
+def test_conflicting_alias_registry_fail_closed(tmp_path: Path) -> None:
+    add_legacy_project_source(
+        P1, "ROOT-a", "F:\\SIRUELA", "A", local_appdata=tmp_path, now=NOW
+    )
+    registry = load_project_sources(P1, local_appdata=tmp_path)
+    second = {
+        "source_id": "SRC-12345678-1234-4123-8123-123456789abc",
+        "display_label": "B",
+        "current_location": "F:\\OTHER",
+        "state": STATE_OFFLINE,
+        "added_at": "2024-01-02T03:04:05Z",
+        "updated_at": "2024-01-02T03:04:05Z",
+        "legacy_source_root_id_alias": "ROOT-a",
+    }
+    registry["sources"].append(second)
+    with pytest.raises(SourceRegistryError) as ei:
+        resolve_legacy_source_id_from_registry(registry, "ROOT-a")
+    assert ei.value.code == CID_SOURCE_LEGACY_ALIAS_CONFLICT
+
+
+# 37. creating legacy migration binding requires no filesystem access on media
+def test_legacy_binding_no_filesystem_access(tmp_path: Path) -> None:
+    nonexistent = "F:\\DOES\\NOT\\EXIST_ANYWHERE_LEGACY"
+    record = add_legacy_project_source(
+        P1, "ROOT-virtual", nonexistent, "V", local_appdata=tmp_path, now=NOW
+    )
+    assert record["legacy_source_root_id_alias"] == "ROOT-virtual"
+    assert record["current_location"] == nonexistent
+
+
+# 38. migration-created binding defaults OFFLINE
+def test_legacy_binding_defaults_offline(tmp_path: Path) -> None:
+    record = add_legacy_project_source(
+        P1, "ROOT-abc123", "F:\\SIRUELA", "Legacy Cam", local_appdata=tmp_path, now=NOW
+    )
+    assert record["state"] == STATE_OFFLINE
+    loaded = load_project_sources(P1, local_appdata=tmp_path)
+    assert loaded["sources"][0]["state"] == STATE_OFFLINE
+
+
+# 39. explicit valid ONLINE state can be persisted when caller provides it
+def test_legacy_binding_explicit_online_state(tmp_path: Path) -> None:
+    record = add_legacy_project_source(
+        P1, "ROOT-abc123", "F:\\SIRUELA", "Legacy Cam",
+        local_appdata=tmp_path, state=STATE_ONLINE, now=NOW,
+    )
+    assert record["state"] == STATE_ONLINE
+
+
+# 40. invalid legacy alias rejected
+def test_invalid_legacy_alias_rejected(tmp_path: Path) -> None:
+    with pytest.raises(SourceRegistryError) as ei:
+        validate_legacy_alias("   ")
+    assert ei.value.code == CID_SOURCE_LEGACY_ALIAS_INVALID
+
+
+# 41. empty alias rejected
+def test_empty_legacy_alias_rejected(tmp_path: Path) -> None:
+    with pytest.raises(SourceRegistryError) as ei:
+        add_legacy_project_source(
+            P1, "", "F:\\SIRUELA", "Legacy Cam", local_appdata=tmp_path, now=NOW
+        )
+    assert ei.value.code == CID_SOURCE_LEGACY_ALIAS_INVALID
+
+
+# 42. existing normal MS1 source with alias=None remains valid
+def test_existing_source_alias_none_remains_valid(tmp_path: Path) -> None:
+    record = add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    assert record["legacy_source_root_id_alias"] is None
+    loaded = load_project_sources(P1, local_appdata=tmp_path)
+    assert is_valid_registry(loaded, P1)
+    assert loaded["sources"][0]["legacy_source_root_id_alias"] is None

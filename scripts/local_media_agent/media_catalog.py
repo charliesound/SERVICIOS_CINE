@@ -214,6 +214,53 @@ def get_media_item(
     return dict(from_catalog) if from_catalog is not None else None
 
 
+def per_source_reuse_map(
+    catalog: dict[str, Any],
+    source_root_id: str,
+    current_relative_paths: set[str],
+) -> dict[str, dict[str, Any]]:
+    """Build a metadata-reuse map scoped to exactly one source root.
+
+    Returns ``{relative_path: {"ffprobe_metadata": ..., "source_color_profile": ...}}``
+    for items where ``source_root_id`` matches, ``relative_path`` is in the
+    caller's current snapshot, and the item has valid reusable analysis results.
+
+    This helper is a pure data query: ZERO media access, ZERO filesystem scan,
+    ZERO ffprobe, ZERO Sony parsing, ZERO hashing, ZERO catalog mutation.
+
+    Eligibility mirrors the existing ``cid_gui._reuse_map_from_catalog`` rules:
+    - item exists in catalog under the canonical ``media_item_key``
+    - ``analysis_status == ANALYSIS_STATUS_OK``
+    - ``ffprobe_metadata`` is a dict
+    - ``relative_path`` belongs to the current source snapshot
+    """
+    _require_catalog(catalog)
+    if not isinstance(source_root_id, str) or not source_root_id.strip():
+        raise MediaCatalogError("SOURCE_ROOT_ID_INVALID")
+    if not isinstance(current_relative_paths, set):
+        raise MediaCatalogError("RELATIVE_PATHS_INVALID")
+    items = catalog.get("media_items", {})
+    reuse: dict[str, dict[str, Any]] = {}
+    for rel in current_relative_paths:
+        if not isinstance(rel, str):
+            continue
+        item = items.get(media_item_key(source_root_id, rel))
+        if item is None:
+            continue
+        if item.get("analysis_status") != ANALYSIS_STATUS_OK:
+            continue
+        if not isinstance(item.get("ffprobe_metadata"), dict):
+            continue
+        entry: dict[str, Any] = {
+            "ffprobe_metadata": item.get("ffprobe_metadata"),
+        }
+        color = item.get("source_color_profile")
+        if color is not None:
+            entry["source_color_profile"] = color
+        reuse[rel] = entry
+    return reuse
+
+
 def catalog_path_for_project(
     project_id: str, *, local_appdata: str | Path | None = None
 ) -> Path:

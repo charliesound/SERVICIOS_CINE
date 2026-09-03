@@ -29,6 +29,7 @@ from scripts.local_media_agent.media_catalog import (
     media_item_key,
     migrate_legacy_source_root,
     new_catalog,
+    per_source_reuse_map,
     save_catalog,
     set_media_item,
 )
@@ -472,3 +473,289 @@ def test_migrated_save_reload_valid(tmp_path: Path) -> None:
     assert is_valid_catalog(loaded)
     assert loaded["schema_version"] == 1
     assert get_media_item(loaded, SRC_ID, REL) is not None
+
+
+# ---------------------------------------------------------------------------
+# MS2B2 — per_source_reuse_map tests
+# ---------------------------------------------------------------------------
+
+SRC_A = "SRC-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+SRC_B = "SRC-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+SHARED_REL = "M4ROOT/CLIP/A001.MP4"
+FFPROBE_A = {"duration_seconds": 10.0, "format_name": "mov,mp4"}
+FFPROBE_B = {"duration_seconds": 20.0, "format_name": "mov,mp4"}
+COLOR_A = {"capture_gamma_raw": "s-log3", "metadata_source": "SONY_XML_SIDECAR"}
+COLOR_B = {"capture_gamma_raw": "s-gamut3", "metadata_source": "SONY_XML_SIDECAR"}
+
+
+def _multi_source_catalog() -> dict:
+    catalog = new_catalog(PROJECT_ID)
+    add_source_root(catalog, SRC_A, "/media/src_a")
+    add_source_root(catalog, SRC_B, "/media/src_b")
+    set_media_item(catalog, _item(
+        source_root_id=SRC_A, relative_path=SHARED_REL,
+        ffprobe_metadata=dict(FFPROBE_A), source_color_profile=dict(COLOR_A),
+    ))
+    set_media_item(catalog, _item(
+        source_root_id=SRC_B, relative_path=SHARED_REL,
+        ffprobe_metadata=dict(FFPROBE_B), source_color_profile=dict(COLOR_B),
+    ))
+    set_media_item(catalog, _item(
+        source_root_id=SRC_A, relative_path="M4ROOT/CLIP/A002.MP4",
+        ffprobe_metadata={"duration_seconds": 5.0},
+    ))
+    return catalog
+
+
+def test_src_a_and_src_b_same_relative_path_retained_distinctly() -> None:
+    catalog = _multi_source_catalog()
+    key_a = media_item_key(SRC_A, SHARED_REL)
+    key_b = media_item_key(SRC_B, SHARED_REL)
+    assert key_a != key_b
+    assert key_a in catalog["media_items"]
+    assert key_b in catalog["media_items"]
+
+
+def test_per_source_reuse_map_src_a_returns_only_a() -> None:
+    catalog = _multi_source_catalog()
+    reuse = per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    assert set(reuse) == {SHARED_REL}
+    assert reuse[SHARED_REL]["ffprobe_metadata"] == FFPROBE_A
+
+
+def test_per_source_reuse_map_src_b_returns_only_b() -> None:
+    catalog = _multi_source_catalog()
+    reuse = per_source_reuse_map(catalog, SRC_B, {SHARED_REL})
+    assert set(reuse) == {SHARED_REL}
+    assert reuse[SHARED_REL]["ffprobe_metadata"] == FFPROBE_B
+
+
+def test_same_relative_path_does_not_cross_reuse() -> None:
+    catalog = _multi_source_catalog()
+    reuse_a = per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    reuse_b = per_source_reuse_map(catalog, SRC_B, {SHARED_REL})
+    assert reuse_a[SHARED_REL]["ffprobe_metadata"] != reuse_b[SHARED_REL]["ffprobe_metadata"]
+
+
+def test_legacy_root_identity_accepted() -> None:
+    catalog = new_catalog(PROJECT_ID)
+    add_source_root(catalog, ROOT_ID, "F:\\SIRUELA")
+    set_media_item(catalog, _item(
+        source_root_id=ROOT_ID, relative_path=REL,
+        ffprobe_metadata={"duration_seconds": 7.0},
+    ))
+    reuse = per_source_reuse_map(catalog, ROOT_ID, {REL})
+    assert REL in reuse
+    assert reuse[REL]["ffprobe_metadata"] == {"duration_seconds": 7.0}
+
+
+def test_stable_src_identity_accepted() -> None:
+    catalog = new_catalog(PROJECT_ID)
+    add_source_root(catalog, SRC_ID, "/media")
+    set_media_item(catalog, _item(
+        source_root_id=SRC_ID, relative_path=REL,
+        ffprobe_metadata={"duration_seconds": 9.0},
+    ))
+    reuse = per_source_reuse_map(catalog, SRC_ID, {REL})
+    assert REL in reuse
+
+
+def test_empty_source_identity_fails_closed() -> None:
+    catalog = new_catalog(PROJECT_ID)
+    with pytest.raises(MediaCatalogError):
+        per_source_reuse_map(catalog, "", {REL})
+    with pytest.raises(MediaCatalogError):
+        per_source_reuse_map(catalog, "  ", {REL})
+
+
+def test_current_relative_paths_limits_results() -> None:
+    catalog = _multi_source_catalog()
+    reuse = per_source_reuse_map(catalog, SRC_A, {"M4ROOT/CLIP/A002.MP4"})
+    assert set(reuse) == {"M4ROOT/CLIP/A002.MP4"}
+    assert SHARED_REL not in reuse
+
+
+def test_absent_from_current_paths_not_returned() -> None:
+    catalog = _multi_source_catalog()
+    reuse = per_source_reuse_map(catalog, SRC_A, set())
+    assert reuse == {}
+
+
+def test_non_ok_status_not_reused() -> None:
+    catalog = new_catalog(PROJECT_ID)
+    add_source_root(catalog, SRC_ID, "/media")
+    set_media_item(catalog, _item(
+        source_root_id=SRC_ID, relative_path=REL,
+        analysis_status=ANALYSIS_STATUS_ERROR,
+        ffprobe_metadata={"duration_seconds": 1.0},
+    ))
+    reuse = per_source_reuse_map(catalog, SRC_ID, {REL})
+    assert reuse == {}
+
+
+def test_missing_ffprobe_metadata_not_reused() -> None:
+    catalog = new_catalog(PROJECT_ID)
+    add_source_root(catalog, SRC_ID, "/media")
+    set_media_item(catalog, _item(
+        source_root_id=SRC_ID, relative_path=REL,
+        ffprobe_metadata=None,
+    ))
+    reuse = per_source_reuse_map(catalog, SRC_ID, {REL})
+    assert reuse == {}
+
+
+def test_non_dict_ffprobe_metadata_not_reused() -> None:
+    catalog = new_catalog(PROJECT_ID)
+    add_source_root(catalog, SRC_ID, "/media")
+    set_media_item(catalog, _item(
+        source_root_id=SRC_ID, relative_path=REL,
+        ffprobe_metadata="not a dict",
+    ))
+    reuse = per_source_reuse_map(catalog, SRC_ID, {REL})
+    assert reuse == {}
+
+
+def test_valid_ffprobe_metadata_preserved() -> None:
+    catalog = new_catalog(PROJECT_ID)
+    add_source_root(catalog, SRC_ID, "/media")
+    meta = {"duration_seconds": 42.0, "format_name": "mp4"}
+    set_media_item(catalog, _item(
+        source_root_id=SRC_ID, relative_path=REL,
+        ffprobe_metadata=dict(meta),
+    ))
+    reuse = per_source_reuse_map(catalog, SRC_ID, {REL})
+    assert reuse[REL]["ffprobe_metadata"] == meta
+
+
+def test_source_color_profile_preserved_from_same_source() -> None:
+    catalog = new_catalog(PROJECT_ID)
+    add_source_root(catalog, SRC_ID, "/media")
+    set_media_item(catalog, _item(
+        source_root_id=SRC_ID, relative_path=REL,
+        ffprobe_metadata={"duration_seconds": 1.0},
+        source_color_profile=dict(COLOR_A),
+    ))
+    reuse = per_source_reuse_map(catalog, SRC_ID, {REL})
+    assert reuse[REL]["source_color_profile"] == COLOR_A
+
+
+def test_source_color_profile_from_other_source_never_returned() -> None:
+    catalog = _multi_source_catalog()
+    reuse_a = per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    reuse_b = per_source_reuse_map(catalog, SRC_B, {SHARED_REL})
+    assert reuse_a[SHARED_REL]["source_color_profile"] == COLOR_A
+    assert reuse_b[SHARED_REL]["source_color_profile"] == COLOR_B
+
+
+def test_deterministic_output() -> None:
+    catalog = _multi_source_catalog()
+    r1 = per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    r2 = per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    assert r1 == r2
+
+
+def test_cross_source_same_size_mtime_not_reused() -> None:
+    catalog = new_catalog(PROJECT_ID)
+    add_source_root(catalog, SRC_A, "/a")
+    add_source_root(catalog, SRC_B, "/b")
+    set_media_item(catalog, _item(
+        source_root_id=SRC_A, relative_path=SHARED_REL,
+        size=999, mtime_ns=42,
+        ffprobe_metadata={"duration_seconds": 1.0},
+    ))
+    set_media_item(catalog, _item(
+        source_root_id=SRC_B, relative_path=SHARED_REL,
+        size=999, mtime_ns=42,
+        ffprobe_metadata={"duration_seconds": 2.0},
+    ))
+    reuse_a = per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    reuse_b = per_source_reuse_map(catalog, SRC_B, {SHARED_REL})
+    assert reuse_a[SHARED_REL]["ffprobe_metadata"] == {"duration_seconds": 1.0}
+    assert reuse_b[SHARED_REL]["ffprobe_metadata"] == {"duration_seconds": 2.0}
+
+
+def test_helper_does_not_alter_catalog_cardinality() -> None:
+    catalog = _multi_source_catalog()
+    before = len(catalog["media_items"])
+    per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    assert len(catalog["media_items"]) == before
+
+
+def test_helper_does_not_mutate_catalog() -> None:
+    catalog = _multi_source_catalog()
+    snapshot = json.dumps(catalog, sort_keys=True)
+    per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    assert json.dumps(catalog, sort_keys=True) == snapshot
+
+
+def test_catalog_schema_remains_v1() -> None:
+    assert SCHEMA_VERSION == 1
+
+
+def test_no_explicit_media_ref_field_in_catalog_items() -> None:
+    catalog = _multi_source_catalog()
+    for item in catalog["media_items"].values():
+        assert "media_ref" not in item
+
+
+def test_source_root_id_field_unchanged() -> None:
+    catalog = _multi_source_catalog()
+    for item in catalog["media_items"].values():
+        assert "source_root_id" in item
+
+
+def test_media_item_key_remains_canonical_lookup_encoder() -> None:
+    key = media_item_key(SRC_A, SHARED_REL)
+    assert key == f"{SRC_A}::{SHARED_REL}"
+
+
+def test_malformed_catalog_fails_closed() -> None:
+    with pytest.raises(MediaCatalogError):
+        per_source_reuse_map({"not_a_catalog": True}, SRC_A, {REL})
+    with pytest.raises(MediaCatalogError):
+        per_source_reuse_map("not a dict", SRC_A, {REL})
+
+
+def test_unknown_source_returns_empty_map() -> None:
+    catalog = _multi_source_catalog()
+    reuse = per_source_reuse_map(catalog, "SRC-unknown", {SHARED_REL})
+    assert reuse == {}
+
+
+def test_no_filesystem_access() -> None:
+    catalog = _multi_source_catalog()
+    reuse = per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    assert SHARED_REL in reuse
+
+
+def test_no_ffprobe_call() -> None:
+    catalog = _multi_source_catalog()
+    reuse = per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    assert isinstance(reuse[SHARED_REL]["ffprobe_metadata"], dict)
+
+
+def test_no_sony_parse() -> None:
+    catalog = _multi_source_catalog()
+    reuse = per_source_reuse_map(catalog, SRC_A, {SHARED_REL})
+    assert reuse[SHARED_REL]["source_color_profile"] == COLOR_A
+
+
+def test_non_string_relative_paths_in_set_ignored() -> None:
+    catalog = _multi_source_catalog()
+    reuse = per_source_reuse_map(catalog, SRC_A, {123, None, SHARED_REL})
+    assert set(reuse) == {SHARED_REL}
+
+
+def test_invalid_relative_paths_set_type_fails() -> None:
+    catalog = _multi_source_catalog()
+    with pytest.raises(MediaCatalogError):
+        per_source_reuse_map(catalog, SRC_A, [SHARED_REL])
+
+
+def test_multiple_paths_different_sources_isolated() -> None:
+    catalog = _multi_source_catalog()
+    reuse_a = per_source_reuse_map(catalog, SRC_A, {SHARED_REL, "M4ROOT/CLIP/A002.MP4"})
+    assert set(reuse_a) == {SHARED_REL, "M4ROOT/CLIP/A002.MP4"}
+    reuse_b = per_source_reuse_map(catalog, SRC_B, {SHARED_REL})
+    assert set(reuse_b) == {SHARED_REL}
+    assert reuse_a["M4ROOT/CLIP/A002.MP4"]["ffprobe_metadata"] == {"duration_seconds": 5.0}

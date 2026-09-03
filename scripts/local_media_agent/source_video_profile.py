@@ -1,4 +1,16 @@
-"""Project-scoped sanitized SOURCE_VIDEO_PROFILE catalog."""
+"""Project-scoped sanitized SOURCE_VIDEO_PROFILE catalog.
+
+Version 2 adds source-aware identity:
+
+- ``source_id``: validated stable SOURCE_ID (authority: project_sources).
+- ``source_media_ref``: source-relative filesystem/path semantics (unchanged).
+- ``media_ref``: canonical source-aware identity via
+  ``media_catalog.media_item_key(source_id, source_media_ref)``.
+
+Version 1 (legacy) entries carry no ``source_id``/``media_ref`` and remain
+globally unique on ``source_media_ref``. Version 2 is globally unique on
+``media_ref``; ``source_media_ref`` may repeat across distinct sources.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +27,8 @@ from scripts.local_media_agent.local_project import (
     source_video_profiles_path,
     validate_project_id,
 )
+from scripts.local_media_agent.media_catalog import media_item_key
+from scripts.local_media_agent.project_sources import validate_source_id
 from scripts.local_media_agent.project_video_profile import SUPPORTED_FRAME_RATES
 from scripts.local_media_agent.sony_sidecar_parser import (
     CONFIDENCE_CONFIRMED,
@@ -29,7 +43,13 @@ from scripts.local_media_agent.sony_sidecar_parser import (
 )
 
 CATALOG_FORMAT = "CID_SOURCE_VIDEO_PROFILES"
-CATALOG_VERSION = 1
+LEGACY_CATALOG_VERSION = 1
+CATALOG_VERSION = 2
+
+# Pure v1 -> v2 migration classification outcomes.
+PROFILE_MIGRATION_AUTO_MIGRATABLE = "AUTO_MIGRATABLE"
+PROFILE_MIGRATION_USER_CONFIRMATION_REQUIRED = "USER_CONFIRMATION_REQUIRED"
+PROFILE_MIGRATION_BLOCKED = "BLOCKED"
 
 CID_SOURCE_VIDEO_RATE_UNAVAILABLE = "CID_SOURCE_VIDEO_RATE_UNAVAILABLE"
 CID_SOURCE_VIDEO_RATE_AMBIGUOUS = "CID_SOURCE_VIDEO_RATE_AMBIGUOUS"
@@ -65,8 +85,21 @@ def normalize_source_media_ref(value: object) -> str:
 def build_source_video_profiles(
     project_id: str,
     metadata: dict[str, Any] | Iterable[dict[str, Any]],
+    *,
+    source_id: str | None = None,
 ) -> dict[str, Any]:
+    """Build a source video profile catalog.
+
+    ``source_id`` is None -> legacy v1 catalog (no source_id/media_ref,
+    ``source_media_ref`` globally unique). Explicit valid ``source_id`` ->
+    canonical v2 catalog (source_id/media_ref required, ``media_ref`` globally
+    unique, ``source_media_ref`` may repeat across sources). The module never
+    generates nor infers SOURCE_ID.
+    """
     validate_project_id(project_id)
+    v2 = source_id is not None
+    if v2:
+        validate_source_id(source_id)
     results = metadata.get("results", []) if isinstance(metadata, dict) else metadata
     entries: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -74,14 +107,15 @@ def build_source_video_profiles(
         if not isinstance(item, dict) or not isinstance(item.get("video"), dict):
             continue
         reference = normalize_source_media_ref(item.get("relative_path"))
-        if reference in seen:
+        key = media_item_key(source_id, reference) if v2 else reference
+        if key in seen:
             raise SourceVideoProfileError(CID_SOURCE_VIDEO_RATE_AMBIGUOUS)
-        seen.add(reference)
-        entries.append(_project_entry(item, reference))
-    entries.sort(key=lambda entry: entry["source_media_ref"])
+        seen.add(key)
+        entries.append(_project_entry(item, reference, source_id=source_id))
+    entries.sort(key=lambda entry: entry["media_ref"] if v2 else entry["source_media_ref"])
     return {
         "format": CATALOG_FORMAT,
-        "version": CATALOG_VERSION,
+        "version": CATALOG_VERSION if v2 else LEGACY_CATALOG_VERSION,
         "project_id": project_id,
         "entries": entries,
     }
@@ -111,7 +145,10 @@ def load_source_video_profiles(
         catalog = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID) from exc
-    _validate_catalog(catalog, project_id)
+    try:
+        _validate_catalog(catalog, project_id)
+    except ValueError as exc:
+        raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID) from exc
     return catalog
 
 
@@ -124,6 +161,8 @@ def resolve_source_video_profile(
     exact = [entry for entry in entries if entry["source_media_ref"] == reference]
     if len(exact) == 1:
         selected = exact[0]
+    elif len(exact) > 1:
+        raise SourceVideoProfileError(CID_SOURCE_VIDEO_RATE_AMBIGUOUS)
     elif len(PurePosixPath(reference).parts) == 1:
         basename = PurePosixPath(reference).name
         matches = [entry for entry in entries if entry["source_filename"] == basename]
@@ -134,6 +173,26 @@ def resolve_source_video_profile(
         selected = matches[0]
     else:
         raise SourceVideoProfileError(CID_SOURCE_MEDIA_NOT_FOUND)
+    return _resolve_selected(selected)
+
+
+def resolve_source_video_profile_by_media_ref(
+    catalog: dict[str, Any], media_ref: str
+) -> dict[str, Any]:
+    """Canonical v2 lookup keyed by ``media_ref`` (unique across sources)."""
+    _validate_catalog(catalog, catalog.get("project_id"))
+    selected = None
+    for entry in catalog["entries"]:
+        if entry.get("media_ref") == media_ref:
+            if selected is not None:
+                raise SourceVideoProfileError(CID_SOURCE_VIDEO_RATE_AMBIGUOUS)
+            selected = entry
+    if selected is None:
+        raise SourceVideoProfileError(CID_SOURCE_MEDIA_NOT_FOUND)
+    return _resolve_selected(selected)
+
+
+def _resolve_selected(selected: dict[str, Any]) -> dict[str, Any]:
     if selected["variable_frame_rate"]:
         raise SourceVideoProfileError(CID_SOURCE_VIDEO_RATE_VARIABLE_UNSUPPORTED)
     if selected.get("rate_conflict"):
@@ -172,7 +231,78 @@ def resolve_source_media_path(
     return resolved
 
 
-def _project_entry(item: dict[str, Any], reference: str) -> dict[str, Any]:
+def classify_legacy_profile_migration(
+    catalog: dict[str, Any], source_ids: Iterable[str]
+) -> str:
+    """Classify a v1 profile for migration without touching any media.
+
+    - ``source_ids`` with exactly one unambiguous stable SOURCE_ID -> AUTO_MIGRATABLE.
+    - Multiple candidate SOURCE_IDs with no provenance -> USER_CONFIRMATION_REQUIRED
+      (never inferred from filename/folder/Sony/frame/duration/content).
+    - Malformed v1 / invalid SOURCE_ID / structural conflict -> BLOCKED.
+    """
+    try:
+        _validate_catalog(catalog, catalog.get("project_id"))
+    except SourceVideoProfileError:
+        return PROFILE_MIGRATION_BLOCKED
+    if catalog.get("version") != LEGACY_CATALOG_VERSION:
+        return PROFILE_MIGRATION_BLOCKED
+    candidates = list(source_ids) if isinstance(source_ids, Iterable) else []
+    try:
+        for sid in candidates:
+            validate_source_id(sid)
+    except ValueError:
+        return PROFILE_MIGRATION_BLOCKED
+    if len(candidates) == 1:
+        return PROFILE_MIGRATION_AUTO_MIGRATABLE
+    return PROFILE_MIGRATION_USER_CONFIRMATION_REQUIRED
+
+
+def migrate_legacy_profile_to_v2(
+    catalog: dict[str, Any],
+    source_id: str,
+) -> dict[str, Any]:
+    """Pure administrative whole-catalog v1 -> v2 identity migration.
+
+    ZERO media access, ZERO ffprobe, ZERO Sony reparse. Builds the complete
+    target v2 payload in memory, validates it, and returns it for atomic
+    persistence by the caller. Idempotent on an already-equivalent v2 target.
+    Never reassigns existing v2 provenance.
+    """
+    if not isinstance(catalog, dict):
+        raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+    if catalog.get("version") == CATALOG_VERSION:
+        _validate_catalog(catalog, catalog.get("project_id"))
+        for entry in catalog["entries"]:
+            if entry.get("source_id") != source_id:
+                raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+        return catalog
+    try:
+        _validate_catalog(catalog, catalog.get("project_id"))
+    except ValueError as exc:
+        raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID) from exc
+    if catalog.get("version") != LEGACY_CATALOG_VERSION:
+        raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+    validate_source_id(source_id)
+    entries: list[dict[str, Any]] = []
+    for entry in catalog["entries"]:
+        migrated = dict(entry)
+        migrated["source_id"] = source_id
+        migrated["media_ref"] = media_item_key(source_id, entry["source_media_ref"])
+        entries.append(migrated)
+    migrated_catalog = {
+        "format": CATALOG_FORMAT,
+        "version": CATALOG_VERSION,
+        "project_id": catalog["project_id"],
+        "entries": entries,
+    }
+    _validate_catalog(migrated_catalog, migrated_catalog.get("project_id"))
+    return migrated_catalog
+
+
+def _project_entry(
+    item: dict[str, Any], reference: str, *, source_id: str | None = None
+) -> dict[str, Any]:
     video = item["video"]
     rate_info = video.get("frame_rate")
     variable = isinstance(rate_info, dict) and rate_info.get("variable") is True
@@ -189,7 +319,7 @@ def _project_entry(item: dict[str, Any], reference: str) -> dict[str, Any]:
     rate = rates[0] if rates and not conflict and rates[0] in SUPPORTED_FRAME_RATES else None
     duration_raw = _valid_duration(item.get("duration_raw"))
     origin = item.get("duration_origin") if duration_raw is not None else None
-    return {
+    entry: dict[str, Any] = {
         "source_media_ref": reference,
         "source_filename": PurePosixPath(reference).name,
         "source_frame_rate": (
@@ -207,6 +337,10 @@ def _project_entry(item: dict[str, Any], reference: str) -> dict[str, Any]:
         "source_duration_origin": origin if origin in ("format", "video_stream") else None,
         "source_color_profile": _normalize_color_profile(item.get("source_color_profile")),
     }
+    if source_id is not None:
+        entry["source_id"] = source_id
+        entry["media_ref"] = media_item_key(source_id, reference)
+    return entry
 
 
 def _validate_catalog(catalog: object, project_id: object) -> None:
@@ -214,11 +348,20 @@ def _validate_catalog(catalog: object, project_id: object) -> None:
         not isinstance(catalog, dict)
         or set(catalog) != {"format", "version", "project_id", "entries"}
         or catalog.get("format") != CATALOG_FORMAT
-        or catalog.get("version") != CATALOG_VERSION
         or catalog.get("project_id") != project_id
         or not isinstance(catalog.get("entries"), list)
     ):
         raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+    version = catalog.get("version")
+    if version == LEGACY_CATALOG_VERSION:
+        _validate_v1_entries(catalog["entries"])
+    elif version == CATALOG_VERSION:
+        _validate_v2_entries(catalog["entries"])
+    else:
+        raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+
+
+def _validate_v1_entries(entries: list[Any]) -> None:
     expected = {
         "source_media_ref", "source_filename", "source_frame_rate", "variable_frame_rate",
         "rate_conflict", "source_width", "source_height", "source_sample_aspect_ratio",
@@ -227,7 +370,7 @@ def _validate_catalog(catalog: object, project_id: object) -> None:
     }
     expected_legacy = expected - {"source_color_profile"}
     seen: set[str] = set()
-    for entry in catalog["entries"]:
+    for entry in entries:
         entry_keys = set(entry) if isinstance(entry, dict) else set()
         if entry_keys not in (expected, expected_legacy):
             raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
@@ -239,39 +382,74 @@ def _validate_catalog(catalog: object, project_id: object) -> None:
         if reference in seen or entry.get("source_filename") != PurePosixPath(reference).name:
             raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
         seen.add(reference)
-        if not isinstance(entry.get("variable_frame_rate"), bool) or not isinstance(
-            entry.get("rate_conflict"), bool
+        _validate_technical_fields(entry)
+
+
+def _validate_v2_entries(entries: list[Any]) -> None:
+    expected = {
+        "source_id", "source_media_ref", "source_filename", "source_frame_rate",
+        "variable_frame_rate", "rate_conflict", "source_width", "source_height",
+        "source_sample_aspect_ratio", "source_display_aspect_ratio", "source_rotation",
+        "source_timecode_start", "source_duration_raw", "source_duration_origin",
+        "source_color_profile", "media_ref",
+    }
+    expected_legacy = expected - {"source_color_profile"}
+    seen: set[str] = set()
+    for entry in entries:
+        entry_keys = set(entry) if isinstance(entry, dict) else set()
+        if entry_keys not in (expected, expected_legacy):
+            raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+        if "source_color_profile" in entry_keys and not _valid_color_profile(
+            entry.get("source_color_profile")
         ):
             raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
-        rate_text = entry.get("source_frame_rate")
-        if rate_text is not None:
-            try:
-                rate = Fraction(rate_text)
-            except (ValueError, ZeroDivisionError) as exc:
-                raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID) from exc
-            if (
-                rate not in SUPPORTED_FRAME_RATES
-                or rate_text != f"{rate.numerator}/{rate.denominator}"
-            ):
-                raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
-        duration = entry.get("source_duration_raw")
-        if duration is not None and _valid_duration(duration) is None:
+        validate_source_id(entry.get("source_id"))
+        reference = normalize_source_media_ref(entry.get("source_media_ref"))
+        if entry.get("source_filename") != PurePosixPath(reference).name:
             raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
-        origin = entry.get("source_duration_origin")
-        if (duration is None and origin is not None) or (
-            duration is not None and origin not in ("format", "video_stream")
+        expected_media_ref = media_item_key(entry.get("source_id"), reference)
+        if entry.get("media_ref") != expected_media_ref:
+            raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+        if entry.get("media_ref") in seen:
+            raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+        seen.add(entry.get("media_ref"))
+        _validate_technical_fields(entry)
+
+
+def _validate_technical_fields(entry: dict[str, Any]) -> None:
+    if not isinstance(entry.get("variable_frame_rate"), bool) or not isinstance(
+        entry.get("rate_conflict"), bool
+    ):
+        raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+    rate_text = entry.get("source_frame_rate")
+    if rate_text is not None:
+        try:
+            rate = Fraction(rate_text)
+        except (ValueError, ZeroDivisionError) as exc:
+            raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID) from exc
+        if (
+            rate not in SUPPORTED_FRAME_RATES
+            or rate_text != f"{rate.numerator}/{rate.denominator}"
         ):
             raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
-        for key in ("source_width", "source_height"):
-            if entry.get(key) is not None and _optional_positive_int(entry.get(key)) is None:
-                raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
-        for key in ("source_sample_aspect_ratio", "source_display_aspect_ratio"):
-            if entry.get(key) is not None and _rational_pair(entry.get(key)) is None:
-                raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
-        if entry.get("source_rotation") is not None and _valid_rotation(
-            entry.get("source_rotation")
-        ) is None:
+    duration = entry.get("source_duration_raw")
+    if duration is not None and _valid_duration(duration) is None:
+        raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+    origin = entry.get("source_duration_origin")
+    if (duration is None and origin is not None) or (
+        duration is not None and origin not in ("format", "video_stream")
+    ):
+        raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+    for key in ("source_width", "source_height"):
+        if entry.get(key) is not None and _optional_positive_int(entry.get(key)) is None:
             raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+    for key in ("source_sample_aspect_ratio", "source_display_aspect_ratio"):
+        if entry.get(key) is not None and _rational_pair(entry.get(key)) is None:
+            raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
+    if entry.get("source_rotation") is not None and _valid_rotation(
+        entry.get("source_rotation")
+    ) is None:
+        raise SourceVideoProfileError(CID_SOURCE_VIDEO_CATALOG_INVALID)
 
 
 def _valid_duration(value: object) -> str | None:

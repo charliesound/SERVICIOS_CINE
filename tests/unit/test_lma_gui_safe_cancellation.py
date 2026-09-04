@@ -1223,6 +1223,123 @@ class TestMS3BProjectSourceGuiAdoption:
         app._start_analysis_action()
         assert picked == [True]
 
+    def test_preflight_summary_has_exact_singular_plural_variants(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        cases = (
+            ([gui.STATE_ONLINE], "1 fuente · 1 disponible · CID analizará 1."),
+            ([gui.STATE_ONLINE] * 3, "3 fuentes · 3 disponibles · CID analizará 3."),
+            (
+                [gui.STATE_ONLINE, gui.STATE_OFFLINE],
+                "2 fuentes · 1 disponible · 1 no disponible · CID analizará 1. Las fuentes no disponibles quedan fuera del análisis.",
+            ),
+            (
+                [gui.STATE_ONLINE, gui.STATE_ONLINE, gui.STATE_OFFLINE],
+                "3 fuentes · 2 disponibles · 1 no disponible · CID analizará 2. Las fuentes no disponibles quedan fuera del análisis.",
+            ),
+            (
+                [gui.STATE_OFFLINE],
+                "1 fuente · 0 disponibles · 1 no disponible · CID no tiene fuentes disponibles para analizar.",
+            ),
+            (
+                [gui.STATE_OFFLINE] * 3,
+                "3 fuentes · 0 disponibles · 3 no disponibles · CID no tiene fuentes disponibles para analizar.",
+            ),
+        )
+        for states, expected in cases:
+            sources = [{"state": state} for state in states]
+            assert gui.ProducerApp._project_source_preflight_summary(sources) == expected
+
+    def test_no_project_is_neutral_and_zero_sources_keeps_guidance(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui)
+        app._refresh_project_sources_ui()
+        assert app.source_status_label.text == ""
+        app.active_project = self.PROJECT
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [])
+        app._refresh_project_sources_ui()
+        assert app.source_status_label.text == "Añade una fuente al proyecto para comenzar."
+
+    def test_refresh_uses_one_snapshot_for_rows_and_summary(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        sources = [
+            {"source_id": self.SOURCE_A, "display_label": "Cam", "current_location": r"Z:\DOES_NOT_EXIST", "state": gui.STATE_ONLINE},
+            {"source_id": self.SOURCE_B, "display_label": "Audio", "current_location": "/nonexistent/source", "state": gui.STATE_OFFLINE},
+        ]
+        calls = []
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: calls.append(project_id) or sources)
+        app._refresh_project_sources_ui()
+        assert calls == [self.PROJECT["project_id"]]
+        assert set(app.source_tree.rows) == {self.SOURCE_A, self.SOURCE_B}
+        assert app.source_status_label.text == (
+            "2 fuentes · 1 disponible · 1 no disponible · CID analizará 1. "
+            "Las fuentes no disponibles quedan fuera del análisis."
+        )
+
+    def test_preflight_uses_persisted_state_and_hides_internal_identifiers(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        source_id = "SRC-INTERNAL-IDENTIFIER"
+        summary = gui.ProducerApp._project_source_preflight_summary([
+            {"source_id": source_id, "media_ref": "MEDIA-INTERNAL", "current_location": r"F:\MISSING", "state": gui.STATE_OFFLINE},
+        ])
+        assert summary == "1 fuente · 0 disponibles · 1 no disponible · CID no tiene fuentes disponibles para analizar."
+        for internal in (source_id, "MEDIA-INTERNAL", "STATE_ONLINE", "STATE_OFFLINE", "ONLINE", "OFFLINE"):
+            assert internal not in summary
+
+    def test_source_lifecycle_refresh_recomputes_summary_from_next_snapshot(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        snapshots = [
+            [{"source_id": self.SOURCE_A, "display_label": "Cam", "current_location": "/cam", "state": gui.STATE_ONLINE}],
+            [{"source_id": self.SOURCE_A, "display_label": "Cam", "current_location": "/cam", "state": gui.STATE_OFFLINE}],
+            [],
+        ]
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: snapshots.pop(0))
+        app._refresh_project_sources_ui()
+        assert app.source_status_label.text == "1 fuente · 1 disponible · CID analizará 1."
+        app._refresh_project_sources_ui()
+        assert app.source_status_label.text == "1 fuente · 0 disponibles · 1 no disponible · CID no tiene fuentes disponibles para analizar."
+        app._refresh_project_sources_ui()
+        assert app.source_status_label.text == "Añade una fuente al proyecto para comenzar."
+
+    def test_registry_error_clears_previous_summary(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        app.source_status_label.config(text="3 fuentes · 3 disponibles · CID analizará 3.")
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: (_ for _ in ()).throw(gui.SourceRegistryError("CID_SOURCE_REGISTRY_INVALID")))
+        monkeypatch.setattr(gui, "_write_log", lambda *args: None)
+        monkeypatch.setattr(gui.messagebox, "showerror", lambda *args, **kwargs: None, raising=False)
+        app._refresh_project_sources_ui()
+        assert app.source_status_label.text == ""
+
+    def test_zero_online_click_guidance_remains_unchanged(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        messages = []
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [{"source_id": self.SOURCE_A}])
+        monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: {})
+        monkeypatch.setattr(gui.messagebox, "showinfo", lambda *args, **kwargs: messages.append(args[1]), raising=False)
+        app._start_analysis()
+        assert messages == ["No hay fuentes disponibles. Reconecta al menos una fuente."]
+
+    def test_preflight_does_not_add_media_counts_or_probe_controls(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        summary = gui.ProducerApp._project_source_preflight_summary([
+            {"state": gui.STATE_ONLINE},
+            {"state": gui.STATE_OFFLINE},
+        ])
+        assert "archivo" not in summary.lower()
+        assert "vídeo" not in summary.lower()
+        assert "audio" not in summary.lower()
+
 
 class TestMS3AProjectSourceRuntimeWiring:
     PROJECT_ID = "PRJ-11111111-1111-4111-8111-111111111111"

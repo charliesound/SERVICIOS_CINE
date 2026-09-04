@@ -874,11 +874,11 @@ class ProducerApp:
         self._source_records = {}
         for item in self.source_tree.get_children():
             self.source_tree.delete(item)
+        self.source_status_label.config(text="")
         if not self.active_project:
             self.add_source_btn.config(state="disabled")
             self.mark_offline_btn.config(state="disabled")
             self.reconnect_source_btn.config(state="disabled")
-            self.source_status_label.config(text="")
             return
         project_id = self.active_project["project_id"]
         try:
@@ -902,8 +902,32 @@ class ProducerApp:
         )
         self._on_source_selection()
         self.source_status_label.config(
-            text="Añade una fuente al proyecto para comenzar." if not sources else ""
+            text=(
+                "Añade una fuente al proyecto para comenzar."
+                if not sources
+                else self._project_source_preflight_summary(sources)
+            )
         )
+
+    @staticmethod
+    def _project_source_preflight_summary(sources: list[dict[str, Any]]) -> str:
+        total = len(sources)
+        online = sum(source["state"] == STATE_ONLINE for source in sources)
+        offline = sum(source["state"] == STATE_OFFLINE for source in sources)
+        total_label = "fuente" if total == 1 else "fuentes"
+        online_label = "disponible" if online == 1 else "disponibles"
+        offline_label = "no disponible" if offline == 1 else "no disponibles"
+        if offline == 0:
+            return f"{total} {total_label} · {online} {online_label} · CID analizará {online}."
+        if online == 0:
+            return (
+                f"{total} {total_label} · 0 disponibles · {offline} {offline_label} · "
+                "CID no tiene fuentes disponibles para analizar."
+            )
+        return (
+            f"{total} {total_label} · {online} {online_label} · {offline} {offline_label} · "
+            "CID analizará {online}. Las fuentes no disponibles quedan fuera del análisis."
+        ).format(online=online)
 
     def _source_mutation_blocked(self) -> bool:
         return bool(self.active or self.analysis_active)

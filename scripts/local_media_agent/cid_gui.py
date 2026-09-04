@@ -211,6 +211,32 @@ def _done_srt_hint(completed_count: int, srt_files_created: int) -> str:
     return DONE_SRT_HINT_NONE
 
 
+def _format_analysis_completion_summary(
+    sources: int, recordings: int, incidents: int
+) -> str:
+    source_label = "fuente analizada" if sources == 1 else "fuentes analizadas"
+    if recordings == 0:
+        recording_label = "No se detectaron grabaciones agrupadas"
+    elif recordings == 1:
+        recording_label = "1 grabación agrupada"
+    else:
+        recording_label = f"{recordings} grabaciones agrupadas"
+    if incidents == 0:
+        incident_label = "Sin incidencias"
+    elif incidents == 1:
+        incident_label = "1 incidencia"
+    else:
+        incident_label = f"{incidents} incidencias"
+    return " · ".join(
+        (
+            "Análisis completado",
+            f"{sources} {source_label}",
+            recording_label,
+            incident_label,
+        )
+    ) + "."
+
+
 def cluster_view(cluster: Any) -> dict[str, Any]:
     """Producer-facing view of one recording/session cluster.
 
@@ -408,6 +434,7 @@ class ProducerApp:
         self._last_davinci_path: str | None = None
         self.active_media_root: str | None = None
         self.analysis_project_id: str | None = None
+        self._analysis_completion_summary: dict[str, int] | None = None
         try:
             self.active_project: dict[str, Any] | None = load_active_project()
         except LocalProjectError:
@@ -611,6 +638,11 @@ class ProducerApp:
         )
         self.material_davinci_hint.grid(row=5, column=0, sticky="w", pady=(8, 0))
 
+        self.material_analysis_summary_label = ttk.Label(
+            body, text="", style="Info.TLabel", wraplength=680
+        )
+        self.material_analysis_summary_label.grid(row=7, column=0, sticky="w", pady=(8, 0))
+
         location = ttk.Frame(body)
         location.grid(row=6, column=0, sticky="ew", pady=(10, 0))
         ttk.Label(location, text="Guardar resultados en:").pack(side="left")
@@ -684,6 +716,11 @@ class ProducerApp:
             body, text=DUPLICATE_AVOIDED_HINT, style="Info.TLabel"
         )
         self.groups_duplicate_hint.grid(row=4, column=0, sticky="w", pady=(8, 0))
+
+        self.groups_analysis_summary_label = ttk.Label(
+            body, text="", style="Info.TLabel", wraplength=680
+        )
+        self.groups_analysis_summary_label.grid(row=5, column=0, sticky="w", pady=(8, 0))
 
         self.groups_tree.bind("<<TreeviewSelect>>", lambda _e: self._update_groups_selection())
 
@@ -1281,6 +1318,8 @@ class ProducerApp:
     def _start_analysis(self) -> None:
         if self.active or self.analysis_active:
             return
+        self._analysis_completion_summary = None
+        self._clear_analysis_completion_summary_labels()
         if self.active_project:
             project_id = self.active_project["project_id"]
             try:
@@ -1539,6 +1578,11 @@ class ProducerApp:
             self._finish_cancelled(catalog, project_id)
             return
         save_signature_cache_runtime(runtime, project_id)
+        self._analysis_completion_summary = {
+            "sources": source_total,
+            "recordings": len(clusters),
+            "incidents": len(combined_meta.get("errors", [])),
+        }
         self.ui_q.put(("clusters_done", clusters))
         self.ui_q.put(("analysis_finished", "completed"))
 
@@ -1727,9 +1771,26 @@ class ProducerApp:
             command=self._start_analysis_action,
         )
         if status == "cancelled":
+            self._analysis_completion_summary = None
+            self._clear_analysis_completion_summary_labels()
             self.analyze_hint.config(text="Análisis cancelado.")
         elif status == "error":
+            self._analysis_completion_summary = None
+            self._clear_analysis_completion_summary_labels()
             self.analyze_hint.config(text="")
+        elif status == "completed" and self._analysis_completion_summary is not None:
+            summary = self._analysis_completion_summary
+            summary_text = _format_analysis_completion_summary(
+                summary["sources"], summary["recordings"], summary["incidents"]
+            )
+            self.material_analysis_summary_label.config(text=summary_text)
+            self.groups_analysis_summary_label.config(text=summary_text)
+
+    def _clear_analysis_completion_summary_labels(self) -> None:
+        for name in ("material_analysis_summary_label", "groups_analysis_summary_label"):
+            label = getattr(self, name, None)
+            if label is not None:
+                label.config(text="")
 
     def _on_scan_done(self, scan: dict[str, Any]) -> None:
         ext = scan.get("extension_summary", {})

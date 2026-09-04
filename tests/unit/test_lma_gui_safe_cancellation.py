@@ -758,6 +758,7 @@ class TestAnalysisLifecycleGuiBoundary:
         app.cancel_event = threading.Event()
         app.analyze_btn = _FakeTkWidget()
         app.analyze_hint = _FakeTkWidget()
+        app._analysis_completion_summary = None
         return app
 
     def test_cancel_sets_cooperative_event_and_keeps_state(self) -> None:
@@ -1524,6 +1525,177 @@ class TestMS3BProjectSourceGuiAdoption:
         assert "analysis_source_context" not in source
 
 
+class TestMS3FCompletionSummary:
+    PROJECT = {"project_id": "PRJ-11111111-1111-4111-8111-111111111111"}
+
+    @staticmethod
+    def _labels_app(gui):
+        app = object.__new__(gui.ProducerApp)
+        app.active = False
+        app.analysis_active = True
+        app.active_project = app.PROJECT if hasattr(app, "PROJECT") else None
+        app.analyze_btn = _FakeTkWidget()
+        app.analyze_hint = _FakeTkWidget()
+        app.cancel_event = threading.Event()
+        app.groups_path_label = _FakeTkWidget()
+        app.material_analysis_summary_label = _FakeTkWidget()
+        app.groups_analysis_summary_label = _FakeTkWidget()
+        app._analysis_completion_summary = None
+        return app
+
+    def test_formatter_all_clear_multi_source(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        assert gui._format_analysis_completion_summary(3, 8, 0) == (
+            "Análisis completado · 3 fuentes analizadas · 8 grabaciones agrupadas · Sin incidencias."
+        )
+
+    def test_formatter_full_singular(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        assert gui._format_analysis_completion_summary(1, 1, 1) == (
+            "Análisis completado · 1 fuente analizada · 1 grabación agrupada · 1 incidencia."
+        )
+
+    def test_formatter_multiple_incidents(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        assert gui._format_analysis_completion_summary(3, 8, 2) == (
+            "Análisis completado · 3 fuentes analizadas · 8 grabaciones agrupadas · 2 incidencias."
+        )
+
+    def test_formatter_zero_groups_without_incidents(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        assert gui._format_analysis_completion_summary(3, 0, 0) == (
+            "Análisis completado · 3 fuentes analizadas · No se detectaron grabaciones agrupadas · Sin incidencias."
+        )
+
+    def test_formatter_zero_groups_with_incidents(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        assert gui._format_analysis_completion_summary(3, 0, 2) == (
+            "Análisis completado · 3 fuentes analizadas · No se detectaron grabaciones agrupadas · 2 incidencias."
+        )
+
+    def test_groups_result_renders_project_summary_without_internal_terms(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._labels_app(gui)
+        app.active_project = self.PROJECT
+        app.folder = "/secret/root"
+        app.groups_tree = _FakeSourceTree()
+        app._update_groups_selection = lambda: None
+        shown = []
+        app._show = shown.append
+        monkeypatch.setattr(
+            gui,
+            "cluster_view",
+            lambda cluster: {
+                "dialogue_count": 1, "technical_count": 0,
+                "unique_count": 0, "uncertain_count": 0,
+                "source_count": 1, "title": "Grabación visible", "master": "master.wav",
+            },
+        )
+        app._analysis_completion_summary = {"sources": 2, "recordings": 1, "incidents": 0}
+        app._on_clusters_done(["SESSION-INTERNAL-SECRET"])
+        app._on_analysis_finished("completed")
+        assert shown == ["groups"]
+        assert app.groups_analysis_summary_label.text == (
+            "Análisis completado · 2 fuentes analizadas · 1 grabación agrupada · Sin incidencias."
+        )
+        assert app.material_analysis_summary_label.text == app.groups_analysis_summary_label.text
+        for internal in (
+            "SRC-INTERNAL-SECRET", "MEDIA-INTERNAL-SECRET", "/secret/root",
+            "SESSION-INTERNAL-SECRET", "cluster", "session_id", "source_id",
+            "media_ref", "ONLINE", "OFFLINE", "ffprobe", "metadata error",
+            "catalog", "cache",
+        ):
+            assert internal not in app.groups_analysis_summary_label.text
+
+    def test_zero_groups_summary_renders_on_material_result(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._labels_app(gui)
+        app.active_project = self.PROJECT
+        app.folder = "/secret/root"
+        app.groups_tree = _FakeSourceTree()
+        app._update_groups_selection = lambda: None
+        shown = []
+        app._show = shown.append
+        app._analysis_completion_summary = {"sources": 3, "recordings": 0, "incidents": 2}
+        app._on_clusters_done([])
+        app._on_analysis_finished("completed")
+        assert shown == ["material"]
+        assert app.material_analysis_summary_label.text == (
+            "Análisis completado · 3 fuentes analizadas · No se detectaron grabaciones agrupadas · 2 incidencias."
+        )
+
+    def test_cancel_clears_success_summary(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._labels_app(gui)
+        app._analysis_completion_summary = {"sources": 3, "recordings": 8, "incidents": 0}
+        app.material_analysis_summary_label.config(text="Análisis completado")
+        app.groups_analysis_summary_label.config(text="Análisis completado")
+        app._on_analysis_finished("cancelled")
+        assert app.material_analysis_summary_label.text == ""
+        assert app.groups_analysis_summary_label.text == ""
+        assert app.analyze_hint.text == "Análisis cancelado."
+
+    def test_error_clears_success_summary(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._labels_app(gui)
+        app._analysis_completion_summary = {"sources": 3, "recordings": 8, "incidents": 0}
+        app.material_analysis_summary_label.config(text="Análisis completado")
+        app.groups_analysis_summary_label.config(text="Análisis completado")
+        app._on_analysis_finished("error")
+        assert app.material_analysis_summary_label.text == ""
+        assert app.groups_analysis_summary_label.text == ""
+        assert "Análisis completado" not in app.material_analysis_summary_label.text
+
+    def test_new_analysis_clears_stale_summary_before_start(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._labels_app(gui)
+        app.analysis_active = False
+        app.active_project = None
+        app.folder = "/selected/folder"
+        app._analysis_completion_summary = {"sources": 3, "recordings": 8, "incidents": 0}
+        app.material_analysis_summary_label.config(text="old completion")
+        app.groups_analysis_summary_label.config(text="old completion")
+        monkeypatch.setattr(gui.threading, "Thread", lambda **kwargs: type("Thread", (), {"start": lambda self: None})())
+        app._start_analysis()
+        assert app._analysis_completion_summary is None
+        assert app.material_analysis_summary_label.text == ""
+        assert app.groups_analysis_summary_label.text == ""
+
+    def test_legacy_worker_does_not_capture_project_summary(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = object.__new__(gui.ProducerApp)
+        app.folder = "/selected/legacy-folder"
+        app.analysis_project_id = None
+        app.cancel_event = threading.Event()
+        app.ui_q = type("Queue", (), {"items": [], "put": lambda self, item: self.items.append(item)})()
+        app._analysis_completion_summary = None
+        monkeypatch.setattr(gui, "scan_read_only_folder", lambda folder: {})
+        monkeypatch.setattr(gui.ProducerApp, "_load_or_create_catalog", lambda self, *args: {"media_items": {}})
+        monkeypatch.setattr(gui.ProducerApp, "_build_snapshot", lambda *args: {"files": []})
+        monkeypatch.setattr(gui, "compare_catalogs", lambda *args: {"classification": {"NEW": [], "MODIFIED": []}})
+        monkeypatch.setattr(gui, "extract_metadata", lambda *args, **kwargs: {"results": [], "errors": []})
+        monkeypatch.setattr(gui.ProducerApp, "_apply_metadata_to_catalog", lambda self, catalog, *args: catalog)
+        monkeypatch.setattr(gui, "select_batch_candidates", lambda results: [])
+        monkeypatch.setattr(gui, "group_related_media", lambda *args, **kwargs: [])
+        monkeypatch.setattr(gui, "save_catalog", lambda *args, **kwargs: None)
+        app._analysis_worker()
+        assert app._analysis_completion_summary is None
+        assert not any(
+            term in str(app.ui_q.items)
+            for term in ("fuente analizada", "grabación agrupada", "incidencia")
+        )
+
 class TestMS3AProjectSourceRuntimeWiring:
     PROJECT_ID = "PRJ-11111111-1111-4111-8111-111111111111"
     SOURCE_A = "SRC-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
@@ -1541,7 +1713,14 @@ class TestMS3AProjectSourceRuntimeWiring:
         return app
 
     def _run_project(
-        self, monkeypatch, *, dirty=True, cancel_during_group=False, grouping_error=None
+        self,
+        monkeypatch,
+        *,
+        dirty=True,
+        cancel_during_group=False,
+        grouping_error=None,
+        cluster_count=1,
+        metadata_error_count=0,
     ):
         from types import SimpleNamespace
 
@@ -1559,17 +1738,25 @@ class TestMS3AProjectSourceRuntimeWiring:
             for source, entry in files.items()
         }
         metadata = {
-            source: {"results": [{"relative_path": self.REL, "category": "audio"}], "errors": []}
+            source: {
+                "results": [{"relative_path": self.REL, "category": "audio"}],
+                "errors": (
+                    [{"relative_path": "bad.wav"}]
+                    if source == self.SOURCE_A and metadata_error_count
+                    else []
+                ),
+            }
             for source in roots
         }
-        calls = {"loads": [], "saves": [], "groups": [], "catalog": []}
+        calls = {"loads": [], "saves": [], "groups": [], "catalog": [], "scans": [], "catalog_loads": []}
 
         monkeypatch.setattr(gui, "load_project_sources", lambda project_id: {"sources": list(roots)})
         monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: roots)
         monkeypatch.setattr(
             gui,
             "scan_read_only_folder",
-            lambda root: scans[next(s for s, value in roots.items() if value == root)],
+            lambda root: calls["scans"].append(root)
+            or scans[next(s for s, value in roots.items() if value == root)],
         )
         monkeypatch.setattr(
             gui.ProducerApp,
@@ -1577,7 +1764,9 @@ class TestMS3AProjectSourceRuntimeWiring:
             lambda self, source, root, scan: snapshots[source],
         )
         monkeypatch.setattr(
-            gui.ProducerApp, "_load_or_create_catalog", lambda self, *args: {"media_items": {}}
+            gui.ProducerApp,
+            "_load_or_create_catalog",
+            lambda self, *args: calls["catalog_loads"].append(args) or {"media_items": {}},
         )
         monkeypatch.setattr(gui.ProducerApp, "_reuse_map_from_catalog", lambda self, catalog, snapshot: {})
         monkeypatch.setattr(
@@ -1615,7 +1804,7 @@ class TestMS3AProjectSourceRuntimeWiring:
                 app.cancel_event.set()
             if grouping_error is not None:
                 raise grouping_error
-            return ["cluster"]
+            return ["cluster"] * cluster_count
 
         monkeypatch.setattr(gui, "group_related_media", group)
         monkeypatch.setattr(
@@ -1676,6 +1865,20 @@ class TestMS3AProjectSourceRuntimeWiring:
             for key in ("results", "errors")
             for item in meta[key]
         )
+
+    def test_completion_summary_uses_runtime_counts_without_extra_work(self, monkeypatch):
+        app, calls, _, _ = self._run_project(
+            monkeypatch, cluster_count=3, metadata_error_count=1
+        )
+        assert app._analysis_completion_summary == {
+            "sources": 2,
+            "recordings": 3,
+            "incidents": 1,
+        }
+        assert len(calls["scans"]) == 2
+        assert len(calls["groups"]) == 1
+        assert len(calls["catalog_loads"]) == 1
+        assert len(calls["loads"]) == 1
 
     def test_offline_source_is_excluded_from_processing(self, monkeypatch):
         from scripts.local_media_agent import cid_gui as gui

@@ -1303,8 +1303,13 @@ class ProducerApp:
                     parent=self.root,
                 )
                 return
-        elif not self.folder:
-            return
+            self._analysis_source_labels = {
+                source["source_id"]: source["display_label"] for source in sources
+            }
+        else:
+            if not self.folder:
+                return
+            self._analysis_source_labels = {}
         self.analysis_active = True
         self.analyze_btn.config(
             state="normal", text="Cancelar análisis", command=self._cancel_analysis_click
@@ -1408,17 +1413,27 @@ class ProducerApp:
             return
         source_scans: dict[str, dict[str, Any]] = {}
         snapshots: list[dict[str, Any]] = []
+        ordered_source_ids = sorted(online_root_map)
+        source_total = len(ordered_source_ids)
+        source_labels = getattr(self, "_analysis_source_labels", {})
         catalog = self._load_or_create_catalog(
             project_id,
             next(iter(sorted(online_root_map)), ""),
             next(iter(sorted(online_root_map.values())), ""),
         )
 
-        for source_id in sorted(online_root_map):
+        for source_index, source_id in enumerate(ordered_source_ids, start=1):
             if self.cancel_event.is_set():
                 self._finish_cancelled(catalog, project_id)
                 return
             root = online_root_map[source_id]
+            label = source_labels.get(source_id, "Fuente")
+            self.ui_q.put(
+                (
+                    "analysis_source_started",
+                    {"index": source_index, "total": source_total, "label": label},
+                )
+            )
             scan = scan_read_only_folder(root)
             source_scans[source_id] = scan
             snapshots.append(self._build_snapshot(source_id, root, scan))
@@ -1433,7 +1448,7 @@ class ProducerApp:
         changed_keys |= set(comparison["classification"][CLASSIFICATION_MODIFIED])
 
         combined_meta: dict[str, Any] = {"results": [], "errors": []}
-        for source_id in sorted(online_root_map):
+        for source_index, source_id in enumerate(ordered_source_ids, start=1):
             if self.cancel_event.is_set():
                 self._finish_cancelled(catalog, project_id)
                 return
@@ -1444,10 +1459,30 @@ class ProducerApp:
                 for key in changed_keys
                 if key.startswith(f"{source_id}::")
             }
+            label = source_labels.get(source_id, "Fuente")
+
+            def enqueue_progress(
+                event: dict[str, Any],
+                *,
+                source_index: int = source_index,
+                source_total: int = source_total,
+                label: str = label,
+            ) -> None:
+                enriched = dict(event)
+                enriched.update(
+                    {
+                        "project_source_context": True,
+                        "source_index": source_index,
+                        "source_total": source_total,
+                        "source_label": label,
+                    }
+                )
+                self.ui_q.put(("analysis_progress", enriched))
+
             meta = extract_metadata(
                 root,
                 source_scans[source_id],
-                progress_callback=lambda event: self.ui_q.put(("analysis_progress", event)),
+                progress_callback=enqueue_progress,
                 cancel_event=self.cancel_event,
                 reuse_metadata=self._reuse_map_from_catalog(catalog, source_snapshot),
                 only_paths=source_keys or None,
@@ -1646,6 +1681,29 @@ class ProducerApp:
         processed = event.get("processed", 0)
         total = event.get("total", 0)
         current = event.get("current_item") or ""
+        if event.get("project_source_context"):
+            source_index = event.get("source_index", 0)
+            source_total = event.get("source_total", 0)
+            label = event.get("source_label") or "Fuente"
+            if status == "cancelled":
+                self.analyze_hint.config(text="Análisis cancelado.")
+            elif status == "reused":
+                self.analyze_hint.config(
+                    text=f"Reutilizando información {processed} de {total} · {label}…"
+                )
+            elif status == "error":
+                self.analyze_hint.config(
+                    text=f"Revisando material {processed} de {total} · {label}…"
+                )
+            else:
+                self.analyze_hint.config(
+                    text=f"Leyendo metadatos {processed} de {total} · {label}…"
+                )
+            if status in ("completed", "phase_completed"):
+                self.analyze_hint.config(
+                    text=f"Analizando fuente {source_index} de {source_total}: {label}…"
+                )
+            return
         count_text = f"metadata {processed}/{total}"
         if status == "cancelled":
             self.analyze_hint.config(text="Análisis cancelado.")
@@ -2178,6 +2236,14 @@ class ProducerApp:
                     self._on_clusters_done(item[1])
                 elif kind == "grouping_started":
                     self.analyze_hint.config(text="Evaluando grabaciones…")
+                elif kind == "analysis_source_started":
+                    context = item[1]
+                    self.analyze_hint.config(
+                        text=(
+                            f"Analizando fuente {context['index']} de {context['total']}: "
+                            f"{context['label']}…"
+                        )
+                    )
                 elif kind == "analysis_progress":
                     self._on_analysis_progress(item[1])
                 elif kind == "analysis_finished":

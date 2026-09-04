@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import queue
 import sys
 import threading
 from contextlib import ExitStack
@@ -859,7 +860,7 @@ class TestMS3BProjectSourceGuiAdoption:
 
         app = self._app(gui, self.PROJECT)
         started = []
-        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [{"source_id": self.SOURCE_A}])
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [{"source_id": self.SOURCE_A, "display_label": "Cam"}])
         monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: {self.SOURCE_A: "/online/a"})
         monkeypatch.setattr(app, "_pick_folder", lambda: (_ for _ in ()).throw(AssertionError()))
         monkeypatch.setattr(gui.threading, "Thread", lambda **kwargs: type("Thread", (), {"start": lambda self: started.append(kwargs["target"])})())
@@ -885,7 +886,7 @@ class TestMS3BProjectSourceGuiAdoption:
 
         app = self._app(gui, self.PROJECT)
         messages = []
-        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [{"source_id": self.SOURCE_A}])
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [{"source_id": self.SOURCE_A, "display_label": "Cam"}])
         monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: {})
         monkeypatch.setattr(gui.messagebox, "showinfo", lambda *args, **kwargs: messages.append(args[1]), raising=False)
         app._start_analysis()
@@ -896,7 +897,15 @@ class TestMS3BProjectSourceGuiAdoption:
         from scripts.local_media_agent import cid_gui as gui
 
         app = self._app(gui, self.PROJECT)
-        app.ui_q = type("Queue", (), {"items": [], "put": lambda self, item: self.items.append(item)})()
+        app.ui_q = type(
+            "Queue",
+            (),
+            {
+                "items": [],
+                "put": lambda self, item: self.items.append(item),
+                "get_nowait": lambda self: self.items.pop(0) if self.items else (_ for _ in ()).throw(queue.Empty),
+            },
+        )()
         calls = {"scan": 0, "load": 0, "group": 0}
         monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: {})
         monkeypatch.setattr(gui, "scan_read_only_folder", lambda *args: calls.__setitem__("scan", calls["scan"] + 1))
@@ -1182,7 +1191,7 @@ class TestMS3BProjectSourceGuiAdoption:
 
         app = self._app(gui, self.PROJECT)
         started = []
-        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [{"source_id": self.SOURCE_A}])
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [{"source_id": self.SOURCE_A, "display_label": "Cam"}])
         monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: {self.SOURCE_A: "/online"})
         monkeypatch.setattr(app, "_pick_folder", lambda: (_ for _ in ()).throw(AssertionError()))
         monkeypatch.setattr(gui.threading, "Thread", lambda **kwargs: type("Thread", (), {"start": lambda self: started.append(kwargs["target"])})())
@@ -1323,7 +1332,7 @@ class TestMS3BProjectSourceGuiAdoption:
 
         app = self._app(gui, self.PROJECT)
         messages = []
-        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [{"source_id": self.SOURCE_A}])
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [{"source_id": self.SOURCE_A, "display_label": "Cam"}])
         monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: {})
         monkeypatch.setattr(gui.messagebox, "showinfo", lambda *args, **kwargs: messages.append(args[1]), raising=False)
         app._start_analysis()
@@ -1339,6 +1348,180 @@ class TestMS3BProjectSourceGuiAdoption:
         assert "archivo" not in summary.lower()
         assert "vídeo" not in summary.lower()
         assert "audio" not in summary.lower()
+
+    def _run_project_context(self, monkeypatch, gui, sources, online_roots):
+        app = self._app(gui, self.PROJECT)
+        app.ui_q = type(
+            "Queue",
+            (),
+            {
+                "items": [],
+                "put": lambda self, item: self.items.append(item),
+                "get_nowait": lambda self: self.items.pop(0) if self.items else (_ for _ in ()).throw(queue.Empty),
+            },
+        )()
+        app.cancel_event = threading.Event()
+        app._analysis_source_labels = {}
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: sources)
+        monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: online_roots)
+        monkeypatch.setattr(gui.threading, "Thread", lambda **kwargs: type("Thread", (), {"start": lambda self: None})())
+        app._start_analysis()
+        monkeypatch.setattr(gui, "scan_read_only_folder", lambda root: {"extension_summary": {}})
+        monkeypatch.setattr(gui, "compare_catalogs", lambda *args, **kwargs: {"classification": {"NEW": [], "MODIFIED": []}})
+        monkeypatch.setattr(gui, "save_catalog", lambda *args, **kwargs: None)
+        monkeypatch.setattr(gui, "load_signature_cache_runtime", lambda *args, **kwargs: {})
+        monkeypatch.setattr(gui, "save_signature_cache_runtime", lambda *args, **kwargs: None)
+        monkeypatch.setattr(gui, "select_batch_candidates", lambda results: [])
+        monkeypatch.setattr(gui, "group_related_media", lambda *args, **kwargs: [])
+        app._load_or_create_catalog = lambda *args, **kwargs: {"media_items": {}}
+        app._build_snapshot = lambda source_id, root, scan: {"online_root_ids": [source_id], "files": []}
+        app._reuse_map_from_catalog = lambda catalog, snapshot: {}
+        app._apply_metadata_to_catalog = lambda catalog, meta, source_id, root, snapshot: catalog
+        callbacks = []
+
+        def extract(root, scan, *, progress_callback, **kwargs):
+            callbacks.append(progress_callback)
+            progress_callback({
+                "phase": "metadata", "status": "running", "processed": 1,
+                "total": 2, "current_item": "A7IV_SL31326.MP4",
+            })
+            return {"results": [], "errors": []}
+
+        monkeypatch.setattr(gui, "extract_metadata", extract)
+        app._project_source_analysis(self.PROJECT["project_id"])
+        return app, callbacks
+
+    def test_project_worker_emits_sorted_source_context_and_closes_callback(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        sources = [
+            {"source_id": self.SOURCE_B, "display_label": "Audio Zoom"},
+            {"source_id": self.SOURCE_A, "display_label": "Angel Perrillo"},
+        ]
+        app, callbacks = self._run_project_context(
+            monkeypatch, gui, sources, {self.SOURCE_B: "/b", self.SOURCE_A: "/a"}
+        )
+        starts = [item[1] for item in app.ui_q.items if item[0] == "analysis_source_started"]
+        progress = [item[1] for item in app.ui_q.items if item[0] == "analysis_progress"]
+        assert starts == [
+            {"index": 1, "total": 2, "label": "Angel Perrillo"},
+            {"index": 2, "total": 2, "label": "Audio Zoom"},
+        ]
+        assert [(event["source_index"], event["source_label"]) for event in progress] == [(1, "Angel Perrillo"), (2, "Audio Zoom")]
+        assert all(event["current_item"] == "A7IV_SL31326.MP4" for event in progress)
+        assert len(callbacks) == 2
+
+    def test_single_project_source_uses_one_of_one_context(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        sources = [{"source_id": self.SOURCE_A, "display_label": "Cámara principal"}]
+        app, _ = self._run_project_context(monkeypatch, gui, sources, {self.SOURCE_A: "/camera"})
+        start = next(item[1] for item in app.ui_q.items if item[0] == "analysis_source_started")
+        assert start == {"index": 1, "total": 1, "label": "Cámara principal"}
+
+    def test_missing_label_uses_neutral_fallback_without_source_id(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app, _ = self._run_project_context(
+            monkeypatch,
+            gui,
+            [{"source_id": self.SOURCE_A, "display_label": "Cámara"}],
+            {self.SOURCE_A: "/a", self.SOURCE_B: "/b"},
+        )
+        starts = [item[1] for item in app.ui_q.items if item[0] == "analysis_source_started"]
+        fallback = next(item for item in starts if item["index"] == 2)
+        assert fallback["label"] == "Fuente"
+        assert self.SOURCE_B not in fallback["label"]
+
+    def test_project_progress_copy_hides_filename_and_internal_terms(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        for status, expected in (
+            ("running", "Leyendo metadatos 24 de 86 · Angel Perrillo…"),
+            ("reused", "Reutilizando información 24 de 86 · Angel Perrillo…"),
+            ("error", "Revisando material 24 de 86 · Angel Perrillo…"),
+            ("phase_completed", "Analizando fuente 1 de 2: Angel Perrillo…"),
+        ):
+            app._on_analysis_progress({
+                "phase": "metadata", "status": status, "processed": 24, "total": 86,
+                "current_item": "A7IV_SL31326.MP4", "project_source_context": True,
+                "source_index": 1, "source_total": 2, "source_label": "Angel Perrillo",
+            })
+            assert app.analyze_hint.text == expected
+            assert "A7IV_SL31326.MP4" not in app.analyze_hint.text
+            assert "metadata" not in app.analyze_hint.text
+
+    def test_grouping_replaces_source_context_and_finished_states_are_safe(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        app.ui_q = type(
+            "Queue",
+            (),
+            {
+                "items": [],
+                "put": lambda self, item: self.items.append(item),
+                "get_nowait": lambda self: self.items.pop(0) if self.items else (_ for _ in ()).throw(queue.Empty),
+            },
+        )()
+        app.ui_q.items.append(("grouping_started", None))
+        app.close_after_done = False
+        app.root = type("Root", (), {"after": lambda self, *args: None})()
+        app._poll_queue()
+        assert app.analyze_hint.text == "Evaluando grabaciones…"
+        app._on_analysis_progress({
+            "phase": "metadata", "status": "running", "processed": 1, "total": 2,
+            "project_source_context": True, "source_index": 1, "source_total": 2,
+            "source_label": "Angel Perrillo",
+        })
+        app._on_analysis_finished("cancelled")
+        assert app.analyze_hint.text == "Análisis cancelado."
+        app._on_analysis_progress({
+            "phase": "metadata", "status": "running", "processed": 1, "total": 2,
+            "project_source_context": True, "source_index": 1, "source_total": 2,
+            "source_label": "Angel Perrillo",
+        })
+        app._on_analysis_finished("error")
+        assert app.analyze_hint.text == ""
+
+    def test_legacy_progress_copy_remains_unchanged(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui)
+        app._on_analysis_progress({
+            "phase": "metadata", "status": "running", "processed": 24, "total": 86,
+            "current_item": "A7IV_SL31326.MP4",
+        })
+        assert app.analyze_hint.text == "Analizando metadata 24/86 · A7IV_SL31326.MP4"
+
+    def test_project_callback_preserves_original_event_fields(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        sources = [
+            {"source_id": self.SOURCE_B, "display_label": "Audio Zoom"},
+            {"source_id": self.SOURCE_A, "display_label": "Angel Perrillo"},
+        ]
+        app, callbacks = self._run_project_context(
+            monkeypatch, gui, sources, {self.SOURCE_B: "/b", self.SOURCE_A: "/a"}
+        )
+        original = {"phase": "metadata", "status": "reused", "processed": 24, "total": 86, "current_item": "clip.mov"}
+        app.ui_q.items.clear()
+        callbacks[0](original)
+        callbacks[1](original)
+        enriched = [item[1] for item in app.ui_q.items]
+        assert enriched[0]["phase"] == "metadata"
+        assert enriched[0]["current_item"] == "clip.mov"
+        assert (enriched[0]["source_index"], enriched[0]["source_label"]) == (1, "Angel Perrillo")
+        assert (enriched[1]["source_index"], enriched[1]["source_label"]) == (2, "Audio Zoom")
+        assert original == {"phase": "metadata", "status": "reused", "processed": 24, "total": 86, "current_item": "clip.mov"}
+
+    def test_progress_context_adds_no_new_widget_or_persistence_terms(self):
+        from pathlib import Path
+
+        source = Path(__file__).parents[2].joinpath("scripts/local_media_agent/cid_gui.py").read_text(encoding="utf-8")
+        assert "source_progress_bar" not in source
+        assert "analysis_source_context" not in source
 
 
 class TestMS3AProjectSourceRuntimeWiring:

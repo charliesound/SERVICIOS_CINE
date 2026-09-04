@@ -117,6 +117,11 @@ from scripts.local_media_agent.local_project import (
     load_active_project,
     select_project,
 )
+from scripts.local_media_agent.project_sources import (
+    SourceRegistryError,
+    build_online_source_root_map,
+    load_project_sources,
+)
 from scripts.local_media_agent.project_video_profile import (
     ASPECT_1_66,
     ASPECT_1_85,
@@ -147,6 +152,10 @@ from scripts.local_media_agent.source_video_profile import (
     SourceVideoProfileError,
     build_source_video_profiles,
     save_source_video_profiles,
+)
+from scripts.local_media_agent.source_signature_runtime import (
+    load_signature_cache_runtime,
+    save_signature_cache_runtime,
 )
 
 ASPECT_DISPLAY_LABELS = {
@@ -1070,6 +1079,10 @@ class ProducerApp:
         project_id = self.analysis_project_id
         source_root_id = _source_root_id_for(folder)
         try:
+            if project_id and self._has_project_source_context(project_id):
+                self._project_source_analysis(project_id)
+                return
+
             catalog = self._load_or_create_catalog(project_id, source_root_id, folder)
 
             scan = scan_read_only_folder(folder)
@@ -1123,6 +1136,122 @@ class ProducerApp:
             _write_log("analysis_error", traceback.format_exc())
             self.ui_q.put(("error", "No se pudo analizar el material.", str(exc)))
             self.ui_q.put(("analysis_finished", "error"))
+
+    def _has_project_source_context(self, project_id: str) -> bool:
+        try:
+            registry = load_project_sources(project_id)
+        except SourceRegistryError:
+            return False
+        return bool(registry.get("sources"))
+
+    def _project_source_analysis(self, project_id: str) -> None:
+        online_root_map = build_online_source_root_map(project_id)
+        source_scans: dict[str, dict[str, Any]] = {}
+        snapshots: list[dict[str, Any]] = []
+        catalog = self._load_or_create_catalog(
+            project_id,
+            next(iter(sorted(online_root_map)), ""),
+            next(iter(sorted(online_root_map.values())), ""),
+        )
+
+        for source_id in sorted(online_root_map):
+            if self.cancel_event.is_set():
+                self._finish_cancelled(catalog, project_id)
+                return
+            root = online_root_map[source_id]
+            scan = scan_read_only_folder(root)
+            source_scans[source_id] = scan
+            snapshots.append(self._build_snapshot(source_id, root, scan))
+            self.ui_q.put(("scan_done", scan))
+
+        snapshot = {
+            "online_root_ids": sorted(online_root_map),
+            "files": [file_entry for item in snapshots for file_entry in item["files"]],
+        }
+        comparison = compare_catalogs(catalog, snapshot)
+        changed_keys = set(comparison["classification"][CLASSIFICATION_NEW])
+        changed_keys |= set(comparison["classification"][CLASSIFICATION_MODIFIED])
+
+        combined_meta: dict[str, Any] = {"results": [], "errors": []}
+        for source_id in sorted(online_root_map):
+            if self.cancel_event.is_set():
+                self._finish_cancelled(catalog, project_id)
+                return
+            root = online_root_map[source_id]
+            source_snapshot = next(item for item in snapshots if item["online_root_ids"] == [source_id])
+            source_keys = {
+                key.split("::", 1)[1]
+                for key in changed_keys
+                if key.startswith(f"{source_id}::")
+            }
+            meta = extract_metadata(
+                root,
+                source_scans[source_id],
+                progress_callback=lambda event: self.ui_q.put(("analysis_progress", event)),
+                cancel_event=self.cancel_event,
+                reuse_metadata=self._reuse_map_from_catalog(catalog, source_snapshot),
+                only_paths=source_keys or None,
+            )
+            self._enrich_project_source_metadata(meta, source_id)
+            combined_meta["results"].extend(meta.get("results", []))
+            combined_meta["errors"].extend(meta.get("errors", []))
+
+        self.ui_q.put(("metadata_done", combined_meta))
+        for source_id in sorted(online_root_map):
+            root = online_root_map[source_id]
+            source_snapshot = next(item for item in snapshots if item["online_root_ids"] == [source_id])
+            source_meta = {
+                "results": [
+                    item for item in combined_meta["results"] if item.get("source_id") == source_id
+                ],
+                "errors": [
+                    item for item in combined_meta["errors"] if item.get("source_id") == source_id
+                ],
+            }
+            self._apply_metadata_to_catalog(
+                catalog, source_meta, source_id, root, source_snapshot
+            )
+        save_catalog(catalog, project_id=project_id)
+
+        if self.cancel_event.is_set():
+            self._finish_cancelled(catalog, project_id)
+            return
+
+        fingerprints = {
+            media_item_key(source_id, file_entry["relative_path"]): {
+                "size": file_entry["size"],
+                "mtime_ns": file_entry["mtime_ns"],
+            }
+            for item in snapshots
+            for file_entry in item["files"]
+            for source_id in item["online_root_ids"]
+            if isinstance(file_entry.get("size"), int)
+            and isinstance(file_entry.get("mtime_ns"), int)
+        }
+        runtime = load_signature_cache_runtime(
+            project_id,
+            fingerprints=fingerprints,
+        )
+        candidates = select_batch_candidates(combined_meta.get("results", []))
+        self.ui_q.put(("candidates_done", candidates))
+        self.ui_q.put(("grouping_started", None))
+        clusters = group_related_media(
+            combined_meta.get("results", []),
+            media_root_by_source_id=online_root_map,
+            signature_cache_runtime=runtime,
+        )
+        if self.cancel_event.is_set():
+            self._finish_cancelled(catalog, project_id)
+            return
+        save_signature_cache_runtime(runtime, project_id)
+        self.ui_q.put(("clusters_done", clusters))
+        self.ui_q.put(("analysis_finished", "completed"))
+
+    @staticmethod
+    def _enrich_project_source_metadata(meta: dict[str, Any], source_id: str) -> None:
+        for key in ("results", "errors"):
+            for item in meta.get(key, []):
+                item["source_id"] = source_id
 
     def _load_or_create_catalog(
         self, project_id: str | None, source_root_id: str, folder: str
@@ -1316,13 +1445,52 @@ class ProducerApp:
         if not project_id:
             return
         try:
-            catalog = build_source_video_profiles(project_id, metadata)
+            project_source_items = self._project_source_video_items(metadata, project_id)
+            if project_source_items:
+                catalog = self._build_project_source_video_profiles(
+                    project_id, project_source_items
+                )
+            else:
+                catalog = build_source_video_profiles(project_id, metadata)
             save_source_video_profiles(catalog)
             summary = analyze_source_video_metadata(metadata)
             refresh_project_video_analysis(project_id, summary)
             self._refresh_project_ui()
         except (SourceVideoProfileError, ProjectVideoProfileError, LocalProjectError) as exc:
             _write_log("project_video_profile_error", str(exc))
+
+    def _project_source_video_items(
+        self, metadata: dict[str, Any], project_id: str
+    ) -> dict[str, list[dict[str, Any]]]:
+        if not self._has_project_source_context(project_id):
+            return {}
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for item in metadata.get("results", []):
+            source_id = item.get("source_id") if isinstance(item, dict) else None
+            if isinstance(source_id, str) and source_id:
+                grouped.setdefault(source_id, []).append(item)
+        return grouped
+
+    @staticmethod
+    def _build_project_source_video_profiles(
+        project_id: str, grouped_metadata: dict[str, list[dict[str, Any]]]
+    ) -> dict[str, Any]:
+        catalogs = [
+            build_source_video_profiles(
+                project_id,
+                {"results": grouped_metadata[source_id]},
+                source_id=source_id,
+            )
+            for source_id in sorted(grouped_metadata)
+        ]
+        entries = [entry for catalog in catalogs for entry in catalog["entries"]]
+        entries.sort(key=lambda entry: entry["media_ref"])
+        return {
+            "format": catalogs[0]["format"],
+            "version": catalogs[0]["version"],
+            "project_id": project_id,
+            "entries": entries,
+        }
 
     def _on_clusters_done(self, clusters: list[Any]) -> None:
         self.clusters = clusters or []

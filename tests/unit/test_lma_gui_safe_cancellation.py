@@ -791,3 +791,376 @@ class TestAnalysisLifecycleGuiBoundary:
         app._start_transcription_click()
         # returns early without clobbering the shared cooperative cancel event
         assert not app.cancel_event.is_set()
+
+
+class TestMS3AProjectSourceRuntimeWiring:
+    PROJECT_ID = "PRJ-11111111-1111-4111-8111-111111111111"
+    SOURCE_A = "SRC-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    SOURCE_B = "SRC-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    REL = "Interview/A001.wav"
+
+    def _app(self, gui):
+        app = object.__new__(gui.ProducerApp)
+        app.folder = "/selected/legacy-folder"
+        app.analysis_project_id = self.PROJECT_ID
+        app.cancel_event = threading.Event()
+        app.ui_q = type(
+            "Queue", (), {"items": [], "put": lambda self, item: self.items.append(item)}
+        )()
+        return app
+
+    def _run_project(
+        self, monkeypatch, *, dirty=True, cancel_during_group=False, grouping_error=None
+    ):
+        from types import SimpleNamespace
+
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui)
+        roots = {self.SOURCE_A: "/online/a", self.SOURCE_B: "/online/b"}
+        files = {
+            self.SOURCE_A: {"relative_path": self.REL, "size": 10, "mtime_ns": 100},
+            self.SOURCE_B: {"relative_path": self.REL, "size": 20, "mtime_ns": 200},
+        }
+        scans = {source: {"extension_summary": {".wav": 1}} for source in roots}
+        snapshots = {
+            source: {"online_root_ids": [source], "files": [dict(entry)]}
+            for source, entry in files.items()
+        }
+        metadata = {
+            source: {"results": [{"relative_path": self.REL, "category": "audio"}], "errors": []}
+            for source in roots
+        }
+        calls = {"loads": [], "saves": [], "groups": [], "catalog": []}
+
+        monkeypatch.setattr(gui, "load_project_sources", lambda project_id: {"sources": list(roots)})
+        monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: roots)
+        monkeypatch.setattr(
+            gui,
+            "scan_read_only_folder",
+            lambda root: scans[next(s for s, value in roots.items() if value == root)],
+        )
+        monkeypatch.setattr(
+            gui.ProducerApp,
+            "_build_snapshot",
+            lambda self, source, root, scan: snapshots[source],
+        )
+        monkeypatch.setattr(
+            gui.ProducerApp, "_load_or_create_catalog", lambda self, *args: {"media_items": {}}
+        )
+        monkeypatch.setattr(gui.ProducerApp, "_reuse_map_from_catalog", lambda self, catalog, snapshot: {})
+        monkeypatch.setattr(
+            gui,
+            "compare_catalogs",
+            lambda catalog, snapshot: {"classification": {"NEW": [], "MODIFIED": []}},
+        )
+        monkeypatch.setattr(
+            gui,
+            "extract_metadata",
+            lambda root, scan, **kwargs: metadata[next(s for s, value in roots.items() if value == root)],
+        )
+        monkeypatch.setattr(
+            gui, "save_catalog", lambda *args, **kwargs: calls["catalog"].append((args, kwargs))
+        )
+        monkeypatch.setattr(
+            gui.ProducerApp,
+            "_apply_metadata_to_catalog",
+            lambda self, catalog, meta, source, root, snapshot: calls["catalog"].append(
+                (source, root, meta, snapshot)
+            )
+            or catalog,
+        )
+        monkeypatch.setattr(gui, "select_batch_candidates", lambda results: list(results))
+
+        def load_runtime(project_id, *, fingerprints):
+            calls["loads"].append((project_id, fingerprints))
+            return SimpleNamespace(fingerprints=fingerprints, dirty=dirty, cache_hits=0)
+
+        monkeypatch.setattr(gui, "load_signature_cache_runtime", load_runtime)
+
+        def group(results, **kwargs):
+            calls["groups"].append((results, kwargs))
+            if cancel_during_group:
+                app.cancel_event.set()
+            if grouping_error is not None:
+                raise grouping_error
+            return ["cluster"]
+
+        monkeypatch.setattr(gui, "group_related_media", group)
+        monkeypatch.setattr(
+            gui,
+            "save_signature_cache_runtime",
+            lambda runtime, project_id: calls["saves"].append((runtime, project_id))
+            if runtime.dirty
+            else False,
+        )
+        app._project_source_analysis(self.PROJECT_ID)
+        return app, calls, roots, files
+
+    def test_legacy_no_project_flow_keeps_current_behavior(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui)
+        app.analysis_project_id = None
+        calls = []
+        monkeypatch.setattr(
+            gui.ProducerApp,
+            "_load_or_create_catalog",
+            lambda self, project, source, folder: calls.append((project, source, folder))
+            or {"media_items": {}},
+        )
+        monkeypatch.setattr(gui, "scan_read_only_folder", lambda folder: {})
+        monkeypatch.setattr(gui.ProducerApp, "_build_snapshot", lambda *args: {"files": []})
+        monkeypatch.setattr(
+            gui, "compare_catalogs", lambda *args: {"classification": {"NEW": [], "MODIFIED": []}}
+        )
+        monkeypatch.setattr(gui, "extract_metadata", lambda *args, **kwargs: {"results": [], "errors": []})
+        monkeypatch.setattr(gui.ProducerApp, "_apply_metadata_to_catalog", lambda self, *args: args[0])
+        monkeypatch.setattr(gui, "select_batch_candidates", lambda results: [])
+        monkeypatch.setattr(gui, "group_related_media", lambda items, **kwargs: [])
+        monkeypatch.setattr(gui, "save_catalog", lambda *args, **kwargs: None)
+        app._analysis_worker()
+        assert calls[0][0] is None
+        assert calls[0][1].startswith("ROOT-")
+
+    def test_analysis_worker_routes_active_project_to_project_source_mode(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui)
+        calls = []
+        monkeypatch.setattr(app, "_has_project_source_context", lambda project_id: True)
+        monkeypatch.setattr(
+            app, "_project_source_analysis", lambda project_id: calls.append(project_id)
+        )
+        app._analysis_worker()
+        assert calls == [self.PROJECT_ID]
+
+    def test_project_source_mode_enriches_metadata_with_stable_source_id(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        meta = {"results": [{"relative_path": self.REL}], "errors": [{"relative_path": "bad.wav"}]}
+        gui.ProducerApp._enrich_project_source_metadata(meta, self.SOURCE_A)
+        assert all(
+            item["source_id"] == self.SOURCE_A
+            for key in ("results", "errors")
+            for item in meta[key]
+        )
+
+    def test_offline_source_is_excluded_from_processing(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        seen = []
+        monkeypatch.setattr(
+            gui, "load_project_sources", lambda project_id: {"sources": [self.SOURCE_A, self.SOURCE_B]}
+        )
+        monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: {self.SOURCE_A: "/online/a"})
+        monkeypatch.setattr(gui, "scan_read_only_folder", lambda root: seen.append(root) or {"extension_summary": {}})
+        monkeypatch.setattr(gui.ProducerApp, "_build_snapshot", lambda self, source, root, scan: {"online_root_ids": [source], "files": []})
+        monkeypatch.setattr(gui.ProducerApp, "_load_or_create_catalog", lambda self, *args: {"media_items": {}})
+        monkeypatch.setattr(gui.ProducerApp, "_reuse_map_from_catalog", lambda *args: {})
+        monkeypatch.setattr(gui, "compare_catalogs", lambda *args: {"classification": {"NEW": [], "MODIFIED": []}})
+        monkeypatch.setattr(gui, "extract_metadata", lambda *args, **kwargs: {"results": [], "errors": []})
+        monkeypatch.setattr(gui.ProducerApp, "_apply_metadata_to_catalog", lambda self, catalog, *args: catalog)
+        monkeypatch.setattr(gui, "save_catalog", lambda *args, **kwargs: None)
+        monkeypatch.setattr(gui, "load_signature_cache_runtime", lambda *args, **kwargs: type("Runtime", (), {"dirty": False})())
+        monkeypatch.setattr(gui, "select_batch_candidates", lambda results: [])
+        monkeypatch.setattr(gui, "group_related_media", lambda *args, **kwargs: [])
+        monkeypatch.setattr(gui, "save_signature_cache_runtime", lambda *args: None)
+        self._app(gui)._project_source_analysis(self.PROJECT_ID)
+        assert seen == ["/online/a"]
+
+    def test_two_online_same_relative_path_get_distinct_media_refs(self, monkeypatch):
+        _, calls, _, _ = self._run_project(monkeypatch)
+        fingerprints = calls["loads"][0][1]
+        assert set(fingerprints) == {
+            f"{self.SOURCE_A}::{self.REL}",
+            f"{self.SOURCE_B}::{self.REL}",
+        }
+
+    def test_fingerprint_map_uses_existing_size_and_mtime_ns(self, monkeypatch):
+        _, calls, _, files = self._run_project(monkeypatch)
+        fingerprints = calls["loads"][0][1]
+        assert fingerprints[f"{self.SOURCE_A}::{self.REL}"] == {
+            "size": files[self.SOURCE_A]["size"],
+            "mtime_ns": files[self.SOURCE_A]["mtime_ns"],
+        }
+        assert fingerprints[f"{self.SOURCE_B}::{self.REL}"] == {
+            "size": files[self.SOURCE_B]["size"],
+            "mtime_ns": files[self.SOURCE_B]["mtime_ns"],
+        }
+
+    def test_fingerprint_construction_requires_no_extra_stat_or_read(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        stat_calls = []
+        monkeypatch.setattr(gui.Path, "stat", lambda *args: stat_calls.append(args) or None)
+        self._run_project(monkeypatch)
+        assert stat_calls == []
+
+    def test_runtime_loaded_exactly_once(self, monkeypatch):
+        _, calls, _, _ = self._run_project(monkeypatch)
+        assert len(calls["loads"]) == 1
+
+    def test_grouping_receives_exact_online_root_map(self, monkeypatch):
+        _, calls, roots, _ = self._run_project(monkeypatch)
+        assert calls["groups"][0][1]["media_root_by_source_id"] == roots
+
+    def test_grouping_receives_signature_cache_runtime(self, monkeypatch):
+        _, calls, _, _ = self._run_project(monkeypatch)
+        assert calls["groups"][0][1]["signature_cache_runtime"] is not None
+
+    def test_dirty_success_saves_runtime_once_after_grouping(self, monkeypatch):
+        _, calls, _, _ = self._run_project(monkeypatch, dirty=True)
+        assert len(calls["saves"]) == 1
+        assert calls["groups"]
+
+    def test_clean_all_hit_does_not_save_runtime(self, monkeypatch):
+        _, calls, _, _ = self._run_project(monkeypatch, dirty=False)
+        assert calls["saves"] == []
+
+    def test_grouping_exception_does_not_save_runtime(self, monkeypatch):
+        with pytest.raises(RuntimeError):
+            self._run_project(monkeypatch, grouping_error=RuntimeError("grouping failed"))
+
+    def test_cancelled_analysis_does_not_save_runtime(self, monkeypatch):
+        _, calls, _, _ = self._run_project(monkeypatch, dirty=True, cancel_during_group=True)
+        assert calls["saves"] == []
+
+    def test_project_catalog_apply_uses_stable_source_id(self, monkeypatch):
+        _, calls, _, _ = self._run_project(monkeypatch)
+        applied = [entry for entry in calls["catalog"] if isinstance(entry, tuple) and len(entry) == 4]
+        assert {entry[0] for entry in applied} == {self.SOURCE_A, self.SOURCE_B}
+
+    def test_legacy_catalog_root_behavior_remains_root_derived(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui)
+        app.analysis_project_id = None
+        received = []
+        monkeypatch.setattr(
+            gui.ProducerApp,
+            "_load_or_create_catalog",
+            lambda self, project, root, folder: received.append(root) or {"media_items": {}},
+        )
+        monkeypatch.setattr(gui, "scan_read_only_folder", lambda folder: {})
+        monkeypatch.setattr(gui.ProducerApp, "_build_snapshot", lambda *args: {"files": []})
+        monkeypatch.setattr(gui, "compare_catalogs", lambda *args: {"classification": {"NEW": [], "MODIFIED": []}})
+        monkeypatch.setattr(gui, "extract_metadata", lambda *args, **kwargs: {"results": [], "errors": []})
+        monkeypatch.setattr(gui.ProducerApp, "_apply_metadata_to_catalog", lambda self, *args: args[0])
+        monkeypatch.setattr(gui, "save_catalog", lambda *args, **kwargs: None)
+        monkeypatch.setattr(gui, "select_batch_candidates", lambda results: [])
+        monkeypatch.setattr(gui, "group_related_media", lambda *args, **kwargs: [])
+        app._analysis_worker()
+        assert received == [gui._source_root_id_for(app.folder)]
+
+    def test_reconnect_does_not_rekey_media_ref(self):
+        from scripts.local_media_agent.media_catalog import media_item_key
+
+        old_location = "/old/location"
+        new_location = "/new/location"
+        assert old_location != new_location
+        assert media_item_key(self.SOURCE_A, self.REL) == media_item_key(self.SOURCE_A, self.REL)
+
+    def test_project_source_runtime_uses_published_apis(self, monkeypatch):
+        _, calls, _, _ = self._run_project(monkeypatch)
+        assert calls["loads"][0][0] == self.PROJECT_ID
+        assert len(calls["saves"]) == 1
+
+    def test_project_source_profile_persistence_uses_v2_and_saves_once(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+        from scripts.local_media_agent.source_video_profile import build_source_video_profiles as published_builder
+
+        app = self._app(gui)
+        calls = []
+        metadata = {
+            "results": [
+                {"relative_path": "Interview/A001.MP4", "source_id": self.SOURCE_A, "video": {"width": 1920, "height": 1080, "frame_rate": {"raw_avg": "25/1", "raw_frame": "25/1", "variable": False}}},
+                {"relative_path": "Interview/A001.MP4", "source_id": self.SOURCE_B, "video": {"width": 1920, "height": 1080, "frame_rate": {"raw_avg": "25/1", "raw_frame": "25/1", "variable": False}}},
+            ]
+        }
+        app._refresh_project_ui = lambda: None
+        monkeypatch.setattr(app, "_has_project_source_context", lambda project_id: True)
+        monkeypatch.setattr(
+            gui,
+            "build_source_video_profiles",
+            lambda project_id, payload, *, source_id=None: calls.append((project_id, source_id))
+            or published_builder(project_id, payload, source_id=source_id),
+        )
+        monkeypatch.setattr(gui, "save_source_video_profiles", lambda catalog: calls.append(("save", catalog)))
+        monkeypatch.setattr(gui, "analyze_source_video_metadata", lambda payload: {})
+        monkeypatch.setattr(gui, "refresh_project_video_analysis", lambda *args: None)
+        monkeypatch.setattr(gui, "_write_log", lambda *args: None)
+        app._on_metadata_done(metadata)
+        built = [item for item in calls if item[0] == self.PROJECT_ID]
+        saved = [item[1] for item in calls if item[0] == "save"]
+        assert [item[1] for item in built] == [self.SOURCE_A, self.SOURCE_B]
+        assert len(saved) == 1
+        assert saved[0]["version"] == 2
+        assert [entry["media_ref"] for entry in saved[0]["entries"]] == [
+            f"{self.SOURCE_A}::Interview/A001.MP4",
+            f"{self.SOURCE_B}::Interview/A001.MP4",
+        ]
+        assert not any(item[1] is None for item in built)
+
+    def test_one_project_source_profile_is_v2_with_stable_source_id(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        metadata = {
+            "results": [{
+                "relative_path": "Interview/A001.MP4",
+                "source_id": self.SOURCE_A,
+                "video": {"width": 1920, "height": 1080, "frame_rate": {"raw_avg": "25/1", "raw_frame": "25/1", "variable": False}},
+            }]
+        }
+        catalog = gui.ProducerApp._build_project_source_video_profiles(
+            self.PROJECT_ID, {self.SOURCE_A: metadata["results"]}
+        )
+        assert catalog["version"] == 2
+        assert catalog["entries"][0]["source_id"] == self.SOURCE_A
+        assert catalog["entries"][0]["media_ref"] == f"{self.SOURCE_A}::Interview/A001.MP4"
+
+    def test_two_source_shared_relative_path_is_not_rate_ambiguous(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        metadata = [{
+            "relative_path": "Interview/A001.MP4",
+            "video": {"width": 1920, "height": 1080, "frame_rate": {"raw_avg": "25/1", "raw_frame": "25/1", "variable": False}},
+        }]
+        catalog = gui.ProducerApp._build_project_source_video_profiles(
+            self.PROJECT_ID,
+            {self.SOURCE_A: metadata, self.SOURCE_B: metadata},
+        )
+        assert len(catalog["entries"]) == 2
+        assert {entry["media_ref"] for entry in catalog["entries"]} == {
+            f"{self.SOURCE_A}::Interview/A001.MP4",
+            f"{self.SOURCE_B}::Interview/A001.MP4",
+        }
+
+    def test_project_source_profile_does_not_follow_legacy_v1_path(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui)
+        app._refresh_project_ui = lambda: None
+        app._has_project_source_context = lambda project_id: True
+        calls = []
+        monkeypatch.setattr(gui, "build_source_video_profiles", lambda *args, **kwargs: calls.append(kwargs.get("source_id")) or {"format": "x", "version": 2, "project_id": self.PROJECT_ID, "entries": []})
+        monkeypatch.setattr(gui, "save_source_video_profiles", lambda catalog: calls.append(catalog["version"]))
+        monkeypatch.setattr(gui, "analyze_source_video_metadata", lambda payload: {})
+        monkeypatch.setattr(gui, "refresh_project_video_analysis", lambda *args: None)
+        metadata = {"results": [{"relative_path": "Interview/A001.MP4", "source_id": self.SOURCE_A, "video": {}}]}
+        app._on_metadata_done(metadata)
+        assert calls == [self.SOURCE_A, 2]
+
+    def test_legacy_profile_handoff_remains_v1(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui)
+        app._refresh_project_ui = lambda: None
+        app._has_project_source_context = lambda project_id: False
+        calls = []
+        monkeypatch.setattr(gui, "build_source_video_profiles", lambda *args, **kwargs: calls.append(kwargs.get("source_id")) or {"format": "x", "version": 1, "project_id": self.PROJECT_ID, "entries": []})
+        monkeypatch.setattr(gui, "save_source_video_profiles", lambda catalog: calls.append(catalog["version"]))
+        monkeypatch.setattr(gui, "analyze_source_video_metadata", lambda payload: {})
+        monkeypatch.setattr(gui, "refresh_project_video_analysis", lambda *args: None)
+        app._on_metadata_done({"results": [{"relative_path": "Interview/A001.MP4", "video": {}}]})
+        assert calls == [None, 1]

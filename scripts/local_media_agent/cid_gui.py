@@ -118,9 +118,14 @@ from scripts.local_media_agent.local_project import (
     select_project,
 )
 from scripts.local_media_agent.project_sources import (
+    STATE_OFFLINE,
+    STATE_ONLINE,
     SourceRegistryError,
+    add_project_source,
     build_online_source_root_map,
     load_project_sources,
+    list_project_sources,
+    reconnect_source,
 )
 from scripts.local_media_agent.project_video_profile import (
     ASPECT_1_66,
@@ -472,7 +477,7 @@ class ProducerApp:
             body,
             text="Seleccionar carpeta",
             style="Primary.TButton",
-            command=self._pick_folder,
+            command=self._start_analysis_action,
         )
         self.analyze_btn.pack(pady=(4, 4))
 
@@ -487,6 +492,33 @@ class ProducerApp:
         ttk.Button(project_actions, text="Seleccionar proyecto", command=self._select_project).pack(side="left", padx=(8, 0))
         self.active_project_label = ttk.Label(body, text="", style="Sub.TLabel")
         self.active_project_label.pack(anchor="w")
+
+        ttk.Label(body, text="FUENTES DEL PROYECTO", style="CountName.TLabel").pack(
+            anchor="w", pady=(16, 4)
+        )
+        self.source_tree = ttk.Treeview(
+            body, columns=("name", "location", "state"), show="headings", height=4
+        )
+        self.source_tree.heading("name", text="Nombre")
+        self.source_tree.heading("location", text="Ubicación")
+        self.source_tree.heading("state", text="Estado")
+        self.source_tree.column("name", width=150, anchor="w")
+        self.source_tree.column("location", width=300, anchor="w")
+        self.source_tree.column("state", width=120, anchor="center")
+        self.source_tree.pack(fill="x", pady=(0, 6))
+        self.source_tree.bind("<<TreeviewSelect>>", self._on_source_selection)
+        source_actions = ttk.Frame(body)
+        source_actions.pack(fill="x", pady=(0, 4))
+        self.add_source_btn = ttk.Button(
+            source_actions, text="Añadir fuente", command=self._add_source_click
+        )
+        self.add_source_btn.pack(side="left")
+        self.reconnect_source_btn = ttk.Button(
+            source_actions, text="Reconectar", command=self._reconnect_source_click
+        )
+        self.reconnect_source_btn.pack(side="left", padx=(8, 0))
+        self.source_status_label = ttk.Label(body, text="", style="Sub.TLabel")
+        self.source_status_label.pack(anchor="w")
 
         ttk.Label(
             body,
@@ -800,6 +832,7 @@ class ProducerApp:
         self.active_project_label.config(
             text=(f"Proyecto activo: {project['project_name']}" if project else "Proyecto activo: ninguno")
         )
+        self._refresh_project_sources_ui()
         if not project:
             return
         try:
@@ -831,6 +864,123 @@ class ProducerApp:
                 f"\nFormato e imagen del proyecto: {self._image_status_text(profile)}"
             )
         )
+
+    def _refresh_project_sources_ui(self) -> None:
+        self._source_records = {}
+        for item in self.source_tree.get_children():
+            self.source_tree.delete(item)
+        if not self.active_project:
+            self.add_source_btn.config(state="disabled")
+            self.reconnect_source_btn.config(state="disabled")
+            self.source_status_label.config(text="")
+            return
+        project_id = self.active_project["project_id"]
+        try:
+            sources = list_project_sources(project_id)
+        except SourceRegistryError as exc:
+            self._show_source_registry_error(exc, "source_list")
+            self.add_source_btn.config(state="disabled")
+            self.reconnect_source_btn.config(state="disabled")
+            return
+        for source in sorted(sources, key=lambda item: item["source_id"]):
+            source_id = source["source_id"]
+            self._source_records[source_id] = source
+            state_label = "Disponible" if source["state"] == STATE_ONLINE else "No disponible"
+            self.source_tree.insert(
+                "", "end", iid=source_id,
+                values=(source["display_label"], source["current_location"], state_label),
+            )
+        self.add_source_btn.config(
+            state="normal" if not self._source_mutation_blocked() else "disabled"
+        )
+        self._on_source_selection()
+        self.source_status_label.config(
+            text="Añade una fuente al proyecto para comenzar." if not sources else ""
+        )
+
+    def _source_mutation_blocked(self) -> bool:
+        return bool(self.active or self.analysis_active)
+
+    def _on_source_selection(self, _event: object = None) -> None:
+        if not hasattr(self, "source_tree"):
+            return
+        selection = self.source_tree.selection()
+        source = self._source_records.get(selection[0]) if selection else None
+        enabled = bool(
+            source
+            and source.get("state") == STATE_OFFLINE
+            and not self._source_mutation_blocked()
+        )
+        self.reconnect_source_btn.config(state="normal" if enabled else "disabled")
+
+    @staticmethod
+    def _source_display_label(location: str) -> str:
+        normalized = location.replace("\\", "/").rstrip("/")
+        return normalized.rsplit("/", 1)[-1] or location
+
+    def _show_source_registry_error(self, exc: SourceRegistryError, action: str) -> None:
+        _write_log(action, exc.code)
+        messages = {
+            "CID_SOURCE_DUPLICATE_LOCATION": "Esta carpeta ya pertenece al proyecto.",
+            "CID_SOURCE_OVERLAPPING_LOCATION": "La carpeta se solapa con otra fuente del proyecto.",
+            "CID_SOURCE_CROSS_PROJECT_CONFLICT": "Esta carpeta ya está vinculada a otro proyecto.",
+            "CID_SOURCE_LOCATION_INVALID": "La ubicación seleccionada no es válida.",
+            "CID_SOURCE_REGISTRY_INVALID": "No se pudo leer las fuentes del proyecto.",
+            "CID_SOURCE_NOT_FOUND": "La fuente seleccionada ya no está disponible.",
+            "CID_SOURCE_RECONNECT_CONFIRMATION_REQUIRED": "Es necesario confirmar la reconexión.",
+        }
+        messagebox.showerror(
+            APP_TITLE,
+            messages.get(exc.code, "No se pudo actualizar la fuente."),
+            parent=self.root,
+        )
+
+    def _add_source_click(self) -> None:
+        if self._source_mutation_blocked() or not self.active_project:
+            return
+        location = filedialog.askdirectory(parent=self.root, title="Añadir fuente al proyecto")
+        if not location:
+            return
+        try:
+            add_project_source(
+                self.active_project["project_id"],
+                location,
+                self._source_display_label(location),
+            )
+        except SourceRegistryError as exc:
+            self._show_source_registry_error(exc, "source_add")
+            return
+        self._refresh_project_sources_ui()
+
+    def _reconnect_source_click(self) -> None:
+        if self._source_mutation_blocked() or not self.active_project:
+            return
+        selection = self.source_tree.selection()
+        source = self._source_records.get(selection[0]) if selection else None
+        if not source or source.get("state") != STATE_OFFLINE:
+            return
+        location = filedialog.askdirectory(parent=self.root, title="Reconectar fuente")
+        if not location:
+            return
+        choice = _confirm_dialog(
+            self.root,
+            "Reconectar fuente",
+            f"¿Reconectar {source['display_label']} a:\n{location}?",
+            ("Reconectar", "Cancelar"),
+        )
+        if choice != "Reconectar":
+            return
+        try:
+            reconnect_source(
+                self.active_project["project_id"],
+                source["source_id"],
+                location,
+                confirmation=True,
+            )
+        except SourceRegistryError as exc:
+            self._show_source_registry_error(exc, "source_reconnect")
+            return
+        self._refresh_project_sources_ui()
 
     def _image_status_text(self, profile: dict[str, Any]) -> str:
         if image_configuration_missing(profile):
@@ -1052,8 +1202,38 @@ class ProducerApp:
         manifest = build_sync_manifest(cluster, media_root=self.folder)
         self._start_transcription(selected, project_name=cluster.session_id, sync_manifest=manifest)
 
+    def _start_analysis_action(self) -> None:
+        if self.active_project:
+            self._start_analysis()
+        else:
+            self._pick_folder()
+
     def _start_analysis(self) -> None:
-        if not self.folder or self.active or self.analysis_active:
+        if self.active or self.analysis_active:
+            return
+        if self.active_project:
+            project_id = self.active_project["project_id"]
+            try:
+                sources = list_project_sources(project_id)
+                online_roots = build_online_source_root_map(project_id)
+            except SourceRegistryError as exc:
+                self._show_source_registry_error(exc, "analysis_start")
+                return
+            if not sources:
+                messagebox.showinfo(
+                    APP_TITLE,
+                    "Añade una fuente al proyecto antes de analizar.",
+                    parent=self.root,
+                )
+                return
+            if not online_roots:
+                messagebox.showinfo(
+                    APP_TITLE,
+                    "No hay fuentes disponibles. Reconecta al menos una fuente.",
+                    parent=self.root,
+                )
+                return
+        elif not self.folder:
             return
         self.analysis_active = True
         self.analyze_btn.config(
@@ -1146,6 +1326,16 @@ class ProducerApp:
 
     def _project_source_analysis(self, project_id: str) -> None:
         online_root_map = build_online_source_root_map(project_id)
+        if not online_root_map:
+            self.ui_q.put(
+                (
+                    "error",
+                    "No hay fuentes disponibles. Reconecta al menos una fuente.",
+                    "ZERO_ONLINE_SOURCES",
+                )
+            )
+            self.ui_q.put(("analysis_finished", "error"))
+            return
         source_scans: dict[str, dict[str, Any]] = {}
         snapshots: list[dict[str, Any]] = []
         catalog = self._load_or_create_catalog(
@@ -1403,7 +1593,11 @@ class ProducerApp:
 
     def _on_analysis_finished(self, status: str) -> None:
         self.analysis_active = False
-        self.analyze_btn.config(state="normal", text="Seleccionar carpeta", command=self._pick_folder)
+        self.analyze_btn.config(
+            state="normal",
+            text=("Analizar proyecto" if self.active_project else "Seleccionar carpeta"),
+            command=self._start_analysis_action,
+        )
         if status == "cancelled":
             self.analyze_hint.config(text="Análisis cancelado.")
         elif status == "error":

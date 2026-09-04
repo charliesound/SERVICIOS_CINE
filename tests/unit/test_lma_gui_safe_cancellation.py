@@ -831,6 +831,7 @@ class TestMS3BProjectSourceGuiAdoption:
         app.cancel_event = threading.Event()
         app.source_tree = _FakeSourceTree()
         app.add_source_btn = _FakeTkWidget()
+        app.mark_offline_btn = _FakeTkWidget()
         app.reconnect_source_btn = _FakeTkWidget()
         app.source_status_label = _FakeTkWidget()
         app.active_project_label = _FakeTkWidget()
@@ -1004,6 +1005,223 @@ class TestMS3BProjectSourceGuiAdoption:
         source = Path(__file__).parents[2].joinpath("scripts/local_media_agent/cid_gui.py").read_text(encoding="utf-8")
         assert "Eliminar fuente" not in source
         assert "Desvincular" not in source
+
+    def test_selection_state_controls_online_offline_actions(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        online = {"source_id": self.SOURCE_A, "display_label": "Cam", "current_location": "/cam", "state": gui.STATE_ONLINE}
+        offline = {"source_id": self.SOURCE_B, "display_label": "Audio", "current_location": "/audio", "state": gui.STATE_OFFLINE}
+        app = self._app(gui, self.PROJECT)
+        app._source_records = {self.SOURCE_A: online, self.SOURCE_B: offline}
+        app.source_tree.selected = (self.SOURCE_A,)
+        app._on_source_selection()
+        assert app.mark_offline_btn.state == "normal"
+        assert app.reconnect_source_btn.state == "disabled"
+        app.source_tree.selected = (self.SOURCE_B,)
+        app._on_source_selection()
+        assert app.mark_offline_btn.state == "disabled"
+        assert app.reconnect_source_btn.state == "normal"
+        app.source_tree.selected = ()
+        app._on_source_selection()
+        assert app.mark_offline_btn.state == "disabled"
+        assert app.reconnect_source_btn.state == "disabled"
+        app.active_project = None
+        app._refresh_project_sources_ui()
+        assert app.mark_offline_btn.state == "disabled"
+        assert app.reconnect_source_btn.state == "disabled"
+
+    def test_mutation_actions_are_disabled_during_active_work(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        app._source_records = {self.SOURCE_A: {"source_id": self.SOURCE_A, "state": gui.STATE_ONLINE}}
+        app.source_tree.selected = (self.SOURCE_A,)
+        for active, analysis_active in ((True, False), (False, True)):
+            app.active, app.analysis_active = active, analysis_active
+            app._on_source_selection()
+            assert app.mark_offline_btn.state == "disabled"
+            assert app.reconnect_source_btn.state == "disabled"
+
+    def test_mark_offline_guards_have_zero_mutations(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        cases = (
+            (None, (), False, False),
+            (self.PROJECT, (), False, False),
+            (self.PROJECT, (self.SOURCE_B,), False, False),
+            (self.PROJECT, (self.SOURCE_A,), True, False),
+            (self.PROJECT, (self.SOURCE_A,), False, True),
+        )
+        calls = []
+        monkeypatch.setattr(gui, "update_source_state", lambda *args, **kwargs: calls.append(args))
+        for project, selection, active, analysis_active in cases:
+            app = self._app(gui, project)
+            app.active, app.analysis_active = active, analysis_active
+            app.source_tree.selected = selection
+            app._source_records = {
+                self.SOURCE_A: {"source_id": self.SOURCE_A, "state": gui.STATE_ONLINE},
+                self.SOURCE_B: {"source_id": self.SOURCE_B, "state": gui.STATE_OFFLINE},
+            }
+            app._mark_source_offline_click()
+        assert calls == []
+
+    def test_mark_offline_confirmation_copy_and_cancel_are_safe(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        source_id = self.SOURCE_A
+        app._source_records = {source_id: {"source_id": source_id, "display_label": "Cam", "state": gui.STATE_ONLINE}}
+        app.source_tree.selected = (source_id,)
+        dialogs = []
+        calls = []
+        monkeypatch.setattr(gui, "_confirm_dialog", lambda *args: dialogs.append(args) or "Cancelar")
+        monkeypatch.setattr(gui, "update_source_state", lambda *args, **kwargs: calls.append(args))
+        monkeypatch.setattr(gui.filedialog, "askdirectory", lambda **kwargs: (_ for _ in ()).throw(AssertionError()), raising=False)
+        app._mark_source_offline_click()
+        assert dialogs[0][1] == "Marcar fuente no disponible"
+        assert "no se eliminará" in dialogs[0][2]
+        assert "excluirá temporalmente del análisis" in dialogs[0][2]
+        assert "Reconectar" in dialogs[0][2]
+        assert source_id not in dialogs[0][2]
+        assert "media_ref" not in dialogs[0][2]
+        assert dialogs[0][3] == ("Marcar no disponible", "Cancelar")
+        assert calls == []
+
+    def test_mark_offline_only_positive_confirmation_mutates_and_refreshes(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        source = {
+            "source_id": self.SOURCE_A,
+            "display_label": "Cam",
+            "current_location": r"F:\SIRUELA",
+            "added_at": "2026-01-01T00:00:00Z",
+            "state": gui.STATE_ONLINE,
+        }
+        app._source_records = {self.SOURCE_A: source}
+        app.source_tree.selected = (self.SOURCE_A,)
+        calls = []
+        refreshed = []
+        monkeypatch.setattr(gui, "_confirm_dialog", lambda *args: "Marcar no disponible")
+        monkeypatch.setattr(gui, "update_source_state", lambda *args, **kwargs: calls.append((args, kwargs)))
+        monkeypatch.setattr(app, "_refresh_project_sources_ui", lambda: refreshed.append(True))
+        monkeypatch.setattr(app, "_start_analysis", lambda: (_ for _ in ()).throw(AssertionError()))
+        monkeypatch.setattr(gui.filedialog, "askdirectory", lambda **kwargs: (_ for _ in ()).throw(AssertionError()), raising=False)
+        app._mark_source_offline_click()
+        assert calls == [((self.PROJECT["project_id"], self.SOURCE_A, gui.STATE_OFFLINE), {})]
+        assert refreshed == [True]
+
+    def test_mark_offline_handles_registry_errors_without_success_refresh(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        app._source_records = {self.SOURCE_A: {"source_id": self.SOURCE_A, "state": gui.STATE_ONLINE}}
+        app.source_tree.selected = (self.SOURCE_A,)
+        messages = []
+        refreshed = []
+        monkeypatch.setattr(gui, "_confirm_dialog", lambda *args: "Marcar no disponible")
+        monkeypatch.setattr(gui, "_write_log", lambda *args: None)
+        monkeypatch.setattr(gui.messagebox, "showerror", lambda *args, **kwargs: messages.append(args[1]), raising=False)
+        monkeypatch.setattr(app, "_refresh_project_sources_ui", lambda: refreshed.append(True))
+        for code, expected in (
+            ("CID_SOURCE_NOT_FOUND", "La fuente seleccionada ya no está disponible."),
+            ("CID_SOURCE_REGISTRY_INVALID", "No se pudo leer las fuentes del proyecto."),
+            ("CID_SOURCE_STATE_INVALID", "El estado de la fuente no es válido."),
+        ):
+            monkeypatch.setattr(gui, "update_source_state", lambda *args, _code=code, **kwargs: (_ for _ in ()).throw(gui.SourceRegistryError(_code)))
+            app._mark_source_offline_click()
+            assert messages[-1] == expected
+            assert self.SOURCE_A not in messages[-1]
+        assert refreshed == []
+
+    def test_online_source_cannot_enter_reconnect_path(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        app._source_records = {self.SOURCE_A: {"source_id": self.SOURCE_A, "state": gui.STATE_ONLINE}}
+        app.source_tree.selected = (self.SOURCE_A,)
+        calls = []
+        monkeypatch.setattr(gui, "reconnect_source", lambda *args, **kwargs: calls.append(args))
+        monkeypatch.setattr(gui.filedialog, "askdirectory", lambda **kwargs: (_ for _ in ()).throw(AssertionError()), raising=False)
+        app._reconnect_source_click()
+        assert calls == []
+
+    def test_mark_offline_does_not_add_source_or_change_analysis(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        app._source_records = {self.SOURCE_A: {"source_id": self.SOURCE_A, "state": gui.STATE_ONLINE}}
+        app.source_tree.selected = (self.SOURCE_A,)
+        calls = {"add": 0, "reconnect": 0, "analysis": 0}
+        monkeypatch.setattr(gui, "_confirm_dialog", lambda *args: "unexpected")
+        monkeypatch.setattr(gui, "add_project_source", lambda *args, **kwargs: calls.__setitem__("add", calls["add"] + 1))
+        monkeypatch.setattr(gui, "reconnect_source", lambda *args, **kwargs: calls.__setitem__("reconnect", calls["reconnect"] + 1))
+        monkeypatch.setattr(app, "_start_analysis", lambda: calls.__setitem__("analysis", calls["analysis"] + 1))
+        app._mark_source_offline_click()
+        assert calls == {"add": 0, "reconnect": 0, "analysis": 0}
+
+    def test_source_refresh_is_state_only_and_clears_stale_rows(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        app.source_tree.rows["stale"] = ("Old", "/old", "Disponible")
+        records = [{
+            "source_id": self.SOURCE_A,
+            "display_label": "Persisted label",
+            "current_location": r"F:\SIRUELA",
+            "state": gui.STATE_OFFLINE,
+        }]
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: records)
+        monkeypatch.setattr(gui.Path, "stat", lambda *args: (_ for _ in ()).throw(AssertionError("no probe")))
+        app._refresh_project_sources_ui()
+        assert list(app.source_tree.rows) == [self.SOURCE_A]
+        assert app.source_tree.rows[self.SOURCE_A] == ("Persisted label", r"F:\SIRUELA", "No disponible")
+
+    def test_project_route_accepts_none_folder_without_legacy_picker(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        started = []
+        monkeypatch.setattr(gui, "list_project_sources", lambda project_id: [{"source_id": self.SOURCE_A}])
+        monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: {self.SOURCE_A: "/online"})
+        monkeypatch.setattr(app, "_pick_folder", lambda: (_ for _ in ()).throw(AssertionError()))
+        monkeypatch.setattr(gui.threading, "Thread", lambda **kwargs: type("Thread", (), {"start": lambda self: started.append(kwargs["target"])})())
+        app._start_analysis_action()
+        assert len(started) == 1
+        assert app.folder is None
+
+    def test_mark_offline_delegates_without_mutating_source_record(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, self.PROJECT)
+        source = {
+            "source_id": self.SOURCE_A,
+            "display_label": "Cam",
+            "current_location": r"F:\SIRUELA",
+            "added_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-01-01T00:00:00Z",
+            "state": gui.STATE_ONLINE,
+        }
+        app._source_records = {self.SOURCE_A: source}
+        app.source_tree.selected = (self.SOURCE_A,)
+        before = dict(source)
+        calls = []
+        monkeypatch.setattr(gui, "_confirm_dialog", lambda *args: "Marcar no disponible")
+        monkeypatch.setattr(gui, "update_source_state", lambda *args, **kwargs: calls.append(args))
+        monkeypatch.setattr(app, "_refresh_project_sources_ui", lambda: None)
+        app._mark_source_offline_click()
+        assert source == before
+        assert calls == [(self.PROJECT["project_id"], self.SOURCE_A, gui.STATE_OFFLINE)]
+
+    def test_legacy_action_remains_folder_picker_only(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui)
+        picked = []
+        monkeypatch.setattr(app, "_pick_folder", lambda: picked.append(True))
+        monkeypatch.setattr(gui, "add_project_source", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError()))
+        app._start_analysis_action()
+        assert picked == [True]
 
 
 class TestMS3AProjectSourceRuntimeWiring:

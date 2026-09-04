@@ -126,6 +126,7 @@ from scripts.local_media_agent.project_sources import (
     load_project_sources,
     list_project_sources,
     reconnect_source,
+    update_source_state,
 )
 from scripts.local_media_agent.project_video_profile import (
     ASPECT_1_66,
@@ -513,6 +514,10 @@ class ProducerApp:
             source_actions, text="Añadir fuente", command=self._add_source_click
         )
         self.add_source_btn.pack(side="left")
+        self.mark_offline_btn = ttk.Button(
+            source_actions, text="Marcar no disponible", command=self._mark_source_offline_click
+        )
+        self.mark_offline_btn.pack(side="left", padx=(8, 0))
         self.reconnect_source_btn = ttk.Button(
             source_actions, text="Reconectar", command=self._reconnect_source_click
         )
@@ -871,6 +876,7 @@ class ProducerApp:
             self.source_tree.delete(item)
         if not self.active_project:
             self.add_source_btn.config(state="disabled")
+            self.mark_offline_btn.config(state="disabled")
             self.reconnect_source_btn.config(state="disabled")
             self.source_status_label.config(text="")
             return
@@ -880,6 +886,7 @@ class ProducerApp:
         except SourceRegistryError as exc:
             self._show_source_registry_error(exc, "source_list")
             self.add_source_btn.config(state="disabled")
+            self.mark_offline_btn.config(state="disabled")
             self.reconnect_source_btn.config(state="disabled")
             return
         for source in sorted(sources, key=lambda item: item["source_id"]):
@@ -906,12 +913,23 @@ class ProducerApp:
             return
         selection = self.source_tree.selection()
         source = self._source_records.get(selection[0]) if selection else None
-        enabled = bool(
+        blocked = self._source_mutation_blocked()
+        mark_offline_enabled = bool(
+            source
+            and source.get("state") == STATE_ONLINE
+            and not blocked
+        )
+        reconnect_enabled = bool(
             source
             and source.get("state") == STATE_OFFLINE
-            and not self._source_mutation_blocked()
+            and not blocked
         )
-        self.reconnect_source_btn.config(state="normal" if enabled else "disabled")
+        self.mark_offline_btn.config(
+            state="normal" if mark_offline_enabled else "disabled"
+        )
+        self.reconnect_source_btn.config(
+            state="normal" if reconnect_enabled else "disabled"
+        )
 
     @staticmethod
     def _source_display_label(location: str) -> str:
@@ -927,6 +945,7 @@ class ProducerApp:
             "CID_SOURCE_LOCATION_INVALID": "La ubicación seleccionada no es válida.",
             "CID_SOURCE_REGISTRY_INVALID": "No se pudo leer las fuentes del proyecto.",
             "CID_SOURCE_NOT_FOUND": "La fuente seleccionada ya no está disponible.",
+            "CID_SOURCE_STATE_INVALID": "El estado de la fuente no es válido.",
             "CID_SOURCE_RECONNECT_CONFIRMATION_REQUIRED": "Es necesario confirmar la reconexión.",
         }
         messagebox.showerror(
@@ -949,6 +968,33 @@ class ProducerApp:
             )
         except SourceRegistryError as exc:
             self._show_source_registry_error(exc, "source_add")
+            return
+        self._refresh_project_sources_ui()
+
+    def _mark_source_offline_click(self) -> None:
+        if self._source_mutation_blocked() or not self.active_project:
+            return
+        selection = self.source_tree.selection()
+        source = self._source_records.get(selection[0]) if len(selection) == 1 else None
+        if not source or source.get("state") != STATE_ONLINE:
+            return
+        choice = _confirm_dialog(
+            self.root,
+            "Marcar fuente no disponible",
+            "La fuente no se eliminará. CID la excluirá temporalmente del análisis. "
+            "Podrás restaurarla más adelante con «Reconectar».",
+            ("Marcar no disponible", "Cancelar"),
+        )
+        if choice != "Marcar no disponible":
+            return
+        try:
+            update_source_state(
+                self.active_project["project_id"],
+                source["source_id"],
+                STATE_OFFLINE,
+            )
+        except SourceRegistryError as exc:
+            self._show_source_registry_error(exc, "source_mark_offline")
             return
         self._refresh_project_sources_ui()
 

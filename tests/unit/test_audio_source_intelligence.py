@@ -26,6 +26,7 @@ from scripts.local_media_agent.audio_source_intelligence import (
     RELATIONSHIP_IDENTICAL,
     RELATIONSHIP_SAME_EVENT,
     RELATIONSHIP_UNRELATED,
+    SOURCE_SIGNATURE_ALGORITHM_VERSION,
     GroupingError,
     SourceSignature,
     _finalize_cluster,
@@ -1062,3 +1063,26 @@ class TestGroupRelatedMediaMultiRoot:
                 media_item_key(SRC_A, "Sesion 1/cam.wav"),
                 media_item_key(SRC_B, "Sesion 1/cam.wav"),
             ])
+
+
+def test_source_signature_algorithm_version_constant_exposed():
+    assert isinstance(SOURCE_SIGNATURE_ALGORITHM_VERSION, str)
+    assert SOURCE_SIGNATURE_ALGORITHM_VERSION.startswith("cid.local_media_agent.source_signature.")
+
+
+def test_source_signature_algorithm_version_in_module_all():
+    module = __import__(
+        "scripts.local_media_agent.audio_source_intelligence",
+        fromlist=["audio_source_intelligence"],
+    )
+    assert "SOURCE_SIGNATURE_ALGORITHM_VERSION" in module.__all__
+
+
+def test_algorithm_version_addition_keeps_public_api_intact():
+    module = __import__(
+        "scripts.local_media_agent.audio_source_intelligence",
+        fromlist=["audio_source_intelligence"],
+    )
+    for public_name in ("SourceSignature", "extract_source_signature", "group_related_media"):
+        assert public_name in module.__all__
+        assert hasattr(module, public_name)

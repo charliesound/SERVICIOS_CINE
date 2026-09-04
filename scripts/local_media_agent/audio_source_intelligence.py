@@ -31,6 +31,8 @@ from scripts.local_media_agent.session_boundary import coarse_session_id
 
 SYNC_MANIFEST_SCHEMA_VERSION = "cid.local_media_agent.sync_manifest.v1"
 
+SOURCE_SIGNATURE_ALGORITHM_VERSION = "cid.local_media_agent.source_signature.v1"
+
 WINDOW_SECONDS_DEFAULT = 20.0
 SIGNATURE_SAMPLE_RATE = 8000
 ENVELOPE_BLOCKS_PER_SECOND = 10
@@ -1240,3 +1242,60 @@ def format_cluster_summary(cluster: SourceCluster) -> dict[str, Any]:
         "uncertain": list(cluster.uncertain_sources),
         "sources": source_rows,
     }
+
+
+__all__ = [
+    "SOURCE_SIGNATURE_ALGORITHM_VERSION",
+    "SYNC_MANIFEST_SCHEMA_VERSION",
+    "WINDOW_SECONDS_DEFAULT",
+    "SIGNATURE_SAMPLE_RATE",
+    "ENVELOPE_BLOCKS_PER_SECOND",
+    "FINE_REFINE_SEARCH_SECONDS",
+    "FINE_REFINE_WINDOW_SECONDS",
+    "SYNC_OFFSET_TOLERANCE_SECONDS",
+    "MIN_OVERLAP_ENVELOPE_SAMPLES",
+    "HIGH_CONFIDENCE_THRESHOLD",
+    "RELATED_CONFIDENCE_THRESHOLD",
+    "MASTER_EVENT_CONFIDENCE_THRESHOLD",
+    "RELATIONSHIP_IDENTICAL",
+    "RELATIONSHIP_SAME_EVENT",
+    "RELATIONSHIP_COMPLEMENTARY",
+    "RELATIONSHIP_UNRELATED",
+    "RELATIONSHIP_UNCERTAIN",
+    "DISPOSITION_DIALOGUE",
+    "DISPOSITION_DUPLICATE",
+    "DISPOSITION_ALTERNATE",
+    "DISPOSITION_TECHNICAL_OR_EMPTY",
+    "DISPOSITION_UNIQUE_CONTENT",
+    "DISPOSITION_UNCERTAIN",
+    "SYNC_METHOD_TIMECODE",
+    "SYNC_METHOD_CORRELATION",
+    "SYNC_STATUS_RESOLVED",
+    "SYNC_STATUS_UNRESOLVED",
+    "ROLE_CAMERA_REFERENCE",
+    "ROLE_EXTERNAL_MIX",
+    "ROLE_ISOLATED_MIC",
+    "ROLE_DUPLICATE",
+    "ROLE_UNKNOWN",
+    "QUALITY_EXCELENTE",
+    "QUALITY_BUENA",
+    "QUALITY_REFERENCIA",
+    "QUALITY_DEFICIENTE",
+    "GroupingError",
+    "SourceCluster",
+    "SourceSignature",
+    "analyze_quality",
+    "assign_source_role",
+    "build_sync_manifest",
+    "classify_relationship",
+    "extract_source_signature",
+    "find_sync_lag",
+    "format_cluster_summary",
+    "group_related_media",
+    "internal_rank_score",
+    "member_identity",
+    "recommend_transcription_sources",
+    "refine_offset_with_samples",
+    "source_quality_summary",
+    "sync_sources",
+]

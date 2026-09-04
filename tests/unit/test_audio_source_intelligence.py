@@ -46,6 +46,15 @@ from scripts.local_media_agent.audio_source_intelligence import (
     _timecode_to_seconds,
 )
 from scripts.local_media_agent.media_catalog import media_item_key
+from scripts.local_media_agent.source_signature_cache import (
+    empty_signature_cache,
+    upsert_cached_signature,
+)
+from scripts.local_media_agent.source_signature_runtime import (
+    SignatureCacheRuntime,
+    load_signature_cache_runtime,
+    save_signature_cache_runtime,
+)
 
 RATE = 8000
 
@@ -1063,6 +1072,466 @@ class TestGroupRelatedMediaMultiRoot:
                 media_item_key(SRC_A, "Sesion 1/cam.wav"),
                 media_item_key(SRC_B, "Sesion 1/cam.wav"),
             ])
+
+
+class TestB2BSignatureCacheRuntimeGrouping:
+    """B2B grouping integration with the runtime signature-content cache.
+
+    Cache-elitibility contract: active only when ``analyze_content`` is true,
+    ``signature_cache_runtime`` is supplied, the public ``signature_builder`` is
+    ``None`` (a custom builder intentionally bypasses the canonical cache), and
+    the source mode is NOT legacy. Cached entries live under the canonical
+    ``media_item_key(source_id, relative_path)``; a HIT bypasses per-item path
+    resolution, the canonical builder, the decoder and the SHA computation.
+    """
+
+    def _legacy_meta(self, rel, cat="audio"):
+        return {
+            "relative_path": rel, "category": cat, "file_size_bytes": 1000,
+            "duration_seconds": 1.0,
+            "audio": {"codec": "pcm_s16le", "sample_rate": RATE, "channel_count": 1},
+        }
+
+    def _aware_meta(self, rel, source_id, cat="audio"):
+        m = self._legacy_meta(rel, cat)
+        m["source_id"] = source_id
+        return m
+
+    def _cached_sig(self, rel, source_id, ref="start"):
+        sig = _sig(rel, source_id=source_id, media_ref=media_item_key(source_id, rel), ref=ref)
+        sig.source_id = source_id
+        sig.media_ref = media_item_key(source_id, rel)
+        return sig
+
+    def _make_runtime(self, fingerprints, cached_sigs=()):
+        runtime = SignatureCacheRuntime(fingerprints=fingerprints)
+        for sig in cached_sigs:
+            runtime.upsert(sig.media_ref, sig)
+        return runtime
+
+    def _fp(self, *items, size=1000, mtime_ns=12345):
+        return {media_ref: {"size": size, "mtime_ns": mtime_ns} for media_ref in items}
+
+    # --- all-hit / bypass proofs ---
+
+    def test_all_hit_bypasses_path_resolution_and_builder(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime(self._fp(ref), [self._cached_sig(rel, src)])
+
+        def boom(*a, **k):
+            raise AssertionError("path resolver must not be called on HIT")
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._resolve_grouping_media_path",
+            boom,
+        )
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            boom,
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_builder=None,
+            signature_cache_runtime=runtime,
+        )
+        assert clusters and len(clusters[0].sources) == 1
+        assert runtime.cache_hits == 1
+        assert runtime.cache_misses == 0
+        assert runtime.signature_builds == 0
+
+    def test_all_hit_zero_decoder_and_zero_sha(self, monkeypatch):
+        rel, src = "B/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime(self._fp(ref), [self._cached_sig(rel, src)])
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence.decode_window",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("decoder used on HIT")),
+        )
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._sha256_of_file",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("sha used on HIT")),
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert clusters and len(clusters[0].sources) == 1
+        assert runtime.cache_hits == 1
+        assert runtime.signature_builds == 0
+
+    def test_all_hit_returns_canonical_media_ref(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime(self._fp(ref), [self._cached_sig(rel, src)])
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError()),
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert clusters[0].sources[0].media_ref == ref
+
+    def test_all_hit_single_item_single_source(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime(self._fp(ref), [self._cached_sig(rel, src)])
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError()),
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert len(clusters[0].sources) == 1
+        assert runtime.cache_hits == 1
+
+    def test_cached_empty_windows_skipped_without_rebuild(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        sig = self._cached_sig(rel, src)
+        sig.windows = {}
+        runtime = self._make_runtime(self._fp(ref), [sig])
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not rebuild for empty windows")),
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert not clusters
+        assert runtime.cache_hits == 1
+        assert runtime.signature_builds == 0
+
+    # --- first-pass / miss ---
+
+    def test_miss_resolves_path_builds_and_upserts(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime(self._fp(ref))
+        seen = []
+
+        def stub_builder(path, metadata, ffmpeg_path):
+            seen.append(str(path))
+            return self._cached_sig(metadata["relative_path"], metadata["source_id"])
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            stub_builder,
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert clusters and len(clusters[0].sources) == 1
+        assert seen == ["/root/a/A/cam.wav"]
+        assert runtime.cache_misses == 1
+        assert runtime.signature_builds == 1
+        assert runtime.cache_upserts == 1
+        assert runtime.dirty is True
+
+    def test_miss_second_pass_all_hit(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime(self._fp(ref))
+
+        def stub_builder(path, metadata, ffmpeg_path):
+            return self._cached_sig(metadata["relative_path"], metadata["source_id"])
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            stub_builder,
+        )
+        first = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert runtime.signature_builds == 1
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("second pass must not build")),
+        )
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._resolve_grouping_media_path",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("second pass must not resolve path")),
+        )
+        second = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert len(second[0].sources) == len(first[0].sources)
+        assert runtime.cache_hits == 1
+        assert runtime.cache_misses == 1
+        assert runtime.signature_builds == 1
+
+    def test_failed_empty_build_not_upserted(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime(self._fp(ref))
+
+        def empty_builder(path, metadata, ffmpeg_path):
+            sig = self._cached_sig(metadata["relative_path"], metadata["source_id"])
+            sig.windows = {}
+            return sig
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            empty_builder,
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert not clusters
+        assert runtime.signature_builds == 1
+        assert runtime.cache_upserts == 0
+        assert ref not in runtime.cache.get("entries", {})
+
+    def test_none_build_not_upserted(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime(self._fp(ref))
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda path, metadata, ffmpeg_path: None,
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert not clusters
+        assert runtime.signature_builds == 1
+        assert runtime.cache_upserts == 0
+        assert ref not in runtime.cache.get("entries", {})
+
+    # --- one modified item ---
+
+    def test_one_modified_fingerprint_rebuilds_only_it(self, monkeypatch):
+        rel_a, src_a = "A/cam.wav", SRC_A
+        rel_b, src_b = "A/mix.wav", SRC_B
+        ref_a = media_item_key(src_a, rel_a)
+        ref_b = media_item_key(src_b, rel_b)
+        runtime = self._make_runtime(
+            self._fp(ref_a, ref_b),
+            [self._cached_sig(rel_a, src_a), self._cached_sig(rel_b, src_b)],
+        )
+        builder_calls = []
+        path_calls = []
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda path, metadata, ffmpeg_path: builder_calls.append(str(path)) or self._cached_sig(
+                metadata["relative_path"], metadata["source_id"]
+            ),
+        )
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._resolve_grouping_media_path",
+            lambda item, **k: path_calls.append(item["relative_path"]) or "/base/" + item["relative_path"],
+        )
+        runtime.fingerprints = dict(runtime.fingerprints)
+        runtime.fingerprints[ref_a] = {"size": 9999, "mtime_ns": 111}
+        runtime.cache_upserts = 0
+        items = [
+            self._aware_meta(rel_a, src_a),
+            self._aware_meta(rel_b, src_b),
+        ]
+        group_related_media(
+            items,
+            media_root_by_source_id={src_a: "/root/a", src_b: "/root/b"},
+            signature_cache_runtime=runtime,
+        )
+        assert runtime.cache_hits == 1
+        assert runtime.cache_misses == 1
+        assert runtime.signature_builds == 1
+        assert runtime.cache_upserts == 1
+        assert builder_calls and path_calls
+        assert builder_calls[0].endswith(rel_a)
+
+    # --- legacy / custom-builder bypass ---
+
+    def test_legacy_mode_never_uses_cache(self, monkeypatch):
+        item = self._legacy_meta("a.wav")
+        runtime = SignatureCacheRuntime()
+
+        def stub_builder(path, metadata, ffmpeg_path):
+            return _sig("a.wav", ref="start")
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            stub_builder,
+        )
+        clusters = group_related_media(
+            [item], media_root="/base", signature_cache_runtime=runtime
+        )
+        assert clusters and clusters[0].sources[0].source_id is None
+        assert runtime.cache_hits == 0
+        assert runtime.cache_misses == 0
+        assert runtime.signature_builds == 0
+        assert runtime.cache_upserts == 0
+
+    def test_custom_builder_never_uses_cache(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime(self._fp(ref))
+        custom_calls = []
+
+        def custom(path, meta, i):
+            custom_calls.append(str(path))
+            return self._cached_sig(meta["relative_path"], meta["source_id"])
+
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_builder=custom,
+            signature_cache_runtime=runtime,
+        )
+        assert clusters and custom_calls
+        assert runtime.cache_hits == 0
+        assert runtime.cache_misses == 0
+        assert runtime.signature_builds == 0
+        assert runtime.cache_upserts == 0
+
+    def test_analyze_content_false_never_uses_cache(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime(self._fp(ref), [self._cached_sig(rel, src)])
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda path, metadata, ffmpeg_path: self._cached_sig(metadata["relative_path"], metadata["source_id"]),
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            analyze_content=False,
+            signature_cache_runtime=runtime,
+        )
+        assert clusters and len(clusters[0].sources) == 1
+        assert runtime.cache_hits == 0
+        assert runtime.signature_builds == 0
+
+    # --- identity semantics ---
+
+    def test_cached_identity_conflict_fails_closed(self):
+        rel = "A/cam.wav"
+        ref_a = media_item_key(SRC_A, rel)
+        conflict = self._cached_sig(rel, SRC_B)
+        conflict.media_ref = ref_a
+        runtime = self._make_runtime(self._fp(ref_a), [conflict])
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(
+                [self._aware_meta(rel, SRC_A)],
+                media_root_by_source_id={SRC_A: "/root/a"},
+                signature_cache_runtime=runtime,
+            )
+        assert exc.value.code == "SOURCE_IDENTITY_CONFLICT"
+
+    def test_same_relpath_two_sources_isolated(self, monkeypatch):
+        rel = SHARED_REL
+        ref_a = media_item_key(SRC_A, rel)
+        ref_b = media_item_key(SRC_B, rel)
+        runtime = self._make_runtime(
+            self._fp(ref_a, ref_b),
+            [self._cached_sig(rel, SRC_A), self._cached_sig(rel, SRC_B)],
+        )
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("all hit, no build")),
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, SRC_A), self._aware_meta(rel, SRC_B)],
+            media_root_by_source_id={SRC_A: "/root/a", SRC_B: "/root/b"},
+            signature_cache_runtime=runtime,
+        )
+        refs = sorted(member_identity(s) for s in clusters[0].sources)
+        assert refs == sorted([ref_a, ref_b])
+        assert runtime.cache_hits == 2
+        assert runtime.signature_builds == 0
+
+    def test_missing_fingerprint_no_eligible_miss_still_builds(self, monkeypatch):
+        rel, src = "A/cam.wav", SRC_A
+        ref = media_item_key(src, rel)
+        runtime = self._make_runtime({}, [self._cached_sig(rel, src)])
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda path, metadata, ffmpeg_path: self._cached_sig(metadata["relative_path"], metadata["source_id"]),
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, src)],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert clusters and len(clusters[0].sources) == 1
+        assert runtime.cache_hits == 0
+        assert runtime.cache_misses == 0
+        assert runtime.signature_builds == 1
+        assert runtime.cache_upserts == 0
+
+    # --- MS2C2 root-map freeze ---
+
+    def test_multi_source_hit_still_requires_root_map(self, monkeypatch):
+        rel = SHARED_REL
+        ref_a = media_item_key(SRC_A, rel)
+        ref_b = media_item_key(SRC_B, rel)
+        runtime = self._make_runtime(
+            self._fp(ref_a, ref_b),
+            [self._cached_sig(rel, SRC_A), self._cached_sig(rel, SRC_B)],
+        )
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError()),
+        )
+        with pytest.raises(GroupingError) as exc:
+            group_related_media(
+                [self._aware_meta(rel, SRC_A), self._aware_meta(rel, SRC_B)],
+                media_root="/nonexistent",
+                signature_cache_runtime=runtime,
+            )
+        assert exc.value.code == "MULTI_SOURCE_REQUIRES_SOURCE_ROOT_MAP"
+        assert runtime.cache_hits == 0
+
+    def test_multi_source_hit_with_complete_root_map_ok(self, monkeypatch):
+        rel = SHARED_REL
+        ref_a = media_item_key(SRC_A, rel)
+        ref_b = media_item_key(SRC_B, rel)
+        runtime = self._make_runtime(
+            self._fp(ref_a, ref_b),
+            [self._cached_sig(rel, SRC_A), self._cached_sig(rel, SRC_B)],
+        )
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._default_signature_builder",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("no build on all hit")),
+        )
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._resolve_grouping_media_path",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("no path resolve on all hit")),
+        )
+        clusters = group_related_media(
+            [self._aware_meta(rel, SRC_A), self._aware_meta(rel, SRC_B)],
+            media_root_by_source_id={SRC_A: "/root/a", SRC_B: "/root/b"},
+            signature_cache_runtime=runtime,
+        )
+        assert clusters and len(clusters[0].sources) == 2
+        assert runtime.cache_hits == 2
+        assert runtime.signature_builds == 0
 
 
 def test_source_signature_algorithm_version_constant_exposed():

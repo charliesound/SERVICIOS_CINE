@@ -24,7 +24,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Protocol
 
 from scripts.local_media_agent.media_catalog import media_item_key
 from scripts.local_media_agent.session_boundary import coarse_session_id
@@ -857,6 +857,19 @@ def _resolve_grouping_media_path(
     return Path(item.get("abs_path") or (Path(media_root) / item.get("relative_path", "")))
 
 
+class SignatureCacheRuntimeProtocol(Protocol):
+    """Smallest structural runtime surface consumed by grouping.
+
+    ``audio_source_intelligence`` intentionally does NOT import project
+    persistence or the runtime module; it consumes a cache runtime only through
+    this structural protocol. The caller owns ``project_id`` / load / save.
+    """
+
+    def lookup(self, media_ref: str) -> SourceSignature | None: ...
+    def note_signature_build(self) -> None: ...
+    def upsert(self, media_ref: str, signature: SourceSignature) -> bool: ...
+
+
 def group_related_media(
     metadata_results: list[dict[str, Any]],
     *,
@@ -866,6 +879,7 @@ def group_related_media(
     signature_builder: Callable[..., SourceSignature] | None = None,
     max_sources_per_cluster: int = 16,
     media_root_by_source_id: Mapping[str, str | Path] | None = None,
+    signature_cache_runtime: SignatureCacheRuntimeProtocol | None = None,
 ) -> list[SourceCluster]:
     """Group related media into recording/session clusters.
 
@@ -915,6 +929,14 @@ def group_related_media(
         path, meta, ffmpeg_path=ffmpeg_path
     ))
 
+    cache_runtime = signature_cache_runtime
+    cache_eligible = (
+        analyze_content
+        and cache_runtime is not None
+        and signature_builder is None
+        and mode != "LEGACY"
+    )
+
     clusters: list[SourceCluster] = []
     for sid, items in sorted(by_session.items()):
         items = sorted(items, key=lambda x: x.get("file_size_bytes") or 0)
@@ -923,6 +945,17 @@ def group_related_media(
             if len(signatures) >= max_sources_per_cluster:
                 break
             source_identity = _resolve_source_identity(item) if mode != "LEGACY" else None
+            media_ref = None
+            if cache_eligible:
+                media_ref = media_item_key(
+                    source_identity, item.get("relative_path", "")
+                )
+                cached = cache_runtime.lookup(media_ref)
+                if cached is not None:
+                    sig = _canonicalize_signature_identity(cached, item)
+                    if sig is not None and sig.windows:
+                        signatures.append(sig)
+                    continue
             path = _resolve_grouping_media_path(
                 item,
                 source_identity=source_identity,
@@ -930,10 +963,14 @@ def group_related_media(
                 media_root_by_source_id=root_map,
                 mode=mode,
             )
+            if cache_eligible:
+                cache_runtime.note_signature_build()
             sig = build(path, item, i)
             sig = _canonicalize_signature_identity(sig, item)
             if sig is None or not sig.windows:
                 continue
+            if cache_eligible:
+                cache_runtime.upsert(media_ref, sig)
             signatures.append(sig)
         if not signatures:
             continue
@@ -951,6 +988,8 @@ def _canonicalize_signature_identity(
     in when absent, accepted when equal, and any conflict fails closed. An
     injected signature builder is never an identity authority.
     """
+    if sig is None:
+        return None
     source_id = _resolve_source_identity(item)
     if source_id is None:
         if sig.source_id is not None or sig.media_ref is not None:

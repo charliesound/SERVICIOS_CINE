@@ -23,6 +23,7 @@ from scripts.local_media_agent.project_sources import (
     CID_SOURCE_CROSS_PROJECT_CONFLICT,
     CID_SOURCE_DUPLICATE_ID,
     CID_SOURCE_DUPLICATE_LOCATION,
+    CID_SOURCE_ID_INVALID,
     CID_SOURCE_LEGACY_ALIAS_CONFLICT,
     CID_SOURCE_LEGACY_ALIAS_INVALID,
     CID_SOURCE_NOT_FOUND,
@@ -36,8 +37,10 @@ from scripts.local_media_agent.project_sources import (
     STATE_OFFLINE,
     STATE_ONLINE,
     SourceRegistryError,
+    _online_source_root_map_from_sources,
     add_legacy_project_source,
     add_project_source,
+    build_online_source_root_map,
     detect_cross_project_location_use,
     detect_project_location_conflicts,
     empty_registry,
@@ -530,3 +533,415 @@ def test_existing_source_alias_none_remains_valid(tmp_path: Path) -> None:
     loaded = load_project_sources(P1, local_appdata=tmp_path)
     assert is_valid_registry(loaded, P1)
     assert loaded["sources"][0]["legacy_source_root_id_alias"] is None
+
+
+# ---------------------------------------------------------------------------
+# MS2D — offline/reconnect orchestration primitives (existing MS1 API hardened)
+# ---------------------------------------------------------------------------
+
+def _registry_bytes(project_id: str, tmp_path: Path) -> bytes:
+    return project_sources_path(project_id, tmp_path).read_bytes()
+
+
+def test_offline_preserves_source_id_location_and_metadata(tmp_path: Path) -> None:
+    record = add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    src_id = record["source_id"]
+    offline = update_source_state(P1, src_id, STATE_OFFLINE, local_appdata=tmp_path, now=NOW)
+    assert offline["source_id"] == src_id
+    assert offline["current_location"] == "F:\\SIRUELA"
+    assert offline["display_label"] == "Cam1"
+    loaded = load_project_sources(P1, local_appdata=tmp_path)
+    assert [s["source_id"] for s in loaded["sources"]] == [src_id]
+    assert loaded["sources"][0]["state"] == STATE_OFFLINE
+    assert loaded["sources"][0]["current_location"] == "F:\\SIRUELA"
+    assert loaded["sources"][0]["display_label"] == "Cam1"
+
+
+def test_offline_does_not_delete_source_record(tmp_path: Path) -> None:
+    record = add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    update_source_state(P1, record["source_id"], STATE_OFFLINE, local_appdata=tmp_path, now=NOW)
+    assert len(list_project_sources(P1, local_appdata=tmp_path)) == 1
+
+
+def test_only_online_offline_are_allowed_persistent_states(tmp_path: Path) -> None:
+    record = add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    for bad in ("RECONNECTED", "RELOCATED", "MISSING", "DETACHED", "UNLINKED"):
+        with pytest.raises(SourceRegistryError) as ei:
+            update_source_state(P1, record["source_id"], bad, local_appdata=tmp_path, now=NOW)
+        assert ei.value.code == CID_SOURCE_STATE_INVALID
+    assert find_source_by_id(P1, record["source_id"], local_appdata=tmp_path)["state"] == STATE_ONLINE
+
+
+def test_reconnect_offline_source_to_new_location_preserves_identity(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD", "Cam1", local_appdata=tmp_path, now=NOW)
+    src_id = record["source_id"]
+    update_source_state(P1, src_id, STATE_OFFLINE, local_appdata=tmp_path, now=NOW)
+    updated = reconnect_source(
+        P1, src_id, "E:\\ARCHIVE", local_appdata=tmp_path, confirmation=True, now=NOW
+    )
+    assert updated["source_id"] == src_id
+    assert updated["current_location"] == "E:\\ARCHIVE"
+    assert updated["state"] == STATE_ONLINE
+    loaded = load_project_sources(P1, local_appdata=tmp_path)
+    assert len(loaded["sources"]) == 1
+    assert loaded["sources"][0]["current_location"] == "E:\\ARCHIVE"
+    assert loaded["sources"][0]["state"] == STATE_ONLINE
+
+
+def test_reconnect_does_not_create_third_persistent_state(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD", "Cam1", local_appdata=tmp_path, now=NOW)
+    updated = reconnect_source(
+        P1, record["source_id"], "E:\\ARCHIVE", local_appdata=tmp_path, confirmation=True, now=NOW
+    )
+    assert updated["state"] == STATE_ONLINE
+    assert updated["state"] in (STATE_ONLINE, STATE_OFFLINE)
+    with pytest.raises(SourceRegistryError):
+        update_source_state(P1, record["source_id"], "RECONNECTED", local_appdata=tmp_path, now=NOW)
+
+
+def test_reconnect_unknown_source_fails_and_does_not_create(tmp_path: Path) -> None:
+    unknown = "SRC-12345678-1234-4123-8123-123456789abc"
+    with pytest.raises(SourceRegistryError) as ei:
+        reconnect_source(
+            P1, unknown, "F:\\NEW", local_appdata=tmp_path, confirmation=True, now=NOW
+        )
+    assert ei.value.code == CID_SOURCE_NOT_FOUND
+    loaded = load_project_sources(P1, local_appdata=tmp_path)
+    assert loaded["sources"] == []
+    assert find_source_by_id(P1, unknown, local_appdata=tmp_path) is None
+
+
+def test_reconnect_requires_explicit_source_id(tmp_path: Path) -> None:
+    record = add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    with pytest.raises(TypeError):
+        reconnect_source(P1, "D:\\MOVED", local_appdata=tmp_path)  # type: ignore[call-arg]
+    assert find_source_by_id(P1, record["source_id"], local_appdata=tmp_path)["current_location"] == "F:\\SIRUELA"
+
+
+def test_same_location_reconnect_preserves_identity(tmp_path: Path) -> None:
+    record = add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    updated = reconnect_source(
+        P1, record["source_id"], "F:\\SIRUELA", local_appdata=tmp_path, confirmation=True, now=NOW
+    )
+    assert updated["source_id"] == record["source_id"]
+    assert updated["current_location"] == "F:\\SIRUELA"
+    assert updated["state"] == STATE_ONLINE
+    assert len(list_project_sources(P1, local_appdata=tmp_path)) == 1
+
+
+def test_online_source_relocate_preserves_identity(tmp_path: Path) -> None:
+    record = add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    updated = reconnect_source(
+        P1, record["source_id"], "G:\\NEWHOME", local_appdata=tmp_path, confirmation=True, now=NOW
+    )
+    assert updated["source_id"] == record["source_id"]
+    assert updated["current_location"] == "G:\\NEWHOME"
+    assert updated["state"] == STATE_ONLINE
+
+
+def test_reconnect_exact_overlap_to_other_source_rejected_and_registry_unchanged(tmp_path: Path) -> None:
+    a = add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    b = add_project_source(P1, "F:\\OTHER", "Cam2", local_appdata=tmp_path, now=NOW)
+    before = _registry_bytes(P1, tmp_path)
+    with pytest.raises(SourceRegistryError) as ei:
+        reconnect_source(
+            P1, b["source_id"], "F:\\SIRUELA", local_appdata=tmp_path, confirmation=True, now=NOW
+        )
+    assert ei.value.code == CID_SOURCE_DUPLICATE_LOCATION
+    assert _registry_bytes(P1, tmp_path) == before
+    assert find_source_by_id(P1, a["source_id"], local_appdata=tmp_path)["current_location"] == "F:\\SIRUELA"
+    assert find_source_by_id(P1, b["source_id"], local_appdata=tmp_path)["current_location"] == "F:\\OTHER"
+
+
+def test_reconnect_parent_overlap_new_root_contains_another_source(tmp_path: Path) -> None:
+    add_project_source(P1, "F:\\SIRUELA\\Inner", "Cam1", local_appdata=tmp_path, now=NOW)
+    b = add_project_source(P1, "F:\\OTHER", "Cam2", local_appdata=tmp_path, now=NOW)
+    with pytest.raises(SourceRegistryError) as ei:
+        reconnect_source(
+            P1, b["source_id"], "F:\\SIRUELA",
+            local_appdata=tmp_path, confirmation=True, now=NOW,
+        )
+    assert ei.value.code == CID_SOURCE_OVERLAPPING_LOCATION
+
+
+def test_reconnect_child_overlap_new_root_inside_another_source(tmp_path: Path) -> None:
+    add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    b = add_project_source(P1, "F:\\OTHER", "Cam2", local_appdata=tmp_path, now=NOW)
+    with pytest.raises(SourceRegistryError) as ei:
+        reconnect_source(
+            P1, b["source_id"], "F:\\SIRUELA\\Inner",
+            local_appdata=tmp_path, confirmation=True, now=NOW,
+        )
+    assert ei.value.code == CID_SOURCE_OVERLAPPING_LOCATION
+
+
+def test_reconnect_self_location_excluded_from_overlap_check(tmp_path: Path) -> None:
+    record = add_project_source(P1, "F:\\SIRUELA\\Sub", "Cam1", local_appdata=tmp_path, now=NOW)
+    updated = reconnect_source(
+        P1, record["source_id"], "F:\\SIRUELA", local_appdata=tmp_path, confirmation=True, now=NOW
+    )
+    assert updated["current_location"] == "F:\\SIRUELA"
+    assert updated["state"] == STATE_ONLINE
+
+
+def test_reconnect_to_cross_project_shared_location_requires_confirmation(tmp_path: Path) -> None:
+    add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    rec = add_project_source(P2, "F:\\OTHER", "CamB", local_appdata=tmp_path, now=NOW)
+    with pytest.raises(SourceRegistryError) as ei:
+        reconnect_source(
+            P2, rec["source_id"], "F:\\SIRUELA", local_appdata=tmp_path, confirmation=True, now=NOW
+        )
+    assert ei.value.code == CID_SOURCE_CROSS_PROJECT_CONFLICT
+    allowed = reconnect_source(
+        P2, rec["source_id"], "F:\\SIRUELA",
+        local_appdata=tmp_path, confirmation=True, allow_shared_location=True, now=NOW,
+    )
+    assert allowed["current_location"] == "F:\\SIRUELA"
+    assert allowed["state"] == STATE_ONLINE
+
+
+def test_reconnect_without_confirmation_rejected_and_registry_unchanged(tmp_path: Path) -> None:
+    record = add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    before = _registry_bytes(P1, tmp_path)
+    with pytest.raises(SourceRegistryError) as ei:
+        reconnect_source(
+            P1, record["source_id"], "F:\\MOVED", local_appdata=tmp_path, confirmation=False, now=NOW
+        )
+    assert ei.value.code == CID_SOURCE_RECONNECT_CONFIRMATION_REQUIRED
+    assert _registry_bytes(P1, tmp_path) == before
+    assert find_source_by_id(P1, record["source_id"], local_appdata=tmp_path)["current_location"] == "F:\\SIRUELA"
+
+
+def test_alias_never_acts_as_reconnect_identity(tmp_path: Path) -> None:
+    bound = add_legacy_project_source(
+        P1, "ROOT-abc123", "F:\\A", "Legacy", local_appdata=tmp_path, now=NOW
+    )
+    with pytest.raises(SourceRegistryError) as ei:
+        reconnect_source(
+            P1, "ROOT-abc123", "F:\\B", local_appdata=tmp_path, confirmation=True, now=NOW
+        )
+    assert ei.value.code == CID_SOURCE_ID_INVALID
+    assert find_source_by_id(P1, bound["source_id"], local_appdata=tmp_path)["current_location"] == "F:\\A"
+
+
+# ---------------------------------------------------------------------------
+# MS2D — online source root map (build_online_source_root_map)
+# ---------------------------------------------------------------------------
+
+def test_root_map_includes_online_source(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD_A", "Cam1", local_appdata=tmp_path, now=NOW)
+    assert build_online_source_root_map(P1, local_appdata=tmp_path) == {
+        record["source_id"]: "D:\\CARD_A"
+    }
+
+
+def test_root_map_omits_offline_source(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD_A", "Cam1", local_appdata=tmp_path, now=NOW)
+    update_source_state(P1, record["source_id"], STATE_OFFLINE, local_appdata=tmp_path, now=NOW)
+    assert build_online_source_root_map(P1, local_appdata=tmp_path) == {}
+
+
+def test_root_map_includes_multiple_online_sources(tmp_path: Path) -> None:
+    a = add_project_source(P1, "D:\\CARD_A", "Cam1", local_appdata=tmp_path, now=NOW)
+    b = add_project_source(P1, "E:\\RECORDER", "Cam2", local_appdata=tmp_path, now=NOW)
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert root_map == {
+        a["source_id"]: "D:\\CARD_A",
+        b["source_id"]: "E:\\RECORDER",
+    }
+    assert list(root_map.keys()) == [a["source_id"], b["source_id"]]
+
+
+def test_root_map_keys_are_exactly_source_id(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD_A", "Cam1", local_appdata=tmp_path, now=NOW)
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert set(root_map.keys()) == {record["source_id"]}
+    assert "Cam1" not in root_map
+    assert "D:\\CARD_A" not in root_map
+
+
+def test_root_map_values_are_exactly_current_location(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD_A", "Cam1", local_appdata=tmp_path, now=NOW)
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert root_map[record["source_id"]] == "D:\\CARD_A"
+
+
+def test_root_map_alias_not_used_as_key(tmp_path: Path) -> None:
+    bound = add_legacy_project_source(
+        P1, "ROOT-abc123", "D:\\CARD_A", "Legacy", local_appdata=tmp_path, now=NOW,
+        state=STATE_ONLINE,
+    )
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert root_map == {bound["source_id"]: "D:\\CARD_A"}
+    assert "ROOT-abc123" not in root_map
+
+
+def test_root_map_mixed_online_offline_returns_only_online(tmp_path: Path) -> None:
+    a = add_project_source(P1, "D:\\A", "A", local_appdata=tmp_path, now=NOW)
+    b = add_project_source(P1, "E:\\B", "B", local_appdata=tmp_path, now=NOW)
+    update_source_state(P1, b["source_id"], STATE_OFFLINE, local_appdata=tmp_path, now=NOW)
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert root_map == {a["source_id"]: "D:\\A"}
+    assert b["source_id"] not in root_map
+
+
+def test_root_map_construction_does_not_mutate_registry(tmp_path: Path) -> None:
+    a = add_project_source(P1, "D:\\A", "A", local_appdata=tmp_path, now=NOW)
+    b = add_project_source(P1, "E:\\B", "B", local_appdata=tmp_path, now=NOW)
+    update_source_state(P1, b["source_id"], STATE_OFFLINE, local_appdata=tmp_path, now=NOW)
+    loaded = load_project_sources(P1, local_appdata=tmp_path)
+    original = json.dumps(loaded, sort_keys=True)
+    build_online_source_root_map(P1, local_appdata=tmp_path)
+    build_online_source_root_map(P1, local_appdata=tmp_path)
+    after = json.dumps(load_project_sources(P1, local_appdata=tmp_path), sort_keys=True)
+    assert after == original
+    assert find_source_by_id(P1, b["source_id"], local_appdata=tmp_path)["state"] == STATE_OFFLINE
+
+
+def test_root_map_construction_does_not_change_updated_at(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\A", "A", local_appdata=tmp_path, now=NOW)
+    before = find_source_by_id(P1, record["source_id"], local_appdata=tmp_path)["updated_at"]
+    build_online_source_root_map(P1, local_appdata=tmp_path)
+    after = find_source_by_id(P1, record["source_id"], local_appdata=tmp_path)["updated_at"]
+    assert after == before
+
+
+def test_root_map_construction_does_not_persist(tmp_path: Path) -> None:
+    add_project_source(P1, "D:\\A", "A", local_appdata=tmp_path, now=NOW)
+    path = project_sources_path(P1, tmp_path)
+    before = path.read_bytes()
+    for _ in range(3):
+        build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert project_sources_path(P1, tmp_path).read_bytes() == before
+    project_dir = project_path(P1, tmp_path)
+    assert not any(p.name.startswith(".") for p in project_dir.iterdir())
+
+
+def test_root_map_does_not_probe_filesystem(tmp_path: Path) -> None:
+    add_project_source(P1, "F:\\DOES\\NOT\\EXIST\\ANYWHERE", "A", local_appdata=tmp_path, now=NOW)
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert root_map and list(root_map.values())[0] == "F:\\DOES\\NOT\\EXIST\\ANYWHERE"
+
+
+def test_root_map_windows_location_preserved_faithfully(tmp_path: Path) -> None:
+    record = add_project_source(P1, "F:\\SIRUELA\\Audio", "A", local_appdata=tmp_path, now=NOW)
+    assert build_online_source_root_map(P1, local_appdata=tmp_path)[record["source_id"]] == "F:\\SIRUELA\\Audio"
+
+
+def test_root_map_posix_location_preserved_faithfully(tmp_path: Path) -> None:
+    record = add_project_source(P1, "/media/Archive/Film", "A", local_appdata=tmp_path, now=NOW)
+    assert build_online_source_root_map(P1, local_appdata=tmp_path)[record["source_id"]] == "/media/Archive/Film"
+
+
+def test_root_map_output_deterministic(tmp_path: Path) -> None:
+    add_project_source(P1, "D:\\A", "A", local_appdata=tmp_path, now=NOW)
+    add_project_source(P1, "E:\\B", "B", local_appdata=tmp_path, now=NOW)
+    first = build_online_source_root_map(P1, local_appdata=tmp_path)
+    second = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert first == second
+    assert list(first.keys()) == list(second.keys())
+
+
+def test_root_map_reflects_reconnect_under_same_source_id(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD", "Cam1", local_appdata=tmp_path, now=NOW)
+    reconnect_source(
+        P1, record["source_id"], "E:\\ARCHIVE", local_appdata=tmp_path, confirmation=True, now=NOW
+    )
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert root_map == {record["source_id"]: "E:\\ARCHIVE"}
+
+
+def test_mark_offline_after_reconnect_removes_from_map_not_registry(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD", "Cam1", local_appdata=tmp_path, now=NOW)
+    reconnect_source(
+        P1, record["source_id"], "E:\\ARCHIVE", local_appdata=tmp_path, confirmation=True, now=NOW
+    )
+    update_source_state(P1, record["source_id"], STATE_OFFLINE, local_appdata=tmp_path, now=NOW)
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert root_map == {}
+    kept = find_source_by_id(P1, record["source_id"], local_appdata=tmp_path)
+    assert kept is not None
+    assert kept["current_location"] == "E:\\ARCHIVE"
+    assert kept["state"] == STATE_OFFLINE
+
+
+def test_mark_online_restores_inclusion_in_map(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD", "Cam1", local_appdata=tmp_path, now=NOW)
+    update_source_state(P1, record["source_id"], STATE_OFFLINE, local_appdata=tmp_path, now=NOW)
+    assert build_online_source_root_map(P1, local_appdata=tmp_path) == {}
+    update_source_state(P1, record["source_id"], STATE_ONLINE, local_appdata=tmp_path, now=NOW)
+    assert build_online_source_root_map(P1, local_appdata=tmp_path) == {
+        record["source_id"]: "D:\\CARD"
+    }
+
+
+def test_root_map_empty_registry_returns_empty(tmp_path: Path) -> None:
+    assert build_online_source_root_map(P1, local_appdata=tmp_path) == {}
+
+
+def test_pure_projection_does_not_mutate_input(tmp_path: Path) -> None:
+    sources = [
+        _make_src("SRC-a1", "D:\\A", state=STATE_ONLINE),
+        _make_src("SRC-b1", "E:\\B", state=STATE_OFFLINE),
+    ]
+    snapshot = json.dumps(sources, sort_keys=True)
+    result = _online_source_root_map_from_sources(sources)
+    assert result == {"SRC-a1": "D:\\A"}
+    assert json.dumps(sources, sort_keys=True) == snapshot
+
+
+def test_root_map_value_type_is_str(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD", "Cam1", local_appdata=tmp_path, now=NOW)
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert isinstance(root_map[record["source_id"]], str)
+
+
+# ---------------------------------------------------------------------------
+# MS2D — identity / no rekey
+# ---------------------------------------------------------------------------
+
+def test_reconnect_never_changes_source_id(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD", "Cam1", local_appdata=tmp_path, now=NOW)
+    for location in ("E:\\A", "F:\\B", "G:\\C"):
+        updated = reconnect_source(
+            P1, record["source_id"], location, local_appdata=tmp_path, confirmation=True, now=NOW
+        )
+        assert updated["source_id"] == record["source_id"]
+    assert len(list_project_sources(P1, local_appdata=tmp_path)) == 1
+
+
+def test_alias_change_does_not_become_identity(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD", "Cam1", local_appdata=tmp_path, now=NOW)
+    registry = load_project_sources(P1, local_appdata=tmp_path)
+    registry["sources"][0]["display_label"] = "Renamed"
+    registry["sources"][0]["legacy_source_root_id_alias"] = "ROOT-zzz"
+    save_project_sources(registry, local_appdata=tmp_path)
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert root_map == {record["source_id"]: "D:\\CARD"}
+
+
+def test_same_physical_location_concept_does_not_replace_source_id(tmp_path: Path) -> None:
+    a = add_project_source(P1, "F:\\SIRUELA", "Cam1", local_appdata=tmp_path, now=NOW)
+    b = add_project_source(P1, "E:\\OTHER", "Cam2", local_appdata=tmp_path, now=NOW)
+    with pytest.raises(SourceRegistryError) as ei:
+        reconnect_source(
+            P1, b["source_id"], "F:\\SIRUELA", local_appdata=tmp_path, confirmation=True, now=NOW
+        )
+    assert ei.value.code == CID_SOURCE_DUPLICATE_LOCATION
+    assert a["source_id"] != b["source_id"]
+    root_map = build_online_source_root_map(P1, local_appdata=tmp_path)
+    assert root_map[a["source_id"]] == "F:\\SIRUELA"
+    assert root_map[b["source_id"]] == "E:\\OTHER"
+    assert a["source_id"] in root_map and b["source_id"] in root_map
+
+
+def test_content_irrelevant_to_reconnect_identity(tmp_path: Path) -> None:
+    record = add_project_source(P1, "D:\\CARD", "Cam1", local_appdata=tmp_path, now=NOW)
+    src_id = record["source_id"]
+    update_source_state(P1, src_id, STATE_OFFLINE, local_appdata=tmp_path, now=NOW)
+    updated = reconnect_source(
+        P1, src_id, "E:\\ARCHIVE", local_appdata=tmp_path, confirmation=True, now=NOW
+    )
+    assert updated["source_id"] == src_id
+    assert len(list_project_sources(P1, local_appdata=tmp_path)) == 1
+    assert find_source_by_id(P1, src_id, local_appdata=tmp_path)["current_location"] == "E:\\ARCHIVE"

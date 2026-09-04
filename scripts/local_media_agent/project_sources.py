@@ -27,7 +27,7 @@ import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 from uuid import uuid4
 
 from scripts.local_media_agent.local_project import (
@@ -355,6 +355,48 @@ def find_source_by_id(
         if source["source_id"] == source_id:
             return dict(source)
     return None
+
+
+def _online_source_root_map_from_sources(
+    sources: Iterable[dict[str, Any]],
+) -> dict[str, str]:
+    """Pure projection of validated source records into ``source_id`` -> ``current_location``.
+
+    Includes a record iff its persistent ``state == ONLINE`` and it carries a
+    non-empty ``current_location`` string. Never mutates the input collection
+    and performs no filesystem access. Result order follows source order, so
+    the projection is deterministic for a given registry.
+    """
+    result: dict[str, str] = {}
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        if source.get("state") != STATE_ONLINE:
+            continue
+        source_id = source.get("source_id")
+        location = source.get("current_location")
+        if not isinstance(source_id, str) or not source_id:
+            continue
+        if not isinstance(location, str) or not location:
+            continue
+        result[source_id] = location
+    return result
+
+
+def build_online_source_root_map(
+    project_id: str, *, local_appdata: str | Path | None = None
+) -> dict[str, str]:
+    """Return the online-source root map: ``source_id`` -> ``current_location``.
+
+    A read-only projection of the currently registered ONLINE sources. OFFLINE
+    sources are omitted (never deleted, never mutated). It only reads the
+    validated ``project_sources.json`` registry: no writes, no ``updated_at``
+    change, no state mutation, and no filesystem existence probe. A missing or
+    empty registry yields an empty map.
+    """
+    identifier = validate_project_id(project_id)
+    registry = load_project_sources(identifier, local_appdata=local_appdata)
+    return _online_source_root_map_from_sources(registry["sources"])
 
 
 def add_project_source(
@@ -754,6 +796,7 @@ __all__ = [
     "save_project_sources",
     "list_project_sources",
     "find_source_by_id",
+    "build_online_source_root_map",
     "add_project_source",
     "update_source_state",
     "reconnect_source",

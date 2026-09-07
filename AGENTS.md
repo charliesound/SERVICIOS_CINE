@@ -201,11 +201,12 @@ Operational guidance:
 
 ## 14) Cursor/Copilot local rules status
 Checked paths requested by product process:
-- `.cursor/rules/`: not present.
+- `.cursor/rules/cid-operating-safety.mdc`: present and mandatory for Cursor.
 - `.cursorrules`: not present.
 - `.github/copilot-instructions.md`: not present.
 
-If these files appear later, merge their directives here and treat them as high-priority local rules.
+Cursor must follow both this `AGENTS.md` and `.cursor/rules/cid-operating-safety.mdc`.
+If additional local AI-agent rules appear later, reconcile them with this guide before use.
 
 ## 15) Criterio de entrega
 A task is complete only when:

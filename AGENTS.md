@@ -4,9 +4,21 @@ Scope: mandatory guidance for agents working in `/opt/SERVICIOS_CINE`.
 
 ## 1) Mission and non-negotiables
 - Prioritize security, reproducibility, traceability, and minimal diffs.
-- Implement only what the task asks; avoid opportunistic refactors.
+- Implement only what the task asks; avoid opportunistic refactors and scope expansion.
+- Preserve existing contracts and backward compatibility; prefer minimal diffs and nearby patterns.
 - Validate with real commands; do not claim checks you did not run.
 - Never expose, generate, or commit secrets or private runtime artifacts.
+
+Hard boundaries unless the task explicitly authorizes otherwise:
+- Do not modify `.env` or secrets.
+- Do not modify PostgreSQL schemas or runtime data, or Alembic migrations.
+- Do not modify Docker, networking, Caddy, TLS, or deployment infrastructure.
+- Do not modify SaaS backend/frontend, Stripe, authentication, billing, AI Jobs, or ledger.
+- Do not trigger paid external APIs or real ComfyUI production renders unless explicitly requested.
+- Do not commit, tag, push, amend, reset, force-push, merge, or rebase unless explicitly instructed.
+- Never use broad staging such as `git add .`.
+- When publication was not requested, stop before commit/tag/push and report the working tree.
+- If an unexpected pre-existing change, architectural conflict, missing authority, or critical ambiguity is found: stop and report before proceeding.
 
 ## 2) Project scope map
 - `src/`: main FastAPI backend.
@@ -200,13 +212,14 @@ Operational guidance:
 - Do not modify Docker/network/TLS posture unless the task requires it.
 
 ## 14) Cursor/Copilot local rules status
+This `AGENTS.md` is the single authoritative source for agent operating rules.
+
 Checked paths requested by product process:
-- `.cursor/rules/cid-operating-safety.mdc`: present and mandatory for Cursor.
+- `.cursor/rules/cid-operating-safety.mdc`: present as a Cursor `alwaysApply` loader only. It must point here and must not duplicate a second full rule body.
 - `.cursorrules`: not present.
 - `.github/copilot-instructions.md`: not present.
 
-Cursor must follow both this `AGENTS.md` and `.cursor/rules/cid-operating-safety.mdc`.
-If additional local AI-agent rules appear later, reconcile them with this guide before use.
+If these files appear or change later, merge their directives into this guide and keep those files as thin pointers (or remove them if unused). Do not maintain parallel full rule definitions that can diverge.
 
 ## 15) Criterio de entrega
 A task is complete only when:

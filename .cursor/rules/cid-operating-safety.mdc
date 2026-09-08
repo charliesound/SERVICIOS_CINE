@@ -1,51 +1,15 @@
 ---
-description: Mandatory operating safety rules for CID / SERVICIOS_CINE
+description: Cursor loader for CID / SERVICIOS_CINE operating rules
 alwaysApply: true
 ---
 
 # CID Cursor Operating Safety
 
-Canonical repository:
-`/opt/SERVICIOS_CINE`
+Single authoritative source: `AGENTS.md` at the repository root (`/opt/SERVICIOS_CINE/AGENTS.md`).
 
-Environment:
-- Work only inside WSL Ubuntu.
-- Use the repository `.venv`.
-- Never use PowerShell, Windows Python, `/mnt/c`, or Windows copies of this repository.
+This file exists only so Cursor always loads that guide. Do not add or maintain a second full copy of operating rules here.
 
-Before any modification:
-1. Read `AGENTS.md`.
-2. Inspect relevant `directivas/`.
-3. Run `git status --short`.
-4. Read all impacted files before editing.
-5. Define the smallest coherent implementation scope.
-
-Hard boundaries unless the task explicitly authorizes them:
-- Do not modify `.env` or secrets.
-- Do not modify PostgreSQL schemas or runtime data.
-- Do not modify Alembic migrations.
-- Do not modify Docker, networking, Caddy, TLS, deployment infrastructure.
-- Do not modify SaaS backend/frontend, Stripe, authentication, billing, AI Jobs, or ledger.
-- Do not trigger paid external APIs.
-- Do not execute real ComfyUI production renders unless explicitly requested.
-
-Git:
-- Never commit, tag, push, amend, reset, force-push, merge, or rebase unless explicitly instructed.
-- Never use broad staging such as `git add .`.
-- Stop before publication and report the working tree.
-
-Implementation:
-- No opportunistic refactors.
-- No scope expansion.
-- Preserve existing contracts and backward compatibility.
-- Prefer minimal diffs.
-- Use existing patterns before inventing new abstractions.
-
-Validation:
-- Run targeted tests after implementation.
-- Run broader tests when risk warrants it.
-- Report exact commands and actual results.
-- Never claim a test or validation that was not executed.
-
-If an unexpected pre-existing change, architectural conflict, missing authority, or critical ambiguity is found:
-STOP and report it before proceeding.
+Before any work:
+1. Read and obey `AGENTS.md`.
+2. Inspect relevant `directivas/` when the task touches architecture, security, or critical flows.
+3. Run `git status --short` from `/opt/SERVICIOS_CINE` with the repo `.venv` activated.

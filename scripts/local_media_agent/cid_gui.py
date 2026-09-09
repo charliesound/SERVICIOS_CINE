@@ -74,6 +74,97 @@ def _media_kind_for(category: Any) -> str:
     return category if category in ("video", "audio", "image") else "video"
 
 
+_SCAN_VIDEO_EXTS = frozenset(
+    {".mp4", ".mov", ".mxf", ".mkv", ".avi", ".mts", ".m2ts", ".webm"}
+)
+_SCAN_AUDIO_EXTS = frozenset(
+    {".wav", ".bwf", ".aif", ".aiff", ".mp3", ".m4a", ".aac", ".flac", ".ogg"}
+)
+_SCAN_IMAGE_EXTS = frozenset(
+    {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".tif",
+        ".tiff",
+        ".dng",
+        ".cr2",
+        ".cr3",
+        ".arw",
+        ".nef",
+        ".orf",
+        ".raf",
+    }
+)
+
+
+def _scan_extension_counts(scan: dict[str, Any] | None) -> dict[str, int]:
+    """Classify one scanner extension_summary into producer Material tallies.
+
+    Pure: no filesystem, catalog, or media access. Does not mutate ``scan``.
+    """
+    ext = (scan or {}).get("extension_summary") or {}
+    if not isinstance(ext, dict):
+        ext = {}
+    video = 0
+    audio = 0
+    images = 0
+    other = 0
+    for extension, count in ext.items():
+        if not isinstance(count, int) or isinstance(count, bool):
+            continue
+        if extension in _SCAN_VIDEO_EXTS:
+            video += count
+        elif extension in _SCAN_AUDIO_EXTS:
+            audio += count
+        elif extension in _SCAN_IMAGE_EXTS:
+            images += count
+        else:
+            other += count
+    return {"video": video, "audio": audio, "images": images, "other": other}
+
+
+def _aggregate_project_scan_counts(
+    scans: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+) -> dict[str, int]:
+    """Sum filesystem scan tallies across ordered online project sources."""
+    totals = {"video": 0, "audio": 0, "images": 0, "other": 0}
+    for scan in scans:
+        counts = _scan_extension_counts(scan)
+        for key in totals:
+            totals[key] += counts[key]
+    return totals
+
+
+def _unique_failed_media_path_count(
+    errors: list[Any] | None,
+    *,
+    project_mode: bool,
+) -> int:
+    """Count unique failed media paths from metadata errors (not scanner I/O).
+
+    Project identity: ``(source_id, relative_path)``.
+    Legacy identity: ``relative_path``.
+    Entries without a valid relative_path are ignored. Does not count
+    ``technical_errors`` list length.
+    """
+    seen: set[tuple[str, ...]] = set()
+    for entry in errors or []:
+        if not isinstance(entry, dict):
+            continue
+        relative_path = entry.get("relative_path")
+        if not isinstance(relative_path, str) or not relative_path.strip():
+            continue
+        if project_mode:
+            source_id = entry.get("source_id")
+            if not isinstance(source_id, str) or not source_id.strip():
+                continue
+            seen.add((source_id, relative_path))
+        else:
+            seen.add((relative_path,))
+    return len(seen)
+
+
 from scripts.local_media_agent.read_only_folder_scanner import scan_read_only_folder
 from scripts.local_media_agent.ffprobe_metadata_extraction import extract_metadata
 from scripts.local_media_agent.audio_source_intelligence import (
@@ -586,14 +677,19 @@ class ProducerApp:
         counts = ttk.Frame(body)
         counts.grid(row=1, column=0, sticky="ew", pady=(0, 12))
         self.count_labels: dict[str, tk.StringVar] = {}
-        for idx, key in enumerate(("video", "audio", "images", "other", "errors")):
+        for idx, key in enumerate(("video", "audio", "images", "other", "incidents")):
             var = tk.StringVar(value="0")
             self.count_labels[key] = var
             cell = ttk.Frame(counts)
             cell.grid(row=0, column=idx, padx=(0, 22))
             ttk.Label(cell, textvariable=var, style="Count.TLabel").pack(anchor="w")
-            name = {"video": "Vídeo", "audio": "Audio", "images": "Imágenes",
-                    "other": "Otros", "errors": "Errores"}[key]
+            name = {
+                "video": "Vídeo",
+                "audio": "Audio",
+                "images": "Imágenes",
+                "other": "Otros",
+                "incidents": "Incidencias",
+            }[key]
             ttk.Label(cell, text=name, style="CountName.TLabel").pack(anchor="w")
 
         list_frame = ttk.Frame(body)
@@ -1477,7 +1573,14 @@ class ProducerApp:
             scan = scan_read_only_folder(root)
             source_scans[source_id] = scan
             snapshots.append(self._build_snapshot(source_id, root, scan))
-            self.ui_q.put(("scan_done", scan))
+
+        ordered_scans = [source_scans[source_id] for source_id in ordered_source_ids]
+        self.ui_q.put(
+            (
+                "project_scan_counts_done",
+                _aggregate_project_scan_counts(ordered_scans),
+            )
+        )
 
         snapshot = {
             "online_root_ids": sorted(online_root_map),
@@ -1582,7 +1685,10 @@ class ProducerApp:
         self._analysis_completion_summary = {
             "sources": source_total,
             "recordings": len(clusters),
-            "incidents": len(combined_meta.get("errors", [])),
+            "incidents": _unique_failed_media_path_count(
+                combined_meta.get("errors"),
+                project_mode=True,
+            ),
         }
         self.ui_q.put(("clusters_done", clusters))
         self.ui_q.put(("analysis_finished", "completed"))
@@ -1793,16 +1899,31 @@ class ProducerApp:
             if label is not None:
                 label.config(text="")
 
+    def _apply_material_scan_counts(self, counts: dict[str, int]) -> None:
+        labels = getattr(self, "count_labels", None)
+        if not labels:
+            return
+        labels["video"].set(str(counts.get("video", 0)))
+        labels["audio"].set(str(counts.get("audio", 0)))
+        labels["images"].set(str(counts.get("images", 0)))
+        labels["other"].set(str(counts.get("other", 0)))
+
+    def _apply_material_incident_count(self, incidents: int) -> None:
+        labels = getattr(self, "count_labels", None)
+        if not labels or "incidents" not in labels:
+            return
+        labels["incidents"].set(str(max(0, int(incidents))))
+
     def _on_scan_done(self, scan: dict[str, Any]) -> None:
-        ext = scan.get("extension_summary", {})
-        video_exts = {".mp4", ".mov", ".mxf", ".mkv", ".avi", ".mts", ".m2ts", ".webm"}
-        audio_exts = {".wav", ".bwf", ".aif", ".aiff", ".mp3", ".m4a", ".aac", ".flac", ".ogg"}
-        image_exts = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".dng", ".cr2", ".cr3", ".arw", ".nef", ".orf", ".raf"}
-        self.count_labels["video"].set(str(sum(v for e, v in ext.items() if e in video_exts)))
-        self.count_labels["audio"].set(str(sum(v for e, v in ext.items() if e in audio_exts)))
-        self.count_labels["images"].set(str(sum(v for e, v in ext.items() if e in image_exts)))
-        self.count_labels["other"].set(str(sum(v for e, v in ext.items() if e not in video_exts | audio_exts | image_exts)))
-        self.count_labels["errors"].set(str(len(scan.get("errors", []))))
+        """Legacy single-folder Material tallies from one filesystem scan."""
+        self._apply_material_scan_counts(_scan_extension_counts(scan))
+        # Incidencias come from metadata failed paths, never scanner I/O errors.
+        self._apply_material_incident_count(0)
+
+    def _on_project_scan_counts_done(self, counts: dict[str, int]) -> None:
+        """Project Material tallies from aggregated ONLINE source scans."""
+        self._apply_material_scan_counts(counts)
+        self._apply_material_incident_count(0)
 
     def _on_candidates_done(self, candidates: list[dict[str, Any]]) -> None:
         self.candidates = candidates
@@ -1825,6 +1946,13 @@ class ProducerApp:
 
     def _on_metadata_done(self, metadata: dict[str, Any]) -> None:
         self.metadata = metadata
+        project_mode = bool(self.analysis_project_id)
+        self._apply_material_incident_count(
+            _unique_failed_media_path_count(
+                metadata.get("errors"),
+                project_mode=project_mode,
+            )
+        )
         project_id = self.analysis_project_id
         if not project_id:
             return
@@ -2290,6 +2418,8 @@ class ProducerApp:
                 kind = item[0]
                 if kind == "scan_done":
                     self._on_scan_done(item[1])
+                elif kind == "project_scan_counts_done":
+                    self._on_project_scan_counts_done(item[1])
                 elif kind == "metadata_done":
                     self._on_metadata_done(item[1])
                 elif kind == "candidates_done":

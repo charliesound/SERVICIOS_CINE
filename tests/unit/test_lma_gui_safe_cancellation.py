@@ -2149,3 +2149,300 @@ class TestApplyMetadataCatalogErrorStatus:
         assert item["technical_errors"][0]["category"] == ERROR_CATEGORY_METADATA
         assert item["technical_errors"][0]["message"] == "moov atom not found"
         assert item["technical_errors"][0]["relative_path"] == self.REL
+
+
+class _FakeStringVar:
+    def __init__(self, value: str = "0") -> None:
+        self._value = str(value)
+
+    def set(self, value: str) -> None:
+        self._value = str(value)
+
+    def get(self) -> str:
+        return self._value
+
+
+class TestMS3GMaterialAggregateCounts:
+    SOURCE_A = "SRC-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    SOURCE_B = "SRC-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    PROJECT_ID = "PRJ-11111111-1111-4111-8111-111111111111"
+
+    @staticmethod
+    def _count_app(gui, *, project_id=None):
+        app = object.__new__(gui.ProducerApp)
+        app.analysis_project_id = project_id
+        app.count_labels = {
+            key: _FakeStringVar("0")
+            for key in ("video", "audio", "images", "other", "incidents")
+        }
+        app.metadata = None
+        return app
+
+    def test_pure_scan_count_classification(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        scan = {
+            "extension_summary": {
+                ".mp4": 2,
+                ".mov": 1,
+                ".wav": 4,
+                ".jpg": 3,
+                ".png": 1,
+                ".txt": 5,
+                ".xml": 2,
+            },
+            "errors": ["SHOULD_NOT_AFFECT_COUNTS"],
+        }
+        assert gui._scan_extension_counts(scan) == {
+            "video": 3,
+            "audio": 4,
+            "images": 4,
+            "other": 7,
+        }
+
+    def test_multi_source_aggregation(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        scan_a = {
+            "extension_summary": {".mp4": 10, ".wav": 2, ".jpg": 1, ".txt": 3},
+        }
+        scan_b = {
+            "extension_summary": {".mov": 5, ".aiff": 7, ".png": 4, ".pdf": 9},
+        }
+        assert gui._aggregate_project_scan_counts([scan_a, scan_b]) == {
+            "video": 15,
+            "audio": 9,
+            "images": 5,
+            "other": 12,
+        }
+
+    def test_project_emits_one_aggregate_count_event_not_last_source(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = object.__new__(gui.ProducerApp)
+        app.analysis_project_id = self.PROJECT_ID
+        app.cancel_event = threading.Event()
+        app.ui_q = type(
+            "Queue", (), {"items": [], "put": lambda self, item: self.items.append(item)}
+        )()
+        roots = {self.SOURCE_A: "/online/a", self.SOURCE_B: "/online/b"}
+        scans = {
+            self.SOURCE_A: {
+                "extension_summary": {".mp4": 100, ".wav": 10, ".jpg": 20, ".txt": 30},
+                "errors": ["scan-io-a"],
+            },
+            self.SOURCE_B: {
+                "extension_summary": {".mov": 7, ".mp3": 3, ".png": 4, ".pdf": 5},
+                "errors": [],
+            },
+        }
+
+        monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: roots)
+        monkeypatch.setattr(
+            gui,
+            "scan_read_only_folder",
+            lambda root: scans[next(s for s, path in roots.items() if path == root)],
+        )
+        monkeypatch.setattr(
+            gui.ProducerApp,
+            "_build_snapshot",
+            lambda self, source, root, scan: {"online_root_ids": [source], "files": []},
+        )
+        monkeypatch.setattr(
+            gui.ProducerApp, "_load_or_create_catalog", lambda self, *args: {"media_items": {}}
+        )
+        monkeypatch.setattr(gui.ProducerApp, "_reuse_map_from_catalog", lambda *args: {})
+        monkeypatch.setattr(
+            gui, "compare_catalogs", lambda *args: {"classification": {"NEW": [], "MODIFIED": []}}
+        )
+        monkeypatch.setattr(
+            gui, "extract_metadata", lambda *args, **kwargs: {"results": [], "errors": []}
+        )
+        monkeypatch.setattr(
+            gui.ProducerApp, "_apply_metadata_to_catalog", lambda self, catalog, *args: catalog
+        )
+        monkeypatch.setattr(gui, "save_catalog", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            gui,
+            "load_signature_cache_runtime",
+            lambda *args, **kwargs: type("Runtime", (), {"dirty": False})(),
+        )
+        monkeypatch.setattr(gui, "select_batch_candidates", lambda results: [])
+        monkeypatch.setattr(gui, "group_related_media", lambda *args, **kwargs: [])
+        monkeypatch.setattr(gui, "save_signature_cache_runtime", lambda *args: None)
+
+        app._project_source_analysis(self.PROJECT_ID)
+
+        scan_done = [item for item in app.ui_q.items if item[0] == "scan_done"]
+        aggregate = [item for item in app.ui_q.items if item[0] == "project_scan_counts_done"]
+        assert scan_done == []
+        assert len(aggregate) == 1
+        assert aggregate[0][1] == {
+            "video": 107,
+            "audio": 13,
+            "images": 24,
+            "other": 35,
+        }
+
+    def test_offline_source_excluded_from_aggregate(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = object.__new__(gui.ProducerApp)
+        app.analysis_project_id = self.PROJECT_ID
+        app.cancel_event = threading.Event()
+        app.ui_q = type(
+            "Queue", (), {"items": [], "put": lambda self, item: self.items.append(item)}
+        )()
+        online = {self.SOURCE_A: "/online/a"}
+        seen_roots: list[str] = []
+
+        monkeypatch.setattr(gui, "build_online_source_root_map", lambda project_id: online)
+        monkeypatch.setattr(
+            gui,
+            "scan_read_only_folder",
+            lambda root: seen_roots.append(root)
+            or {"extension_summary": {".mp4": 11, ".txt": 2}},
+        )
+        monkeypatch.setattr(
+            gui.ProducerApp,
+            "_build_snapshot",
+            lambda self, source, root, scan: {"online_root_ids": [source], "files": []},
+        )
+        monkeypatch.setattr(
+            gui.ProducerApp, "_load_or_create_catalog", lambda self, *args: {"media_items": {}}
+        )
+        monkeypatch.setattr(gui.ProducerApp, "_reuse_map_from_catalog", lambda *args: {})
+        monkeypatch.setattr(
+            gui, "compare_catalogs", lambda *args: {"classification": {"NEW": [], "MODIFIED": []}}
+        )
+        monkeypatch.setattr(
+            gui, "extract_metadata", lambda *args, **kwargs: {"results": [], "errors": []}
+        )
+        monkeypatch.setattr(
+            gui.ProducerApp, "_apply_metadata_to_catalog", lambda self, catalog, *args: catalog
+        )
+        monkeypatch.setattr(gui, "save_catalog", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            gui,
+            "load_signature_cache_runtime",
+            lambda *args, **kwargs: type("Runtime", (), {"dirty": False})(),
+        )
+        monkeypatch.setattr(gui, "select_batch_candidates", lambda results: [])
+        monkeypatch.setattr(gui, "group_related_media", lambda *args, **kwargs: [])
+        monkeypatch.setattr(gui, "save_signature_cache_runtime", lambda *args: None)
+
+        app._project_source_analysis(self.PROJECT_ID)
+
+        assert seen_roots == ["/online/a"]
+        aggregate = [item for item in app.ui_q.items if item[0] == "project_scan_counts_done"]
+        assert len(aggregate) == 1
+        assert aggregate[0][1] == {"video": 11, "audio": 0, "images": 0, "other": 2}
+
+    def test_unique_project_incidents(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        errors = [
+            {"source_id": self.SOURCE_A, "relative_path": "clip.mp4"},
+            {"source_id": self.SOURCE_A, "relative_path": "clip.mp4"},
+            {"source_id": self.SOURCE_B, "relative_path": "clip.mp4"},
+            {"source_id": self.SOURCE_A, "relative_path": "other.wav"},
+            {"source_id": self.SOURCE_A},  # malformed: no relative_path
+            {"relative_path": "orphan.mp4"},  # malformed for project: no source_id
+        ]
+        assert (
+            gui._unique_failed_media_path_count(errors, project_mode=True) == 3
+        )
+
+    def test_legacy_unique_incidents(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        errors = [
+            {"relative_path": "a.mp4"},
+            {"relative_path": "a.mp4"},
+            {"relative_path": "b.wav"},
+            {"source_id": self.SOURCE_A},  # malformed: no relative_path
+        ]
+        assert gui._unique_failed_media_path_count(errors, project_mode=False) == 2
+
+    def test_material_card_incident_update_from_metadata(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._count_app(gui, project_id=self.PROJECT_ID)
+        app._on_project_scan_counts_done(
+            {"video": 1, "audio": 2, "images": 3, "other": 4}
+        )
+        assert app.count_labels["incidents"].get() == "0"
+        app._on_metadata_done(
+            {
+                "results": [],
+                "errors": [
+                    {"source_id": self.SOURCE_A, "relative_path": "bad.mp4"},
+                    {"source_id": self.SOURCE_A, "relative_path": "bad.mp4"},
+                    {"source_id": self.SOURCE_B, "relative_path": "bad.mp4"},
+                ],
+            }
+        )
+        assert app.count_labels["video"].get() == "1"
+        assert app.count_labels["audio"].get() == "2"
+        assert app.count_labels["images"].get() == "3"
+        assert app.count_labels["other"].get() == "4"
+        assert app.count_labels["incidents"].get() == "2"
+
+    def test_completion_summary_aligns_with_material_incidents(self, monkeypatch):
+        from scripts.local_media_agent import cid_gui as gui
+
+        wiring = TestMS3AProjectSourceRuntimeWiring()
+        app, _, _, _ = wiring._run_project(monkeypatch, metadata_error_count=1)
+        combined_errors = [
+            item[1]
+            for item in app.ui_q.items
+            if item[0] == "metadata_done"
+        ][0]["errors"]
+        expected = gui._unique_failed_media_path_count(
+            combined_errors, project_mode=True
+        )
+        assert expected == 1
+        assert app._analysis_completion_summary["incidents"] == expected
+
+        labels_app = self._count_app(gui, project_id=self.PROJECT_ID)
+        labels_app._on_metadata_done({"results": [], "errors": combined_errors})
+        assert labels_app.count_labels["incidents"].get() == str(expected)
+
+    def test_legacy_single_scan_tally_behavior(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._count_app(gui, project_id=None)
+        scan = {
+            "extension_summary": {
+                ".mp4": 2,
+                ".wav": 3,
+                ".jpg": 4,
+                ".txt": 5,
+            },
+            "errors": ["io-error-1", "io-error-2"],
+        }
+        app._on_scan_done(scan)
+        assert app.count_labels["video"].get() == "2"
+        assert app.count_labels["audio"].get() == "3"
+        assert app.count_labels["images"].get() == "4"
+        assert app.count_labels["other"].get() == "5"
+        # Scanner I/O errors must not drive Incidencias.
+        assert app.count_labels["incidents"].get() == "0"
+        app._on_metadata_done(
+            {
+                "results": [],
+                "errors": [
+                    {"relative_path": "fail.mp4"},
+                    {"relative_path": "fail.mp4"},
+                    {"relative_path": "fail2.wav"},
+                ],
+            }
+        )
+        assert app.count_labels["incidents"].get() == "2"
+
+    def test_ui_label_is_incidencias(self):
+        source = Path(__file__).parents[2].joinpath(
+            "scripts/local_media_agent/cid_gui.py"
+        ).read_text(encoding="utf-8")
+        assert '"incidents": "Incidencias"' in source
+        assert '"errors": "Errores"' not in source

@@ -2098,3 +2098,54 @@ class TestMS3AProjectSourceRuntimeWiring:
         monkeypatch.setattr(gui, "refresh_project_video_analysis", lambda *args: None)
         app._on_metadata_done({"results": [{"relative_path": "Interview/A001.MP4", "video": {}}]})
         assert calls == [None, 1]
+
+
+class TestApplyMetadataCatalogErrorStatus:
+    """Regression: meta['errors'] must resolve ANALYSIS_STATUS_ERROR without NameError."""
+
+    SOURCE_ID = "SRC-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    REL = "broken_clip.mp4"
+    PROJECT_ID = "PRJ-11111111-1111-4111-8111-111111111111"
+
+    def test_apply_metadata_errors_branch_sets_analysis_status_error(self):
+        from scripts.local_media_agent import cid_gui as gui
+        from scripts.local_media_agent.media_catalog import (
+            ANALYSIS_STATUS_ERROR,
+            ERROR_CATEGORY_METADATA,
+            media_item_key,
+            new_catalog,
+        )
+
+        app = object.__new__(gui.ProducerApp)
+        catalog = new_catalog(self.PROJECT_ID)
+        snapshot = {
+            "online_root_ids": [self.SOURCE_ID],
+            "files": [
+                {"source_root_id": self.SOURCE_ID, "relative_path": self.REL, "size": 1, "mtime_ns": 1}
+            ],
+        }
+        meta = {
+            "results": [],
+            "errors": [
+                {
+                    "relative_path": self.REL,
+                    "category": "video",
+                    "error_category": ERROR_CATEGORY_METADATA,
+                    "error": "moov atom not found",
+                }
+            ],
+        }
+
+        updated = app._apply_metadata_to_catalog(
+            catalog, meta, self.SOURCE_ID, "/online/in-memory-root", snapshot
+        )
+
+        key = media_item_key(self.SOURCE_ID, self.REL)
+        item = updated["media_items"][key]
+        assert item["analysis_status"] == ANALYSIS_STATUS_ERROR
+        assert item["analysis_status"] == "ERROR"
+        assert isinstance(item["technical_errors"], list)
+        assert len(item["technical_errors"]) == 1
+        assert item["technical_errors"][0]["category"] == ERROR_CATEGORY_METADATA
+        assert item["technical_errors"][0]["message"] == "moov atom not found"
+        assert item["technical_errors"][0]["relative_path"] == self.REL

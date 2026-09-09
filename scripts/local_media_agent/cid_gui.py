@@ -97,6 +97,7 @@ from scripts.local_media_agent.catalog_compare import (
     compare_catalogs,
 )
 from scripts.local_media_agent.media_catalog import (
+    ANALYSIS_STATUS_ERROR,
     ANALYSIS_STATUS_OK,
     ANALYSIS_STATUS_PENDING,
     CATALOG_STATUS_PRESENT,

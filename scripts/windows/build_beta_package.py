@@ -25,7 +25,7 @@ import sysconfig
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "0.3.0-beta2"
+VERSION = "0.3.0-beta3"
 PACKAGE_NAME = f"CID-Local-Media-Agent-{VERSION}"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -572,6 +572,10 @@ if errorlevel 1 goto :fail
 echo   [5/5] Copying model (this may take a moment)...
 if exist "%INSTALL_TARGET%\\models" rmdir /s /q "%INSTALL_TARGET%\\models"
 xcopy /s /e /q /y "%PACKAGE_DIR%\\models\\*" "%INSTALL_TARGET%\\models\\" >nul
+if errorlevel 1 goto :fail
+
+echo   Copying package_manifest.json...
+copy /y "%PACKAGE_DIR%\\package_manifest.json" "%INSTALL_TARGET%\\package_manifest.json" >nul
 if errorlevel 1 goto :fail
 
 echo.

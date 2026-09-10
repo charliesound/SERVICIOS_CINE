@@ -43,7 +43,7 @@ def assembled_package(tmp_path: Path):
     Uses fake/minimal runtime placeholders (no full 500MB build). Runs only the
     editorial-relevant integration helpers with a minimal layout.
     """
-    pkg = tmp_path / "CID-Local-Media-Agent-0.3.0-beta2"
+    pkg = tmp_path / "CID-Local-Media-Agent-0.3.0-beta3"
     runtime = pkg / "runtime" / "python"
     runtime.mkdir(parents=True)
     runtime.joinpath("python.exe").write_bytes(b"x")
@@ -240,6 +240,51 @@ def test_recursive_copy_includes_project_video_profile_modules(tmp_path) -> None
         "source_video_profile.py",
     ):
         assert (module_root / module).is_file()
+
+
+# ---------------- beta3 version / installed manifest -----------------
+
+def test_package_version_is_beta3() -> None:
+    assert B.VERSION == "0.3.0-beta3"
+    assert B.PACKAGE_NAME == "CID-Local-Media-Agent-0.3.0-beta3"
+
+
+def test_gui_app_version_is_beta3() -> None:
+    from scripts.local_media_agent.cid_gui import APP_VERSION
+
+    assert APP_VERSION == "0.3.0-beta3"
+
+
+def test_install_copies_package_manifest_into_install_target(assembled_package) -> None:
+    install = (assembled_package / "install.cmd").read_text(encoding="utf-8")
+    assert (
+        'copy /y "%PACKAGE_DIR%\\package_manifest.json" '
+        '"%INSTALL_TARGET%\\package_manifest.json"'
+    ) in install
+    assert "%INSTALL_TARGET%\\package_manifest.json" in install
+
+
+def test_install_manifest_copy_failure_is_fatal(assembled_package) -> None:
+    install = (assembled_package / "install.cmd").read_text(encoding="utf-8")
+    lines = install.splitlines()
+    copy_idx = next(
+        i
+        for i, line in enumerate(lines)
+        if 'copy /y "%PACKAGE_DIR%\\package_manifest.json"' in line
+        and "%INSTALL_TARGET%\\package_manifest.json" in line
+    )
+    assert lines[copy_idx + 1].strip() == "if errorlevel 1 goto :fail"
+    assert ":fail" in install
+    assert "exit /b 1" in install
+
+
+def test_uninstall_still_preserves_user_results_and_editorial_store(assembled_package) -> None:
+    uninstall = (assembled_package / "uninstall.cmd").read_text(encoding="utf-8")
+    assert uninstall.count('rmdir /s /q "%INSTALL_TARGET%"') == 1
+    assert "editorial_selections" in uninstall
+    assert "Resultados" in uninstall
+    assert 'rmdir /s /q "%LOCALAPPDATA%\\CID"' not in uninstall
+    assert "package_manifest.json" not in uninstall  # removed with INSTALL_TARGET only
 
 
 # ---------------- manifest -----------------

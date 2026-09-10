@@ -2648,3 +2648,95 @@ class TestGlobalVerticalScroll:
         assert "yview_scroll" not in show_section
         configure = source.split("def _on_home_canvas_configure")[1].split("def ")[0]
         assert "yview" not in configure
+
+
+class TestAnalyzeButtonIdleLabelState:
+    PROJECT = {
+        "project_id": "PRJ-11111111-1111-4111-8111-111111111111",
+        "project_name": "Scroll Smoke",
+    }
+
+    def _app(self, gui, *, project=None, analysis_active: bool = False):
+        app = object.__new__(gui.ProducerApp)
+        app.active_project = project
+        app.analysis_active = analysis_active
+        app.analyze_btn = _FakeTkWidget()
+        app.active_project_label = _FakeTkWidget()
+        app.video_profile_label = _FakeTkWidget()
+        app.source_tree = type("Tree", (), {"get_children": lambda self: (), "delete": lambda self, *_: None})()
+        app.source_status_label = _FakeTkWidget()
+        app.add_source_btn = _FakeTkWidget()
+        app.mark_offline_btn = _FakeTkWidget()
+        app.reconnect_source_btn = _FakeTkWidget()
+        app._source_records = {}
+        app.active = False
+        return app
+
+    def test_idle_active_project_sets_analizar_proyecto(self) -> None:
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, project=self.PROJECT)
+        app.analyze_btn.config(text="Seleccionar carpeta", command=app._start_analysis_action)
+        app._sync_analyze_button_idle_state()
+        assert app.analyze_btn.text == "Analizar proyecto"
+        assert app.analyze_btn.command == app._start_analysis_action
+
+    def test_idle_no_project_sets_seleccionar_carpeta(self) -> None:
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui)
+        app.analyze_btn.config(text="Analizar proyecto", command=app._start_analysis_action)
+        app._sync_analyze_button_idle_state()
+        assert app.analyze_btn.text == "Seleccionar carpeta"
+        assert app.analyze_btn.command == app._start_analysis_action
+
+    def test_analysis_active_preserves_cancel_label_and_command(self) -> None:
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, project=self.PROJECT, analysis_active=True)
+        app.analyze_btn.config(text="Cancelar análisis", command=app._cancel_analysis_click)
+        before_state = app.analyze_btn.state
+        app._sync_analyze_button_idle_state()
+        assert app.analyze_btn.text == "Cancelar análisis"
+        assert app.analyze_btn.command == app._cancel_analysis_click
+        assert app.analyze_btn.state == before_state
+
+    def test_refresh_project_ui_sets_idle_label_before_profile_return(self, monkeypatch) -> None:
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, project=self.PROJECT)
+        app.analyze_btn.config(text="Seleccionar carpeta", command=app._start_analysis_action)
+        monkeypatch.setattr(app, "_refresh_project_sources_ui", lambda: None)
+        monkeypatch.setattr(
+            gui,
+            "load_project_video_profile",
+            lambda project_id: (_ for _ in ()).throw(gui.ProjectVideoProfileError("CID_PROJECT_VIDEO_PROFILE_MISSING")),
+        )
+        app._refresh_project_ui()
+        assert app.analyze_btn.text == "Analizar proyecto"
+        assert app.analyze_btn.command == app._start_analysis_action
+        assert app.active_project_label.text == "Proyecto activo: Scroll Smoke"
+
+    def test_refresh_project_ui_during_analysis_preserves_cancel(self, monkeypatch) -> None:
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, project=self.PROJECT, analysis_active=True)
+        app.analyze_btn.config(text="Cancelar análisis", command=app._cancel_analysis_click)
+        monkeypatch.setattr(app, "_refresh_project_sources_ui", lambda: None)
+        monkeypatch.setattr(
+            gui,
+            "load_project_video_profile",
+            lambda project_id: (_ for _ in ()).throw(gui.ProjectVideoProfileError("CID_PROJECT_VIDEO_PROFILE_MISSING")),
+        )
+        app._refresh_project_ui()
+        assert app.analyze_btn.text == "Cancelar análisis"
+        assert app.analyze_btn.command == app._cancel_analysis_click
+
+    def test_helper_does_not_set_button_state(self) -> None:
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = self._app(gui, project=self.PROJECT)
+        app.analyze_btn.state = "disabled"
+        app._sync_analyze_button_idle_state()
+        assert app.analyze_btn.state == "disabled"
+        assert app.analyze_btn.text == "Analizar proyecto"

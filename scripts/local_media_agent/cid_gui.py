@@ -1078,7 +1078,20 @@ class ProducerApp:
         self.active_media_root = None
         self._refresh_project_ui()
 
+    def _sync_analyze_button_idle_state(self) -> None:
+        """Sync Home analyze-button idle label/command; never during analysis."""
+        if getattr(self, "analysis_active", False):
+            return
+        button = getattr(self, "analyze_btn", None)
+        if button is None:
+            return
+        if self.active_project:
+            button.config(text="Analizar proyecto", command=self._start_analysis_action)
+        else:
+            button.config(text="Seleccionar carpeta", command=self._start_analysis_action)
+
     def _refresh_project_ui(self) -> None:
+        self._sync_analyze_button_idle_state()
         project = self.active_project
         self.active_project_label.config(
             text=(f"Proyecto activo: {project['project_name']}" if project else "Proyecto activo: ninguno")

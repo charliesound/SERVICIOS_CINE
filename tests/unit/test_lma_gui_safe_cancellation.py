@@ -2446,3 +2446,205 @@ class TestMS3GMaterialAggregateCounts:
         ).read_text(encoding="utf-8")
         assert '"incidents": "Incidencias"' in source
         assert '"errors": "Errores"' not in source
+
+
+class _FakeScrollEvent:
+    def __init__(self, *, delta: int = 0, width: int = 0, widget=None) -> None:
+        self.delta = delta
+        self.width = width
+        self.widget = widget
+
+
+class _FakeCanvas:
+    def __init__(self) -> None:
+        self.scrollregion = None
+        self.item_widths: dict[Any, int] = {}
+        self.yview_calls: list[tuple[int, str]] = []
+        self.binds: list[tuple[str, Any]] = []
+        self._bbox = (0, 0, 100, 400)
+
+    def bbox(self, _what: str):
+        return self._bbox
+
+    def configure(self, **kwargs) -> None:
+        if "scrollregion" in kwargs:
+            self.scrollregion = kwargs["scrollregion"]
+
+    def itemconfigure(self, window_id, **kwargs) -> None:
+        if "width" in kwargs:
+            self.item_widths[window_id] = kwargs["width"]
+
+    def yview_scroll(self, amount: int, what: str) -> None:
+        self.yview_calls.append((amount, what))
+
+    def bind(self, sequence: str, handler) -> None:
+        self.binds.append((sequence, handler))
+
+
+class _FakeBindWidget:
+    def __init__(self, *, treeview: bool = False, children=None, master=None) -> None:
+        self._treeview = treeview
+        self._children = list(children or [])
+        self.master = master
+        self.binds: list[tuple[str, Any]] = []
+
+    def winfo_class(self) -> str:
+        return "Treeview" if self._treeview else "TFrame"
+
+    def winfo_children(self):
+        return list(self._children)
+
+    def bind(self, sequence: str, handler) -> None:
+        self.binds.append((sequence, handler))
+
+
+class TestGlobalVerticalScroll:
+    @staticmethod
+    def _source() -> str:
+        return Path(__file__).parents[2].joinpath(
+            "scripts/local_media_agent/cid_gui.py"
+        ).read_text(encoding="utf-8")
+
+    def test_structural_home_scroll_architecture(self):
+        source = self._source()
+        assert "tk.Canvas(" in source
+        assert "self.home_canvas" in source
+        assert "self.home_scrollbar" in source
+        assert "create_window(" in source
+        assert 'command=self.home_canvas.yview' in source
+        assert "yscrollcommand=self.home_scrollbar.set" in source
+        home_section = source.split("def _build_home")[1].split("def _build_material")[0]
+        assert 'Scrollbar(\n            frame, orient="horizontal"' not in home_section
+        assert 'orient="horizontal", command=' not in home_section
+        assert "home_canvas.create_window" in source or "self.home_canvas.create_window" in source
+        assert 'orient="vertical", command=self.home_canvas.yview' in home_section
+    def test_inner_configure_updates_scrollregion(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = object.__new__(gui.ProducerApp)
+        canvas = _FakeCanvas()
+        canvas._bbox = (0, 0, 200, 900)
+        app.home_canvas = canvas
+        app._on_home_inner_configure(_FakeScrollEvent())
+        assert canvas.scrollregion == (0, 0, 200, 900)
+
+    def test_canvas_configure_updates_inner_width(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = object.__new__(gui.ProducerApp)
+        canvas = _FakeCanvas()
+        app.home_canvas = canvas
+        app._home_canvas_window = "win-1"
+        app._on_home_canvas_configure(_FakeScrollEvent(width=640))
+        assert canvas.item_widths["win-1"] == 640
+        app._on_home_canvas_configure(_FakeScrollEvent(width=0))
+        assert canvas.item_widths["win-1"] == 1
+        assert canvas.yview_calls == []
+
+    def test_home_wheel_scrolls_canvas(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = object.__new__(gui.ProducerApp)
+        canvas = _FakeCanvas()
+        app.home_canvas = canvas
+        ordinary = _FakeBindWidget()
+        down = app._on_home_mousewheel(_FakeScrollEvent(delta=-120, widget=ordinary))
+        up = app._on_home_mousewheel(_FakeScrollEvent(delta=120, widget=ordinary))
+        assert down == "break"
+        assert up == "break"
+        assert canvas.yview_calls == [(1, "units"), (-1, "units")]
+
+    def test_high_resolution_wheel_delta(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = object.__new__(gui.ProducerApp)
+        canvas = _FakeCanvas()
+        app.home_canvas = canvas
+        ordinary = _FakeBindWidget()
+        assert app._on_home_mousewheel(_FakeScrollEvent(delta=60, widget=ordinary)) == "break"
+        assert app._on_home_mousewheel(_FakeScrollEvent(delta=-60, widget=ordinary)) == "break"
+        assert canvas.yview_calls == [(-1, "units"), (1, "units")]
+
+    def test_treeview_excluded_from_home_wheel(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = object.__new__(gui.ProducerApp)
+        canvas = _FakeCanvas()
+        app.home_canvas = canvas
+        tree = _FakeBindWidget(treeview=True)
+        child = _FakeBindWidget(master=tree)
+        assert app._on_home_mousewheel(_FakeScrollEvent(delta=-120, widget=tree)) is None
+        assert app._on_home_mousewheel(_FakeScrollEvent(delta=-120, widget=child)) is None
+        assert canvas.yview_calls == []
+
+        body = _FakeBindWidget(children=[_FakeBindWidget(), tree])
+        app._home_scroll_bound = False
+        app.home_canvas = canvas
+        app.home_body = body
+        app._bind_home_mousewheel_once()
+        assert tree.binds == []
+        assert any(seq == "<MouseWheel>" for seq, _ in body.binds)
+        assert any(seq == "<MouseWheel>" for seq, _ in body._children[0].binds)
+
+    def test_bind_once(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = object.__new__(gui.ProducerApp)
+        canvas = _FakeCanvas()
+        body = _FakeBindWidget()
+        app.home_canvas = canvas
+        app.home_body = body
+        app._home_scroll_bound = False
+        app._bind_home_mousewheel_once()
+        app._bind_home_mousewheel_once()
+        assert app._home_scroll_bound is True
+        assert canvas.binds.count(("<MouseWheel>", app._on_home_mousewheel)) == 1
+        assert body.binds.count(("<MouseWheel>", app._on_home_mousewheel)) == 1
+
+    def test_no_bind_all(self):
+        source = self._source()
+        assert 'bind_all("<MouseWheel>"' not in source
+        assert "bind_all('<MouseWheel>'" not in source
+
+    def test_home_only_wheel_binding_scope(self):
+        source = self._source()
+        home_section = source.split("def _build_home")[1].split("def _build_material")[0]
+        assert "_bind_home_mousewheel_once()" in home_section
+        assert "self.tree.bind(\"<MouseWheel>\"" not in source
+        assert "self.groups_tree.bind(\"<MouseWheel>\"" not in source
+        assert "_bind_home_mousewheel_descendants(body)" in source or "_bind_home_mousewheel_descendants(self.home_body)" in source
+
+    def test_geometry_preserved(self):
+        source = self._source()
+        assert 'self.root.geometry("780x620")' in source
+        assert "self.root.minsize(700, 540)" in source
+        assert "minsize(700, 541)" not in source
+        assert 'geometry("780x621")' not in source
+
+    def test_analysis_callbacks_preserved(self):
+        source = self._source()
+        home_section = source.split("def _build_home")[1].split("def _build_material")[0]
+        assert "command=self._start_analysis_action" in home_section
+        assert 'command=self._cancel_analysis_click' in source
+        assert 'text="Cancelar análisis"' in source
+
+    def test_zero_delta_and_empty_bbox_safe(self):
+        from scripts.local_media_agent import cid_gui as gui
+
+        app = object.__new__(gui.ProducerApp)
+        canvas = _FakeCanvas()
+        canvas._bbox = None
+        app.home_canvas = canvas
+        app._on_home_inner_configure(_FakeScrollEvent())
+        assert canvas.scrollregion is None
+        ordinary = _FakeBindWidget()
+        assert app._on_home_mousewheel(_FakeScrollEvent(delta=0, widget=ordinary)) is None
+        assert canvas.yview_calls == []
+
+    def test_show_does_not_reset_yview(self):
+        source = self._source()
+        show_section = source.split("def _show(self, name: str)")[1].split("def ")[0]
+        assert "yview_moveto" not in show_section
+        assert "yview_scroll" not in show_section
+        configure = source.split("def _on_home_canvas_configure")[1].split("def ")[0]
+        assert "yview" not in configure

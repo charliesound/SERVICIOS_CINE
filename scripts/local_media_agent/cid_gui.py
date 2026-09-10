@@ -579,10 +579,120 @@ class ProducerApp:
     def _show(self, name: str) -> None:
         self.frames[name].tkraise()
 
+    @staticmethod
+    def _is_treeview_widget(widget: Any) -> bool:
+        if widget is None:
+            return False
+        treeview_type = getattr(ttk, "Treeview", None)
+        if treeview_type is not None:
+            try:
+                if isinstance(widget, treeview_type):
+                    return True
+            except TypeError:
+                pass
+        winfo_class = getattr(widget, "winfo_class", None)
+        if callable(winfo_class):
+            try:
+                return str(winfo_class()) == "Treeview"
+            except Exception:
+                return False
+        return False
+
+    def _event_targets_treeview(self, event: Any) -> bool:
+        widget = getattr(event, "widget", None)
+        while widget is not None:
+            if self._is_treeview_widget(widget):
+                return True
+            widget = getattr(widget, "master", None)
+        return False
+
+    def _on_home_inner_configure(self, _event: Any = None) -> None:
+        canvas = getattr(self, "home_canvas", None)
+        if canvas is None:
+            return
+        bbox = canvas.bbox("all")
+        if bbox is None:
+            return
+        canvas.configure(scrollregion=bbox)
+
+    def _on_home_canvas_configure(self, event: Any) -> None:
+        canvas = getattr(self, "home_canvas", None)
+        window_id = getattr(self, "_home_canvas_window", None)
+        if canvas is None or window_id is None:
+            return
+        try:
+            width = int(getattr(event, "width", 0) or 0)
+        except (TypeError, ValueError):
+            width = 0
+        canvas.itemconfigure(window_id, width=max(1, width))
+
+    def _on_home_mousewheel(self, event: Any) -> str | None:
+        if self._event_targets_treeview(event):
+            return None
+        try:
+            delta = int(getattr(event, "delta", 0) or 0)
+        except (TypeError, ValueError):
+            return None
+        if delta == 0:
+            return None
+        canvas = getattr(self, "home_canvas", None)
+        if canvas is None:
+            return None
+        direction = -1 if delta > 0 else 1
+        notches = max(1, abs(delta) // 120)
+        canvas.yview_scroll(direction * notches, "units")
+        return "break"
+
+    def _bind_home_mousewheel_descendants(self, widget: Any) -> None:
+        if self._is_treeview_widget(widget):
+            return
+        widget.bind("<MouseWheel>", self._on_home_mousewheel)
+        winfo_children = getattr(widget, "winfo_children", None)
+        if not callable(winfo_children):
+            return
+        for child in winfo_children():
+            self._bind_home_mousewheel_descendants(child)
+
+    def _bind_home_mousewheel_once(self) -> None:
+        if getattr(self, "_home_scroll_bound", False):
+            return
+        self._home_scroll_bound = True
+        canvas = getattr(self, "home_canvas", None)
+        body = getattr(self, "home_body", None)
+        if canvas is not None:
+            canvas.bind("<MouseWheel>", self._on_home_mousewheel)
+        if body is not None:
+            self._bind_home_mousewheel_descendants(body)
+
     def _build_home(self) -> None:
         frame = self._new_frame("home")
-        body = ttk.Frame(frame)
-        body.grid(row=0, column=0, sticky="n")
+        frame.grid_rowconfigure(0, weight=1)
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_columnconfigure(1, weight=0)
+
+        style = ttk.Style(self.root)
+        background = style.lookup("TFrame", "background") or self.root.cget("background")
+        self.home_canvas = tk.Canvas(
+            frame,
+            highlightthickness=0,
+            borderwidth=0,
+            background=background,
+        )
+        self.home_scrollbar = ttk.Scrollbar(
+            frame, orient="vertical", command=self.home_canvas.yview
+        )
+        self.home_canvas.configure(yscrollcommand=self.home_scrollbar.set)
+        self.home_canvas.grid(row=0, column=0, sticky="nsew")
+        self.home_scrollbar.grid(row=0, column=1, sticky="ns")
+
+        self.home_body = ttk.Frame(self.home_canvas)
+        self._home_canvas_window = self.home_canvas.create_window(
+            (0, 0), window=self.home_body, anchor="nw"
+        )
+        self.home_body.bind("<Configure>", self._on_home_inner_configure)
+        self.home_canvas.bind("<Configure>", self._on_home_canvas_configure)
+
+        body = self.home_body
 
         ttk.Label(body, text=APP_TITLE, style="Header.TLabel").pack(pady=(30, 2))
         ttk.Label(body, text=f"Versión {APP_VERSION}", style="Sub.TLabel").pack(pady=(0, 22))
@@ -659,6 +769,8 @@ class ProducerApp:
         ttk.Button(profile_actions, text="Usar configuración compatible de CID", command=self._choose_video_configuration).pack(side="left")
         ttk.Button(profile_actions, text="Confirmar configuración del proyecto", command=self._confirm_configuration).pack(side="left", padx=(8, 0))
         ttk.Button(profile_actions, text="Posponer", command=self._postpone_video_configuration).pack(side="left", padx=(8, 0))
+        self._home_scroll_bound = False
+        self._bind_home_mousewheel_once()
         self._refresh_project_ui()
 
     def _build_material(self) -> None:

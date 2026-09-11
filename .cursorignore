@@ -1,0 +1,31 @@
+# Cursor index exclusions for SERVICIOS_CINE / CID
+# Keep AGENTS.md, .cursor/, src/, scripts/, tests/, docs/, directivas/,
+# and src_frontend/src/ visible for development.
+
+# Python runtime / caches
+.venv/
+.pytest_cache/
+**/__pycache__/
+**/*.pyc
+
+# Node / frontend build artifacts
+node_modules/
+dist/
+build/
+
+# Logs and local scratch
+logs/
+.tmp/
+tmp/
+exports/
+backups/
+
+# Large generated ComfyUI validation dumps
+docs/validation/comfyui_node_inventory_*/
+
+# Bulk landing media (not all images globally)
+src_frontend/public/landing-media/
+
+# Database and package artifacts
+*.db
+*.zip

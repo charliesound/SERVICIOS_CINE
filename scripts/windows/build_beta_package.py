@@ -25,7 +25,7 @@ import sysconfig
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "0.3.0-beta4"
+VERSION = "0.3.0-beta5"
 PACKAGE_NAME = f"CID-Local-Media-Agent-{VERSION}"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

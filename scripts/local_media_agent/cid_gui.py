@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "0.3.0-beta3"
+APP_VERSION = "0.3.0-beta4"
 APP_TITLE = "CID Local Media Agent"
 LOCAL_HINT = "CID trabaja en modo local\nLos originales no se modifican"
 RESULTS_DAVINCI_HINT = "Se genera un SRT listo para DaVinci."

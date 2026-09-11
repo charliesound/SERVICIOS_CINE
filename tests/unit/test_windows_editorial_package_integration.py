@@ -43,7 +43,7 @@ def assembled_package(tmp_path: Path):
     Uses fake/minimal runtime placeholders (no full 500MB build). Runs only the
     editorial-relevant integration helpers with a minimal layout.
     """
-    pkg = tmp_path / "CID-Local-Media-Agent-0.3.0-beta3"
+    pkg = tmp_path / "CID-Local-Media-Agent-0.3.0-beta4"
     runtime = pkg / "runtime" / "python"
     runtime.mkdir(parents=True)
     runtime.joinpath("python.exe").write_bytes(b"x")
@@ -242,17 +242,17 @@ def test_recursive_copy_includes_project_video_profile_modules(tmp_path) -> None
         assert (module_root / module).is_file()
 
 
-# ---------------- beta3 version / installed manifest -----------------
+# ---------------- beta4 version / installed manifest -----------------
 
-def test_package_version_is_beta3() -> None:
-    assert B.VERSION == "0.3.0-beta3"
-    assert B.PACKAGE_NAME == "CID-Local-Media-Agent-0.3.0-beta3"
+def test_package_version_is_beta4() -> None:
+    assert B.VERSION == "0.3.0-beta4"
+    assert B.PACKAGE_NAME == "CID-Local-Media-Agent-0.3.0-beta4"
 
 
-def test_gui_app_version_is_beta3() -> None:
+def test_gui_app_version_is_beta4() -> None:
     from scripts.local_media_agent.cid_gui import APP_VERSION
 
-    assert APP_VERSION == "0.3.0-beta3"
+    assert APP_VERSION == "0.3.0-beta4"
 
 
 def test_install_copies_package_manifest_into_install_target(assembled_package) -> None:

@@ -136,6 +136,39 @@ def _aggregate_project_scan_counts(
     return totals
 
 
+def _aggregate_project_scan_persistence(
+    scans: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+) -> dict[str, int]:
+    """Build schema-v1 scan block from analysis-time scanner manifests.
+
+    Pure: no filesystem. ``total_files`` / ``media_files`` derive from the same
+    extension classification used by Material Home labels. Scanner ``errors`` /
+    ``warnings`` list lengths are summed across online sources.
+    """
+    counts = _aggregate_project_scan_counts(scans)
+    media_files = counts["video"] + counts["audio"] + counts["images"]
+    other = counts["other"]
+    errors = 0
+    warnings = 0
+    for scan in scans:
+        scan_errors = (scan or {}).get("errors") or []
+        scan_warnings = (scan or {}).get("warnings") or []
+        if isinstance(scan_errors, list):
+            errors += len(scan_errors)
+        if isinstance(scan_warnings, list):
+            warnings += len(scan_warnings)
+    return {
+        "total_files": media_files + other,
+        "media_files": media_files,
+        "video": counts["video"],
+        "audio": counts["audio"],
+        "images": counts["images"],
+        "other": other,
+        "errors": errors,
+        "warnings": warnings,
+    }
+
+
 def _unique_failed_media_path_count(
     errors: list[Any] | None,
     *,
@@ -219,6 +252,15 @@ from scripts.local_media_agent.project_sources import (
     list_project_sources,
     reconnect_source,
     update_source_state,
+)
+from scripts.local_media_agent.project_analysis_display_summary import (
+    ProjectAnalysisDisplaySummaryError,
+    build_project_analysis_display_summary,
+    incident_count_from_summary,
+    is_displayable_summary,
+    load_project_analysis_display_summary,
+    material_counts_from_summary,
+    save_project_analysis_display_summary,
 )
 from scripts.local_media_agent.project_video_profile import (
     ASPECT_1_66,
@@ -562,6 +604,8 @@ class ProducerApp:
         self._build_done()
 
         self._show("home")
+        if self.active_project:
+            self._restore_persisted_analysis_result(self.active_project["project_id"])
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self.root.after(120, self._poll_queue)
@@ -1078,6 +1122,95 @@ class ProducerApp:
         self.active_media_root = None
         self._refresh_project_ui()
 
+    def _clear_material_result_display(self) -> None:
+        """Reset Material count widgets to the safe zero/default state."""
+        self._apply_material_scan_counts(
+            {"video": 0, "audio": 0, "images": 0, "other": 0}
+        )
+        self._apply_material_incident_count(0)
+
+    def _restore_persisted_analysis_result(
+        self, project_id: str | None = None
+    ) -> None:
+        """Hydrate Material tallies from the latest valid display summary.
+
+        No scanner, media, grouping, or analysis. Invalid/stale/missing
+        artifacts fail closed to zero/default Material state.
+        """
+        if getattr(self, "analysis_active", False):
+            return
+        if getattr(self, "count_labels", None) is None:
+            return
+        self._clear_material_result_display()
+        if not project_id:
+            return
+        try:
+            summary = load_project_analysis_display_summary(project_id)
+        except (ProjectAnalysisDisplaySummaryError, LocalProjectError) as exc:
+            code = getattr(exc, "code", str(exc))
+            _write_log("display_summary_load_error", code)
+            return
+        if summary is None:
+            return
+        try:
+            sources = list_project_sources(project_id)
+            online_map = build_online_source_root_map(project_id)
+        except SourceRegistryError as exc:
+            _write_log("display_summary_scope_error", exc.code)
+            return
+        if not is_displayable_summary(
+            summary,
+            project_id=project_id,
+            project_sources=sources,
+            online_source_ids=set(online_map),
+        ):
+            return
+        self._apply_material_scan_counts(material_counts_from_summary(summary))
+        self._apply_material_incident_count(incident_count_from_summary(summary))
+
+    def _persist_project_analysis_display_summary(
+        self,
+        project_id: str,
+        *,
+        online_root_map: dict[str, Any],
+        ordered_scans: list[dict[str, Any]],
+        metadata_errors: list[Any] | None,
+    ) -> None:
+        """Persist Material display summary after successful scan+metadata.
+
+        Does not wait for grouping. Failures are logged and never raise into
+        the analysis worker (prior valid summary remains authoritative).
+        """
+        try:
+            analyzed_sources = [
+                {
+                    "source_id": source_id,
+                    "current_location": str(online_root_map[source_id]),
+                }
+                for source_id in sorted(online_root_map)
+            ]
+            scan_block = _aggregate_project_scan_persistence(ordered_scans)
+            incident_count = _unique_failed_media_path_count(
+                metadata_errors,
+                project_mode=True,
+            )
+            summary = build_project_analysis_display_summary(
+                project_id,
+                analyzed_sources=analyzed_sources,
+                scan=scan_block,
+                incident_count=incident_count,
+            )
+            save_project_analysis_display_summary(summary)
+        except (
+            ProjectAnalysisDisplaySummaryError,
+            LocalProjectError,
+            OSError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            code = getattr(exc, "code", type(exc).__name__)
+            _write_log("display_summary_save_error", str(code))
+
     def _sync_analyze_button_idle_state(self) -> None:
         """Sync Home analyze-button idle label/command; never during analysis."""
         if getattr(self, "analysis_active", False):
@@ -1097,6 +1230,10 @@ class ProducerApp:
             text=(f"Proyecto activo: {project['project_name']}" if project else "Proyecto activo: ninguno")
         )
         self._refresh_project_sources_ui()
+        if getattr(self, "count_labels", None) is not None:
+            self._restore_persisted_analysis_result(
+                project["project_id"] if project else None
+            )
         if not project:
             return
         try:
@@ -1779,6 +1916,13 @@ class ProducerApp:
         if self.cancel_event.is_set():
             self._finish_cancelled(catalog, project_id)
             return
+
+        self._persist_project_analysis_display_summary(
+            project_id,
+            online_root_map=online_root_map,
+            ordered_scans=ordered_scans,
+            metadata_errors=combined_meta.get("errors"),
+        )
 
         fingerprints = {
             media_item_key(source_id, file_entry["relative_path"]): {

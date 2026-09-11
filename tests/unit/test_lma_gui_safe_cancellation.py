@@ -1926,10 +1926,83 @@ class TestMS3AProjectSourceRuntimeWiring:
     def test_fingerprint_construction_requires_no_extra_stat_or_read(self, monkeypatch):
         from scripts.local_media_agent import cid_gui as gui
 
-        stat_calls = []
-        monkeypatch.setattr(gui.Path, "stat", lambda *args: stat_calls.append(args) or None)
+        # Display-summary persistence is out of scope for fingerprint I/O assertions.
+        monkeypatch.setattr(
+            gui.ProducerApp,
+            "_persist_project_analysis_display_summary",
+            lambda *args, **kwargs: None,
+        )
+        real_stat = gui.Path.stat
+        stat_calls: list[object] = []
+
+        def tracking_stat(self, *args, **kwargs):
+            stat_calls.append(self)
+            return real_stat(self, *args, **kwargs)
+
+        monkeypatch.setattr(gui.Path, "stat", tracking_stat)
         self._run_project(monkeypatch)
         assert stat_calls == []
+
+    def test_cancelled_before_material_completion_preserves_display_summary(
+        self, monkeypatch, tmp_path
+    ):
+        from scripts.local_media_agent import cid_gui as gui
+        from scripts.local_media_agent.local_project import create_project
+        from scripts.local_media_agent.project_analysis_display_summary import (
+            build_project_analysis_display_summary,
+            load_project_analysis_display_summary,
+            save_project_analysis_display_summary,
+        )
+        from scripts.local_media_agent.project_sources import add_project_source
+
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+        project = create_project("CancelPreserve", local_appdata=tmp_path)
+        source = add_project_source(
+            project["project_id"], "E:/online", "E", local_appdata=tmp_path
+        )
+        prior = build_project_analysis_display_summary(
+            project["project_id"],
+            analyzed_sources=[
+                {
+                    "source_id": source["source_id"],
+                    "current_location": source["current_location"],
+                }
+            ],
+            scan={
+                "total_files": 3,
+                "media_files": 3,
+                "video": 3,
+                "audio": 0,
+                "images": 0,
+                "other": 0,
+                "errors": 0,
+                "warnings": 0,
+            },
+            incident_count=0,
+            analysis_run_id="prior-run",
+        )
+        save_project_analysis_display_summary(prior, local_appdata=tmp_path)
+
+        app = self._app(gui)
+        app.analysis_project_id = project["project_id"]
+        app.cancel_event.set()
+        monkeypatch.setattr(
+            gui,
+            "build_online_source_root_map",
+            lambda project_id: {source["source_id"]: source["current_location"]},
+        )
+        monkeypatch.setattr(
+            gui.ProducerApp,
+            "_load_or_create_catalog",
+            lambda self, *args: {"media_items": {}},
+        )
+        app._project_source_analysis(project["project_id"])
+        loaded = load_project_analysis_display_summary(
+            project["project_id"], local_appdata=tmp_path
+        )
+        assert loaded is not None
+        assert loaded["analysis_run_id"] == "prior-run"
+        assert loaded["scan"]["video"] == 3
 
     def test_runtime_loaded_exactly_once(self, monkeypatch):
         _, calls, _, _ = self._run_project(monkeypatch)

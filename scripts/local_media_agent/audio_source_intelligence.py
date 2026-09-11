@@ -40,6 +40,12 @@ FINE_REFINE_SEARCH_SECONDS = 1.0
 FINE_REFINE_WINDOW_SECONDS = 10.0
 SYNC_OFFSET_TOLERANCE_SECONDS = 0.100
 MIN_OVERLAP_ENVELOPE_SAMPLES = 50
+# Chunked dense-envelope decode: keeps peak PCM memory bounded while building a
+# continuous low-rate envelope suitable for arbitrary-offset sliding search.
+DENSE_ENVELOPE_CHUNK_SECONDS = 30.0
+# Soft floor for attempting fine refinement around a coarse sliding candidate.
+# Final acceptance still requires RELATED_CONFIDENCE_THRESHOLD.
+COARSE_REFINE_CANDIDATE_FLOOR = 0.25
 
 RELATIONSHIP_IDENTICAL = "IDENTICAL_OR_NEAR_DUPLICATE"
 RELATIONSHIP_SAME_EVENT = "SAME_EVENT_DIFFERENT_SOURCE"
@@ -455,6 +461,385 @@ class SourceSignature:
     analysis_seconds: float = 0.0
     source_id: str | None = None
     media_ref: str | None = None
+    # Optional continuous low-rate envelope for arbitrary-offset sliding sync.
+    # Additive/backwards-compatible: legacy cache records omit this field.
+    dense_envelope: Any | None = None
+    # Ephemeral absolute media path for on-demand dense enrich / fine refine.
+    # Never persisted to the signature cache.
+    media_path: str | None = None
+
+
+def extract_dense_envelope(
+    media_path: str | Path,
+    duration_seconds: float | None,
+    *,
+    blocks_per_second: int = ENVELOPE_BLOCKS_PER_SECOND,
+    sample_rate: int = SIGNATURE_SAMPLE_RATE,
+    ffmpeg_path: str | None = None,
+    decoder: Callable[..., tuple[float, Any] | None] | None = None,
+    chunk_seconds: float = DENSE_ENVELOPE_CHUNK_SECONDS,
+) -> Any:
+    """Build a continuous low-rate envelope spanning the usable media duration.
+
+    Decodes audio in bounded chunks (never keeps the full PCM stream). Returns
+    a float32 envelope array at ``blocks_per_second``, or an empty array when
+    decoding fails / duration is unavailable.
+    """
+    import numpy as np
+
+    if duration_seconds is None or duration_seconds <= 0:
+        return np.zeros(0, dtype=np.float32)
+    media_path = Path(media_path)
+    decode = decoder or (
+        lambda start, dur: decode_window(
+            media_path,
+            start_seconds=start,
+            duration_seconds=dur,
+            sample_rate=sample_rate,
+            ffmpeg_path=ffmpeg_path,
+        )
+    )
+    chunk = max(1.0, float(chunk_seconds))
+    parts: list[Any] = []
+    start = 0.0
+    while start < duration_seconds - 1e-9:
+        dur = min(chunk, duration_seconds - start)
+        decoded = decode(start, dur)
+        if decoded is None:
+            break
+        rate, samples = decoded
+        env = envelope(samples, rate, blocks_per_second)
+        if env.size:
+            parts.append(env)
+        start += dur
+    if not parts:
+        return np.zeros(0, dtype=np.float32)
+    return np.concatenate(parts).astype(np.float32, copy=False)
+
+
+def ensure_dense_envelope(
+    sig: SourceSignature,
+    *,
+    ffmpeg_path: str | None = None,
+    decoder: Callable[..., tuple[float, Any] | None] | None = None,
+    blocks_per_second: int = ENVELOPE_BLOCKS_PER_SECOND,
+    sample_rate: int = SIGNATURE_SAMPLE_RATE,
+) -> bool:
+    """Ensure ``sig.dense_envelope`` is populated when a media path is available.
+
+    Returns True when a usable dense envelope is present afterwards. Does not
+    mutate source media. No-op when the envelope is already present. When a
+    new envelope is generated, sets ephemeral ``_dense_dirty`` so callers can
+    persist only newly enriched signatures.
+    """
+    import numpy as np
+
+    existing = sig.dense_envelope
+    if existing is not None and np.asarray(existing).size >= 2:
+        return True
+    path = sig.media_path
+    if not path:
+        return False
+    env = extract_dense_envelope(
+        path,
+        sig.duration_seconds,
+        blocks_per_second=blocks_per_second,
+        sample_rate=sample_rate,
+        ffmpeg_path=ffmpeg_path,
+        decoder=decoder,
+    )
+    if np.asarray(env).size < 2:
+        return False
+    sig.dense_envelope = env
+    sig._dense_dirty = True  # type: ignore[attr-defined]
+    return True
+
+
+def _sliding_offset_b_relative_to_a(
+    env_a: Any,
+    env_b: Any,
+    blocks_per_second: int,
+) -> tuple[float, float]:
+    """Search the shorter envelope inside the longer one; return B-relative-to-A.
+
+    Offset convention (preserved): ``offset_seconds`` is the start of B on A's
+    timeline (positive means B starts later than A / B's content begins at a
+    positive time on A).
+    """
+    import numpy as np
+
+    env_a = np.asarray(env_a, dtype=np.float32)
+    env_b = np.asarray(env_b, dtype=np.float32)
+    if env_a.size < 2 or env_b.size < 2:
+        return 0.0, 0.0
+    if env_a.size >= env_b.size:
+        lag, confidence = find_sync_lag(env_a, env_b, blocks_per_second)
+        return lag / float(blocks_per_second), float(confidence)
+    lag_a_on_b, confidence = find_sync_lag(env_b, env_a, blocks_per_second)
+    return -lag_a_on_b / float(blocks_per_second), float(confidence)
+
+
+def _homologous_window_sync(
+    sig_a: SourceSignature,
+    sig_b: SourceSignature,
+) -> dict[str, Any]:
+    """Legacy start/middle/end homologous-window correlation fallback."""
+    best: dict[str, Any] = {"confidence": -1.0}
+    for key in ("start", "middle", "end"):
+        env_a = sig_a.windows.get(key)
+        env_b = sig_b.windows.get(key)
+        if env_a is None or env_b is None or env_a.size < 2 or env_b.size < 2:
+            continue
+        lag, confidence = find_sync_lag(env_a, env_b, ENVELOPE_BLOCKS_PER_SECOND)
+        if confidence > best["confidence"]:
+            best = {
+                "lag": lag,
+                "confidence": confidence,
+                "window": key,
+                "offset_seconds": lag / ENVELOPE_BLOCKS_PER_SECOND,
+            }
+    return best
+
+
+def _fine_refine_offset(
+    path_a: str | Path,
+    path_b: str | Path,
+    coarse_offset_seconds: float,
+    *,
+    ffmpeg_path: str | None = None,
+) -> tuple[float, float]:
+    """Local fine refine around a coarse B-relative-to-A offset using PCM windows."""
+    if coarse_offset_seconds >= 0.0:
+        start_a = float(coarse_offset_seconds)
+        start_b = 0.0
+    else:
+        start_a = 0.0
+        start_b = float(-coarse_offset_seconds)
+    decoded_a = decode_window(
+        path_a,
+        start_seconds=start_a,
+        duration_seconds=FINE_REFINE_WINDOW_SECONDS,
+        sample_rate=SIGNATURE_SAMPLE_RATE,
+        ffmpeg_path=ffmpeg_path,
+    )
+    decoded_b = decode_window(
+        path_b,
+        start_seconds=start_b,
+        duration_seconds=FINE_REFINE_WINDOW_SECONDS,
+        sample_rate=SIGNATURE_SAMPLE_RATE,
+        ffmpeg_path=ffmpeg_path,
+    )
+    if decoded_a is None or decoded_b is None:
+        return coarse_offset_seconds, 0.0
+    _rate_a, samples_a = decoded_a
+    _rate_b, samples_b = decoded_b
+    return refine_offset_with_samples(
+        samples_a,
+        samples_b,
+        SIGNATURE_SAMPLE_RATE,
+        coarse_offset_seconds,
+        search_seconds=FINE_REFINE_SEARCH_SECONDS,
+    )
+
+
+def extract_source_signature(
+    media_path: str | Path,
+    metadata: dict[str, Any],
+    *,
+    ffmpeg_path: str | None = None,
+    window_seconds: float = WINDOW_SECONDS_DEFAULT,
+    blocks_per_second: int = ENVELOPE_BLOCKS_PER_SECOND,
+    sample_rate: int = SIGNATURE_SAMPLE_RATE,
+    include_sha256: bool = True,
+    decoder: Callable[..., tuple[float, Any] | None] | None = None,
+    include_dense_envelope: bool = False,
+) -> SourceSignature:
+    """Build a compact signature for one media source.
+
+    ``decoder`` (optional) overrides window decoding for hermetic tests.
+    Dense envelopes are optional at extraction time; production sync enriches
+    them on demand via :func:`ensure_dense_envelope` when needed for sliding
+    search (and then persists them through the signature cache).
+    """
+    import numpy as np
+
+    media_path = Path(media_path)
+    rel = metadata.get("relative_path", media_path.name)
+    source_id = _resolve_source_identity(metadata)
+    media_ref = media_item_key(source_id, rel) if source_id is not None else None
+    duration = metadata.get("duration_seconds")
+    audio_info = metadata.get("audio") or {}
+    video_info = metadata.get("video")
+
+    decode = decoder or (lambda start, dur: decode_window(
+        media_path,
+        start_seconds=start,
+        duration_seconds=dur,
+        sample_rate=sample_rate,
+        ffmpeg_path=ffmpeg_path,
+    ))
+
+    started = time.monotonic()
+    windows: dict[str, Any] = {}
+    quality: dict[str, Any] = {}
+    for key in _window_offsets(duration, window_seconds):
+        anchor = _window_anchor(key, duration, window_seconds)
+        decoded = decode(anchor, window_seconds)
+        if decoded is None:
+            continue
+        rate, samples = decoded
+        windows[key] = envelope(samples, rate, blocks_per_second)
+        quality[key] = analyze_quality(samples, rate)
+    dense_envelope = None
+    if include_dense_envelope:
+        dense_envelope = extract_dense_envelope(
+            media_path,
+            duration,
+            blocks_per_second=blocks_per_second,
+            sample_rate=sample_rate,
+            ffmpeg_path=ffmpeg_path,
+            decoder=decoder,
+        )
+        if np.asarray(dense_envelope).size < 2:
+            dense_envelope = None
+    analysis_seconds = time.monotonic() - started
+
+    sig = SourceSignature(
+        relative_path=rel,
+        category=metadata.get("category", "audio"),
+        file_size_bytes=metadata.get("file_size_bytes"),
+        duration_seconds=duration,
+        sample_rate=(audio_info or {}).get("sample_rate"),
+        channel_count=(audio_info or {}).get("channel_count"),
+        codec=(audio_info or {}).get("codec"),
+        timecode=metadata.get("timecode"),
+        creation_time=metadata.get("creation_time"),
+        has_video=bool(video_info),
+        windows=windows,
+        quality=quality,
+        role=assign_source_role(rel, metadata.get("category", ""), bool(video_info), quality),
+        analysis_seconds=analysis_seconds,
+        source_id=source_id,
+        media_ref=media_ref,
+        dense_envelope=dense_envelope,
+        media_path=str(media_path),
+    )
+    if include_sha256 and sig.file_size_bytes and sig.file_size_bytes <= (1 << 31):
+        sig.sha256 = _sha256_of_file(media_path)
+    return sig
+
+
+def _best_window(sig: SourceSignature, preferred: str = "start") -> tuple[str, Any] | None:
+    for key in (preferred, "middle", "end"):
+        if key in sig.windows:
+            return key, sig.windows[key]
+    return None
+
+
+def sync_sources(
+    sig_a: SourceSignature,
+    sig_b: SourceSignature,
+    *,
+    tolerance_seconds: float = SYNC_OFFSET_TOLERANCE_SECONDS,
+    ffmpeg_path: str | None = None,
+) -> dict[str, Any]:
+    """Estimate synchronization between two related sources.
+
+    Returns a dict with ``offset_seconds`` (B relative to A), ``confidence``,
+    ``method``, ``status``. Timecode evidence is preferred when genuinely
+    available and internally consistent; otherwise audio correlation is used.
+
+    Waveform path prefers a coarse-to-fine sliding search of the shorter dense
+    envelope inside the longer one (arbitrary temporal offset). Homologous
+    start/middle/end windows remain a fallback when dense envelopes cannot be
+    obtained. ``refine_offset_with_samples`` is applied locally around the
+    coarse candidate when media paths are available.
+    """
+    import numpy as np
+
+    result: dict[str, Any] = {
+        "offset_seconds": None,
+        "confidence": None,
+        "method": SYNC_METHOD_CORRELATION,
+        "status": SYNC_STATUS_UNRESOLVED,
+    }
+
+    if sig_a.timecode and sig_b.timecode:
+        tc_a = _timecode_to_seconds(sig_a.timecode)
+        tc_b = _timecode_to_seconds(sig_b.timecode)
+        if tc_a is not None and tc_b is not None:
+            offset = tc_b - tc_a
+            result["offset_seconds"] = round(offset, 3)
+            result["method"] = SYNC_METHOD_TIMECODE
+            result["confidence"] = 0.95
+            result["status"] = SYNC_STATUS_RESOLVED
+            return result
+
+    ensure_dense_envelope(sig_a, ffmpeg_path=ffmpeg_path)
+    ensure_dense_envelope(sig_b, ffmpeg_path=ffmpeg_path)
+
+    env_a = sig_a.dense_envelope
+    env_b = sig_b.dense_envelope
+    have_dense = (
+        env_a is not None
+        and env_b is not None
+        and np.asarray(env_a).size >= 2
+        and np.asarray(env_b).size >= 2
+    )
+
+    offset_seconds: float | None = None
+    confidence = -1.0
+    if have_dense:
+        offset_seconds, confidence = _sliding_offset_b_relative_to_a(
+            env_a, env_b, ENVELOPE_BLOCKS_PER_SECOND
+        )
+        path_a = sig_a.media_path
+        path_b = sig_b.media_path
+        if (
+            path_a
+            and path_b
+            and confidence >= COARSE_REFINE_CANDIDATE_FLOOR
+        ):
+            refined, fine_conf = _fine_refine_offset(
+                path_a,
+                path_b,
+                float(offset_seconds),
+                ffmpeg_path=ffmpeg_path,
+            )
+            if fine_conf >= RELATED_CONFIDENCE_THRESHOLD:
+                offset_seconds = refined
+                confidence = max(float(confidence), float(fine_conf))
+            elif confidence >= RELATED_CONFIDENCE_THRESHOLD:
+                # Keep coarse acceptance; adopt refined offset only when fine
+                # correlation remains competitive with the coarse score.
+                if fine_conf >= float(confidence) * 0.85:
+                    offset_seconds = refined
+    else:
+        if not sig_a.windows or not sig_b.windows:
+            return result
+        best = _homologous_window_sync(sig_a, sig_b)
+        if best["confidence"] < 0.0:
+            return result
+        offset_seconds = float(best["offset_seconds"])
+        confidence = float(best["confidence"])
+
+    if confidence < 0.0 or confidence < RELATED_CONFIDENCE_THRESHOLD:
+        return result
+
+    result["confidence"] = round(float(confidence), 3)
+    result["offset_seconds"] = round(float(offset_seconds), 3)
+    result["status"] = SYNC_STATUS_RESOLVED
+    return result
+
+
+def _timecode_to_seconds(timecode: str) -> float | None:
+    parts = str(timecode).split(":")
+    if len(parts) != 3:
+        return None
+    try:
+        return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+    except ValueError:
+        return None
 
 
 def _resolve_source_identity(item: dict[str, Any]) -> str | None:
@@ -499,149 +884,6 @@ def _sha256_of_file(path: str | Path) -> str | None:
                 h.update(chunk)
         return h.hexdigest()
     except OSError:
-        return None
-
-
-def extract_source_signature(
-    media_path: str | Path,
-    metadata: dict[str, Any],
-    *,
-    ffmpeg_path: str | None = None,
-    window_seconds: float = WINDOW_SECONDS_DEFAULT,
-    blocks_per_second: int = ENVELOPE_BLOCKS_PER_SECOND,
-    sample_rate: int = SIGNATURE_SAMPLE_RATE,
-    include_sha256: bool = True,
-    decoder: Callable[..., tuple[float, Any] | None] | None = None,
-) -> SourceSignature:
-    """Build a compact signature for one media source.
-
-    ``decoder`` (optional) overrides window decoding for hermetic tests.
-    """
-    import numpy as np
-
-    media_path = Path(media_path)
-    rel = metadata.get("relative_path", media_path.name)
-    source_id = _resolve_source_identity(metadata)
-    media_ref = media_item_key(source_id, rel) if source_id is not None else None
-    duration = metadata.get("duration_seconds")
-    audio_info = metadata.get("audio") or {}
-    video_info = metadata.get("video")
-
-    decode = decoder or (lambda start, dur: decode_window(
-        media_path,
-        start_seconds=start,
-        duration_seconds=dur,
-        sample_rate=sample_rate,
-        ffmpeg_path=ffmpeg_path,
-    ))
-
-    started = time.monotonic()
-    windows: dict[str, Any] = {}
-    quality: dict[str, Any] = {}
-    for key in _window_offsets(duration, window_seconds):
-        anchor = _window_anchor(key, duration, window_seconds)
-        decoded = decode(anchor, window_seconds)
-        if decoded is None:
-            continue
-        rate, samples = decoded
-        windows[key] = envelope(samples, rate, blocks_per_second)
-        quality[key] = analyze_quality(samples, rate)
-    analysis_seconds = time.monotonic() - started
-
-    sig = SourceSignature(
-        relative_path=rel,
-        category=metadata.get("category", "audio"),
-        file_size_bytes=metadata.get("file_size_bytes"),
-        duration_seconds=duration,
-        sample_rate=(audio_info or {}).get("sample_rate"),
-        channel_count=(audio_info or {}).get("channel_count"),
-        codec=(audio_info or {}).get("codec"),
-        timecode=metadata.get("timecode"),
-        creation_time=metadata.get("creation_time"),
-        has_video=bool(video_info),
-        windows=windows,
-        quality=quality,
-        role=assign_source_role(rel, metadata.get("category", ""), bool(video_info), quality),
-        analysis_seconds=analysis_seconds,
-        source_id=source_id,
-        media_ref=media_ref,
-    )
-    if include_sha256 and sig.file_size_bytes and sig.file_size_bytes <= (1 << 31):
-        sig.sha256 = _sha256_of_file(media_path)
-    return sig
-
-
-def _best_window(sig: SourceSignature, preferred: str = "start") -> tuple[str, Any] | None:
-    for key in (preferred, "middle", "end"):
-        if key in sig.windows:
-            return key, sig.windows[key]
-    return None
-
-
-def sync_sources(
-    sig_a: SourceSignature,
-    sig_b: SourceSignature,
-    *,
-    tolerance_seconds: float = SYNC_OFFSET_TOLERANCE_SECONDS,
-) -> dict[str, Any]:
-    """Estimate synchronization between two related sources.
-
-    Returns a dict with ``offset_seconds`` (B relative to A), ``confidence``,
-    ``method``, ``status``. Timecode evidence is preferred when genuinely
-    available and internally consistent; otherwise audio correlation is used.
-    """
-    result: dict[str, Any] = {
-        "offset_seconds": None,
-        "confidence": None,
-        "method": SYNC_METHOD_CORRELATION,
-        "status": SYNC_STATUS_UNRESOLVED,
-    }
-
-    if sig_a.timecode and sig_b.timecode:
-        tc_a = _timecode_to_seconds(sig_a.timecode)
-        tc_b = _timecode_to_seconds(sig_b.timecode)
-        if tc_a is not None and tc_b is not None:
-            offset = tc_b - tc_a
-            result["offset_seconds"] = round(offset, 3)
-            result["method"] = SYNC_METHOD_TIMECODE
-            result["confidence"] = 0.95
-            result["status"] = SYNC_STATUS_RESOLVED
-            return result
-
-    if not sig_a.windows or not sig_b.windows:
-        return result
-
-    best: dict[str, Any] = {"confidence": -1.0}
-    for key in ("start", "middle", "end"):
-        env_a = sig_a.windows.get(key)
-        env_b = sig_b.windows.get(key)
-        if env_a is None or env_b is None or env_a.size < 2 or env_b.size < 2:
-            continue
-        lag, confidence = find_sync_lag(env_a, env_b, ENVELOPE_BLOCKS_PER_SECOND)
-        if confidence > best["confidence"]:
-            best = {
-                "lag": lag,
-                "confidence": confidence,
-                "window": key,
-                "offset_seconds": lag / ENVELOPE_BLOCKS_PER_SECOND,
-            }
-
-    if best["confidence"] < 0.0 or best["confidence"] < RELATED_CONFIDENCE_THRESHOLD:
-        return result
-
-    result["confidence"] = round(best["confidence"], 3)
-    result["offset_seconds"] = round(best["offset_seconds"], 3)
-    result["status"] = SYNC_STATUS_RESOLVED
-    return result
-
-
-def _timecode_to_seconds(timecode: str) -> float | None:
-    parts = str(timecode).split(":")
-    if len(parts) != 3:
-        return None
-    try:
-        return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
-    except ValueError:
         return None
 
 
@@ -857,6 +1099,49 @@ def _resolve_grouping_media_path(
     return Path(item.get("abs_path") or (Path(media_root) / item.get("relative_path", "")))
 
 
+def _signature_has_usable_dense(sig: SourceSignature) -> bool:
+    """True when ``sig.dense_envelope`` is present and long enough for sliding sync."""
+    import numpy as np
+
+    env = sig.dense_envelope
+    if env is None:
+        return False
+    return np.asarray(env).size >= 2
+
+
+def _attach_online_media_path_for_dense_enrichment(
+    sig: SourceSignature,
+    item: dict[str, Any],
+    *,
+    source_identity: str | None,
+    media_root: str | Path | None,
+    media_root_by_source_id: dict[str, Path] | None,
+    mode: str,
+) -> bool:
+    """Attach a runtime-only ``media_path`` when the source file is ONLINE.
+
+    ONLINE means the existing root authority can resolve a path that currently
+    exists as a file. Does not decode media and never persists ``media_path``.
+    Returns True when ``sig.media_path`` was set.
+    """
+    if mode != "LEGACY" and media_root_by_source_id is not None:
+        if source_identity is None or source_identity not in media_root_by_source_id:
+            return False
+    elif media_root is None and not item.get("abs_path"):
+        return False
+    path = _resolve_grouping_media_path(
+        item,
+        source_identity=source_identity,
+        media_root=media_root,
+        media_root_by_source_id=media_root_by_source_id,
+        mode=mode,
+    )
+    if not Path(path).is_file():
+        return False
+    sig.media_path = str(path)
+    return True
+
+
 class SignatureCacheRuntimeProtocol(Protocol):
     """Smallest structural runtime surface consumed by grouping.
 
@@ -954,6 +1239,23 @@ def group_related_media(
                 if cached is not None:
                     sig = _canonicalize_signature_identity(cached, item)
                     if sig is not None and sig.windows:
+                        # Warm dense hits stay path-free. Legacy windows-only
+                        # hits (beta4) attach a runtime media_path only when
+                        # the source file is ONLINE, enrich dense once, and
+                        # persist the derived envelope — without a full
+                        # signature rebuild. media_path is never serialized.
+                        if analyze_content and not _signature_has_usable_dense(sig):
+                            if _attach_online_media_path_for_dense_enrichment(
+                                sig,
+                                item,
+                                source_identity=source_identity,
+                                media_root=media_root,
+                                media_root_by_source_id=root_map,
+                                mode=mode,
+                            ):
+                                # Enrich in place; persist via finalize when
+                                # ``_dense_dirty`` is set (no full rebuild).
+                                ensure_dense_envelope(sig, ffmpeg_path=ffmpeg_path)
                         signatures.append(sig)
                     continue
             path = _resolve_grouping_media_path(
@@ -969,12 +1271,23 @@ def group_related_media(
             sig = _canonicalize_signature_identity(sig, item)
             if sig is None or not sig.windows:
                 continue
+            sig.media_path = str(path)
             if cache_eligible:
                 cache_runtime.upsert(media_ref, sig)
             signatures.append(sig)
         if not signatures:
             continue
-        cluster = _finalize_cluster(signatures, sid)
+        cluster = _finalize_cluster(signatures, sid, ffmpeg_path=ffmpeg_path)
+        if cache_eligible:
+            # Persist only newly enriched dense envelopes (not warm re-hits).
+            for sig in cluster.sources:
+                if (
+                    sig.media_ref
+                    and sig.dense_envelope is not None
+                    and getattr(sig, "_dense_dirty", False)
+                ):
+                    cache_runtime.upsert(sig.media_ref, sig)
+                    sig._dense_dirty = False  # type: ignore[attr-defined]
         clusters.append(cluster)
     return clusters
 
@@ -1026,6 +1339,8 @@ def _default_signature_builder(
 def _finalize_cluster(
     signatures: list[SourceSignature],
     session_id: str,
+    *,
+    ffmpeg_path: str | None = None,
 ) -> SourceCluster:
     if not signatures:
         raise GroupingError("EMPTY_CLUSTER")
@@ -1038,7 +1353,7 @@ def _finalize_cluster(
 
     for i, sig_b in enumerate(signatures):
         for sig_a in signatures[:i]:
-            sync = sync_sources(sig_a, sig_b)
+            sync = sync_sources(sig_a, sig_b, ffmpeg_path=ffmpeg_path)
             rel = classify_relationship(sig_a, sig_b, sync)
             relation = {
                 "a": sig_a.relative_path,
@@ -1286,6 +1601,8 @@ def format_cluster_summary(cluster: SourceCluster) -> dict[str, Any]:
 __all__ = [
     "SOURCE_SIGNATURE_ALGORITHM_VERSION",
     "SYNC_MANIFEST_SCHEMA_VERSION",
+    "DENSE_ENVELOPE_CHUNK_SECONDS",
+    "COARSE_REFINE_CANDIDATE_FLOOR",
     "WINDOW_SECONDS_DEFAULT",
     "SIGNATURE_SAMPLE_RATE",
     "ENVELOPE_BLOCKS_PER_SECOND",
@@ -1327,6 +1644,8 @@ __all__ = [
     "assign_source_role",
     "build_sync_manifest",
     "classify_relationship",
+    "ensure_dense_envelope",
+    "extract_dense_envelope",
     "extract_source_signature",
     "find_sync_lag",
     "format_cluster_summary",

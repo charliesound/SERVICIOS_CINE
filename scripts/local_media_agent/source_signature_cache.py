@@ -141,8 +141,12 @@ def serialize_source_signature(signature: SourceSignature) -> dict[str, Any]:
     ``windows`` values are numpy float32 arrays and are serialized as
     ``list[float]``; no numpy-specific object is persisted. ``quality`` and all
     scalar fields are already JSON-native and stored verbatim.
+
+    ``dense_envelope`` is optional/additive: omitted when absent so legacy
+    readers and older records remain compatible. ``media_path`` is ephemeral
+    runtime-only and is never persisted.
     """
-    return {
+    payload: dict[str, Any] = {
         "relative_path": signature.relative_path,
         "category": signature.category,
         "file_size_bytes": signature.file_size_bytes,
@@ -161,6 +165,14 @@ def serialize_source_signature(signature: SourceSignature) -> dict[str, Any]:
         "source_id": signature.source_id,
         "media_ref": signature.media_ref,
     }
+    dense = signature.dense_envelope
+    if dense is not None:
+        import numpy as np
+
+        arr = np.asarray(dense)
+        if arr.size:
+            payload["dense_envelope"] = _to_plain_list(arr)
+    return payload
 
 
 def deserialize_source_signature(payload: Mapping[str, Any]) -> SourceSignature:
@@ -168,7 +180,9 @@ def deserialize_source_signature(payload: Mapping[str, Any]) -> SourceSignature:
 
     ``windows`` lists are converted back to ``np.float32`` arrays. The float32
     window values round-trip exactly (Python floats represent every float32
-    value losslessly). No algorithm recomputation and no media access occur.
+    value losslessly). Optional ``dense_envelope`` is restored when present;
+    legacy records without it load with ``dense_envelope=None``. No algorithm
+    recomputation and no media access occur.
     """
     if not isinstance(payload, Mapping):
         raise SourceSignatureCacheError(CID_SOURCE_SIGNATURE_CACHE_SIGNATURE_INVALID)
@@ -177,6 +191,10 @@ def deserialize_source_signature(payload: Mapping[str, Any]) -> SourceSignature:
         raise SourceSignatureCacheError(CID_SOURCE_SIGNATURE_CACHE_SIGNATURE_INVALID)
     try:
         windows = {key: _deserialize_window(value) for key, value in raw_windows.items()}
+        dense_envelope = None
+        raw_dense = payload.get("dense_envelope")
+        if raw_dense is not None:
+            dense_envelope = _deserialize_window(raw_dense)
         return SourceSignature(
             relative_path=_non_empty_str(payload.get("relative_path")),
             category=payload.get("category", "audio"),
@@ -195,6 +213,8 @@ def deserialize_source_signature(payload: Mapping[str, Any]) -> SourceSignature:
             analysis_seconds=payload.get("analysis_seconds", 0.0),
             source_id=payload.get("source_id"),
             media_ref=payload.get("media_ref"),
+            dense_envelope=dense_envelope,
+            media_path=None,
         )
     except SourceSignatureCacheError:
         raise

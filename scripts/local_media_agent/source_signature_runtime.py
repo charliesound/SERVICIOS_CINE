@@ -20,6 +20,15 @@ its own. Persistence happens only through the explicit
 Fingerprints are keyed by the canonical ``media_ref`` and contain only
 ``{"size": int, "mtime_ns": int}``. No absolute path, current location, drive
 letter, source alias, display label or SHA participates in cache identity.
+
+Dense envelopes
+---------------
+``SourceSignature.dense_envelope`` is an optional additive field used by
+sliding-offset sync. Legacy cache records without it remain loadable. On a
+cache hit that lacks dense data, ``group_related_media`` may resolve an ONLINE
+runtime ``media_path`` (in memory only), enrich the dense envelope once, and
+:meth:`SignatureCacheRuntime.upsert` the updated signature so the next analysis
+reuses it without re-decoding. ``media_path`` is never persisted.
 """
 
 from __future__ import annotations
@@ -89,7 +98,8 @@ class SignatureCacheRuntime:
         """Return a cached signature on a valid hit, else ``None``.
 
         Increments ``cache_hits`` on a hit and ``cache_misses`` on an eligible
-        miss. No persistence, filesystem or media access occur.
+        miss. No persistence, filesystem or media access occur. Dense envelopes
+        round-trip when present on the stored payload.
         """
         fingerprint = self._fingerprint_for(media_ref)
         if fingerprint is None:
@@ -117,7 +127,8 @@ class SignatureCacheRuntime:
 
         Uses the already-supplied fingerprint. If no usable fingerprint exists
         for ``media_ref`` the entry is not stored and ``False`` is returned.
-        Persistence is NOT performed here.
+        Persistence is NOT performed here. Call after dense-envelope enrichment
+        so subsequent lookups reuse the continuous envelope.
         """
         fingerprint = self._fingerprint_for(media_ref)
         if fingerprint is None:

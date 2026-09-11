@@ -14,6 +14,7 @@ import pytest
 
 from scripts.local_media_agent.audio_source_intelligence import (
     ENVELOPE_BLOCKS_PER_SECOND,
+    RELATED_CONFIDENCE_THRESHOLD,
     ROLE_CAMERA_REFERENCE,
     ROLE_EXTERNAL_MIX,
     ROLE_ISOLATED_MIC,
@@ -42,12 +43,14 @@ from scripts.local_media_agent.audio_source_intelligence import (
     member_identity,
     source_quality_summary,
     sync_sources,
+    extract_dense_envelope,
     _label_quality,
     _timecode_to_seconds,
 )
 from scripts.local_media_agent.media_catalog import media_item_key
 from scripts.local_media_agent.source_signature_cache import (
     empty_signature_cache,
+    serialize_source_signature,
     upsert_cached_signature,
 )
 from scripts.local_media_agent.source_signature_runtime import (
@@ -1077,12 +1080,15 @@ class TestGroupRelatedMediaMultiRoot:
 class TestB2BSignatureCacheRuntimeGrouping:
     """B2B grouping integration with the runtime signature-content cache.
 
-    Cache-elitibility contract: active only when ``analyze_content`` is true,
+    Cache-eligibility contract: active only when ``analyze_content`` is true,
     ``signature_cache_runtime`` is supplied, the public ``signature_builder`` is
     ``None`` (a custom builder intentionally bypasses the canonical cache), and
     the source mode is NOT legacy. Cached entries live under the canonical
-    ``media_item_key(source_id, relative_path)``; a HIT bypasses per-item path
-    resolution, the canonical builder, the decoder and the SHA computation.
+    ``media_item_key(source_id, relative_path)``.
+
+    Warm dense hits bypass path resolution, the canonical builder, the decoder
+    and SHA computation. Legacy windows-only hits may resolve an ONLINE path
+    solely to enrich ``dense_envelope`` (no full signature rebuild).
     """
 
     def _legacy_meta(self, rel, cat="audio"):
@@ -1097,10 +1103,13 @@ class TestB2BSignatureCacheRuntimeGrouping:
         m["source_id"] = source_id
         return m
 
-    def _cached_sig(self, rel, source_id, ref="start"):
+    def _cached_sig(self, rel, source_id, ref="start", *, dense=True):
         sig = _sig(rel, source_id=source_id, media_ref=media_item_key(source_id, rel), ref=ref)
         sig.source_id = source_id
         sig.media_ref = media_item_key(source_id, rel)
+        # Warm dense envelope: HIT path must not resolve/decode when present.
+        if dense:
+            sig.dense_envelope = np.ones(20, dtype=np.float32)
         return sig
 
     def _make_runtime(self, fingerprints, cached_sigs=()):
@@ -1555,3 +1564,528 @@ def test_algorithm_version_addition_keeps_public_api_intact():
     for public_name in ("SourceSignature", "extract_source_signature", "group_related_media"):
         assert public_name in module.__all__
         assert hasattr(module, public_name)
+
+
+class TestSlidingEnvelopeCoarseToFine:
+    """Synthetic QA for arbitrary-offset sliding envelope sync (beta5)."""
+
+    def _pair_from_samples(self, sess: Path, samples_a, samples_b, name_a, name_b, dur_a, dur_b):
+        path_a = sess / name_a
+        path_b = sess / name_b
+        _write_wav(path_a, samples_a)
+        _write_wav(path_b, samples_b)
+        before_a = path_a.read_bytes()
+        before_b = path_b.read_bytes()
+        sig_a = extract_source_signature(
+            path_a,
+            _metadata(f"Sesion 1/{name_a}", dur_a, "audio"),
+            window_seconds=min(20.0, dur_a),
+        )
+        sig_b = extract_source_signature(
+            path_b,
+            _metadata(f"Sesion 1/{name_b}", dur_b, "audio"),
+            window_seconds=min(20.0, dur_b),
+        )
+        return sig_a, sig_b, path_a, path_b, before_a, before_b
+
+    def test_identical_aligned_audio(self):
+        with tempfile.TemporaryDirectory() as td:
+            sess = _session_dir(Path(td), "Sesion 1")
+            samples = _event(8.0, seed=101)
+            sig_a, sig_b, *_ = self._pair_from_samples(
+                sess, samples, samples.copy(), "cam.wav", "mix.wav", 8.0, 8.0
+            )
+            sync = sync_sources(sig_a, sig_b)
+            assert sync["status"] == SYNC_STATUS_RESOLVED
+            assert sync["confidence"] >= RELATED_CONFIDENCE_THRESHOLD
+            assert abs(sync["offset_seconds"]) <= SYNC_OFFSET_TOLERANCE_SECONDS
+
+    def test_camera_starts_later_inside_long_wav(self):
+        with tempfile.TemporaryDirectory() as td:
+            sess = _session_dir(Path(td), "Sesion 1")
+            insert = 12.0
+            camera = _event(6.0, seed=202)
+            head = np.zeros(int(insert * RATE), dtype=np.float32)
+            # Distinct non-matching filler after the camera segment.
+            tail = _event(10.0, seed=303) * 0.15
+            recorder = np.concatenate([head, camera, tail])
+            sig_wav, sig_cam, *_ = self._pair_from_samples(
+                sess,
+                recorder,
+                camera,
+                "recorder_mix.wav",
+                "camera_clip.wav",
+                float(recorder.size) / RATE,
+                6.0,
+            )
+            # offset_seconds is B relative to A → camera relative to recorder.
+            sync = sync_sources(sig_wav, sig_cam)
+            assert sync["status"] == SYNC_STATUS_RESOLVED
+            assert abs(sync["offset_seconds"] - insert) <= SYNC_OFFSET_TOLERANCE_SECONDS
+
+    def test_camera_ends_earlier_than_long_wav(self):
+        with tempfile.TemporaryDirectory() as td:
+            sess = _session_dir(Path(td), "Sesion 1")
+            insert = 5.0
+            camera = _event(7.0, seed=404)
+            head = _event(insert, seed=1) * 0.05
+            tail = _event(15.0, seed=505)
+            recorder = np.concatenate([head, camera, tail])
+            sig_wav, sig_cam, *_ = self._pair_from_samples(
+                sess,
+                recorder,
+                camera,
+                "long_rec.wav",
+                "short_cam.wav",
+                float(recorder.size) / RATE,
+                7.0,
+            )
+            sync = sync_sources(sig_wav, sig_cam)
+            assert sync["status"] == SYNC_STATUS_RESOLVED
+            assert abs(sync["offset_seconds"] - insert) <= SYNC_OFFSET_TOLERANCE_SECONDS
+
+    def test_silence_at_wav_head(self):
+        with tempfile.TemporaryDirectory() as td:
+            sess = _session_dir(Path(td), "Sesion 1")
+            silence = 18.0
+            camera = _event(5.0, seed=606)
+            head = np.zeros(int(silence * RATE), dtype=np.float32)
+            tail = _event(8.0, seed=707) * 0.1
+            recorder = np.concatenate([head, camera, tail])
+            sig_wav, sig_cam, *_ = self._pair_from_samples(
+                sess,
+                recorder,
+                camera,
+                "silent_head.wav",
+                "cam.wav",
+                float(recorder.size) / RATE,
+                5.0,
+            )
+            sync = sync_sources(sig_wav, sig_cam)
+            assert sync["status"] == SYNC_STATUS_RESOLVED
+            assert abs(sync["offset_seconds"] - silence) <= SYNC_OFFSET_TOLERANCE_SECONDS
+
+    def test_unrelated_recordings(self):
+        with tempfile.TemporaryDirectory() as td:
+            sess = _session_dir(Path(td), "Sesion 1")
+            a = _event(8.0, seed=11)
+            b = _white_noise(8.0, seed=99)
+            sig_a, sig_b, *_ = self._pair_from_samples(
+                sess, a, b, "a.wav", "b.wav", 8.0, 8.0
+            )
+            sync = sync_sources(sig_a, sig_b)
+            assert sync["status"] == SYNC_STATUS_UNRESOLVED
+            assert sync["confidence"] is None or sync["confidence"] < RELATED_CONFIDENCE_THRESHOLD
+            rel = classify_relationship(sig_a, sig_b, sync)
+            assert rel["relationship"] == RELATIONSHIP_UNRELATED
+
+    def test_confidence_threshold_behavior(self):
+        """Acceptance remains gated by RELATED_CONFIDENCE_THRESHOLD (0.50)."""
+        assert RELATED_CONFIDENCE_THRESHOLD == 0.50
+        with tempfile.TemporaryDirectory() as td:
+            sess = _session_dir(Path(td), "Sesion 1")
+            samples = _event(6.0, seed=808)
+            sig_a, sig_b, *_ = self._pair_from_samples(
+                sess, samples, samples.copy(), "x.wav", "y.wav", 6.0, 6.0
+            )
+            sync_ok = sync_sources(sig_a, sig_b)
+            assert sync_ok["status"] == SYNC_STATUS_RESOLVED
+            assert sync_ok["confidence"] >= RELATED_CONFIDENCE_THRESHOLD
+
+            path_n = sess / "noise.wav"
+            _write_wav(path_n, _white_noise(6.0, seed=909))
+            sig_n = extract_source_signature(path_n, _metadata("Sesion 1/noise.wav", 6.0, "audio"))
+            sync_bad = sync_sources(sig_a, sig_n)
+            assert sync_bad["status"] == SYNC_STATUS_UNRESOLVED
+
+    def test_offset_sign_and_value(self):
+        """Canonical convention: offset_seconds is B relative to A."""
+        with tempfile.TemporaryDirectory() as td:
+            sess = _session_dir(Path(td), "Sesion 1")
+            insert = 9.0
+            camera = _event(4.0, seed=111)
+            recorder = np.concatenate(
+                [
+                    np.zeros(int(insert * RATE), dtype=np.float32),
+                    camera,
+                    _event(6.0, seed=222) * 0.1,
+                ]
+            )
+            path_rec = sess / "rec.wav"
+            path_cam = sess / "cam.wav"
+            _write_wav(path_rec, recorder)
+            _write_wav(path_cam, camera)
+            sig_rec = extract_source_signature(
+                path_rec, _metadata("Sesion 1/rec.wav", float(recorder.size) / RATE, "audio")
+            )
+            sig_cam = extract_source_signature(
+                path_cam, _metadata("Sesion 1/cam.wav", 4.0, "audio")
+            )
+            # B=camera starts later on A=recorder → positive offset.
+            sync_cam_as_b = sync_sources(sig_rec, sig_cam)
+            assert sync_cam_as_b["status"] == SYNC_STATUS_RESOLVED
+            assert sync_cam_as_b["offset_seconds"] > 0
+            assert abs(sync_cam_as_b["offset_seconds"] - insert) <= SYNC_OFFSET_TOLERANCE_SECONDS
+
+            # Swap args: B=recorder starts earlier than A=camera → negative offset.
+            sync_rec_as_b = sync_sources(sig_cam, sig_rec)
+            assert sync_rec_as_b["status"] == SYNC_STATUS_RESOLVED
+            assert sync_rec_as_b["offset_seconds"] < 0
+            assert abs(sync_rec_as_b["offset_seconds"] + insert) <= SYNC_OFFSET_TOLERANCE_SECONDS
+
+    def test_unequal_durations(self):
+        with tempfile.TemporaryDirectory() as td:
+            sess = _session_dir(Path(td), "Sesion 1")
+            insert = 4.5
+            camera = _event(5.0, seed=333)
+            recorder = np.concatenate(
+                [
+                    np.zeros(int(insert * RATE), dtype=np.float32),
+                    camera,
+                    _event(20.0, seed=444) * 0.12,
+                ]
+            )
+            sig_wav, sig_cam, *_ = self._pair_from_samples(
+                sess,
+                recorder,
+                camera,
+                "uneq_long.wav",
+                "uneq_short.wav",
+                float(recorder.size) / RATE,
+                5.0,
+            )
+            assert (sig_wav.duration_seconds or 0) > (sig_cam.duration_seconds or 0) * 2
+            sync = sync_sources(sig_wav, sig_cam)
+            assert sync["status"] == SYNC_STATUS_RESOLVED
+            assert abs(sync["offset_seconds"] - insert) <= SYNC_OFFSET_TOLERANCE_SECONDS
+
+    def test_no_source_mutation(self):
+        with tempfile.TemporaryDirectory() as td:
+            sess = _session_dir(Path(td), "Sesion 1")
+            samples = _event(5.0, seed=555)
+            sig_a, sig_b, path_a, path_b, before_a, before_b = self._pair_from_samples(
+                sess, samples, samples.copy(), "im_a.wav", "im_b.wav", 5.0, 5.0
+            )
+            sync_sources(sig_a, sig_b)
+            assert path_a.read_bytes() == before_a
+            assert path_b.read_bytes() == before_b
+
+    def test_dense_envelope_cache_reuse(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            sess = _session_dir(base, "Sesion 1")
+            insert = 6.0
+            camera = _event(4.0, seed=666)
+            recorder = np.concatenate(
+                [np.zeros(int(insert * RATE), dtype=np.float32), camera, _event(5.0, seed=777) * 0.1]
+            )
+            path_rec = sess / "cache_rec.wav"
+            path_cam = sess / "cache_cam.wav"
+            _write_wav(path_rec, recorder)
+            _write_wav(path_cam, camera)
+            rel_rec = "Sesion 1/cache_rec.wav"
+            rel_cam = "Sesion 1/cache_cam.wav"
+            meta_rec = {
+                **_metadata(rel_rec, float(recorder.size) / RATE, "audio"),
+                "source_id": SRC_A,
+                "file_size_bytes": path_rec.stat().st_size,
+            }
+            meta_cam = {
+                **_metadata(rel_cam, 4.0, "audio"),
+                "source_id": SRC_A,
+                "file_size_bytes": path_cam.stat().st_size,
+            }
+            ref_rec = media_item_key(SRC_A, rel_rec)
+            ref_cam = media_item_key(SRC_A, rel_cam)
+            fingerprints = {
+                ref_rec: {"size": path_rec.stat().st_size, "mtime_ns": path_rec.stat().st_mtime_ns},
+                ref_cam: {"size": path_cam.stat().st_size, "mtime_ns": path_cam.stat().st_mtime_ns},
+            }
+            runtime = SignatureCacheRuntime(cache=empty_signature_cache("PRJ-11111111-1111-4111-8111-111111111111"), fingerprints=fingerprints)
+
+            first = group_related_media(
+                [meta_rec, meta_cam],
+                media_root=base,
+                signature_cache_runtime=runtime,
+            )
+            assert runtime.signature_builds >= 1
+            assert first and first[0].relationships
+            sync1 = first[0].relationships[0]["sync"]
+            assert sync1["status"] == SYNC_STATUS_RESOLVED
+
+            # Dense envelopes must now be cached for reuse.
+            hit_rec = runtime.lookup(ref_rec)
+            hit_cam = runtime.lookup(ref_cam)
+            assert hit_rec is not None and hit_rec.dense_envelope is not None
+            assert hit_cam is not None and hit_cam.dense_envelope is not None
+            builds_after_first = runtime.signature_builds
+
+            second = group_related_media(
+                [meta_rec, meta_cam],
+                media_root=base,
+                signature_cache_runtime=runtime,
+            )
+            assert runtime.signature_builds == builds_after_first
+            assert second and second[0].relationships
+            sync2 = second[0].relationships[0]["sync"]
+            assert sync2["status"] == SYNC_STATUS_RESOLVED
+            # Relationship iteration order may place either source as A; absolute
+            # magnitude must still recover the known insertion point.
+            assert abs(abs(sync2["offset_seconds"]) - insert) <= SYNC_OFFSET_TOLERANCE_SECONDS
+
+
+class TestLegacyCacheDenseEnrichment:
+    """beta4 → beta5 upgrade: windows-only cache hits enrich dense when ONLINE."""
+
+    def _seed_legacy_windows_only(
+        self,
+        runtime: SignatureCacheRuntime,
+        path: Path,
+        rel: str,
+        source_id: str,
+        duration: float,
+    ) -> SourceSignature:
+        meta = {
+            **_metadata(rel, duration, "audio"),
+            "source_id": source_id,
+            "file_size_bytes": path.stat().st_size,
+        }
+        sig = extract_source_signature(
+            path, meta, window_seconds=min(20.0, duration)
+        )
+        # Simulate beta4 persisted record: windows only, no dense, no media_path.
+        start_win = np.asarray(sig.windows.get("start"), dtype=np.float32).copy()
+        mid_win = (
+            np.asarray(sig.windows["middle"], dtype=np.float32).copy()
+            if "middle" in sig.windows
+            else None
+        )
+        end_win = (
+            np.asarray(sig.windows["end"], dtype=np.float32).copy()
+            if "end" in sig.windows
+            else None
+        )
+        sig.dense_envelope = None
+        sig.media_path = None
+        assert runtime.upsert(sig.media_ref, sig)
+        payload = serialize_source_signature(sig)
+        assert "dense_envelope" not in payload
+        assert "media_path" not in payload
+        # Keep copies for preservation asserts after enrichment.
+        sig._test_start = start_win  # type: ignore[attr-defined]
+        sig._test_middle = mid_win  # type: ignore[attr-defined]
+        sig._test_end = end_win  # type: ignore[attr-defined]
+        return sig
+
+    def test_legacy_cache_hit_online_enriches_persists_and_slides(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            sess = _session_dir(base, "Sesion 1")
+            insert = 8.0
+            camera = _event(5.0, seed=901)
+            recorder = np.concatenate(
+                [
+                    np.zeros(int(insert * RATE), dtype=np.float32),
+                    camera,
+                    _event(6.0, seed=902) * 0.1,
+                ]
+            )
+            path_rec = sess / "legacy_rec.wav"
+            path_cam = sess / "legacy_cam.wav"
+            _write_wav(path_rec, recorder)
+            _write_wav(path_cam, camera)
+            rel_rec = "Sesion 1/legacy_rec.wav"
+            rel_cam = "Sesion 1/legacy_cam.wav"
+            dur_rec = float(recorder.size) / RATE
+            meta_rec = {
+                **_metadata(rel_rec, dur_rec, "audio"),
+                "source_id": SRC_A,
+                "file_size_bytes": path_rec.stat().st_size,
+            }
+            meta_cam = {
+                **_metadata(rel_cam, 5.0, "audio"),
+                "source_id": SRC_A,
+                "file_size_bytes": path_cam.stat().st_size,
+            }
+            ref_rec = media_item_key(SRC_A, rel_rec)
+            ref_cam = media_item_key(SRC_A, rel_cam)
+            fingerprints = {
+                ref_rec: {
+                    "size": path_rec.stat().st_size,
+                    "mtime_ns": path_rec.stat().st_mtime_ns,
+                },
+                ref_cam: {
+                    "size": path_cam.stat().st_size,
+                    "mtime_ns": path_cam.stat().st_mtime_ns,
+                },
+            }
+            runtime = SignatureCacheRuntime(
+                cache=empty_signature_cache(
+                    "PRJ-22222222-2222-4222-8222-222222222222"
+                ),
+                fingerprints=fingerprints,
+            )
+            seeded_rec = self._seed_legacy_windows_only(
+                runtime, path_rec, rel_rec, SRC_A, dur_rec
+            )
+            seeded_cam = self._seed_legacy_windows_only(
+                runtime, path_cam, rel_cam, SRC_A, 5.0
+            )
+            assert runtime.signature_builds == 0
+            upserts_before = runtime.cache_upserts
+
+            first = group_related_media(
+                [meta_rec, meta_cam],
+                media_root=base,
+                signature_cache_runtime=runtime,
+            )
+            # Cache hits (no full rebuild) + dense enrichment upserts.
+            assert runtime.signature_builds == 0
+            assert runtime.cache_hits >= 2
+            assert runtime.cache_upserts > upserts_before
+
+            hit_rec = runtime.lookup(ref_rec)
+            hit_cam = runtime.lookup(ref_cam)
+            assert hit_rec is not None and hit_rec.dense_envelope is not None
+            assert hit_cam is not None and hit_cam.dense_envelope is not None
+            assert np.asarray(hit_rec.windows["start"]).size == seeded_rec._test_start.size
+            assert np.allclose(hit_rec.windows["start"], seeded_rec._test_start)
+            if seeded_rec._test_middle is not None:
+                assert np.allclose(hit_rec.windows["middle"], seeded_rec._test_middle)
+            if seeded_cam._test_end is not None and "end" in hit_cam.windows:
+                assert np.allclose(hit_cam.windows["end"], seeded_cam._test_end)
+
+            payload_rec = serialize_source_signature(hit_rec)
+            payload_cam = serialize_source_signature(hit_cam)
+            assert "dense_envelope" in payload_rec
+            assert "dense_envelope" in payload_cam
+            assert "media_path" not in payload_rec
+            assert "media_path" not in payload_cam
+
+            assert first and first[0].relationships
+            sync1 = first[0].relationships[0]["sync"]
+            assert sync1["status"] == SYNC_STATUS_RESOLVED
+            assert abs(abs(sync1["offset_seconds"]) - insert) <= SYNC_OFFSET_TOLERANCE_SECONDS
+
+            # Second run: dense reused; no dense decode / no full rebuild.
+            builds_after = runtime.signature_builds
+            upserts_after_first = runtime.cache_upserts
+            dense_calls = {"n": 0}
+            real_extract = extract_dense_envelope
+
+            def counting_extract(*a, **k):
+                dense_calls["n"] += 1
+                return real_extract(*a, **k)
+
+            import scripts.local_media_agent.audio_source_intelligence as asi
+
+            original = asi.extract_dense_envelope
+            asi.extract_dense_envelope = counting_extract
+            try:
+                second = group_related_media(
+                    [meta_rec, meta_cam],
+                    media_root=base,
+                    signature_cache_runtime=runtime,
+                )
+            finally:
+                asi.extract_dense_envelope = original
+
+            assert dense_calls["n"] == 0
+            assert runtime.signature_builds == builds_after
+            assert runtime.cache_upserts == upserts_after_first
+            assert second and second[0].relationships
+            sync2 = second[0].relationships[0]["sync"]
+            assert sync2["status"] == SYNC_STATUS_RESOLVED
+            assert abs(abs(sync2["offset_seconds"]) - insert) <= SYNC_OFFSET_TOLERANCE_SECONDS
+
+    def test_offline_legacy_cache_skips_media_access(self, monkeypatch):
+        rel, src = "Sesion 1/offline.wav", SRC_A
+        ref = media_item_key(src, rel)
+        sig = _sig(rel, source_id=src, media_ref=ref, ref="start")
+        sig.dense_envelope = None
+        sig.media_path = None
+        runtime = SignatureCacheRuntime(
+            fingerprints={ref: {"size": 1000, "mtime_ns": 12345}}
+        )
+        assert runtime.upsert(ref, sig)
+
+        def boom_decode(*a, **k):
+            raise AssertionError("offline legacy hit must not decode media")
+
+        def boom_extract(*a, **k):
+            raise AssertionError("offline legacy hit must not extract dense")
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence.decode_window",
+            boom_decode,
+        )
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence.extract_dense_envelope",
+            boom_extract,
+        )
+        clusters = group_related_media(
+            [
+                {
+                    "relative_path": rel,
+                    "category": "audio",
+                    "file_size_bytes": 1000,
+                    "duration_seconds": 5.0,
+                    "source_id": src,
+                    "audio": {
+                        "codec": "pcm_s16le",
+                        "sample_rate": RATE,
+                        "channel_count": 1,
+                    },
+                }
+            ],
+            # Root authority present but file is not ONLINE on disk.
+            media_root_by_source_id={src: "/nonexistent/offline/root"},
+            signature_cache_runtime=runtime,
+        )
+        assert clusters and len(clusters[0].sources) == 1
+        assert clusters[0].sources[0].dense_envelope is None
+        assert clusters[0].sources[0].media_path is None
+        assert runtime.signature_builds == 0
+
+    def test_warm_dense_cache_skips_path_resolve(self, monkeypatch):
+        rel, src = "A/warm.wav", SRC_A
+        ref = media_item_key(src, rel)
+        sig = _sig(rel, source_id=src, media_ref=ref, ref="start")
+        sig.dense_envelope = np.ones(30, dtype=np.float32)
+        runtime = SignatureCacheRuntime(
+            fingerprints={ref: {"size": 1000, "mtime_ns": 99}}
+        )
+        assert runtime.upsert(ref, sig)
+
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence._resolve_grouping_media_path",
+            lambda *a, **k: (_ for _ in ()).throw(
+                AssertionError("warm dense must not resolve path")
+            ),
+        )
+        monkeypatch.setattr(
+            "scripts.local_media_agent.audio_source_intelligence.extract_dense_envelope",
+            lambda *a, **k: (_ for _ in ()).throw(
+                AssertionError("warm dense must not re-extract")
+            ),
+        )
+        clusters = group_related_media(
+            [
+                {
+                    "relative_path": rel,
+                    "category": "audio",
+                    "file_size_bytes": 1000,
+                    "duration_seconds": 5.0,
+                    "source_id": src,
+                    "audio": {
+                        "codec": "pcm_s16le",
+                        "sample_rate": RATE,
+                        "channel_count": 1,
+                    },
+                }
+            ],
+            media_root_by_source_id={src: "/root/a"},
+            signature_cache_runtime=runtime,
+        )
+        assert clusters and clusters[0].sources[0].dense_envelope is not None
+        assert runtime.signature_builds == 0
